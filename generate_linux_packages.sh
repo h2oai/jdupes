@@ -20,5 +20,5 @@ cp CHANGES README.md LICENSE $PKGNAME/
 make clean && make -j$PM ENABLE_DEDUPE=1 stripped && cp ${NAME} $PKGNAME/${NAME}
 make clean && make -j$PM ENABLE_DEDUPE=1 LOUD=1 stripped && cp ${NAME} $PKGNAME/${NAME}-loud
 make clean && make -j$PM LOW_MEMORY=1 stripped && cp ${NAME} $PKGNAME/${NAME}-lowmem
-zip -9r ${PKGNAME}.zip $PKGNAME/
+tar -c $PKGNAME/ | xz -e > $PKGNAME.pkg.tar.xz
 echo "Package generation complete."
