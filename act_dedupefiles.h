@@ -1,4 +1,4 @@
-/* jdupes action for BTRFS block-level deduplication
+/* jdupes action for OS-specific block-level or CoW deduplication
  * This file is part of jdupes; see jdupes.c for license information */
 
 #ifndef ACT_DEDUPEFILES_H
