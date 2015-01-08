@@ -509,7 +509,7 @@ static int same_permissions(char* name1, char* name2)
 }
 
 
-static file_t **checkmatch(filetree_t **root, filetree_t *checktree, file_t *file)
+static file_t **checkmatch(filetree_t *checktree, file_t *file)
 {
   int cmpresult;
   char *crcsignature;
@@ -605,14 +605,14 @@ static file_t **checkmatch(filetree_t **root, filetree_t *checktree, file_t *fil
 
   if (cmpresult < 0) {
     if (checktree->left != NULL) {
-      return checkmatch(root, checktree->left, file);
+      return checkmatch(checktree->left, file);
     } else {
       registerfile(&(checktree->left), file);
       return NULL;
     }
   } else if (cmpresult > 0) {
     if (checktree->right != NULL) {
-      return checkmatch(root, checktree->right, file);
+      return checkmatch(checktree->right, file);
     } else {
       registerfile(&(checktree->right), file);
       return NULL;
@@ -1205,7 +1205,7 @@ int main(int argc, char **argv) {
     if (!checktree)
       registerfile(&checktree, curfile);
     else
-      match = checkmatch(&checktree, checktree, curfile);
+      match = checkmatch(checktree, curfile);
 
     if (match != NULL) {
       file1 = fopen(curfile->d_name, "rb");
