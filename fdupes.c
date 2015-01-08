@@ -40,6 +40,9 @@
 
 #define ISFLAG(a,b) ((a & b) == b)
 #define SETFLAG(a,b) (a |= b)
+#define getcrcsignature(a) getcrcsignatureuntil(a, 0)
+#define getcrcpartialsignature(a) getcrcsignatureuntil(a, PARTIAL_MD5_SIZE)
+
 
 #define F_RECURSE           0x0001
 #define F_HIDEPROGRESS      0x0002
@@ -407,16 +410,6 @@ static char *getcrcsignatureuntil(const char *filename, const off_t max_read)
   fclose(file);
 
   return signature;
-}
-
-static inline char *getcrcsignature(char *filename)
-{
-  return getcrcsignatureuntil(filename, 0);
-}
-
-static inline char *getcrcpartialsignature(char *filename)
-{
-  return getcrcsignatureuntil(filename, PARTIAL_MD5_SIZE);
 }
 
 #endif /* [#ifndef EXTERNAL_MD5] */
