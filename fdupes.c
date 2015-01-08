@@ -70,6 +70,9 @@ unsigned long flags = 0;
 
 #define PARTIAL_MD5_SIZE 4096
 
+/* How many operations to wait before updating progress counters */
+#define DELAY_COUNT 256
+
 /* 
 
 TODO: Partial sums (for working with very large files).
@@ -247,6 +250,7 @@ int grokdir(char *dir, file_t **filelistp)
   struct stat info;
   struct stat linfo;
   static int progress = 0;
+  static int delay = 0;
   static char indicator[] = "-\\|/";
   char *fullname, *name;
 
@@ -260,8 +264,11 @@ int grokdir(char *dir, file_t **filelistp)
   while ((dirinfo = readdir(cd)) != NULL) {
     if (strcmp(dirinfo->d_name, ".") && strcmp(dirinfo->d_name, "..")) {
       if (!ISFLAG(flags, F_HIDEPROGRESS)) {
-	fprintf(stderr, "\rBuilding file list %c ", indicator[progress]);
-	progress = (progress + 1) % 4;
+        if (delay == DELAY_COUNT) {
+          delay = 0;
+          fprintf(stderr, "\rBuilding file list %c ", indicator[progress]);
+          progress = (progress + 1) % 4;
+       } else delay++;
       }
 
       newfile = (file_t*) malloc(sizeof(file_t));
@@ -1032,6 +1039,9 @@ int main(int argc, char **argv) {
   char **oldargv;
   int firstrecurse;
   ordertype_t ordertype = ORDER_TIME;
+  int pct_step;
+  int delay = 0;
+
   
 #ifndef OMIT_GETOPT_LONG
   static struct option long_options[] = 
@@ -1183,7 +1193,10 @@ int main(int argc, char **argv) {
     if (!ISFLAG(flags, F_HIDEPROGRESS)) fprintf(stderr, "\r%40s\r", " ");
     exit(0);
   }
-  
+
+  pct_step = filecount / 100;
+  if (pct_step == 0) pct_step = 1;
+
   curfile = files;
 
   while (curfile) {
@@ -1222,8 +1235,11 @@ int main(int argc, char **argv) {
     curfile = curfile->next;
 
     if (!ISFLAG(flags, F_HIDEPROGRESS)) {
-      fprintf(stderr, "\rProgress [%d/%d] %d%% ", progress, filecount,
-       (int)((float) progress / (float) filecount * 100.0));
+      if (delay == DELAY_COUNT) {
+        delay = 0;
+        fprintf(stderr, "\rProgress [%d/%d] %d%% ", progress, filecount,
+          progress / pct_step);
+      } else delay++;
       progress++;
     }
   }
