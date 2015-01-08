@@ -11,12 +11,12 @@
    The above copyright notice and this permission notice shall be
    included in all copies or substantial portions of the Software.
 
-   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS 
-   OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF 
-   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
-   IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY 
-   CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
-   TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+   OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+   IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+   CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+   TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. */
 
 #include <stdio.h>
@@ -26,6 +26,7 @@
 #include <dirent.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <stdint.h>
 #ifndef OMIT_GETOPT_LONG
 #include <getopt.h>
 #endif
@@ -60,9 +61,9 @@ typedef enum {
   ORDER_NAME
 } ordertype_t;
 
-char *program_name;
+const char *program_name;
 
-unsigned long flags = 0;
+uint_fast16_t flags = 0;
 
 #define CHUNK_SIZE 8192
 
@@ -73,7 +74,7 @@ unsigned long flags = 0;
 /* How many operations to wait before updating progress counters */
 #define DELAY_COUNT 256
 
-/* 
+/*
 
 TODO: Partial sums (for working with very large files).
 
@@ -105,12 +106,12 @@ typedef struct _file {
 } file_t;
 
 typedef struct _filetree {
-  file_t *file; 
+  file_t *file;
   struct _filetree *left;
   struct _filetree *right;
 } filetree_t;
 
-void errormsg(char *message, ...)
+static void errormsg(char *message, ...)
 {
   va_list ap;
 
@@ -120,7 +121,7 @@ void errormsg(char *message, ...)
   vfprintf(stderr, message, ap);
 }
 
-void escapefilename(char *escape_list, char **filename_ptr)
+static void escapefilename(char *escape_list, char **filename_ptr)
 {
   int x;
   int tx;
@@ -152,7 +153,7 @@ void escapefilename(char *escape_list, char **filename_ptr)
   }
 }
 
-off_t filesize(char *filename) {
+static inline off_t filesize(const char * const filename) {
   struct stat s;
 
   if (stat(filename, &s) != 0) return -1;
@@ -160,7 +161,7 @@ off_t filesize(char *filename) {
   return s.st_size;
 }
 
-dev_t getdevice(char *filename) {
+static inline dev_t getdevice(const char * const filename) {
   struct stat s;
 
   if (stat(filename, &s) != 0) return 0;
@@ -168,15 +169,15 @@ dev_t getdevice(char *filename) {
   return s.st_dev;
 }
 
-ino_t getinode(char *filename) {
+static inline ino_t getinode(const char * const filename) {
   struct stat s;
-   
+
   if (stat(filename, &s) != 0) return 0;
 
-  return s.st_ino;   
+  return s.st_ino;
 }
 
-time_t getmtime(char *filename) {
+static inline time_t getmtime(const char * const filename) {
   struct stat s;
 
   if (stat(filename, &s) != 0) return 0;
@@ -184,7 +185,7 @@ time_t getmtime(char *filename) {
   return s.st_mtime;
 }
 
-char **cloneargs(int argc, char **argv)
+static char **cloneargs(const int argc, char **argv)
 {
   int x;
   char **args;
@@ -209,20 +210,21 @@ char **cloneargs(int argc, char **argv)
   return args;
 }
 
-int findarg(char *arg, int start, int argc, char **argv)
+static int findarg(const char * const arg, const int start,
+		const int argc, char **argv)
 {
   int x;
-  
+
   for (x = start; x < argc; x++)
-    if (strcmp(argv[x], arg) == 0) 
+    if (strcmp(argv[x], arg) == 0)
       return x;
 
   return x;
 }
 
 /* Find the first non-option argument after specified option. */
-int nonoptafter(char *option, int argc, char **oldargv, 
-		      char **newargv, int optind) 
+static int nonoptafter(const char *option, const int argc,
+		char **oldargv, char **newargv, int optind)
 {
   int x;
   int targetind;
@@ -230,7 +232,7 @@ int nonoptafter(char *option, int argc, char **oldargv,
   int startat = 1;
 
   targetind = findarg(option, 1, argc, oldargv);
-    
+
   for (x = optind; x < argc; x++) {
     testind = findarg(newargv[x], startat, argc, oldargv);
     if (testind > targetind) return x;
@@ -240,7 +242,7 @@ int nonoptafter(char *option, int argc, char **oldargv,
   return x;
 }
 
-int grokdir(char *dir, file_t **filelistp)
+static int grokdir(const char *dir, file_t ** const filelistp)
 {
   DIR *cd;
   file_t *newfile;
@@ -300,7 +302,7 @@ int grokdir(char *dir, file_t **filelistp)
       if (lastchar >= 0 && dir[lastchar] != '/')
 	strcat(newfile->d_name, "/");
       strcat(newfile->d_name, dirinfo->d_name);
-      
+
       if (ISFLAG(flags, F_EXCLUDEHIDDEN)) {
 	fullname = strdup(newfile->d_name);
 	name = basename(fullname);
@@ -354,25 +356,25 @@ int grokdir(char *dir, file_t **filelistp)
 
 #ifndef EXTERNAL_MD5
 
-/* If EXTERNAL_MD5 is not defined, use L. Peter Deutsch's MD5 library. 
+/* If EXTERNAL_MD5 is not defined, use L. Peter Deutsch's MD5 library.
  */
-char *getcrcsignatureuntil(char *filename, off_t max_read)
+static char *getcrcsignatureuntil(const char *filename, const off_t max_read)
 {
   int x;
   off_t fsize;
   off_t toread;
   md5_state_t state;
-  md5_byte_t digest[16];  
+  md5_byte_t digest[16];
   static md5_byte_t chunk[CHUNK_SIZE];
-  static char signature[16*2 + 1]; 
+  static char signature[16*2 + 1];
   char *sigp;
   FILE *file;
-   
+
   md5_init(&state);
 
- 
+
   fsize = filesize(filename);
-  
+
   if (max_read != 0 && fsize > max_read)
     fsize = max_read;
 
@@ -381,7 +383,7 @@ char *getcrcsignatureuntil(char *filename, off_t max_read)
     errormsg("error opening file %s\n", filename);
     return NULL;
   }
- 
+
   while (fsize > 0) {
     toread = (fsize >= CHUNK_SIZE) ? CHUNK_SIZE : fsize;
     if (fread(chunk, toread, 1, file) != 1) {
@@ -407,12 +409,12 @@ char *getcrcsignatureuntil(char *filename, off_t max_read)
   return signature;
 }
 
-char *getcrcsignature(char *filename)
+static inline char *getcrcsignature(char *filename)
 {
   return getcrcsignatureuntil(filename, 0);
 }
 
-char *getcrcpartialsignature(char *filename)
+static inline char *getcrcpartialsignature(char *filename)
 {
   return getcrcsignatureuntil(filename, PARTIAL_MD5_SIZE);
 }
@@ -423,7 +425,7 @@ char *getcrcpartialsignature(char *filename)
 
 /* If EXTERNAL_MD5 is defined, use md5sum program to calculate signatures.
  */
-char *getcrcsignature(char *filename)
+static char *getcrcsignature(char *filename)
 {
   static char signature[256];
   char *command;
@@ -443,13 +445,13 @@ char *getcrcsignature(char *filename)
     errormsg("error invoking %s\n", EXTERNAL_MD5);
     exit(1);
   }
- 
+
   free(command);
 
   if (fgets(signature, 256, result) == NULL) {
     errormsg("error generating signature for %s\n", filename);
     return NULL;
-  }    
+  }
   separator = strchr(signature, ' ');
   if (separator) *separator = '\0';
 
@@ -460,16 +462,16 @@ char *getcrcsignature(char *filename)
 
 #endif /* [#ifdef EXTERNAL_MD5] */
 
-void purgetree(filetree_t *checktree)
+static inline void purgetree(filetree_t *checktree)
 {
   if (checktree->left != NULL) purgetree(checktree->left);
-    
+
   if (checktree->right != NULL) purgetree(checktree->right);
-    
+
   free(checktree);
 }
 
-void getfilestats(file_t *file)
+static inline void getfilestats(file_t * const file)
 {
   file->size = filesize(file->d_name);
   file->inode = getinode(file->d_name);
@@ -477,7 +479,7 @@ void getfilestats(file_t *file)
   file->mtime = getmtime(file->d_name);
 }
 
-int registerfile(filetree_t **branch, file_t *file)
+static int registerfile(filetree_t **branch, file_t *file)
 {
   getfilestats(file);
 
@@ -486,7 +488,7 @@ int registerfile(filetree_t **branch, file_t *file)
     errormsg("out of memory!\n");
     exit(1);
   }
-  
+
   (*branch)->file = file;
   (*branch)->left = NULL;
   (*branch)->right = NULL;
@@ -494,7 +496,7 @@ int registerfile(filetree_t **branch, file_t *file)
   return 1;
 }
 
-int same_permissions(char* name1, char* name2)
+static int same_permissions(char* name1, char* name2)
 {
     struct stat s1, s2;
 
@@ -507,27 +509,27 @@ int same_permissions(char* name1, char* name2)
 }
 
 
-file_t **checkmatch(filetree_t **root, filetree_t *checktree, file_t *file)
+static file_t **checkmatch(filetree_t **root, filetree_t *checktree, file_t *file)
 {
   int cmpresult;
   char *crcsignature;
   off_t fsize;
 
-  /* If device and inode fields are equal one of the files is a 
-     hard link to the other or the files have been listed twice 
+  /* If device and inode fields are equal one of the files is a
+     hard link to the other or the files have been listed twice
      unintentionally. We don't want to flag these files as
      duplicates unless the user specifies otherwise.
-  */    
+  */
 
-  if (!ISFLAG(flags, F_CONSIDERHARDLINKS) && (getinode(file->d_name) == 
+  if (!ISFLAG(flags, F_CONSIDERHARDLINKS) && (getinode(file->d_name) ==
       checktree->file->inode) && (getdevice(file->d_name) ==
-      checktree->file->device)) return NULL; 
+      checktree->file->device)) return NULL;
 
   fsize = filesize(file->d_name);
-  
-  if (fsize < checktree->file->size) 
+
+  if (fsize < checktree->file->size)
     cmpresult = -1;
-  else 
+  else
     if (fsize > checktree->file->size) cmpresult = 1;
   else
     if (ISFLAG(flags, F_PERMISSIONS) &&
@@ -593,7 +595,7 @@ file_t **checkmatch(filetree_t **root, filetree_t *checktree, file_t *file)
       }
 
       cmpresult = strcmp(file->crcsignature, checktree->file->crcsignature);
-      /*if (cmpresult != 0) errormsg("P   on %s vs %s\n", 
+      /*if (cmpresult != 0) errormsg("P   on %s vs %s\n",
           file->d_name, checktree->file->d_name);
       else errormsg("P F on %s vs %s\n", file->d_name,
           checktree->file->d_name);
@@ -615,23 +617,23 @@ file_t **checkmatch(filetree_t **root, filetree_t *checktree, file_t *file)
       registerfile(&(checktree->right), file);
       return NULL;
     }
-  } else 
+  } else
   {
     getfilestats(file);
     return &checktree->file;
   }
 }
 
-/* Do a bit-for-bit comparison in case two different files produce the 
+/* Do a bit-for-bit comparison in case two different files produce the
    same signature. Unlikely, but better safe than sorry. */
 
-int confirmmatch(FILE *file1, FILE *file2)
+static int confirmmatch(FILE * const file1, FILE * const file2)
 {
   unsigned char c1[CHUNK_SIZE];
   unsigned char c2[CHUNK_SIZE];
   size_t r1;
   size_t r2;
-  
+
   fseek(file1, 0, SEEK_SET);
   fseek(file2, 0, SEEK_SET);
 
@@ -642,11 +644,11 @@ int confirmmatch(FILE *file1, FILE *file2)
     if (r1 != r2) return 0; /* file lengths are different */
     if (memcmp (c1, c2, r1)) return 0; /* file contents are different */
   } while (r2);
-  
+
   return 1;
 }
 
-void summarizematches(file_t *files)
+static void summarizematches(file_t *files)
 {
   int numsets = 0;
   double numbytes = 0.0;
@@ -681,18 +683,18 @@ void summarizematches(file_t *files)
       printf("%d duplicate files (in %d sets), occupying %.1f kilobytes\n\n", numfiles, numsets, numbytes / 1000.0);
     else
       printf("%d duplicate files (in %d sets), occupying %.1f megabytes\n\n", numfiles, numsets, numbytes / (1000.0 * 1000.0));
- 
+
   }
 }
 
-void printmatches(file_t *files)
+static void printmatches(file_t *files)
 {
   file_t *tmpfile;
 
   while (files != NULL) {
     if (files->hasdupes) {
       if (!ISFLAG(flags, F_OMITFIRST)) {
-	if (ISFLAG(flags, F_SHOWSIZE)) printf("%lld byte%seach:\n", (long long int)files->size,
+	if (ISFLAG(flags, F_SHOWSIZE)) printf("%jd byte%seach:\n", (intmax_t)files->size,
 	 (files->size != 1) ? "s " : " ");
 	if (ISFLAG(flags, F_DSAMELINE)) escapefilename("\\ ", &files->d_name);
 	printf("%s%c", files->d_name, ISFLAG(flags, F_DSAMELINE)?' ':'\n');
@@ -706,7 +708,7 @@ void printmatches(file_t *files)
       printf("\n");
 
     }
-      
+
     files = files->next;
   }
 }
@@ -729,7 +731,7 @@ char *revisefilename(char *path, int seq)
 
   strcpy(scratch, path);
   dot = strrchr(scratch, '.');
-  if (dot) 
+  if (dot)
   {
     *dot = 0;
     sprintf(newpath, "%s%s%d.%s", scratch, REVISE_APPEND, seq, dot + 1);
@@ -745,7 +747,7 @@ char *revisefilename(char *path, int seq)
   return newpath;
 } */
 
-int relink(char *oldfile, char *newfile)
+static int relink(char *oldfile, char *newfile)
 {
   dev_t od;
   dev_t nd;
@@ -768,7 +770,7 @@ int relink(char *oldfile, char *newfile)
   return 1;
 }
 
-void deletefiles(file_t *files, int prompt, FILE *tty)
+static void deletefiles(file_t *files, int prompt, FILE *tty)
 {
   int counter;
   int groups = 0;
@@ -787,7 +789,7 @@ void deletefiles(file_t *files, int prompt, FILE *tty)
   int i;
 
   curfile = files;
-  
+
   while (curfile) {
     if (curfile->hasdupes) {
       counter = 1;
@@ -798,10 +800,10 @@ void deletefiles(file_t *files, int prompt, FILE *tty)
 	counter++;
 	tmpfile = tmpfile->duplicates;
       }
-      
+
       if (counter > max) max = counter;
     }
-    
+
     curfile = curfile->next;
   }
 
@@ -843,9 +845,9 @@ void deletefiles(file_t *files, int prompt, FILE *tty)
       else /* prompt for files to preserve */
 
       do {
-	printf("Set %d of %d, preserve files [1 - %d, all]", 
+	printf("Set %d of %d, preserve files [1 - %d, all]",
           curgroup, groups, counter);
-	if (ISFLAG(flags, F_SHOWSIZE)) printf(" (%lld byte%seach)", (long long int)files->size,
+	if (ISFLAG(flags, F_SHOWSIZE)) printf(" (%jd byte%seach)", (intmax_t)files->size,
 	  (files->size != 1) ? "s " : " ");
 	printf(": ");
 	fflush(stdout);
@@ -877,22 +879,22 @@ void deletefiles(file_t *files, int prompt, FILE *tty)
 	token = strtok(preservestr, " ,\n");
 	
 	while (token != NULL) {
-	  if (strcasecmp(token, "all") == 0)
+	  if (strncasecmp(token, "all", 4) == 0)
 	    for (x = 0; x <= counter; x++) preserve[x] = 1;
-	  
+
 	  number = 0;
 	  sscanf(token, "%d", &number);
 	  if (number > 0 && number <= counter) preserve[number] = 1;
-	  
+
 	  token = strtok(NULL, " ,\n");
 	}
-      
+
 	for (sum = 0, x = 1; x <= counter; x++) sum += preserve[x];
       } while (sum < 1); /* make sure we've preserved at least one file */
 
       printf("\n");
 
-      for (x = 1; x <= counter; x++) { 
+      for (x = 1; x <= counter; x++) {
 	if (preserve[x])
 	  printf("   [+] %s\n", dupelist[x]->d_name);
 	else {
@@ -906,7 +908,7 @@ void deletefiles(file_t *files, int prompt, FILE *tty)
       }
       printf("\n");
     }
-    
+
     files = files->next;
   }
 
@@ -915,7 +917,7 @@ void deletefiles(file_t *files, int prompt, FILE *tty)
   free(preservestr);
 }
 
-int sort_pairs_by_arrival(file_t *f1, file_t *f2)
+static inline int sort_pairs_by_arrival(file_t *f1, file_t *f2)
 {
   if (f2->duplicates != 0)
     return 1;
@@ -923,7 +925,7 @@ int sort_pairs_by_arrival(file_t *f1, file_t *f2)
   return -1;
 }
 
-int sort_pairs_by_mtime(file_t *f1, file_t *f2)
+static inline int sort_pairs_by_mtime(file_t *f1, file_t *f2)
 {
   if (f1->mtime < f2->mtime)
     return -1;
@@ -933,12 +935,12 @@ int sort_pairs_by_mtime(file_t *f1, file_t *f2)
   return 0;
 }
 
-int sort_pairs_by_filename(file_t *f1, file_t *f2)
+static inline int sort_pairs_by_filename(file_t *f1, file_t *f2)
 {
   return strcmp(f1->d_name, f2->d_name);
 }
 
-void registerpair(file_t **matchlist, file_t *newmatch, 
+static void registerpair(file_t **matchlist, file_t *newmatch,
 		  int (*comparef)(file_t *f1, file_t *f2))
 {
   file_t *traverse;
@@ -953,7 +955,7 @@ void registerpair(file_t **matchlist, file_t *newmatch,
     if (comparef(newmatch, traverse) <= 0)
     {
       newmatch->duplicates = traverse;
-      
+
       if (back == 0)
       {
 	*matchlist = newmatch; /* update pointer to head of list */
@@ -978,13 +980,13 @@ void registerpair(file_t **matchlist, file_t *newmatch,
 	break;
       }
     }
-    
+
     back = traverse;
     traverse = traverse->duplicates;
   }
 }
 
-void help_text()
+static void help_text()
 {
   printf("Usage: fdupes [options] DIRECTORY...\n\n");
 
@@ -995,7 +997,7 @@ void help_text()
   printf("                  \tthe end of the option, manpage for more details)\n");
   printf(" -s --symlinks    \tfollow symlinks\n");
   printf(" -H --hardlinks   \tnormally, when two or more files point to the same\n");
-  printf("                  \tdisk area they are treated as non-duplicates; this\n"); 
+  printf("                  \tdisk area they are treated as non-duplicates; this\n");
   printf("                  \toption will change this behavior\n");
   printf(" -n --noempty     \texclude zero-length files from consideration\n");
   printf(" -A --nohidden    \texclude hidden files from consideration\n");
@@ -1004,7 +1006,7 @@ void help_text()
   printf(" -S --size        \tshow size of duplicate files\n");
   printf(" -m --summarize   \tsummarize dupe information\n");
   printf(" -q --quiet       \thide progress indicator\n");
-  printf(" -d --delete      \tprompt user for files to preserve and delete all\n"); 
+  printf(" -d --delete      \tprompt user for files to preserve and delete all\n");
   printf("                  \tothers; important: under particular circumstances,\n");
   printf("                  \tdata may be lost when using this option together\n");
   printf("                  \twith -s or --symlinks, or when specifying a\n");
@@ -1042,9 +1044,9 @@ int main(int argc, char **argv) {
   int pct_step;
   int delay = 0;
 
-  
+
 #ifndef OMIT_GETOPT_LONG
-  static struct option long_options[] = 
+  static struct option long_options[] =
   {
     { "omitfirst", 0, 0, 'f' },
     { "recurse", 0, 0, 'r' },
@@ -1133,9 +1135,9 @@ int main(int argc, char **argv) {
       SETFLAG(flags, F_PERMISSIONS);
       break;
     case 'o':
-      if (!strcasecmp("name", optarg)) {
+      if (!strncasecmp("name", optarg, 5)) {
         ordertype = ORDER_NAME;
-      } else if (!strcasecmp("time", optarg)) {
+      } else if (!strncasecmp("time", optarg, 5)) {
         ordertype = ORDER_TIME;
       } else {
         errormsg("invalid value for --order: '%s'\n", optarg);
@@ -1166,7 +1168,7 @@ int main(int argc, char **argv) {
 
   if (ISFLAG(flags, F_RECURSEAFTER)) {
     firstrecurse = nonoptafter("--recurse:", argc, oldargv, argv, optind);
-    
+
     if (firstrecurse == argc)
       firstrecurse = nonoptafter("-R", argc, oldargv, argv, optind);
 
@@ -1200,9 +1202,9 @@ int main(int argc, char **argv) {
   curfile = files;
 
   while (curfile) {
-    if (!checktree) 
+    if (!checktree)
       registerfile(&checktree, curfile);
-    else 
+    else
       match = checkmatch(&checktree, checktree, curfile);
 
     if (match != NULL) {
@@ -1211,7 +1213,7 @@ int main(int argc, char **argv) {
 	curfile = curfile->next;
 	continue;
       }
-      
+
       file2 = fopen((*match)->d_name, "rb");
       if (!file2) {
 	fclose(file1);
@@ -1227,7 +1229,7 @@ int main(int argc, char **argv) {
         curfile->duplicates = match->duplicates;
         match->duplicates = curfile;*/
       }
-      
+
       fclose(file1);
       fclose(file2);
     }
@@ -1259,11 +1261,11 @@ int main(int argc, char **argv) {
     }
   }
 
-  else 
+  else
 
     if (ISFLAG(flags, F_SUMMARIZEMATCHES))
       summarizematches(files);
-      
+
     else
 
       printmatches(files);
