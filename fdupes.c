@@ -28,21 +28,41 @@
 #include <stdlib.h>
 #include <stdint.h>
 #ifndef OMIT_GETOPT_LONG
-#include <getopt.h>
+ #include <getopt.h>
 #endif
 #include <string.h>
 #include <errno.h>
 #include <libgen.h>
 
-#ifndef EXTERNAL_MD5
-#include "md5/md5.h"
+/* Include headers based on selected hash function */
+#ifdef JODY_HASH
+ #include "jody_hash.h"
+#else
+ #ifndef EXTERNAL_MD5
+  #include "md5/md5.h"
+ #endif
 #endif
+
+/* Use appropriate code for selected hash function */
+#ifdef JODY_HASH
+ #define CRC_MALLOC() (hash_t *) malloc(sizeof(hash_t))
+ #define CRC_CPY(a,b) memcpy(a,b,sizeof(hash_t))
+ #define CRC_CMP(a,b) memcmp(a,b,sizeof(hash_t))
+ #define CRC_T hash_t
+#else	/* Using MD5 instead */
+ #define CRC_MALLOC() (char *) malloc(strlen(crcsignature)+1)
+ #define CRC_CPY(a,b) strcpy(a,b)
+ #define CRC_CMP(a,b) strcmp(a,b)
+ #define CRC_T char
+#endif  /* JODY_HASH */
+
+/* How many operations to wait before updating progress counters */
+#define DELAY_COUNT 256
 
 #define ISFLAG(a,b) ((a & b) == b)
 #define SETFLAG(a,b) (a |= b)
 #define getcrcsignature(a) getcrcsignatureuntil(a, 0)
 #define getcrcpartialsignature(a) getcrcsignatureuntil(a, PARTIAL_MD5_SIZE)
-
 
 #define F_RECURSE           0x0001
 #define F_HIDEPROGRESS      0x0002
@@ -74,9 +94,6 @@ uint_fast16_t flags = 0;
 
 #define PARTIAL_MD5_SIZE 4096
 
-/* How many operations to wait before updating progress counters */
-#define DELAY_COUNT 256
-
 /*
 
 TODO: Partial sums (for working with very large files).
@@ -98,8 +115,8 @@ typedef struct _signatures
 typedef struct _file {
   char *d_name;
   off_t size;
-  char *crcpartial;
-  char *crcsignature;
+  CRC_T *crcpartial;
+  CRC_T *crcsignature;
   dev_t device;
   ino_t inode;
   time_t mtime;
@@ -273,15 +290,15 @@ static int grokdir(const char *dir, file_t ** const filelistp)
           delay = 0;
           fprintf(stderr, "\rBuilding file list %c ", indicator[progress]);
           progress = (progress + 1) % 4;
-       } else delay++;
+        } else delay++;
       }
 
       newfile = (file_t*) malloc(sizeof(file_t));
 
       if (!newfile) {
-	errormsg("out of memory!\n");
-	closedir(cd);
-	exit(1);
+        errormsg("out of memory!\n");
+        closedir(cd);
+        exit(1);
       } else newfile->next = *filelistp;
 
       newfile->device = 0;
@@ -294,27 +311,27 @@ static int grokdir(const char *dir, file_t ** const filelistp)
       newfile->d_name = (char*)malloc(strlen(dir)+strlen(dirinfo->d_name)+2);
 
       if (!newfile->d_name) {
-	errormsg("out of memory!\n");
-	free(newfile);
-	closedir(cd);
-	exit(1);
+        errormsg("out of memory!\n");
+        free(newfile);
+        closedir(cd);
+        exit(1);
       }
 
       strcpy(newfile->d_name, dir);
       lastchar = strlen(dir) - 1;
       if (lastchar >= 0 && dir[lastchar] != '/')
-	strcat(newfile->d_name, "/");
+        strcat(newfile->d_name, "/");
       strcat(newfile->d_name, dirinfo->d_name);
 
       if (ISFLAG(flags, F_EXCLUDEHIDDEN)) {
-	fullname = strdup(newfile->d_name);
-	name = basename(fullname);
-	if (name[0] == '.' && strcmp(name, ".") && strcmp(name, "..") ) {
-	  free(newfile->d_name);
-	  free(newfile);
-	  continue;
-	}
-	free(fullname);
+        fullname = strdup(newfile->d_name);
+        name = basename(fullname);
+        if (name[0] == '.' && strcmp(name, ".") && strcmp(name, "..") ) {
+          free(newfile->d_name);
+          free(newfile);
+          continue;
+        }
+        free(fullname);
       }
 
       if (filesize(newfile->d_name) == 0 && ISFLAG(flags, F_EXCLUDEEMPTY)) {
@@ -357,11 +374,53 @@ static int grokdir(const char *dir, file_t ** const filelistp)
   return filecount;
 }
 
-#ifndef EXTERNAL_MD5
+/* Use Jody Bruchon's hash function instead of MD5 */
+#ifdef JODY_HASH
+static hash_t *getcrcsignatureuntil(const char * const filename,
+		const off_t max_read)
+{
+  off_t fsize;
+  off_t toread;
+  static hash_t hash[1];
+  char chunk[CHUNK_SIZE];
+  FILE *file;
+
+  fsize = filesize(filename);
+
+  if (max_read != 0 && fsize > max_read)
+    fsize = max_read;
+
+  file = fopen(filename, "rb");
+  if (file == NULL) {
+    errormsg("error opening file %s\n", filename);
+    return NULL;
+  }
+
+  while (fsize > 0) {
+    toread = (fsize >= CHUNK_SIZE) ? CHUNK_SIZE : fsize;
+    if (fread(chunk, toread, 1, file) != 1) {
+      errormsg("error reading from file %s\n", filename);
+      fclose(file);
+      return NULL;
+    }
+
+    *hash = 0;
+    *hash = jody_block_hash((hash_t *)chunk, *hash, toread);
+    if (toread > fsize) fsize = 0;
+    else fsize -= toread;
+  }
+
+  fclose(file);
+
+  return hash;
+}
+
+#else	/* Use MD5 instead of jody_hash */
+ #ifndef EXTERNAL_MD5
 
 /* If EXTERNAL_MD5 is not defined, use L. Peter Deutsch's MD5 library.
  */
-static char *getcrcsignatureuntil(const char *filename, const off_t max_read)
+static char *getcrcsignatureuntil(char *filename, off_t max_read)
 {
   int x;
   off_t fsize;
@@ -412,9 +471,7 @@ static char *getcrcsignatureuntil(const char *filename, const off_t max_read)
   return signature;
 }
 
-#endif /* [#ifndef EXTERNAL_MD5] */
-
-#ifdef EXTERNAL_MD5
+ #else	/* EXTERNAL_MD5 */
 
 /* If EXTERNAL_MD5 is defined, use md5sum program to calculate signatures.
  */
@@ -453,7 +510,8 @@ static char *getcrcsignature(char *filename)
   return signature;
 }
 
-#endif /* [#ifdef EXTERNAL_MD5] */
+ #endif	/* EXTERNAL_MD5 */
+#endif	/* JODY_HASH */
 
 static inline void purgetree(filetree_t *checktree)
 {
@@ -502,10 +560,24 @@ static int same_permissions(char* name1, char* name2)
 }
 
 
+/* Use correct function depending on CRC/hash function */
+#ifdef JODY_HASH
+ #define CRC_MALLOC() (hash_t *) malloc(sizeof(hash_t))
+ #define CRC_CPY(a,b) memcpy(a,b,sizeof(hash_t))
+ #define CRC_CMP(a,b) memcmp(a,b,sizeof(hash_t))
+ #define CRC_T hash_t
+#else
+ #define CRC_MALLOC() (char *) malloc(strlen(crcsignature)+1)
+ #define CRC_CPY(a,b) strcpy(a,b)
+ #define CRC_CMP(a,b) strcmp(a,b)
+ #define CRC_T char
+#endif	/* JODY_HASH */
+
+/* Change to hashes */
 static file_t **checkmatch(filetree_t *checktree, file_t *file)
 {
   int cmpresult;
-  char *crcsignature;
+  CRC_T *crcsignature;
   off_t fsize;
 
   /* If device and inode fields are equal one of the files is a
@@ -536,12 +608,12 @@ static file_t **checkmatch(filetree_t *checktree, file_t *file)
         return NULL;
       }
 
-      checktree->file->crcpartial = (char*) malloc(strlen(crcsignature)+1);
+      checktree->file->crcpartial = CRC_MALLOC();
       if (checktree->file->crcpartial == NULL) {
 	errormsg("out of memory\n");
 	exit(1);
       }
-      strcpy(checktree->file->crcpartial, crcsignature);
+      CRC_CPY(checktree->file->crcpartial, crcsignature);
     }
 
     if (file->crcpartial == NULL) {
@@ -551,15 +623,15 @@ static file_t **checkmatch(filetree_t *checktree, file_t *file)
         return NULL;
       }
 
-      file->crcpartial = (char*) malloc(strlen(crcsignature)+1);
+      file->crcpartial = CRC_MALLOC();
       if (file->crcpartial == NULL) {
 	errormsg("out of memory\n");
 	exit(1);
       }
-      strcpy(file->crcpartial, crcsignature);
+      CRC_CPY(file->crcpartial, crcsignature);
     }
 
-    cmpresult = strcmp(file->crcpartial, checktree->file->crcpartial);
+    cmpresult = CRC_CMP(file->crcpartial, checktree->file->crcpartial);
     /*if (cmpresult != 0) errormsg("    on %s vs %s\n", file->d_name, checktree->file->d_name);*/
 
     if (cmpresult == 0) {
@@ -567,27 +639,27 @@ static file_t **checkmatch(filetree_t *checktree, file_t *file)
 	crcsignature = getcrcsignature(checktree->file->d_name);
 	if (crcsignature == NULL) return NULL;
 
-	checktree->file->crcsignature = (char*) malloc(strlen(crcsignature)+1);
+	checktree->file->crcsignature = CRC_MALLOC();
 	if (checktree->file->crcsignature == NULL) {
 	  errormsg("out of memory\n");
 	  exit(1);
 	}
-	strcpy(checktree->file->crcsignature, crcsignature);
+	CRC_CPY(checktree->file->crcsignature, crcsignature);
       }
 
       if (file->crcsignature == NULL) {
 	crcsignature = getcrcsignature(file->d_name);
 	if (crcsignature == NULL) return NULL;
 
-	file->crcsignature = (char*) malloc(strlen(crcsignature)+1);
+	file->crcsignature = CRC_MALLOC();
 	if (file->crcsignature == NULL) {
 	  errormsg("out of memory\n");
 	  exit(1);
 	}
-	strcpy(file->crcsignature, crcsignature);
+	CRC_CPY(file->crcsignature, crcsignature);
       }
 
-      cmpresult = strcmp(file->crcsignature, checktree->file->crcsignature);
+      cmpresult = CRC_CMP(file->crcsignature, checktree->file->crcsignature);
       /*if (cmpresult != 0) errormsg("P   on %s vs %s\n",
           file->d_name, checktree->file->d_name);
       else errormsg("P F on %s vs %s\n", file->d_name,
@@ -1036,7 +1108,6 @@ int main(int argc, char **argv) {
   ordertype_t ordertype = ORDER_TIME;
   int pct_step;
   int delay = 0;
-
 
 #ifndef OMIT_GETOPT_LONG
   static struct option long_options[] =
