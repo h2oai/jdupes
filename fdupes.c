@@ -778,7 +778,7 @@ static void printmatches(file_t *files)
   }
 }
 
-/*
+#if 0
 #define REVISE_APPEND "_tmp"
 char *revisefilename(char *path, int seq)
 {
@@ -810,8 +810,11 @@ char *revisefilename(char *path, int seq)
   free(scratch);
 
   return newpath;
-} */
+}
+#endif
 
+/* relink() is not currently used, so don't compile it */
+#if 0
 static int relink(char *oldfile, char *newfile)
 {
   dev_t od;
@@ -834,6 +837,7 @@ static int relink(char *oldfile, char *newfile)
 
   return 1;
 }
+#endif
 
 static void deletefiles(file_t *files, int prompt, FILE *tty)
 {
