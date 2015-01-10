@@ -197,14 +197,6 @@ static inline ino_t getinode(const char * const filename) {
   return s.st_ino;
 }
 
-static inline time_t getmtime(const char * const filename) {
-  struct stat s;
-
-  if (stat(filename, &s) != 0) return 0;
-
-  return s.st_mtime;
-}
-
 static char **cloneargs(const int argc, char **argv)
 {
   int x;
@@ -524,10 +516,20 @@ static inline void purgetree(filetree_t *checktree)
 
 static inline void getfilestats(file_t * const file)
 {
-  file->size = filesize(file->d_name);
-  file->inode = getinode(file->d_name);
-  file->device = getdevice(file->d_name);
-  file->mtime = getmtime(file->d_name);
+  struct stat s;
+
+  if (stat(file->d_name, &s) != 0) {
+    file->size = -1;
+    file->inode = 0;
+    file->device = 0;
+    file->mtime = 0;
+    return;
+  }
+  file->size = s.st_size;
+  file->inode = s.st_ino;
+  file->device = s.st_dev;
+  file->mtime = s.st_mtime;
+  return;
 }
 
 static int registerfile(filetree_t **branch, file_t *file)
