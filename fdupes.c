@@ -173,30 +173,6 @@ static void escapefilename(char *escape_list, char **filename_ptr)
   }
 }
 
-static inline off_t filesize(const char * const filename) {
-  struct stat s;
-
-  if (stat(filename, &s) != 0) return -1;
-
-  return s.st_size;
-}
-
-static inline dev_t getdevice(const char * const filename) {
-  struct stat s;
-
-  if (stat(filename, &s) != 0) return 0;
-
-  return s.st_dev;
-}
-
-static inline ino_t getinode(const char * const filename) {
-  struct stat s;
-
-  if (stat(filename, &s) != 0) return 0;
-
-  return s.st_ino;
-}
-
 static char **cloneargs(const int argc, char **argv)
 {
   int x;
@@ -326,13 +302,13 @@ static int grokdir(const char *dir, file_t ** const filelistp)
         free(fullname);
       }
 
-      if (filesize(newfile->d_name) == 0 && ISFLAG(flags, F_EXCLUDEEMPTY)) {
+      if (stat(newfile->d_name, &info) == -1) {
 	free(newfile->d_name);
 	free(newfile);
 	continue;
       }
 
-      if (stat(newfile->d_name, &info) == -1) {
+      if (info.st_size == 0 && ISFLAG(flags, F_EXCLUDEEMPTY)) {
 	free(newfile->d_name);
 	free(newfile);
 	continue;
@@ -376,8 +352,10 @@ static hash_t *getcrcsignatureuntil(const char * const filename,
   static hash_t hash[1];
   char chunk[CHUNK_SIZE];
   FILE *file;
+  struct stat s;
 
-  fsize = filesize(filename);
+  if (stat(filename, &s) == -1) return NULL;
+  fsize = s.st_size;
 
   if (max_read != 0 && fsize > max_read)
     fsize = max_read;
@@ -423,11 +401,13 @@ static char *getcrcsignatureuntil(char *filename, off_t max_read)
   static char signature[16*2 + 1];
   char *sigp;
   FILE *file;
+  struct stat s;
 
   md5_init(&state);
 
 
-  fsize = filesize(filename);
+  if (stat(filename, &s) == -1) return NULL;
+  fsize = s.st_size;
 
   if (max_read != 0 && fsize > max_read)
     fsize = max_read;
@@ -581,6 +561,7 @@ static file_t **checkmatch(filetree_t *checktree, file_t *file)
   int cmpresult;
   CRC_T *crcsignature;
   off_t fsize;
+  struct stat s;
 
   /* If device and inode fields are equal one of the files is a
      hard link to the other or the files have been listed twice
@@ -588,11 +569,18 @@ static file_t **checkmatch(filetree_t *checktree, file_t *file)
      duplicates unless the user specifies otherwise.
   */
 
-  if (!ISFLAG(flags, F_CONSIDERHARDLINKS) && (getinode(file->d_name) ==
-      checktree->file->inode) && (getdevice(file->d_name) ==
-      checktree->file->device)) return NULL;
+  if (stat(file->d_name, &s)) {
+    s.st_size = -1;
+    s.st_ino = 0;
+    s.st_dev = 0;
+  }
+  if (!ISFLAG(flags, F_CONSIDERHARDLINKS)) {
+    if ((s.st_ino ==
+        checktree->file->inode) && (s.st_dev ==
+        checktree->file->device)) return NULL;
+  }
 
-  fsize = filesize(file->d_name);
+  fsize = s.st_size;
 
   if (fsize < checktree->file->size)
     cmpresult = -1;
