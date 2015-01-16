@@ -321,7 +321,7 @@ static int grokdir(const char *dir, file_t ** const filelistp)
 	continue;
       }
 
-      if (info.st_size == 0 && ISFLAG(flags, F_EXCLUDEEMPTY)) {
+      if (!S_ISDIR(info.st_mode) && info.st_size == 0 && ISFLAG(flags, F_EXCLUDEEMPTY)) {
 	free(newfile->d_name);
 	free(newfile);
 	continue;
@@ -1084,9 +1084,11 @@ static void help_text()
 #ifndef NO_SYMLINKS
   printf(" -s --symlinks    \tfollow symlinks\n");
 #endif
+#ifndef ON_WINDOWS
   printf(" -H --hardlinks   \tnormally, when two or more files point to the same\n");
   printf("                  \tdisk area they are treated as non-duplicates; this\n");
   printf("                  \toption will change this behavior\n");
+#endif
   printf(" -n --noempty     \texclude zero-length files from consideration\n");
   printf(" -A --nohidden    \texclude hidden files from consideration\n");
   printf(" -f --omitfirst   \tomit the first file in each set of matches\n");
