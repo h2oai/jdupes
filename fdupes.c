@@ -34,6 +34,12 @@
 #include <errno.h>
 #include <libgen.h>
 
+/* Detect Windows */
+#if defined _WIN32 || defined __CYGWIN__
+ #define ON_WINDOWS 1
+ #define NO_SYMLINKS 1
+#endif
+
 /* Include headers based on selected hash function */
 #ifdef JODY_HASH
  #include "jody_hash.h"
@@ -137,7 +143,12 @@ static void errormsg(char *message, ...)
 
   va_start(ap, message);
 
+  /* Windows will dump the full program path into argv[0] */
+#ifndef ON_WINDOWS
   fprintf(stderr, "\r%40s\r%s: ", "", program_name);
+#else
+  fprintf(stderr, "\r%40s\r%s: ", "", "fdupes");
+#endif
   vfprintf(stderr, message, ap);
 }
 
@@ -238,7 +249,9 @@ static int grokdir(const char *dir, file_t ** const filelistp)
   int lastchar;
   int filecount = 0;
   struct stat info;
+#ifndef NO_SYMLINKS
   struct stat linfo;
+#endif
   static int progress = 0;
   static int delay = 0;
   static char indicator[] = "-\\|/";
@@ -314,19 +327,30 @@ static int grokdir(const char *dir, file_t ** const filelistp)
 	continue;
       }
 
+#ifndef NO_SYMLINKS
       if (lstat(newfile->d_name, &linfo) == -1) {
 	free(newfile->d_name);
 	free(newfile);
 	continue;
       }
+#endif
 
       if (S_ISDIR(info.st_mode)) {
+#ifndef NO_SYMLINKS
 	if (ISFLAG(flags, F_RECURSE) && (ISFLAG(flags, F_FOLLOWLINKS) || !S_ISLNK(linfo.st_mode)))
-	  filecount += grokdir(newfile->d_name, filelistp);
+          filecount += grokdir(newfile->d_name, filelistp);
+#else
+	if (ISFLAG(flags, F_RECURSE))
+          filecount += grokdir(newfile->d_name, filelistp);
+#endif
 	free(newfile->d_name);
 	free(newfile);
       } else {
-	if (S_ISREG(linfo.st_mode) || (S_ISLNK(linfo.st_mode) && ISFLAG(flags, F_FOLLOWLINKS))) {
+#ifndef NO_SYMLINKS
+        if (S_ISREG(linfo.st_mode) || (S_ISLNK(linfo.st_mode) && ISFLAG(flags, F_FOLLOWLINKS))) {
+#else
+        if (S_ISREG(info.st_mode)) {
+#endif
 	  *filelistp = newfile;
 	  filecount++;
 	} else {
@@ -574,11 +598,14 @@ static file_t **checkmatch(filetree_t *checktree, file_t *file)
     s.st_ino = 0;
     s.st_dev = 0;
   }
+  /* Hard link checks always fail when building for Windows */
+#ifndef ON_WINDOWS
   if (!ISFLAG(flags, F_CONSIDERHARDLINKS)) {
     if ((s.st_ino ==
         checktree->file->inode) && (s.st_dev ==
         checktree->file->device)) return NULL;
   }
+#endif
 
   fsize = s.st_size;
 
@@ -749,7 +776,7 @@ static void printmatches(file_t *files)
   while (files != NULL) {
     if (files->hasdupes) {
       if (!ISFLAG(flags, F_OMITFIRST)) {
-	if (ISFLAG(flags, F_SHOWSIZE)) printf("%jd byte%seach:\n", (intmax_t)files->size,
+	if (ISFLAG(flags, F_SHOWSIZE)) printf("%jd byte%s each:\n", (intmax_t)files->size,
 	 (files->size != 1) ? "s " : " ");
 	if (ISFLAG(flags, F_DSAMELINE)) escapefilename("\\ ", &files->d_name);
 	printf("%s%c", files->d_name, ISFLAG(flags, F_DSAMELINE)?' ':'\n');
@@ -1054,7 +1081,9 @@ static void help_text()
   printf(" -R --recurse:    \tfor each directory given after this option follow\n");
   printf("                  \tsubdirectories encountered within (note the ':' at\n");
   printf("                  \tthe end of the option, manpage for more details)\n");
+#ifndef NO_SYMLINKS
   printf(" -s --symlinks    \tfollow symlinks\n");
+#endif
   printf(" -H --hardlinks   \tnormally, when two or more files point to the same\n");
   printf("                  \tdisk area they are treated as non-duplicates; this\n");
   printf("                  \toption will change this behavior\n");
@@ -1114,7 +1143,9 @@ int main(int argc, char **argv) {
     { "quiet", 0, 0, 'q' },
     { "sameline", 0, 0, '1' },
     { "size", 0, 0, 'S' },
+#ifndef NO_SYMLINKS
     { "symlinks", 0, 0, 's' },
+#endif
     { "hardlinks", 0, 0, 'H' },
     { "relink", 0, 0, 'l' },
     { "noempty", 0, 0, 'n' },
@@ -1162,9 +1193,11 @@ int main(int argc, char **argv) {
     case 'S':
       SETFLAG(flags, F_SHOWSIZE);
       break;
+#ifndef NO_SYMLINKS
     case 's':
       SETFLAG(flags, F_FOLLOWLINKS);
       break;
+#endif
     case 'H':
       SETFLAG(flags, F_CONSIDERHARDLINKS);
       break;
@@ -1314,7 +1347,9 @@ int main(int argc, char **argv) {
     }
     else
     {
+#ifndef ON_WINDOWS
       stdin = freopen("/dev/tty", "r", stdin);
+#endif
       deletefiles(files, 1, stdin);
     }
   }

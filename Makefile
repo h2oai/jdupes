@@ -89,6 +89,11 @@ MKDIR   = mkdir -p
 CC ?= gcc
 COMPILER_OPTIONS = -Wall -pedantic -std=gnu99 -O2 -g
 
+# MinGW needs this for printf() conversions to work
+ifeq ($(OS), Windows_NT)
+	COMPILER_OPTIONS += -D__USE_MINGW_ANSI_STDIO=1
+endif
+
 CFLAGS= $(COMPILER_OPTIONS) -I. -DVERSION=\"$(VERSION)\" $(SUM_FUNC) $(OMIT_GETOPT_LONG) $(FILEOFFSET_64BIT)
 
 INSTALL_PROGRAM = $(INSTALL) -c -m 0755
@@ -100,7 +105,13 @@ INSTALL_DATA    = $(INSTALL) -c -m 0644
 #
 #ADDITIONAL_OBJECTS = getopt.o
 
-OBJECT_FILES = fdupes.o md5/md5.o jody_hash.o $(ADDITIONAL_OBJECTS)
+ifeq ("$(strip $(SUM_FUNC))", "-DJODY_HASH")
+	SUM_FUNC_O = jody_hash.o
+else
+	SUM_FUNC_O = md5/md5.o
+endif
+
+OBJECT_FILES = fdupes.o $(SUM_FUNC_O) $(ADDITIONAL_OBJECTS)
 
 #####################################################################
 # no need to modify anything beyond this point                      #
@@ -121,7 +132,7 @@ install: fdupes installdirs
 
 clean:
 	$(RM) $(OBJECT_FILES)
-	$(RM) fdupes
+	$(RM) fdupes fdupes.exe
 	$(RM) *~ md5/*~
 
 love:
