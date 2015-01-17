@@ -795,67 +795,6 @@ static void printmatches(file_t *files)
   }
 }
 
-#if 0
-#define REVISE_APPEND "_tmp"
-char *revisefilename(char *path, int seq)
-{
-  int digits;
-  char *newpath;
-  char *scratch;
-  char *dot;
-
-  digits = numdigits(seq);
-  newpath = malloc(strlen(path) + strlen(REVISE_APPEND) + digits + 1);
-  if (!newpath) return newpath;
-
-  scratch = malloc(strlen(path) + 1);
-  if (!scratch) return newpath;
-
-  strcpy(scratch, path);
-  dot = strrchr(scratch, '.');
-  if (dot)
-  {
-    *dot = 0;
-    sprintf(newpath, "%s%s%d.%s", scratch, REVISE_APPEND, seq, dot + 1);
-  }
-
-  else
-  {
-    sprintf(newpath, "%s%s%d", path, REVISE_APPEND, seq);
-  }
-
-  free(scratch);
-
-  return newpath;
-}
-#endif
-
-/* relink() is not currently used, so don't compile it */
-#if 0
-static int relink(char *oldfile, char *newfile)
-{
-  dev_t od;
-  dev_t nd;
-  ino_t oi;
-  ino_t ni;
-
-  od = getdevice(oldfile);
-  oi = getinode(oldfile);
-
-  if (link(oldfile, newfile) != 0)
-    return 0;
-
-  /* make sure we're working with the right file (the one we created) */
-  nd = getdevice(newfile);
-  ni = getinode(newfile);
-
-  if (nd != od || oi != ni)
-    return 0; /* file is not what we expected */
-
-  return 1;
-}
-#endif
-
 static void deletefiles(file_t *files, int prompt, FILE *tty)
 {
   int counter;
