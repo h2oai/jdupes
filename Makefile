@@ -11,34 +11,13 @@
 # determination of the actual installation directories.
 # Suggested values are "/usr/local", "/usr", "/pkgs/fdupes-$(VERSION)"
 #
-PREFIX = /usr/local
-
-#
-# When compiling for 32-bit systems, FILEOFFSET_64BIT must be enabled
-# for fdupes to handle files greater than (2<<31)-1 bytes.
-#
-FILEOFFSET_64BIT = -D_FILE_OFFSET_BITS=64
+PREFIX = /usr
 
 #
 # Certain platforms do not support long options (command line options).
 # To disable long options, uncomment the following line.
 #
 #OMIT_GETOPT_LONG = -DOMIT_GETOPT_LONG
-
-#
-# To use the md5sum program for calculating signatures (instead of the
-# built in MD5 message digest routines) uncomment the following
-# line (try this if you're having trouble with built in code).
-#
-#SUM_FUNC = -DEXTERNAL_MD5=\"md5sum\"
-
-#
-# To use Jody Bruchon's hash function instead of MD5 signatures,
-# uncomment the following line. This algorithm is faster than MD5 but
-# has occasional hash collisions that may result in more full-file
-# comparisons in some instances.
-#
-SUM_FUNC = -DJODY_HASH
 
 
 #####################################################################
@@ -87,14 +66,14 @@ MKDIR   = mkdir -p
 # Make Configuration
 #
 CC ?= gcc
-COMPILER_OPTIONS = -Wall -pedantic -std=gnu99 -O2 -g
+COMPILER_OPTIONS = -Wall -pedantic -std=gnu99 -O2 -g -D_FILE_OFFSET_BITS=64
 
 # MinGW needs this for printf() conversions to work
 ifeq ($(OS), Windows_NT)
 	COMPILER_OPTIONS += -D__USE_MINGW_ANSI_STDIO=1
 endif
 
-CFLAGS= $(COMPILER_OPTIONS) -I. -DVERSION=\"$(VERSION)\" $(SUM_FUNC) $(OMIT_GETOPT_LONG) $(FILEOFFSET_64BIT)
+CFLAGS= $(COMPILER_OPTIONS) -I. -DVERSION=\"$(VERSION)\" $(OMIT_GETOPT_LONG)
 
 INSTALL_PROGRAM = $(INSTALL) -c -m 0755
 INSTALL_DATA    = $(INSTALL) -c -m 0644
@@ -105,13 +84,7 @@ INSTALL_DATA    = $(INSTALL) -c -m 0644
 #
 #ADDITIONAL_OBJECTS = getopt.o
 
-ifeq ("$(strip $(SUM_FUNC))", "-DJODY_HASH")
-	SUM_FUNC_O = jody_hash.o
-else
-	SUM_FUNC_O = md5/md5.o
-endif
-
-OBJECT_FILES = fdupes.o $(SUM_FUNC_O) $(ADDITIONAL_OBJECTS)
+OBJECT_FILES = fdupes.o jody_hash.o $(ADDITIONAL_OBJECTS)
 
 #####################################################################
 # no need to modify anything beyond this point                      #
@@ -131,9 +104,4 @@ install: fdupes installdirs
 	$(INSTALL_DATA)		fdupes.1 $(DESTDIR)$(MAN_DIR)/$(PROGRAM_NAME).$(MAN_EXT)
 
 clean:
-	$(RM) $(OBJECT_FILES)
-	$(RM) fdupes fdupes.exe
-	$(RM) *~ md5/*~
-
-love:
-	@echo You\'re not my type. Go find a human partner.
+	$(RM) $(OBJECT_FILES) fdupes fdupes.exe *~

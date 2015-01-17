@@ -33,6 +33,7 @@
 #include <string.h>
 #include <errno.h>
 #include <libgen.h>
+#include "jody_hash.h"
 
 /* Detect Windows */
 #if defined _WIN32 || defined __CYGWIN__
@@ -40,35 +41,20 @@
  #define NO_SYMLINKS 1
 #endif
 
-/* Include headers based on selected hash function */
-#ifdef JODY_HASH
- #include "jody_hash.h"
-#else
- #ifndef EXTERNAL_MD5
-  #include "md5/md5.h"
- #endif
-#endif
-
-/* Use appropriate code for selected hash function */
-#ifdef JODY_HASH
- #define CRC_MALLOC() (hash_t *) malloc(sizeof(hash_t))
- #define CRC_CPY(a,b) memcpy(a,b,sizeof(hash_t))
- #define CRC_CMP(a,b) memcmp(a,b,sizeof(hash_t))
- #define CRC_T hash_t
-#else	/* Using MD5 instead */
- #define CRC_MALLOC() (char *) malloc(strlen(crcsignature)+1)
- #define CRC_CPY(a,b) strcpy(a,b)
- #define CRC_CMP(a,b) strcmp(a,b)
- #define CRC_T char
-#endif  /* JODY_HASH */
+/* Hash operation shortcuts */
+#define CRC_MALLOC() (hash_t *) malloc(sizeof(hash_t))
+#define CRC_CPY(a,b) memcpy(a,b,sizeof(hash_t))
+#define CRC_CMP(a,b) memcmp(a,b,sizeof(hash_t))
+#define CRC_T hash_t
 
 /* How many operations to wait before updating progress counters */
 #define DELAY_COUNT 256
 
 #define ISFLAG(a,b) ((a & b) == b)
 #define SETFLAG(a,b) (a |= b)
+/* These used to be functions. This way saves lots of call overhead */
 #define getcrcsignature(a) getcrcsignatureuntil(a, 0)
-#define getcrcpartialsignature(a) getcrcsignatureuntil(a, PARTIAL_MD5_SIZE)
+#define getcrcpartialsignature(a) getcrcsignatureuntil(a, PARTIAL_HASH_SIZE)
 
 #define F_RECURSE           0x0001
 #define F_HIDEPROGRESS      0x0002
@@ -95,28 +81,8 @@ const char *program_name;
 uint_fast16_t flags = 0;
 
 #define CHUNK_SIZE 8192
-
 #define INPUT_SIZE 256
-
-#define PARTIAL_MD5_SIZE 4096
-
-/*
-
-TODO: Partial sums (for working with very large files).
-
-typedef struct _signature
-{
-  md5_state_t state;
-  md5_byte_t  digest[16];
-} signature_t;
-
-typedef struct _signatures
-{
-  int         num_signatures;
-  signature_t *signatures;
-} signatures_t;
-
-*/
+#define PARTIAL_HASH_SIZE 4096
 
 typedef struct _file {
   char *d_name;
@@ -366,8 +332,7 @@ static int grokdir(const char *dir, file_t ** const filelistp)
   return filecount;
 }
 
-/* Use Jody Bruchon's hash function instead of MD5 */
-#ifdef JODY_HASH
+/* Use Jody Bruchon's hash function on part or all of a file */
 static hash_t *getcrcsignatureuntil(const char * const filename,
 		const off_t max_read)
 {
@@ -409,112 +374,10 @@ static hash_t *getcrcsignatureuntil(const char * const filename,
   return hash;
 }
 
-#else	/* Use MD5 instead of jody_hash */
- #ifndef EXTERNAL_MD5
-
-/* If EXTERNAL_MD5 is not defined, use L. Peter Deutsch's MD5 library.
- */
-static char *getcrcsignatureuntil(char *filename, off_t max_read)
-{
-  int x;
-  off_t fsize;
-  off_t toread;
-  md5_state_t state;
-  md5_byte_t digest[16];
-  static md5_byte_t chunk[CHUNK_SIZE];
-  static char signature[16*2 + 1];
-  char *sigp;
-  FILE *file;
-  struct stat s;
-
-  md5_init(&state);
-
-
-  if (stat(filename, &s) == -1) return NULL;
-  fsize = s.st_size;
-
-  if (max_read != 0 && fsize > max_read)
-    fsize = max_read;
-
-  file = fopen(filename, "rb");
-  if (file == NULL) {
-    errormsg("error opening file %s\n", filename);
-    return NULL;
-  }
-
-  while (fsize > 0) {
-    toread = (fsize >= CHUNK_SIZE) ? CHUNK_SIZE : fsize;
-    if (fread(chunk, toread, 1, file) != 1) {
-      errormsg("error reading from file %s\n", filename);
-      fclose(file);
-      return NULL;
-    }
-    md5_append(&state, chunk, toread);
-    fsize -= toread;
-  }
-
-  md5_finish(&state, digest);
-
-  sigp = signature;
-
-  for (x = 0; x < 16; x++) {
-    sprintf(sigp, "%02x", digest[x]);
-    sigp = strchr(sigp, '\0');
-  }
-
-  fclose(file);
-
-  return signature;
-}
-
- #else	/* EXTERNAL_MD5 */
-
-/* If EXTERNAL_MD5 is defined, use md5sum program to calculate signatures.
- */
-static char *getcrcsignature(char *filename)
-{
-  static char signature[256];
-  char *command;
-  char *separator;
-  FILE *result;
-
-  command = (char*) malloc(strlen(filename)+strlen(EXTERNAL_MD5)+2);
-  if (command == NULL) {
-    errormsg("out of memory\n");
-    exit(1);
-  }
-
-  sprintf(command, "%s %s", EXTERNAL_MD5, filename);
-
-  result = popen(command, "r");
-  if (result == NULL) {
-    errormsg("error invoking %s\n", EXTERNAL_MD5);
-    exit(1);
-  }
-
-  free(command);
-
-  if (fgets(signature, 256, result) == NULL) {
-    errormsg("error generating signature for %s\n", filename);
-    return NULL;
-  }
-  separator = strchr(signature, ' ');
-  if (separator) *separator = '\0';
-
-  pclose(result);
-
-  return signature;
-}
-
- #endif	/* EXTERNAL_MD5 */
-#endif	/* JODY_HASH */
-
 static inline void purgetree(filetree_t *checktree)
 {
   if (checktree->left != NULL) purgetree(checktree->left);
-
   if (checktree->right != NULL) purgetree(checktree->right);
-
   free(checktree);
 }
 
@@ -565,21 +428,6 @@ static int same_permissions(char* name1, char* name2)
             s1.st_gid == s2.st_gid);
 }
 
-
-/* Use correct function depending on CRC/hash function */
-#ifdef JODY_HASH
- #define CRC_MALLOC() (hash_t *) malloc(sizeof(hash_t))
- #define CRC_CPY(a,b) memcpy(a,b,sizeof(hash_t))
- #define CRC_CMP(a,b) memcmp(a,b,sizeof(hash_t))
- #define CRC_T hash_t
-#else
- #define CRC_MALLOC() (char *) malloc(strlen(crcsignature)+1)
- #define CRC_CPY(a,b) strcpy(a,b)
- #define CRC_CMP(a,b) strcmp(a,b)
- #define CRC_T char
-#endif	/* JODY_HASH */
-
-/* Change to hashes */
 static file_t **checkmatch(filetree_t *checktree, file_t *file)
 {
   int cmpresult;
@@ -609,12 +457,9 @@ static file_t **checkmatch(filetree_t *checktree, file_t *file)
 
   fsize = s.st_size;
 
-  if (fsize < checktree->file->size)
-    cmpresult = -1;
-  else
-    if (fsize > checktree->file->size) cmpresult = 1;
-  else
-    if (ISFLAG(flags, F_PERMISSIONS) &&
+  if (fsize < checktree->file->size) cmpresult = -1;
+  else if (fsize > checktree->file->size) cmpresult = 1;
+  else if (ISFLAG(flags, F_PERMISSIONS) &&
         !same_permissions(file->d_name, checktree->file->d_name))
         cmpresult = -1;
   else {
@@ -649,7 +494,6 @@ static file_t **checkmatch(filetree_t *checktree, file_t *file)
     }
 
     cmpresult = CRC_CMP(file->crcpartial, checktree->file->crcpartial);
-    /*if (cmpresult != 0) errormsg("    on %s vs %s\n", file->d_name, checktree->file->d_name);*/
 
     if (cmpresult == 0) {
       if (checktree->file->crcsignature == NULL) {
@@ -737,21 +581,16 @@ static void summarizematches(file_t *files)
   int numfiles = 0;
   file_t *tmpfile;
 
-  while (files != NULL)
-  {
-    if (files->hasdupes)
-    {
+  while (files != NULL) {
+    if (files->hasdupes) {
       numsets++;
-
       tmpfile = files->duplicates;
-      while (tmpfile != NULL)
-      {
+      while (tmpfile != NULL) {
 	numfiles++;
 	numbytes += files->size;
 	tmpfile = tmpfile->duplicates;
       }
     }
-
     files = files->next;
   }
 
@@ -861,15 +700,12 @@ static void deletefiles(file_t *files, int prompt, FILE *tty)
 
       if (prompt) printf("\n");
 
-      if (!prompt) /* preserve only the first file */
-      {
-         preserve[1] = 1;
-	 for (x = 2; x <= counter; x++) preserve[x] = 0;
-      }
-
-      else /* prompt for files to preserve */
-
-      do {
+      /* preserve only the first file */
+      if (!prompt) {
+        preserve[1] = 1;
+        for (x = 2; x <= counter; x++) preserve[x] = 0;
+      } else do {
+        /* prompt for files to preserve */
 	printf("Set %d of %d, preserve files [1 - %d, all]",
           curgroup, groups, counter);
 	if (ISFLAG(flags, F_SHOWSIZE)) printf(" (%jd byte%seach)", (intmax_t)files->size,
@@ -882,7 +718,8 @@ static void deletefiles(file_t *files, int prompt, FILE *tty)
 
 	i = strlen(preservestr) - 1;
 
-	while (preservestr[i]!='\n'){ /* tail of buffer must be a newline */
+        /* tail of buffer must be a newline */
+	while (preservestr[i]!='\n') {
 	  tstr = (char*)
 	    realloc(preservestr, strlen(preservestr) + 1 + INPUT_SIZE);
 	  if (!tstr) { /* couldn't allocate memory, treat as fatal */
@@ -944,18 +781,15 @@ static void deletefiles(file_t *files, int prompt, FILE *tty)
 
 static inline int sort_pairs_by_arrival(file_t *f1, file_t *f2)
 {
-  if (f2->duplicates != 0)
-    return 1;
+  if (f2->duplicates != 0) return 1;
 
   return -1;
 }
 
 static inline int sort_pairs_by_mtime(file_t *f1, file_t *f2)
 {
-  if (f1->mtime < f2->mtime)
-    return -1;
-  else if (f1->mtime > f2->mtime)
-    return 1;
+  if (f1->mtime < f2->mtime) return -1;
+  else if (f1->mtime > f2->mtime) return 1;
 
   return 0;
 }
@@ -972,36 +806,25 @@ static void registerpair(file_t **matchlist, file_t *newmatch,
   file_t *back;
 
   (*matchlist)->hasdupes = 1;
-
   back = 0;
   traverse = *matchlist;
-  while (traverse)
-  {
-    if (comparef(newmatch, traverse) <= 0)
-    {
+
+  while (traverse) {
+    if (comparef(newmatch, traverse) <= 0) {
       newmatch->duplicates = traverse;
 
-      if (back == 0)
-      {
+      if (back == 0) {
 	*matchlist = newmatch; /* update pointer to head of list */
-
 	newmatch->hasdupes = 1;
 	traverse->hasdupes = 0; /* flag is only for first file in dupe chain */
-      }
-      else
-	back->duplicates = newmatch;
+      } else back->duplicates = newmatch;
 
       break;
-    }
-    else
-    {
-      if (traverse->duplicates == 0)
-      {
+    } else {
+      if (traverse->duplicates == 0) {
 	traverse->duplicates = newmatch;
-	
-	if (back == 0)
-	  traverse->hasdupes = 1;
-	
+	if (back == 0) traverse->hasdupes = 1;
+
 	break;
       }
     }
@@ -1232,10 +1055,8 @@ int main(int argc, char **argv) {
   curfile = files;
 
   while (curfile) {
-    if (!checktree)
-      registerfile(&checktree, curfile);
-    else
-      match = checkmatch(checktree, curfile);
+    if (!checktree) registerfile(&checktree, curfile);
+    else match = checkmatch(checktree, curfile);
 
     if (match != NULL) {
       file1 = fopen(curfile->d_name, "rb");
@@ -1254,10 +1075,6 @@ int main(int argc, char **argv) {
       if (confirmmatch(file1, file2)) {
         registerpair(match, curfile,
             (ordertype == ORDER_TIME) ? sort_pairs_by_mtime : sort_pairs_by_filename );
-	
-	/*match->hasdupes = 1;
-        curfile->duplicates = match->duplicates;
-        match->duplicates = curfile;*/
       }
 
       fclose(file1);
@@ -1278,29 +1095,18 @@ int main(int argc, char **argv) {
 
   if (!ISFLAG(flags, F_HIDEPROGRESS)) fprintf(stderr, "\r%40s\r", " ");
 
-  if (ISFLAG(flags, F_DELETEFILES))
-  {
-    if (ISFLAG(flags, F_NOPROMPT))
-    {
-      deletefiles(files, 0, 0);
-    }
-    else
-    {
+  if (ISFLAG(flags, F_DELETEFILES)) {
+    if (ISFLAG(flags, F_NOPROMPT)) deletefiles(files, 0, 0);
+    else {
 #ifndef ON_WINDOWS
       stdin = freopen("/dev/tty", "r", stdin);
 #endif
       deletefiles(files, 1, stdin);
     }
+  } else {
+    if (ISFLAG(flags, F_SUMMARIZEMATCHES)) summarizematches(files);
+    else printmatches(files);
   }
-
-  else
-
-    if (ISFLAG(flags, F_SUMMARIZEMATCHES))
-      summarizematches(files);
-
-    else
-
-      printmatches(files);
 
   while (files) {
     curfile = files->next;
@@ -1315,7 +1121,6 @@ int main(int argc, char **argv) {
     free(oldargv[x]);
 
   free(oldargv);
-
   purgetree(checktree);
 
   return 0;
