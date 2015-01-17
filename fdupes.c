@@ -1,4 +1,5 @@
 /* FDUPES Copyright (c) 1999-2002 Adrian Lopez
+   Ported to MinGW by Jody Bruchon <jody@jodybruchon.com>
 
    Permission is hereby granted, free of charge, to any person
    obtaining a copy of this software and associated documentation files
@@ -35,7 +36,7 @@
 #include <libgen.h>
 #include "jody_hash.h"
 
-/* Detect Windows */
+/* Detect Windows and modify as needed */
 #if defined _WIN32 || defined __CYGWIN__
  #define ON_WINDOWS 1
  #define NO_SYMLINKS 1
@@ -287,7 +288,7 @@ static int grokdir(const char *dir, file_t ** const filelistp)
 	continue;
       }
 
-      if (info.st_size == 0 && ISFLAG(flags, F_EXCLUDEEMPTY)) {
+      if (!S_ISDIR(info.st_mode) && info.st_size == 0 && ISFLAG(flags, F_EXCLUDEEMPTY)) {
 	free(newfile->d_name);
 	free(newfile);
 	continue;
@@ -615,8 +616,8 @@ static void printmatches(file_t *files)
   while (files != NULL) {
     if (files->hasdupes) {
       if (!ISFLAG(flags, F_OMITFIRST)) {
-	if (ISFLAG(flags, F_SHOWSIZE)) printf("%jd byte%s each:\n", (intmax_t)files->size,
-	 (files->size != 1) ? "s " : " ");
+	if (ISFLAG(flags, F_SHOWSIZE)) printf("%jd byte%c each:\n", (intmax_t)files->size,
+	 (files->size != 1) ? 's' : ' ');
 	if (ISFLAG(flags, F_DSAMELINE)) escapefilename("\\ ", &files->d_name);
 	printf("%s%c", files->d_name, ISFLAG(flags, F_DSAMELINE)?' ':'\n');
       }
@@ -708,8 +709,8 @@ static void deletefiles(file_t *files, int prompt, FILE *tty)
         /* prompt for files to preserve */
 	printf("Set %d of %d, preserve files [1 - %d, all]",
           curgroup, groups, counter);
-	if (ISFLAG(flags, F_SHOWSIZE)) printf(" (%jd byte%seach)", (intmax_t)files->size,
-	  (files->size != 1) ? "s " : " ");
+	if (ISFLAG(flags, F_SHOWSIZE)) printf(" (%jd byte%c each)", (intmax_t)files->size,
+	  (files->size != 1) ? 's' : ' ');
 	printf(": ");
 	fflush(stdout);
 
@@ -846,9 +847,11 @@ static void help_text()
 #ifndef NO_SYMLINKS
   printf(" -s --symlinks    \tfollow symlinks\n");
 #endif
+#ifndef ON_WINDOWS
   printf(" -H --hardlinks   \tnormally, when two or more files point to the same\n");
   printf("                  \tdisk area they are treated as non-duplicates; this\n");
   printf("                  \toption will change this behavior\n");
+#endif
   printf(" -n --noempty     \texclude zero-length files from consideration\n");
   printf(" -A --nohidden    \texclude hidden files from consideration\n");
   printf(" -f --omitfirst   \tomit the first file in each set of matches\n");
@@ -908,7 +911,9 @@ int main(int argc, char **argv) {
 #ifndef NO_SYMLINKS
     { "symlinks", 0, 0, 's' },
 #endif
+#ifndef ON_WINDOWS
     { "hardlinks", 0, 0, 'H' },
+#endif
     { "relink", 0, 0, 'l' },
     { "noempty", 0, 0, 'n' },
     { "nohidden", 0, 0, 'A' },
@@ -960,9 +965,11 @@ int main(int argc, char **argv) {
       SETFLAG(flags, F_FOLLOWLINKS);
       break;
 #endif
+#ifndef ON_WINDOWS
     case 'H':
       SETFLAG(flags, F_CONSIDERHARDLINKS);
       break;
+#endif
     case 'n':
       SETFLAG(flags, F_EXCLUDEEMPTY);
       break;
