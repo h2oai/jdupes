@@ -1091,7 +1091,7 @@ int main(int argc, char **argv) {
       if (curfile != NULL) delay += (curfile->size >> 23);
       if ((delay >= DELAY_COUNT)) {
         delay = 0;
-        fprintf(stderr, "\rProgress [%u/%u] %d%% ", progress, filecount,
+        fprintf(stderr, "\rProgress [%d/%d] %d%% ", progress, filecount,
           (int)((progress * 100) / filecount));
       } else delay++;
       progress++;
