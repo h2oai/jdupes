@@ -49,7 +49,7 @@
 #define CRC_T hash_t
 
 /* How many operations to wait before updating progress counters */
-#define DELAY_COUNT 256
+#define DELAY_COUNT 512
 
 #define ISFLAG(a,b) ((a & b) == b)
 #define SETFLAG(a,b) (a |= b)
@@ -318,6 +318,7 @@ static int grokdir(const char *dir, file_t ** const filelistp)
 #else
         if (S_ISREG(info.st_mode)) {
 #endif
+          newfile->size = info.st_size;
 	  *filelistp = newfile;
 	  filecount++;
 	} else {
@@ -894,7 +895,6 @@ int main(int argc, char **argv) {
   char **oldargv;
   int firstrecurse;
   ordertype_t ordertype = ORDER_TIME;
-  int pct_step;
   int delay = 0;
 
 #ifndef OMIT_GETOPT_LONG
@@ -1056,9 +1056,6 @@ int main(int argc, char **argv) {
     exit(0);
   }
 
-  pct_step = filecount / 100;
-  if (pct_step == 0) pct_step = 1;
-
   curfile = files;
 
   while (curfile) {
@@ -1091,10 +1088,11 @@ int main(int argc, char **argv) {
     curfile = curfile->next;
 
     if (!ISFLAG(flags, F_HIDEPROGRESS)) {
-      if (delay == DELAY_COUNT) {
+      if (curfile != NULL) delay += (curfile->size >> 23);
+      if ((delay >= DELAY_COUNT)) {
         delay = 0;
-        fprintf(stderr, "\rProgress [%d/%d] %d%% ", progress, filecount,
-          progress / pct_step);
+        fprintf(stderr, "\rProgress [%u/%u] %d%% ", progress, filecount,
+          (int)((progress * 100) / filecount));
       } else delay++;
       progress++;
     }
