@@ -157,23 +157,19 @@ static char **cloneargs(const int argc, char **argv)
   char **args;
 
   args = (char **) malloc(sizeof(char*) * argc);
-  if (args == NULL) {
-    errormsg("out of memory!\n");
-    exit(1);
-  }
+  if (args == NULL) goto oom;
 
   for (x = 0; x < argc; x++) {
     args[x] = (char*) malloc(strlen(argv[x]) + 1);
-    if (args[x] == NULL) {
-      free(args);
-      errormsg("out of memory!\n");
-      exit(1);
-    }
-
+    if (args[x] == NULL) goto oom;
     strcpy(args[x], argv[x]);
   }
 
   return args;
+
+oom:
+  errormsg("out of memory!\n");
+  exit(1);
 }
 
 static int findarg(const char * const arg, const int start,
@@ -242,12 +238,8 @@ static int grokdir(const char *dir, file_t ** const filelistp)
       }
 
       newfile = (file_t*) malloc(sizeof(file_t));
-
-      if (!newfile) {
-        errormsg("out of memory!\n");
-        closedir(cd);
-        exit(1);
-      } else newfile->next = *filelistp;
+      if (!newfile) goto oom;
+      else newfile->next = *filelistp;
 
       newfile->device = 0;
       newfile->inode = 0;
@@ -257,13 +249,7 @@ static int grokdir(const char *dir, file_t ** const filelistp)
       newfile->hasdupes = 0;
 
       newfile->d_name = (char*)malloc(strlen(dir)+strlen(dirinfo->d_name)+2);
-
-      if (!newfile->d_name) {
-        errormsg("out of memory!\n");
-        free(newfile);
-        closedir(cd);
-        exit(1);
-      }
+      if (!newfile->d_name) goto oom;
 
       strcpy(newfile->d_name, dir);
       lastchar = strlen(dir) - 1;
@@ -332,6 +318,10 @@ static int grokdir(const char *dir, file_t ** const filelistp)
   closedir(cd);
 
   return filecount;
+
+oom:
+  errormsg("out of memory!\n");
+  exit(1);
 }
 
 /* Use Jody Bruchon's hash function on part or all of a file */
@@ -476,10 +466,7 @@ static file_t **checkmatch(filetree_t *checktree, file_t *file)
       }
 
       checktree->file->crcpartial = CRC_MALLOC();
-      if (checktree->file->crcpartial == NULL) {
-	errormsg("out of memory\n");
-	exit(1);
-      }
+      if (checktree->file->crcpartial == NULL) goto oom;
       CRC_CPY(checktree->file->crcpartial, crcsignature);
     }
 
@@ -491,10 +478,7 @@ static file_t **checkmatch(filetree_t *checktree, file_t *file)
       }
 
       file->crcpartial = CRC_MALLOC();
-      if (file->crcpartial == NULL) {
-	errormsg("out of memory\n");
-	exit(1);
-      }
+      if (file->crcpartial == NULL) goto oom;
       CRC_CPY(file->crcpartial, crcsignature);
     }
 
@@ -507,10 +491,7 @@ static file_t **checkmatch(filetree_t *checktree, file_t *file)
 	if (crcsignature == NULL) return NULL;
 
 	checktree->file->crcsignature = CRC_MALLOC();
-	if (checktree->file->crcsignature == NULL) {
-	  errormsg("out of memory\n");
-	  exit(1);
-	}
+	if (checktree->file->crcsignature == NULL) goto oom;
 	CRC_CPY(checktree->file->crcsignature, crcsignature);
       }
 
@@ -519,10 +500,7 @@ static file_t **checkmatch(filetree_t *checktree, file_t *file)
 	if (crcsignature == NULL) return NULL;
 
 	file->crcsignature = CRC_MALLOC();
-	if (file->crcsignature == NULL) {
-	  errormsg("out of memory\n");
-	  exit(1);
-	}
+	if (file->crcsignature == NULL) goto oom;
 	CRC_CPY(file->crcsignature, crcsignature);
       }
 
@@ -555,6 +533,12 @@ static file_t **checkmatch(filetree_t *checktree, file_t *file)
     getfilestats(file);
     return &checktree->file;
   }
+  /* Fall through - should never be reached */
+  return NULL;
+
+oom:
+  errormsg("out of memory\n");
+  exit(1);
 }
 
 /* Do a bit-for-bit comparison in case two different files produce the
