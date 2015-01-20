@@ -459,12 +459,15 @@ static file_t **checkmatch(filetree_t *checktree, file_t *file)
 
   fsize = s.st_size;
 
+  /* Exclude files that are not the same size */
   if (fsize < checktree->file->size) cmpresult = -1;
   else if (fsize > checktree->file->size) cmpresult = 1;
+  /* Exclude files by permissions if requested */
   else if (ISFLAG(flags, F_PERMISSIONS) &&
         !same_permissions(file->d_name, checktree->file->d_name))
         cmpresult = -1;
   else {
+    /* Attempt to exclude files quickly with partial file hashing */
     if (checktree->file->crcpartial == NULL) {
       crcsignature = getcrcpartialsignature(checktree->file->d_name);
       if (crcsignature == NULL) {
@@ -497,6 +500,7 @@ static file_t **checkmatch(filetree_t *checktree, file_t *file)
 
     cmpresult = CRC_CMP(file->crcpartial, checktree->file->crcpartial);
 
+    /* If partial match was correct, perform a full file hash match */
     if (cmpresult == 0) {
       if (checktree->file->crcsignature == NULL) {
 	crcsignature = getcrcsignature(checktree->file->d_name);
@@ -523,6 +527,7 @@ static file_t **checkmatch(filetree_t *checktree, file_t *file)
       }
 
       cmpresult = CRC_CMP(file->crcsignature, checktree->file->crcsignature);
+
       /*if (cmpresult != 0) errormsg("P   on %s vs %s\n",
           file->d_name, checktree->file->d_name);
       else errormsg("P F on %s vs %s\n", file->d_name,
@@ -545,8 +550,8 @@ static file_t **checkmatch(filetree_t *checktree, file_t *file)
       registerfile(&(checktree->right), file);
       return NULL;
     }
-  } else
-  {
+  } else {
+    /* All compares matched */
     getfilestats(file);
     return &checktree->file;
   }
@@ -555,7 +560,7 @@ static file_t **checkmatch(filetree_t *checktree, file_t *file)
 /* Do a bit-for-bit comparison in case two different files produce the
    same signature. Unlikely, but better safe than sorry. */
 
-static int confirmmatch(FILE * const file1, FILE * const file2)
+static inline int confirmmatch(FILE * const file1, FILE * const file2)
 {
   unsigned char c1[CHUNK_SIZE];
   unsigned char c2[CHUNK_SIZE];
@@ -1062,6 +1067,7 @@ int main(int argc, char **argv) {
     if (!checktree) registerfile(&checktree, curfile);
     else match = checkmatch(checktree, curfile);
 
+    /* Byte-for-byte check that a matched pair are actually matched */
     if (match != NULL) {
       file1 = fopen(curfile->d_name, "rb");
       if (!file1) {
