@@ -1092,12 +1092,7 @@ int main(int argc, char **argv) {
 
   if (ISFLAG(flags, F_DELETEFILES)) {
     if (ISFLAG(flags, F_NOPROMPT)) deletefiles(files, 0, 0);
-    else {
-#ifndef ON_WINDOWS
-      stdin = freopen("/dev/tty", "r", stdin);
-#endif
-      deletefiles(files, 1, stdin);
-    }
+    else deletefiles(files, 1, stdin);
   } else {
     if (ISFLAG(flags, F_SUMMARIZEMATCHES)) summarizematches(files);
     else printmatches(files);
