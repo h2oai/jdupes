@@ -71,6 +71,7 @@
 #define F_SUMMARIZEMATCHES  0x0800
 #define F_EXCLUDEHIDDEN     0x1000
 #define F_PERMISSIONS       0x2000
+#define F_HARDLINKFILES     0x4000
 
 typedef enum {
   ORDER_TIME = 0,
@@ -825,6 +826,84 @@ static void registerpair(file_t **matchlist, file_t *newmatch,
   }
 }
 
+static void hardlinkfiles(file_t *files)
+{
+  int counter;
+  int groups = 0;
+  int curgroup = 0;
+  file_t *tmpfile;
+  file_t *curfile;
+  file_t **dupelist;
+  int max = 0;
+  int x = 0;
+
+  curfile = files;
+
+  while (curfile) {
+    if (curfile->hasdupes) {
+      counter = 1;
+      groups++;
+
+      tmpfile = curfile->duplicates;
+      while (tmpfile) {
+       counter++;
+       tmpfile = tmpfile->duplicates;
+      }
+
+      if (counter > max) max = counter;
+    }
+
+    curfile = curfile->next;
+  }
+
+  max++;
+
+  dupelist = (file_t**) malloc(sizeof(file_t*) * max);
+
+  if (!dupelist) {
+    errormsg("out of memory\n");
+    exit(1);
+  }
+
+  while (files) {
+    if (files->hasdupes) {
+      curgroup++;
+      counter = 1;
+      dupelist[counter] = files;
+
+      tmpfile = files->duplicates;
+
+      while (tmpfile) {
+       dupelist[++counter] = tmpfile;
+       tmpfile = tmpfile->duplicates;
+      }
+
+      /* preserve only the first file */
+
+      printf("   [+] %s\n", dupelist[1]->d_name);
+      for (x = 2; x <= counter; x++) {
+         if (unlink(dupelist[x]->d_name) == 0) {
+            if ( link(dupelist[1]->d_name, dupelist[x]->d_name) == 0 ) {
+                printf("   [h] %s\n", dupelist[x]->d_name);
+            } else {
+                printf("-- unable to create a hardlink for the file: %s\n", strerror(errno));
+                printf("   [!] %s ", dupelist[x]->d_name);
+            }
+         } else {
+           printf("   [!] %s ", dupelist[x]->d_name);
+           printf("-- unable to delete the file!\n");
+         }
+       }
+      printf("\n");
+    }
+
+    files = files->next;
+  }
+
+  free(dupelist);
+}
+
+
 static void help_text()
 {
   printf("Usage: fdupes [options] DIRECTORY...\n\n");
@@ -855,7 +934,6 @@ static void help_text()
   printf("                  \twith -s or --symlinks, or when specifying a\n");
   printf("                  \tparticular directory more than once; refer to the\n");
   printf("                  \tfdupes documentation for additional information\n");
-  /*printf(" -l --relink      \t(description)\n");*/
   printf(" -N --noprompt    \ttogether with --delete, preserve the first file in\n");
   printf("                  \teach set of duplicates and delete the rest without\n");
   printf("                  \tprompting the user\n");
@@ -902,8 +980,8 @@ int main(int argc, char **argv) {
 #endif
 #ifndef ON_WINDOWS
     { "hardlinks", 0, 0, 'H' },
+    { "linkhard", 0, 0, 'L' },
 #endif
-    { "relink", 0, 0, 'l' },
     { "noempty", 0, 0, 'n' },
     { "nohidden", 0, 0, 'A' },
     { "delete", 0, 0, 'd' },
@@ -925,7 +1003,7 @@ int main(int argc, char **argv) {
 
   oldargv = cloneargs(argc, argv);
 
-  while ((opt = GETOPT(argc, argv, "frRq1SsHlnAdvhNmpo:"
+  while ((opt = GETOPT(argc, argv, "frRq1SsHLlnAdvhNmpo:"
 #ifndef OMIT_GETOPT_LONG
           , long_options, NULL
 #endif
@@ -957,6 +1035,9 @@ int main(int argc, char **argv) {
 #ifndef ON_WINDOWS
     case 'H':
       SETFLAG(flags, F_CONSIDERHARDLINKS);
+      break;
+    case 'L':
+      SETFLAG(flags, F_HARDLINKFILES);
       break;
 #endif
     case 'n':
@@ -1002,6 +1083,15 @@ int main(int argc, char **argv) {
 
   if (optind >= argc) {
     errormsg("no directories specified\n");
+    exit(1);
+  }
+  if (ISFLAG(flags, F_HARDLINKFILES) && ISFLAG(flags, F_DELETEFILES)) {
+    errormsg("options --linkhard and --delete are not compatible\n");
+    exit(1);
+  }
+
+  if (ISFLAG(flags, F_HARDLINKFILES) && ISFLAG(flags, F_CONSIDERHARDLINKS)) {
+    errormsg("options --linkhard and --hardlinks are not compatible\n");
     exit(1);
   }
 
@@ -1094,8 +1184,11 @@ int main(int argc, char **argv) {
     if (ISFLAG(flags, F_NOPROMPT)) deletefiles(files, 0, 0);
     else deletefiles(files, 1, stdin);
   } else {
-    if (ISFLAG(flags, F_SUMMARIZEMATCHES)) summarizematches(files);
-    else printmatches(files);
+    if (ISFLAG(flags, F_HARDLINKFILES)) hardlinkfiles(files);
+    else {
+      if (ISFLAG(flags, F_SUMMARIZEMATCHES)) summarizematches(files);
+      else printmatches(files);
+    }
   }
 
   while (files) {
