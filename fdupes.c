@@ -826,6 +826,7 @@ static void registerpair(file_t **matchlist, file_t *newmatch,
   }
 }
 
+#ifndef ON_WINDOWS
 static void hardlinkfiles(file_t *files)
 {
   int counter;
@@ -880,21 +881,23 @@ static void hardlinkfiles(file_t *files)
 
       /* preserve only the first file */
 
-      printf("   [+] %s\n", dupelist[1]->d_name);
+      if (!ISFLAG(flags, F_HIDEPROGRESS)) printf("   [+] %s\n", dupelist[1]->d_name);
       for (x = 2; x <= counter; x++) {
          if (unlink(dupelist[x]->d_name) == 0) {
             if ( link(dupelist[1]->d_name, dupelist[x]->d_name) == 0 ) {
-                printf("   [h] %s\n", dupelist[x]->d_name);
+              if (!ISFLAG(flags, F_HIDEPROGRESS)) printf("   [h] %s\n", dupelist[x]->d_name);
             } else {
+              if (!ISFLAG(flags, F_HIDEPROGRESS)) {
                 printf("-- unable to create a hardlink for the file: %s\n", strerror(errno));
                 printf("   [!] %s ", dupelist[x]->d_name);
+	      }
             }
-         } else {
+         } else if (!ISFLAG(flags, F_HIDEPROGRESS)) {
            printf("   [!] %s ", dupelist[x]->d_name);
            printf("-- unable to delete the file!\n");
          }
        }
-      printf("\n");
+      if (!ISFLAG(flags, F_HIDEPROGRESS)) printf("\n");
     }
 
     files = files->next;
@@ -902,6 +905,7 @@ static void hardlinkfiles(file_t *files)
 
   free(dupelist);
 }
+#endif /* ON_WINDOWS */
 
 
 static void help_text()
@@ -920,6 +924,8 @@ static void help_text()
   printf(" -H --hardlinks   \tnormally, when two or more files point to the same\n");
   printf("                  \tdisk area they are treated as non-duplicates; this\n");
   printf("                  \toption will change this behavior\n");
+  printf(" -L --linkhard    \thardlink duplicate files to the first file in\n");
+  printf("                  \teach set of duplicates without prompting the user\n");
 #endif
   printf(" -n --noempty     \texclude zero-length files from consideration\n");
   printf(" -A --nohidden    \texclude hidden files from consideration\n");
@@ -1003,7 +1009,16 @@ int main(int argc, char **argv) {
 
   oldargv = cloneargs(argc, argv);
 
-  while ((opt = GETOPT(argc, argv, "frRq1SsHLlnAdvhNmpo:"
+  while ((opt = GETOPT(argc, argv,
+#ifndef ON_WINDOWS
+  "frRq1SsHLnAdvhNmpo:"
+#else
+  #ifdef NO_SYMLINKS
+  "frRq1SnAdvhNmpo:"
+  #else
+  "frRq1SsnAdvhNmpo:"
+  #endif /* NO_SYMLINKS */
+#endif /* ON_WINDOWS */
 #ifndef OMIT_GETOPT_LONG
           , long_options, NULL
 #endif
