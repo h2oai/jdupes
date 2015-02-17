@@ -1200,7 +1200,10 @@ int main(int argc, char **argv) {
     else deletefiles(files, 1, stdin);
   } else {
 #ifndef ON_WINDOWS
-    if (ISFLAG(flags, F_HARDLINKFILES)) hardlinkfiles(files);
+    if (ISFLAG(flags, F_HARDLINKFILES)) {
+      if (ISFLAG(flags, F_SUMMARIZEMATCHES)) summarizematches(files);
+      hardlinkfiles(files);
+    }
 #else
     if (0) {}
 #endif /* ON_WINDOWS */
