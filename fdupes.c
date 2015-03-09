@@ -1016,7 +1016,7 @@ int main(int argc, char **argv) {
   #ifdef NO_SYMLINKS
   "frRq1SnAdvhNmpo:"
   #else
-  "frRq1SsHLnAdvhNmpo:"
+  "frRq1SsnAdvhNmpo:"
   #endif /* NO_SYMLINKS */
 #endif /* ON_WINDOWS */
 #ifndef OMIT_GETOPT_LONG
