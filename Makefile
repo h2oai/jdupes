@@ -27,7 +27,7 @@ PREFIX = /usr
 #
 # VERSION determines the program's version number.
 #
-include Makefile.inc/VERSION
+include VERSION
 
 #
 # PROGRAM_NAME determines the installation name and manual page name
