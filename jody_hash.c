@@ -6,12 +6,28 @@
  * and faster.
  *
  * Copyright (C) 2014-2015 by Jody Bruchon <jody@jodybruchon.com>
- * Released under the MIT License (see LICENSE for details)
+ * Released under The MIT License or GNU GPL v2 (your choice)
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include "jody_hash.h"
+
+/* The tail mask table is used for block sizes that are
+ * indivisible by the width of a hash_t. It is ANDed with the
+ * final hash_t-sized element to zero out data in the buffer
+ * that is not part of the data to be hashed. */
+static const hash_t tail_mask[] = {
+	0x0000000000000000,
+	0x00000000000000ff,
+	0x000000000000ffff,
+	0x0000000000ffffff,
+	0x00000000ffffffff,
+	0x000000ffffffffff,
+	0x0000ffffffffffff,
+	0x00ffffffffffffff,
+	0xffffffffffffffff
+};
 
 /* Hash a block of arbitrary size; must be divisible by sizeof(hash_t)
  * The first block should pass a start_hash of zero.
@@ -24,62 +40,39 @@ extern hash_t jody_block_hash(const hash_t * restrict data,
 		const hash_t start_hash, const unsigned int count)
 {
 	register hash_t hash = start_hash;
+	register hash_t element;
 	unsigned int len;
 	hash_t tail;
 
-#ifdef ARCH_HAS_LITTLE_ENDIAN
-	/* Little-endian 64-bit hash_t tail mask */
-	const hash_t le64_tail_mask[] = {
-		0x0000000000000000,
-		0xff00000000000000,
-		0xffff000000000000,
-		0xffffff0000000000,
-		0xffffffff00000000,
-		0xffffffffff000000,
-		0xffffffffffff0000,
-		0xffffffffffffff00,
-		0xffffffffffffffff,
-	};
- #define TAIL_MASK le64_tail_mask
-#else
-	/* Big-endian 64-bit hash_t tail mask */
-	const hash_t be64_tail_mask[] = {
-		0x0000000000000000,
-		0x00000000000000ff,
-		0x000000000000ffff,
-		0x0000000000ffffff,
-		0x00000000ffffffff,
-		0x000000ffffffffff,
-		0x0000ffffffffffff,
-		0x00ffffffffffffff,
-		0xffffffffffffffff,
-	};
- #define TAIL_MASK be64_tail_mask
-#endif	/* ARCH_HAS_LITTLE_ENDIAN */
-
 	len = count / sizeof(hash_t);
 	for (; len > 0; len--) {
-		hash += *data;
+		element = *data;
+		hash += element;
+		hash += JODY_HASH_SALT;
 		hash = (hash << JODY_HASH_SHIFT) | hash >> (sizeof(hash_t) * 8 - JODY_HASH_SHIFT);
-		hash += (*data & (hash_t)0x000000ff);
-		hash ^= (*data);
-		hash += (*data & (hash_t)0xffffff00);
+		hash += (element & (hash_t)0x000000ff);
+		hash ^= element;
+		hash += (element & (hash_t)0xffffff00);
 		hash = (hash << JODY_HASH_SHIFT) | hash >> (sizeof(hash_t) * 8 - JODY_HASH_SHIFT);
-		hash += *data;
+		hash ^= JODY_HASH_SALT;
+		hash += element;
 		data++;
 	}
 
 	/* Handle data tail (for blocks indivisible by sizeof(hash_t)) */
 	len = count & (sizeof(hash_t) - 1);
 	if (len) {
-		tail = *data;
-		tail &= TAIL_MASK[len];
+		element = *data;
+		tail = element;
+		tail += JODY_HASH_SALT;
+		tail &= tail_mask[len];
 		hash += tail;
 		hash = (hash << JODY_HASH_SHIFT) | hash >> (sizeof(hash_t) * 8 - JODY_HASH_SHIFT);
 		hash += (tail & (hash_t)0x000000ff);
-		hash ^= (tail);
+		hash ^= tail;
 		hash += (tail & (hash_t)0xffffff00);
 		hash = (hash << JODY_HASH_SHIFT) | hash >> (sizeof(hash_t) * 8 - JODY_HASH_SHIFT);
+		hash ^= JODY_HASH_SALT;
 		hash += tail;
 	}
 
