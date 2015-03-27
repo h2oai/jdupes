@@ -1183,7 +1183,8 @@ int main(int argc, char **argv) {
     curfile = curfile->next;
 
     if (!ISFLAG(flags, F_HIDEPROGRESS)) {
-      if (curfile != NULL) delay += (curfile->size >> 23);
+      /* If file size is larger than 1 MiB, make progress update faster */
+      if (curfile != NULL) delay += (curfile->size >> 20);
       if ((delay >= DELAY_COUNT)) {
         delay = 0;
         fprintf(stderr, "\rProgress [%d/%d] %d%% ", progress, filecount,
