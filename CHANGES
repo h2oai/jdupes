@@ -6,6 +6,12 @@ who contributed the patch or idea appears first, followed by
 those who've otherwise worked on that item. For a list of 
 contributors names and identifiers please see the CONTRIBUTORS file.
 
+Changes from 1.51-jody4 to 1.51-jody4-jkl1 [JKL]
+
+- added `--xsize=SIZE' option: exclude files of size < SIZE
+- updated Makefile: `PREFIX = /usr/local'
+- updated README: Usage to reflect curent parameters
+
 Changes from 1.51 to 1.51-jody2 [JLB]
 
 - Switched to C99
