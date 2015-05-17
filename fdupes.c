@@ -73,6 +73,7 @@
 #define F_EXCLUDEHIDDEN     0x1000
 #define F_PERMISSIONS       0x2000
 #define F_HARDLINKFILES     0x4000
+#define F_EXCLUDESIZE       0x8000
 
 typedef enum {
   ORDER_TIME = 0,
@@ -82,6 +83,7 @@ typedef enum {
 const char *program_name;
 
 uint_fast16_t flags = 0;
+unsigned long long int excludesize = 0;
 
 #define CHUNK_SIZE 8192
 #define INPUT_SIZE 256
@@ -277,6 +279,12 @@ static int grokdir(const char *dir, file_t ** const filelistp)
       }
 
       if (!S_ISDIR(info.st_mode) && info.st_size == 0 && ISFLAG(flags, F_EXCLUDEEMPTY)) {
+	free(newfile->d_name);
+	free(newfile);
+	continue;
+      }
+
+      if (!S_ISDIR(info.st_mode) && ISFLAG(flags, F_EXCLUDESIZE) && info.st_size < excludesize) {
 	free(newfile->d_name);
 	free(newfile);
 	continue;
@@ -929,6 +937,8 @@ static void help_text()
   printf("                  \teach set of duplicates without prompting the user\n");
 #endif
   printf(" -n --noempty     \texclude zero-length files from consideration\n");
+  printf(" -x --xsize=SIZE  \texclude files of size < SIZE from consideration; the\n");
+  printf("                  \tSIZE argument accepts 'k', 'M' and 'G' unit suffix\n");
   printf(" -A --nohidden    \texclude hidden files from consideration\n");
   printf(" -f --omitfirst   \tomit the first file in each set of matches\n");
   printf(" -1 --sameline    \tlist each set of matches on a single line\n");
@@ -970,6 +980,7 @@ int main(int argc, char **argv) {
   int firstrecurse;
   ordertype_t ordertype = ORDER_TIME;
   int delay = 0;
+  char *endptr;
 
 #ifndef OMIT_GETOPT_LONG
   static struct option long_options[] =
@@ -990,6 +1001,7 @@ int main(int argc, char **argv) {
     { "linkhard", 0, 0, 'L' },
 #endif
     { "noempty", 0, 0, 'n' },
+    { "xsize", 1, 0, 'x' },
     { "nohidden", 0, 0, 'A' },
     { "delete", 0, 0, 'd' },
     { "version", 0, 0, 'v' },
@@ -1012,12 +1024,12 @@ int main(int argc, char **argv) {
 
   while ((opt = GETOPT(argc, argv,
 #ifndef ON_WINDOWS
-  "frRq1SsHLnAdvhNmpo:"
+  "frRq1SsHLnx:AdvhNmpo:"
 #else
   #ifdef NO_SYMLINKS
-  "frRq1SnAdvhNmpo:"
+  "frRq1Snx:AdvhNmpo:"
   #else
-  "frRq1SsnAdvhNmpo:"
+  "frRq1Ssnx:AdvhNmpo:"
   #endif /* NO_SYMLINKS */
 #endif /* ON_WINDOWS */
 #ifndef OMIT_GETOPT_LONG
@@ -1058,6 +1070,30 @@ int main(int argc, char **argv) {
 #endif
     case 'n':
       SETFLAG(flags, F_EXCLUDEEMPTY);
+      break;
+    case 'x':
+      SETFLAG(flags, F_EXCLUDESIZE);
+      excludesize = strtoull(optarg, &endptr, 0);
+      switch (*endptr) {
+        case 'k':
+          excludesize = excludesize * 1024;
+          endptr++;
+          break;
+        case 'M':
+          excludesize = excludesize * 1024 * 1024;
+          endptr++;
+          break;
+        case 'G':
+          excludesize = excludesize * 1024 * 1024 * 1024;
+          endptr++;
+          break;
+        default:
+          break;
+      }
+      if (*endptr != '\0') {
+        errormsg("invalid value for --xsize: '%s'\n", optarg);
+        exit(1);
+      }
       break;
     case 'A':
       SETFLAG(flags, F_EXCLUDEHIDDEN);

@@ -11,7 +11,7 @@
 # determination of the actual installation directories.
 # Suggested values are "/usr/local", "/usr", "/pkgs/fdupes-$(VERSION)"
 #
-PREFIX = /usr
+PREFIX = /usr/local
 
 #
 # Certain platforms do not support long options (command line options).

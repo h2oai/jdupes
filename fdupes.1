@@ -36,6 +36,17 @@ treated as non-duplicates; this option will change this behavior
 .B -n --noempty
 exclude zero-length files from consideration
 .TP
+.B -x --xsize=SIZE
+exclude files of size < SIZE from consideration; following suffixes can be used:
+.RS
+.IP `k'
+for kilobytes (units of 1024 bytes)
+.IP `M'
+for Megabytes (units of 1024 x 1024 bytes)
+.IP `G'
+for Gigabytes (units of 1024 x 1024 x 1024 bytes)
+.RE
+.TP
 .B -f --omitfirst
 omit the first file in each set of matches
 .TP
