@@ -40,6 +40,7 @@
 #if defined _WIN32 || defined __CYGWIN__
  #define ON_WINDOWS 1
  #define NO_SYMLINKS 1
+ #define NO_HARDLINKS 1
 #endif
 
 /* Hash operation shortcuts */
@@ -440,7 +441,7 @@ static file_t **checkmatch(filetree_t *checktree, file_t *file)
     s.st_dev = 0;
   }
   /* Hard link checks always fail when building for Windows */
-#ifndef ON_WINDOWS
+#ifndef NO_HARDLINKS
   if (!ISFLAG(flags, F_CONSIDERHARDLINKS)) {
     if ((s.st_ino ==
         checktree->file->inode) && (s.st_dev ==
@@ -826,7 +827,7 @@ static void registerpair(file_t **matchlist, file_t *newmatch,
   }
 }
 
-#ifndef ON_WINDOWS
+#ifndef NO_HARDLINKS
 static void hardlinkfiles(file_t *files)
 {
   int counter;
@@ -888,7 +889,7 @@ static void hardlinkfiles(file_t *files)
               if (!ISFLAG(flags, F_HIDEPROGRESS)) printf("   [h] %s\n", dupelist[x]->d_name);
             } else {
               if (!ISFLAG(flags, F_HIDEPROGRESS)) {
-                printf("-- unable to create a hardlink for the file: %s\n", strerror(errno));
+                printf("-- unable to create a hard link for the file: %s\n", strerror(errno));
                 printf("   [!] %s ", dupelist[x]->d_name);
 	      }
             }
@@ -920,11 +921,11 @@ static void help_text()
 #ifndef NO_SYMLINKS
   printf(" -s --symlinks    \tfollow symlinks\n");
 #endif
-#ifndef ON_WINDOWS
+#ifndef NO_HARDLINKS
   printf(" -H --hardlinks   \tnormally, when two or more files point to the same\n");
   printf("                  \tdisk area they are treated as non-duplicates; this\n");
   printf("                  \toption will change this behavior\n");
-  printf(" -L --linkhard    \thardlink duplicate files to the first file in\n");
+  printf(" -L --linkhard    \thard link duplicate files to the first file in\n");
   printf("                  \teach set of duplicates without prompting the user\n");
 #endif
   printf(" -n --noempty     \texclude zero-length files from consideration\n");
@@ -984,7 +985,7 @@ int main(int argc, char **argv) {
 #ifndef NO_SYMLINKS
     { "symlinks", 0, 0, 's' },
 #endif
-#ifndef ON_WINDOWS
+#ifndef NO_HARDLINKS
     { "hardlinks", 0, 0, 'H' },
     { "linkhard", 0, 0, 'L' },
 #endif
@@ -1100,6 +1101,7 @@ int main(int argc, char **argv) {
     errormsg("no directories specified\n");
     exit(1);
   }
+#ifndef NO_HARDLINKS
   if (ISFLAG(flags, F_HARDLINKFILES) && ISFLAG(flags, F_DELETEFILES)) {
     errormsg("options --linkhard and --delete are not compatible\n");
     exit(1);
@@ -1109,7 +1111,7 @@ int main(int argc, char **argv) {
     errormsg("options --linkhard and --hardlinks are not compatible\n");
     exit(1);
   }
-
+#endif	/* NO_HARDLINKS */
   if (ISFLAG(flags, F_RECURSE) && ISFLAG(flags, F_RECURSEAFTER)) {
     errormsg("options --recurse and --recurse: are not compatible\n");
     exit(1);
@@ -1200,7 +1202,7 @@ int main(int argc, char **argv) {
     if (ISFLAG(flags, F_NOPROMPT)) deletefiles(files, 0, 0);
     else deletefiles(files, 1, stdin);
   } else {
-#ifndef ON_WINDOWS
+#ifndef NO_HARDLINKS
     if (ISFLAG(flags, F_HARDLINKFILES)) {
       if (ISFLAG(flags, F_SUMMARIZEMATCHES)) summarizematches(files);
       hardlinkfiles(files);
