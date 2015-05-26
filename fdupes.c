@@ -43,12 +43,6 @@
  #define NO_HARDLINKS 1
 #endif
 
-/* Hash operation shortcuts */
-#define CRC_MALLOC() (hash_t *) malloc(sizeof(hash_t))
-#define CRC_CPY(a,b) memcpy(a,b,sizeof(hash_t))
-#define CRC_CMP(a,b) memcmp(a,b,sizeof(hash_t))
-#define CRC_T hash_t
-
 /* How many operations to wait before updating progress counters */
 #define DELAY_COUNT 512
 
@@ -92,12 +86,14 @@ off_t excludesize = 0;
 typedef struct _file {
   char *d_name;
   off_t size;
-  CRC_T *crcpartial;
-  CRC_T *crcsignature;
+  uint_fast8_t crcpartial_set;
+  hash_t crcpartial;
+  uint_fast8_t crcsignature_set;
+  hash_t crcsignature;
   dev_t device;
   ino_t inode;
   time_t mtime;
-  int hasdupes; /* true only if file is first on duplicate chain */
+  uint_fast8_t hasdupes; /* true only if file is first on duplicate chain */
   struct _file *duplicates;
   struct _file *next;
 } file_t;
@@ -107,6 +103,20 @@ typedef struct _filetree {
   struct _filetree *left;
   struct _filetree *right;
 } filetree_t;
+
+
+/***** End definitions, begin code *****/
+
+
+/* Compare two jody_hashes like memcmp() */
+static inline int crc_cmp(const hash_t hash1, const hash_t hash2)
+{
+	if (hash1 > hash2) return 1;
+	if (hash1 == hash2) return 0;
+	/* No need to compare a third time */
+	return -1;
+}
+
 
 static void errormsg(char *message, ...)
 {
@@ -122,6 +132,7 @@ static void errormsg(char *message, ...)
 #endif
   vfprintf(stderr, message, ap);
 }
+
 
 static void escapefilename(char *escape_list, char **filename_ptr)
 {
@@ -157,7 +168,7 @@ static void escapefilename(char *escape_list, char **filename_ptr)
 
 static char **cloneargs(const int argc, char **argv)
 {
-  int x;
+  unsigned int x;
   char **args;
 
   args = (char **) malloc(sizeof(char*) * argc);
@@ -179,7 +190,7 @@ oom:
 static int findarg(const char * const arg, const int start,
 		const int argc, char **argv)
 {
-  int x;
+  unsigned int x;
 
   for (x = start; x < argc; x++)
     if (strcmp(argv[x], arg) == 0)
@@ -247,8 +258,10 @@ static int grokdir(const char *dir, file_t ** const filelistp)
 
       newfile->device = 0;
       newfile->inode = 0;
-      newfile->crcsignature = NULL;
-      newfile->crcpartial = NULL;
+      newfile->crcsignature_set = 0;
+      newfile->crcsignature = 0;
+      newfile->crcpartial_set = 0;
+      newfile->crcpartial = 0;
       newfile->duplicates = NULL;
       newfile->hasdupes = 0;
 
@@ -433,7 +446,7 @@ static int same_permissions(char* name1, char* name2)
 static file_t **checkmatch(filetree_t *checktree, file_t *file)
 {
   int cmpresult;
-  CRC_T *crcsignature;
+  hash_t *crcsignature;
   off_t fsize;
   struct stat s;
 
@@ -468,53 +481,49 @@ static file_t **checkmatch(filetree_t *checktree, file_t *file)
         cmpresult = -1;
   else {
     /* Attempt to exclude files quickly with partial file hashing */
-    if (checktree->file->crcpartial == NULL) {
+    if (checktree->file->crcpartial_set == 0) {
       crcsignature = getcrcpartialsignature(checktree->file->d_name);
       if (crcsignature == NULL) {
         errormsg ("cannot read file %s\n", checktree->file->d_name);
         return NULL;
       }
 
-      checktree->file->crcpartial = CRC_MALLOC();
-      if (checktree->file->crcpartial == NULL) goto oom;
-      CRC_CPY(checktree->file->crcpartial, crcsignature);
+      checktree->file->crcpartial = *crcsignature;
+      checktree->file->crcpartial_set = 1;
     }
 
-    if (file->crcpartial == NULL) {
+    if (file->crcpartial_set == 0) {
       crcsignature = getcrcpartialsignature(file->d_name);
       if (crcsignature == NULL) {
         errormsg ("cannot read file %s\n", file->d_name);
         return NULL;
       }
 
-      file->crcpartial = CRC_MALLOC();
-      if (file->crcpartial == NULL) goto oom;
-      CRC_CPY(file->crcpartial, crcsignature);
+      file->crcpartial = *crcsignature;
+      file->crcpartial_set = 1;
     }
 
-    cmpresult = CRC_CMP(file->crcpartial, checktree->file->crcpartial);
+    cmpresult = crc_cmp(file->crcpartial, checktree->file->crcpartial);
 
     /* If partial match was correct, perform a full file hash match */
     if (cmpresult == 0) {
-      if (checktree->file->crcsignature == NULL) {
+      if (checktree->file->crcsignature_set == 0) {
 	crcsignature = getcrcsignature(checktree->file->d_name);
 	if (crcsignature == NULL) return NULL;
 
-	checktree->file->crcsignature = CRC_MALLOC();
-	if (checktree->file->crcsignature == NULL) goto oom;
-	CRC_CPY(checktree->file->crcsignature, crcsignature);
+	checktree->file->crcsignature = *crcsignature;
+        checktree->file->crcsignature_set = 1;
       }
 
-      if (file->crcsignature == NULL) {
+      if (file->crcsignature_set == 0) {
 	crcsignature = getcrcsignature(file->d_name);
 	if (crcsignature == NULL) return NULL;
 
-	file->crcsignature = CRC_MALLOC();
-	if (file->crcsignature == NULL) goto oom;
-	CRC_CPY(file->crcsignature, crcsignature);
+	file->crcsignature = *crcsignature;
+	file->crcsignature_set = 1;
       }
 
-      cmpresult = CRC_CMP(file->crcsignature, checktree->file->crcsignature);
+      cmpresult = crc_cmp(file->crcsignature, checktree->file->crcsignature);
 
       /*if (cmpresult != 0) errormsg("P   on %s vs %s\n",
           file->d_name, checktree->file->d_name);
@@ -545,10 +554,6 @@ static file_t **checkmatch(filetree_t *checktree, file_t *file)
   }
   /* Fall through - should never be reached */
   return NULL;
-
-oom:
-  errormsg("out of memory\n");
-  exit(1);
 }
 
 /* Do a bit-for-bit comparison in case two different files produce the
@@ -1255,8 +1260,6 @@ int main(int argc, char **argv) {
   while (files) {
     curfile = files->next;
     free(files->d_name);
-    free(files->crcsignature);
-    free(files->crcpartial);
     free(files);
     files = curfile;
   }
