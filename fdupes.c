@@ -52,22 +52,24 @@
 #define getcrcsignature(a) getcrcsignatureuntil(a, 0)
 #define getcrcpartialsignature(a) getcrcsignatureuntil(a, PARTIAL_HASH_SIZE)
 
-#define F_RECURSE           0x0001
-#define F_HIDEPROGRESS      0x0002
-#define F_DSAMELINE         0x0004
-#define F_FOLLOWLINKS       0x0008
-#define F_DELETEFILES       0x0010
-#define F_EXCLUDEEMPTY      0x0020
-#define F_CONSIDERHARDLINKS 0x0040
-#define F_SHOWSIZE          0x0080
-#define F_OMITFIRST         0x0100
-#define F_RECURSEAFTER      0x0200
-#define F_NOPROMPT          0x0400
-#define F_SUMMARIZEMATCHES  0x0800
-#define F_EXCLUDEHIDDEN     0x1000
-#define F_PERMISSIONS       0x2000
-#define F_HARDLINKFILES     0x4000
-#define F_EXCLUDESIZE       0x8000
+/* Behavior modification flags */
+uint_fast32_t flags = 0;
+#define F_RECURSE           0x000001
+#define F_HIDEPROGRESS      0x000002
+#define F_DSAMELINE         0x000004
+#define F_FOLLOWLINKS       0x000008
+#define F_DELETEFILES       0x000010
+#define F_EXCLUDEEMPTY      0x000020
+#define F_CONSIDERHARDLINKS 0x000040
+#define F_SHOWSIZE          0x000080
+#define F_OMITFIRST         0x000100
+#define F_RECURSEAFTER      0x000200
+#define F_NOPROMPT          0x000400
+#define F_SUMMARIZEMATCHES  0x000800
+#define F_EXCLUDEHIDDEN     0x001000
+#define F_PERMISSIONS       0x002000
+#define F_HARDLINKFILES     0x004000
+#define F_EXCLUDESIZE       0x008000
 
 typedef enum {
   ORDER_TIME = 0,
@@ -76,7 +78,6 @@ typedef enum {
 
 const char *program_name;
 
-uint_fast16_t flags = 0;
 off_t excludesize = 0;
 
 #define CHUNK_SIZE 8192
@@ -86,14 +87,14 @@ off_t excludesize = 0;
 typedef struct _file {
   char *d_name;
   off_t size;
-  uint_fast8_t crcpartial_set;
   hash_t crcpartial;
-  uint_fast8_t crcsignature_set;
   hash_t crcsignature;
   dev_t device;
   ino_t inode;
   time_t mtime;
   uint_fast8_t hasdupes; /* true only if file is first on duplicate chain */
+  uint_fast8_t crcpartial_set;  /* 1 = crcpartial is valid */
+  uint_fast8_t crcsignature_set;  /* 1 = crcsignature is valid */
   struct _file *duplicates;
   struct _file *next;
 } file_t;
