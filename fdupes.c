@@ -83,7 +83,7 @@ typedef enum {
 const char *program_name;
 
 uint_fast16_t flags = 0;
-unsigned long long int excludesize = 0;
+off_t excludesize = 0;
 
 #define CHUNK_SIZE 8192
 #define INPUT_SIZE 256
@@ -914,7 +914,7 @@ static void hardlinkfiles(file_t *files)
 
   free(dupelist);
 }
-#endif /* ON_WINDOWS */
+#endif /* NO_HARDLINKS */
 
 
 static void help_text()
@@ -1060,7 +1060,7 @@ int main(int argc, char **argv) {
       SETFLAG(flags, F_FOLLOWLINKS);
       break;
 #endif
-#ifndef ON_WINDOWS
+#ifndef NO_HARDLINKS
     case 'H':
       SETFLAG(flags, F_CONSIDERHARDLINKS);
       break;
@@ -1245,7 +1245,7 @@ int main(int argc, char **argv) {
     }
 #else
     if (0) {}
-#endif /* ON_WINDOWS */
+#endif /* NO_HARDLINKS */
     else {
       if (ISFLAG(flags, F_SUMMARIZEMATCHES)) summarizematches(files);
       else printmatches(files);
