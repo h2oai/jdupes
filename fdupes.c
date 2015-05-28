@@ -232,7 +232,7 @@ static int grokdir(const char *dir, file_t ** const filelistp)
   struct stat linfo;
 #endif
   static int progress = 0;
-  static int delay = 0;
+  static int delay = DELAY_COUNT;
   static char indicator[] = "-\\|/";
   char *fullname, *name;
 
@@ -246,7 +246,7 @@ static int grokdir(const char *dir, file_t ** const filelistp)
   while ((dirinfo = readdir(cd)) != NULL) {
     if (strcmp(dirinfo->d_name, ".") && strcmp(dirinfo->d_name, "..")) {
       if (!ISFLAG(flags, F_HIDEPROGRESS)) {
-        if (delay == DELAY_COUNT) {
+        if (delay >= DELAY_COUNT) {
           delay = 0;
           fprintf(stderr, "\rBuilding file list %c ", indicator[progress]);
           progress = (progress + 1) % 4;
@@ -278,7 +278,7 @@ static int grokdir(const char *dir, file_t ** const filelistp)
       if (ISFLAG(flags, F_EXCLUDEHIDDEN)) {
         fullname = strdup(newfile->d_name);
         name = basename(fullname);
-        if (name[0] == '.' && strcmp(name, ".") && strcmp(name, "..") ) {
+        if (name[0] == '.' && strcmp(name, ".") && strcmp(name, "..")) {
           free(newfile->d_name);
           free(newfile);
           continue;
@@ -899,7 +899,7 @@ static void hardlinkfiles(file_t *files)
       if (!ISFLAG(flags, F_HIDEPROGRESS)) printf("   [+] %s\n", dupelist[1]->d_name);
       for (x = 2; x <= counter; x++) {
          if (unlink(dupelist[x]->d_name) == 0) {
-            if ( link(dupelist[1]->d_name, dupelist[x]->d_name) == 0 ) {
+            if ( link(dupelist[1]->d_name, dupelist[x]->d_name) == 0) {
               if (!ISFLAG(flags, F_HIDEPROGRESS)) printf("   [h] %s\n", dupelist[x]->d_name);
             } else {
               if (!ISFLAG(flags, F_HIDEPROGRESS)) {
@@ -985,7 +985,7 @@ int main(int argc, char **argv) {
   char **oldargv;
   int firstrecurse;
   ordertype_t ordertype = ORDER_TIME;
-  int delay = 0;
+  int delay = DELAY_COUNT;
   char *endptr;
 
 #ifndef OMIT_GETOPT_LONG
@@ -1041,7 +1041,7 @@ int main(int argc, char **argv) {
 #ifndef OMIT_GETOPT_LONG
           , long_options, NULL
 #endif
-          )) != EOF) {
+	  )) != EOF) {
     switch (opt) {
     case 'f':
       SETFLAG(flags, F_OMITFIRST);
@@ -1217,7 +1217,7 @@ int main(int argc, char **argv) {
 
       if (confirmmatch(file1, file2)) {
         registerpair(match, curfile,
-            (ordertype == ORDER_TIME) ? sort_pairs_by_mtime : sort_pairs_by_filename );
+            (ordertype == ORDER_TIME) ? sort_pairs_by_mtime : sort_pairs_by_filename);
       }
 
       fclose(file1);
