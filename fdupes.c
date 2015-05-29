@@ -801,9 +801,83 @@ static inline int sort_pairs_by_mtime(file_t *f1, file_t *f2)
   return 0;
 }
 
+#define IS_NUM(a) (((a >= '0') && (a <= '9')) ? 1 : 0)
+static inline int numeric_sort(char *c1, char *c2)
+{
+	char num1[1024], num2[1024];
+	char *n1, *n2;
+	int nlen1 = 0, nlen2 = 0;
+	int i, len;
+
+	/* Numerically correct sort */
+	while (*c1 != '\0' && *c2 != '\0') {
+		/* Skip all sequences of zeroes */
+		while (*c1 == '0') {
+			nlen1++;
+			c1++;
+		}
+		while (*c2 == '0') {
+			nlen2++;
+			c2++;
+		}
+		if (IS_NUM(*c1) && IS_NUM(*c2)) {
+			n1 = num1; n2 = num2;
+
+			/* Terminate comparison on non-numeric */
+			while (IS_NUM(*c1) && IS_NUM(*c2)) {
+				/* Copy numbers to strings */
+				*n1 = *c1; *n2 = *c2;
+				n1++; n2++;
+				nlen1++; nlen2++;
+				c1++; c2++;
+			}
+
+			/* One numeric and one non-numeric means the
+			 * numeric one is larger and sorts later */
+			if (IS_NUM(*c1) ^ IS_NUM(*c2)) {
+				if (IS_NUM(*c1)) return 1;
+				else return -1;
+			}
+
+			/* Terminate number strings */
+			*n1 = 0; *n2 = 0;
+			i = 0;
+			len = (uintptr_t)n1 - (uintptr_t)num1;
+
+			/* Compare the numbers */
+			while (1) {
+				/* Skip runs of equal digits */
+				while ((*(num1 + i) == *(num2 + i)) && i < len) i++;
+
+				/* If we run out of digits, numbers are identical */
+				if (i == len) break;
+
+				/* Different digits = we have a result */
+				if (*(num1 + i) > *(num2 + i)) return 1;
+				else return -1;
+			}
+		}
+
+		/* Do normal comparison */
+		if (*c1 == *c2) {
+			c1++; c2++;
+			nlen1++; nlen2++;
+		} else if (*c1 > *c2) return 1;
+		else return -1;
+	}
+
+	/* Longer strings sort later */
+	if (nlen1 < nlen2) return -1;
+	if (nlen1 > nlen2) return 1;
+	if (*c1 == '\0' && *c2 != '\0') return -1;
+	if (*c1 != '\0' && *c2 == '\0') return 1;
+
+	return 0;
+}
+
 static inline int sort_pairs_by_filename(file_t *f1, file_t *f2)
 {
-  return strcmp(f1->d_name, f2->d_name);
+	return numeric_sort(f1->d_name, f2->d_name);
 }
 
 static void registerpair(file_t **matchlist, file_t *newmatch,
@@ -963,7 +1037,7 @@ static void help_text()
   printf(" -p --permissions \tdon't consider files with different owner/group or\n");
   printf("                  \tpermission bits as duplicates\n");
   printf(" -o --order=BY    \tselect sort order for output, linking and deleting; by\n");
-  printf("                  \tmtime (BY='time'; default) or filename (BY='filename')\n");
+  printf("                  \tmtime (BY='time'; default) or filename (BY='name')\n");
   printf(" -v --version     \tdisplay fdupes version\n");
   printf(" -h --help        \tdisplay this help message\n\n");
 #ifdef OMIT_GETOPT_LONG
