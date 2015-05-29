@@ -804,31 +804,39 @@ static inline int sort_pairs_by_mtime(file_t *f1, file_t *f2)
 #define IS_NUM(a) (((a >= '0') && (a <= '9')) ? 1 : 0)
 static inline int numeric_sort(char *c1, char *c2)
 {
-	char num1[1024], num2[1024];
+	char num1[4096], num2[4096];
 	char *n1, *n2;
 	int nlen1 = 0, nlen2 = 0;
 	int i, len;
 
 	/* Numerically correct sort */
 	while (*c1 != '\0' && *c2 != '\0') {
+		/* Reset number length counters */
+		nlen1 = 0; nlen2 = 0;
+
 		/* Skip all sequences of zeroes */
 		while (*c1 == '0') {
 			nlen1++;
 			c1++;
+			if (nlen1 == 4096) goto strlen_overflow;
 		}
 		while (*c2 == '0') {
 			nlen2++;
 			c2++;
+			if (nlen2 == 4096) goto strlen_overflow;
 		}
+
+		/* If both chars are numeric, do a numeric comparison */
 		if (IS_NUM(*c1) && IS_NUM(*c2)) {
 			n1 = num1; n2 = num2;
 
-			/* Terminate comparison on non-numeric */
+			/* Terminate comparison on non-numeric chars */
 			while (IS_NUM(*c1) && IS_NUM(*c2)) {
 				/* Copy numbers to strings */
 				*n1 = *c1; *n2 = *c2;
 				n1++; n2++;
 				nlen1++; nlen2++;
+				if (nlen1 == 4096 || nlen2 == 4096) goto strlen_overflow;
 				c1++; c2++;
 			}
 
@@ -844,10 +852,10 @@ static inline int numeric_sort(char *c1, char *c2)
 			i = 0;
 			len = (uintptr_t)n1 - (uintptr_t)num1;
 
-			/* Compare the numbers */
+			/* Compare the number strings */
 			while (1) {
 				/* Skip runs of equal digits */
-				while ((*(num1 + i) == *(num2 + i)) && i < len) i++;
+				while (i < len && (*(num1 + i) == *(num2 + i))) i++;
 
 				/* If we run out of digits, numbers are identical */
 				if (i == len) break;
@@ -862,6 +870,7 @@ static inline int numeric_sort(char *c1, char *c2)
 		if (*c1 == *c2) {
 			c1++; c2++;
 			nlen1++; nlen2++;
+			if (nlen1 == 4096 || nlen2 == 4096) goto strlen_overflow;
 		} else if (*c1 > *c2) return 1;
 		else return -1;
 	}
@@ -871,7 +880,11 @@ static inline int numeric_sort(char *c1, char *c2)
 	if (nlen1 > nlen2) return 1;
 	if (*c1 == '\0' && *c2 != '\0') return -1;
 	if (*c1 != '\0' && *c2 == '\0') return 1;
+	return 0;
 
+strlen_overflow:
+	/* If a buffer limit is reached, don't change order */
+	fprintf(stderr, "warning: a number was too long for numeric_sort()\n");
 	return 0;
 }
 
