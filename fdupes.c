@@ -847,8 +847,8 @@ static inline int numeric_sort(char *c1, char *c2)
 				else return -1;
 			}
 
-			/* Terminate number strings */
-			*n1 = 0; *n2 = 0;
+			/* Terminate number strings and compute length */
+			*n1 = '\0'; *n2 = '\0';
 			i = 0;
 			len = (uintptr_t)n1 - (uintptr_t)num1;
 
