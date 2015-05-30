@@ -804,21 +804,21 @@ static inline int sort_pairs_by_mtime(file_t *f1, file_t *f2)
 #define IS_NUM(a) (((a >= '0') && (a <= '9')) ? 1 : 0)
 static inline int numeric_sort(char *c1, char *c2)
 {
-	int nlen1 = 0, nlen2 = 0;
+	int len1 = 0, len2 = 0;
 	int precompare = 0;
 
 	/* Numerically correct sort */
 	while (*c1 != '\0' && *c2 != '\0') {
-		/* Reset number length counters */
-		nlen1 = 0; nlen2 = 0;
+		/* Reset string length counters */
+		len1 = 0; len2 = 0;
 
 		/* Skip all sequences of zeroes */
 		while (*c1 == '0') {
-			nlen1++;
+			len1++;
 			c1++;
 		}
 		while (*c2 == '0') {
-			nlen2++;
+			len2++;
 			c2++;
 		}
 
@@ -830,14 +830,14 @@ static inline int numeric_sort(char *c1, char *c2)
 			while (IS_NUM(*c1) && IS_NUM(*c2)) {
 				if (*c1 < *c2) precompare = -1;
 				if (*c1 > *c2) precompare = 1;
-				nlen1++; nlen2++;
+				len1++; len2++;
 				c1++; c2++;
 
 				/* Skip remaining digit pairs after any
 				 * difference is found */
 				if (precompare != 0) {
 					while (IS_NUM(*c1) && IS_NUM(*c2)) {
-						nlen1++; nlen2++;
+						len1++; len2++;
 						c1++; c2++;
 					}
 					break;
@@ -860,14 +860,14 @@ static inline int numeric_sort(char *c1, char *c2)
 		/* Do normal comparison */
 		if (*c1 == *c2) {
 			c1++; c2++;
-			nlen1++; nlen2++;
+			len1++; len2++;
 		} else if (*c1 > *c2) return 1;
 		else return -1;
 	}
 
 	/* Longer strings sort later */
-	if (nlen1 < nlen2) return -1;
-	if (nlen1 > nlen2) return 1;
+	if (len1 < len2) return -1;
+	if (len1 > len2) return 1;
 	if (*c1 == '\0' && *c2 != '\0') return -1;
 	if (*c1 != '\0' && *c2 == '\0') return 1;
 
