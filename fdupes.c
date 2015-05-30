@@ -804,10 +804,8 @@ static inline int sort_pairs_by_mtime(file_t *f1, file_t *f2)
 #define IS_NUM(a) (((a >= '0') && (a <= '9')) ? 1 : 0)
 static inline int numeric_sort(char *c1, char *c2)
 {
-	char num1[4096], num2[4096];
-	char *n1, *n2;
 	int nlen1 = 0, nlen2 = 0;
-	int i, len;
+	int precompare = 0;
 
 	/* Numerically correct sort */
 	while (*c1 != '\0' && *c2 != '\0') {
@@ -818,26 +816,32 @@ static inline int numeric_sort(char *c1, char *c2)
 		while (*c1 == '0') {
 			nlen1++;
 			c1++;
-			if (nlen1 == 4096) goto strlen_overflow;
 		}
 		while (*c2 == '0') {
 			nlen2++;
 			c2++;
-			if (nlen2 == 4096) goto strlen_overflow;
 		}
 
 		/* If both chars are numeric, do a numeric comparison */
 		if (IS_NUM(*c1) && IS_NUM(*c2)) {
-			n1 = num1; n2 = num2;
+			precompare = 0;
 
-			/* Terminate comparison on non-numeric chars */
+			/* Scan numbers and get preliminary results */
 			while (IS_NUM(*c1) && IS_NUM(*c2)) {
-				/* Copy numbers to strings */
-				*n1 = *c1; *n2 = *c2;
-				n1++; n2++;
+				if (*c1 < *c2) precompare = -1;
+				if (*c1 > *c2) precompare = 1;
 				nlen1++; nlen2++;
-				if (nlen1 == 4096 || nlen2 == 4096) goto strlen_overflow;
 				c1++; c2++;
+
+				/* Skip remaining digit pairs after any
+				 * difference is found */
+				if (precompare != 0) {
+					while (IS_NUM(*c1) && IS_NUM(*c2)) {
+						nlen1++; nlen2++;
+						c1++; c2++;
+					}
+					break;
+				}
 			}
 
 			/* One numeric and one non-numeric means the
@@ -847,30 +851,16 @@ static inline int numeric_sort(char *c1, char *c2)
 				else return -1;
 			}
 
-			/* Terminate number strings and compute length */
-			*n1 = '\0'; *n2 = '\0';
-			i = 0;
-			len = (uintptr_t)n1 - (uintptr_t)num1;
-
-			/* Compare the number strings */
-			while (1) {
-				/* Skip runs of equal digits */
-				while (i < len && (*(num1 + i) == *(num2 + i))) i++;
-
-				/* If we run out of digits, numbers are identical */
-				if (i == len) break;
-
-				/* Different digits = we have a result */
-				if (*(num1 + i) > *(num2 + i)) return 1;
-				else return -1;
-			}
+			/* If the last test fell through, numbers are
+			 * of equal length. Use the precompare result
+			 * as the result for this number comparison. */
+			if (precompare != 0) return precompare;
 		}
 
 		/* Do normal comparison */
 		if (*c1 == *c2) {
 			c1++; c2++;
 			nlen1++; nlen2++;
-			if (nlen1 == 4096 || nlen2 == 4096) goto strlen_overflow;
 		} else if (*c1 > *c2) return 1;
 		else return -1;
 	}
@@ -880,11 +870,8 @@ static inline int numeric_sort(char *c1, char *c2)
 	if (nlen1 > nlen2) return 1;
 	if (*c1 == '\0' && *c2 != '\0') return -1;
 	if (*c1 != '\0' && *c2 == '\0') return 1;
-	return 0;
 
-strlen_overflow:
-	/* If a buffer limit is reached, don't change order */
-	fprintf(stderr, "warning: a number was too long for numeric_sort()\n");
+	/* Fall through: the strings are equal */
 	return 0;
 }
 
