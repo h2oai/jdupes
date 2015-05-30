@@ -48,9 +48,6 @@
 
 #define ISFLAG(a,b) ((a & b) == b)
 #define SETFLAG(a,b) (a |= b)
-/* These used to be functions. This way saves lots of call overhead */
-#define getcrcsignature(a) getcrcsignatureuntil(a, 0)
-#define getcrcpartialsignature(a) getcrcsignatureuntil(a, PARTIAL_HASH_SIZE)
 
 /* Behavior modification flags */
 uint_fast32_t flags = 0;
@@ -84,6 +81,10 @@ off_t excludesize = 0;
 #define INPUT_SIZE 256
 #define PARTIAL_HASH_SIZE 4096
 
+/* These used to be functions. This way saves lots of call overhead */
+#define getcrcsignature(a) getcrcsignatureuntil(a, 0)
+#define getcrcpartialsignature(a) getcrcsignatureuntil(a, PARTIAL_HASH_SIZE)
+
 typedef struct _file {
   char *d_name;
   off_t size;
@@ -104,6 +105,9 @@ typedef struct _filetree {
   struct _filetree *left;
   struct _filetree *right;
 } filetree_t;
+
+/* Hash/compare performance statistics */
+int small_file = 0, partial_hash = 0, partial_to_full = -1, hash_fail = 0;
 
 
 /***** End definitions, begin code *****/
@@ -482,6 +486,7 @@ static file_t **checkmatch(filetree_t *checktree, file_t *file)
         cmpresult = -1;
   else {
     /* Attempt to exclude files quickly with partial file hashing */
+    partial_hash++;
     if (checktree->file->crcpartial_set == 0) {
       crcsignature = getcrcpartialsignature(checktree->file->d_name);
       if (crcsignature == NULL) {
@@ -506,8 +511,20 @@ static file_t **checkmatch(filetree_t *checktree, file_t *file)
 
     cmpresult = crc_cmp(file->crcpartial, checktree->file->crcpartial);
 
-    /* If partial match was correct, perform a full file hash match */
-    if (cmpresult == 0) {
+    if (file->size <= PARTIAL_HASH_SIZE) {
+      /* crcpartial = crcsignature if file is small enough */
+      if (file->crcsignature_set == 0) {
+        file->crcsignature = file->crcpartial;
+        file->crcsignature_set = 1;
+        small_file++;
+      }
+      if (checktree->file->crcsignature_set == 0) {
+        checktree->file->crcsignature = checktree->file->crcpartial;
+        checktree->file->crcsignature_set = 1;
+        small_file++;
+      }
+    } else if (cmpresult == 0) {
+      /* If partial match was correct, perform a full file hash match */
       if (checktree->file->crcsignature_set == 0) {
 	crcsignature = getcrcsignature(checktree->file->d_name);
 	if (crcsignature == NULL) return NULL;
@@ -550,6 +567,7 @@ static file_t **checkmatch(filetree_t *checktree, file_t *file)
     }
   } else {
     /* All compares matched */
+    partial_to_full++;
     getfilestats(file);
     return &checktree->file;
   }
@@ -861,13 +879,18 @@ static inline int numeric_sort(char *c1, char *c2)
 		if (*c1 == *c2) {
 			c1++; c2++;
 			len1++; len2++;
-		} else if (*c1 > *c2) return 1;
+		/* Put symbols and spaces after everything else */
+		} else if (*c2 < '.' && *c1 >= '.') return -1;
+		else if (*c1 < '.' && *c2 >= '.') return 1;
+		/* Normal strcmp() style compare */
+		else if (*c1 > *c2) return 1;
 		else return -1;
 	}
 
-	/* Longer strings sort later */
+	/* Longer strings generally sort later */
 	if (len1 < len2) return -1;
 	if (len1 > len2) return 1;
+	/* Normal strcmp() style comparison */
 	if (*c1 == '\0' && *c2 != '\0') return -1;
 	if (*c1 != '\0' && *c2 == '\0') return 1;
 
@@ -1292,7 +1315,7 @@ int main(int argc, char **argv) {
       if (confirmmatch(file1, file2)) {
         registerpair(match, curfile,
             (ordertype == ORDER_TIME) ? sort_pairs_by_mtime : sort_pairs_by_filename);
-      }
+      } else hash_fail++;
 
       fclose(file1);
       fclose(file2);
@@ -1345,5 +1368,12 @@ int main(int argc, char **argv) {
   free(oldargv);
   purgetree(checktree);
 
-  return 0;
+  /* Uncomment this to see hash statistics after running the program
+  fprintf(stderr, "\n%d partial (+%d small) -> %d full (%d partial elim) (%d hash fail)\n",
+		  partial_hash, small_file, partial_to_full,
+		  (partial_hash - partial_to_full), hash_fail);
+  */
+
+  exit(0);
+
 }
