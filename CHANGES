@@ -6,11 +6,28 @@ who contributed the patch or idea appears first, followed by
 those who've otherwise worked on that item. For a list of 
 contributors names and identifiers please see the CONTRIBUTORS file.
 
+Changes from 1.51-jody4-jkl1 to 1.51-jody5 [JLB]
+
+- Less malloc()s so less memory usage and a slight speedup
+- Change --order=name to an intelligent numerically correct sort
+- Fixed bug where progress text was missing until first update
+- Performance boost for small files (4KB or less) by not running
+  redundant hashes and comparisons
+- Test files added for numerically correct sort ordering
+
 Changes from 1.51-jody4 to 1.51-jody4-jkl1 [JKL]
 
 - added `--xsize=SIZE' option: exclude files of size < SIZE
 - updated Makefile: `PREFIX = /usr/local'
 - updated README: Usage to reflect curent parameters
+
+Changes from 1.51-jody2 to 1.51-jody4 [JLB]
+
+- Add support for hard linking duplicates with -L switch
+- Updated jody_hash algorithm with much lower collision rate
+- Remove freopen() call that posed a portability problem
+- Improved progress indicator behavior
+- Many minor bug fixes
 
 Changes from 1.51 to 1.51-jody2 [JLB]
 
