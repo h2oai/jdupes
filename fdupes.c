@@ -77,7 +77,8 @@ const char *program_name;
 
 off_t excludesize = 0;
 
-#define CHUNK_SIZE 8192
+/* Larger chunk size makes large files process faster but uses more RAM */
+#define CHUNK_SIZE 1048576
 #define INPUT_SIZE 256
 #define PARTIAL_HASH_SIZE 4096
 
@@ -123,9 +124,16 @@ static inline int crc_cmp(const hash_t hash1, const hash_t hash2)
 }
 
 
+/* Print error message. NULL will output "out of memory" and exit */
 static void errormsg(char *message, ...)
 {
   va_list ap;
+
+  /* A null pointer means "out of memory" */
+  if (message == NULL) {
+    fprintf(stderr, "\r%40s\rout of memory\n", "");
+    exit(1);
+  }
 
   va_start(ap, message);
 
@@ -149,10 +157,7 @@ static void escapefilename(char *escape_list, char **filename_ptr)
   filename = *filename_ptr;
 
   tmp = (char*) malloc(strlen(filename) * 2 + 1);
-  if (tmp == NULL) {
-    errormsg("out of memory!\n");
-    exit(1);
-  }
+  if (tmp == NULL) errormsg(NULL);
 
   for (x = 0, tx = 0; x < strlen(filename); x++) {
     if (strchr(escape_list, filename[x]) != NULL) tmp[tx++] = '\\';
@@ -163,34 +168,29 @@ static void escapefilename(char *escape_list, char **filename_ptr)
 
   if (x != tx) {
     *filename_ptr = realloc(*filename_ptr, strlen(tmp) + 1);
-    if (*filename_ptr == NULL) {
-      errormsg("out of memory!\n");
-      exit(1);
-    }
+    if (*filename_ptr == NULL) errormsg(NULL);
     strcpy(*filename_ptr, tmp);
   }
 }
 
-static char **cloneargs(const int argc, char **argv)
+
+static inline char **cloneargs(const int argc, char **argv)
 {
   unsigned int x;
   char **args;
 
   args = (char **) malloc(sizeof(char*) * argc);
-  if (args == NULL) goto oom;
+  if (args == NULL) errormsg(NULL);
 
   for (x = 0; x < argc; x++) {
     args[x] = (char*) malloc(strlen(argv[x]) + 1);
-    if (args[x] == NULL) goto oom;
+    if (args[x] == NULL) errormsg(NULL);
     strcpy(args[x], argv[x]);
   }
 
   return args;
-
-oom:
-  errormsg("out of memory!\n");
-  exit(1);
 }
+
 
 static int findarg(const char * const arg, const int start,
 		const int argc, char **argv)
@@ -258,7 +258,7 @@ static int grokdir(const char *dir, file_t ** const filelistp)
       }
 
       newfile = (file_t*) malloc(sizeof(file_t));
-      if (!newfile) goto oom;
+      if (!newfile) errormsg(NULL);
       else newfile->next = *filelistp;
 
       newfile->device = 0;
@@ -271,7 +271,7 @@ static int grokdir(const char *dir, file_t ** const filelistp)
       newfile->hasdupes = 0;
 
       newfile->d_name = (char*)malloc(strlen(dir)+strlen(dirinfo->d_name)+2);
-      if (!newfile->d_name) goto oom;
+      if (!newfile->d_name) errormsg(NULL);
 
       strcpy(newfile->d_name, dir);
       lastchar = strlen(dir) - 1;
@@ -346,10 +346,6 @@ static int grokdir(const char *dir, file_t ** const filelistp)
   closedir(cd);
 
   return filecount;
-
-oom:
-  errormsg("out of memory!\n");
-  exit(1);
 }
 
 /* Use Jody Bruchon's hash function on part or all of a file */
@@ -357,9 +353,10 @@ static hash_t *getcrcsignatureuntil(const char * const filename,
 		const off_t max_read)
 {
   off_t fsize;
-  off_t toread;
+  off_t bytes_to_read;
+  /* This is an array because we return a pointer to it */
   static hash_t hash[1];
-  char chunk[CHUNK_SIZE];
+  static char chunk[CHUNK_SIZE];
   FILE *file;
   struct stat s;
 
@@ -376,17 +373,17 @@ static hash_t *getcrcsignatureuntil(const char * const filename,
   }
 
   while (fsize > 0) {
-    toread = (fsize >= CHUNK_SIZE) ? CHUNK_SIZE : fsize;
-    if (fread(chunk, toread, 1, file) != 1) {
+    bytes_to_read = (fsize >= CHUNK_SIZE) ? CHUNK_SIZE : fsize;
+    if (fread(chunk, bytes_to_read, 1, file) != 1) {
       errormsg("error reading from file %s\n", filename);
       fclose(file);
       return NULL;
     }
 
     *hash = 0;
-    *hash = jody_block_hash((hash_t *)chunk, *hash, toread);
-    if (toread > fsize) fsize = 0;
-    else fsize -= toread;
+    *hash = jody_block_hash((hash_t *)chunk, *hash, bytes_to_read);
+    if (bytes_to_read > fsize) fsize = 0;
+    else fsize -= bytes_to_read;
   }
 
   fclose(file);
@@ -394,12 +391,14 @@ static hash_t *getcrcsignatureuntil(const char * const filename,
   return hash;
 }
 
+
 static inline void purgetree(filetree_t *checktree)
 {
   if (checktree->left != NULL) purgetree(checktree->left);
   if (checktree->right != NULL) purgetree(checktree->right);
   free(checktree);
 }
+
 
 static inline void getfilestats(file_t * const file)
 {
@@ -419,24 +418,23 @@ static inline void getfilestats(file_t * const file)
   return;
 }
 
-static int registerfile(filetree_t **branch, file_t *file)
+
+static inline void registerfile(filetree_t **branch, file_t *file)
 {
   getfilestats(file);
 
   *branch = (filetree_t*) malloc(sizeof(filetree_t));
-  if (*branch == NULL) {
-    errormsg("out of memory!\n");
-    exit(1);
-  }
+  if (*branch == NULL) errormsg(NULL);
 
   (*branch)->file = file;
   (*branch)->left = NULL;
   (*branch)->right = NULL;
 
-  return 1;
+  return;
 }
 
-static int same_permissions(char* name1, char* name2)
+
+static inline int same_permissions(char* name1, char* name2)
 {
     struct stat s1, s2;
 
@@ -447,6 +445,7 @@ static int same_permissions(char* name1, char* name2)
             s1.st_uid == s2.st_uid &&
             s1.st_gid == s2.st_gid);
 }
+
 
 static file_t **checkmatch(filetree_t *checktree, file_t *file)
 {
@@ -490,7 +489,7 @@ static file_t **checkmatch(filetree_t *checktree, file_t *file)
     if (checktree->file->crcpartial_set == 0) {
       crcsignature = getcrcpartialsignature(checktree->file->d_name);
       if (crcsignature == NULL) {
-        errormsg ("cannot read file %s\n", checktree->file->d_name);
+        errormsg("cannot read file %s\n", checktree->file->d_name);
         return NULL;
       }
 
@@ -501,7 +500,7 @@ static file_t **checkmatch(filetree_t *checktree, file_t *file)
     if (file->crcpartial_set == 0) {
       crcsignature = getcrcpartialsignature(file->d_name);
       if (crcsignature == NULL) {
-        errormsg ("cannot read file %s\n", file->d_name);
+        errormsg("cannot read file %s\n", file->d_name);
         return NULL;
       }
 
@@ -575,13 +574,13 @@ static file_t **checkmatch(filetree_t *checktree, file_t *file)
   return NULL;
 }
 
+
 /* Do a bit-for-bit comparison in case two different files produce the
    same signature. Unlikely, but better safe than sorry. */
-
 static inline int confirmmatch(FILE * const file1, FILE * const file2)
 {
-  unsigned char c1[CHUNK_SIZE];
-  unsigned char c2[CHUNK_SIZE];
+  static char c1[CHUNK_SIZE];
+  static char c2[CHUNK_SIZE];
   size_t r1;
   size_t r2;
 
@@ -589,8 +588,8 @@ static inline int confirmmatch(FILE * const file1, FILE * const file2)
   fseek(file2, 0, SEEK_SET);
 
   do {
-    r1 = fread(c1, sizeof(unsigned char), sizeof(c1), file1);
-    r2 = fread(c2, sizeof(unsigned char), sizeof(c2), file2);
+    r1 = fread(c1, sizeof(char), CHUNK_SIZE, file1);
+    r2 = fread(c2, sizeof(char), CHUNK_SIZE, file2);
 
     if (r1 != r2) return 0; /* file lengths are different */
     if (memcmp (c1, c2, r1)) return 0; /* file contents are different */
@@ -633,6 +632,7 @@ static void summarizematches(file_t *files)
   }
 }
 
+
 static void printmatches(file_t *files)
 {
   file_t *tmpfile;
@@ -658,6 +658,7 @@ static void printmatches(file_t *files)
     files = files->next;
   }
 }
+
 
 static void deletefiles(file_t *files, int prompt, FILE *tty)
 {
@@ -702,10 +703,7 @@ static void deletefiles(file_t *files, int prompt, FILE *tty)
   preserve = (int*) malloc(sizeof(int) * max);
   preservestr = (char*) malloc(INPUT_SIZE);
 
-  if (!dupelist || !preserve || !preservestr) {
-    errormsg("out of memory\n");
-    exit(1);
-  }
+  if (!dupelist || !preserve || !preservestr) errormsg(NULL);
 
   while (files) {
     if (files->hasdupes) {
@@ -747,10 +745,7 @@ static void deletefiles(file_t *files, int prompt, FILE *tty)
 	while (preservestr[i]!='\n') {
 	  tstr = (char*)
 	    realloc(preservestr, strlen(preservestr) + 1 + INPUT_SIZE);
-	  if (!tstr) { /* couldn't allocate memory, treat as fatal */
-	    errormsg("out of memory!\n");
-	    exit(1);
-	  }
+	  if (!tstr) errormsg(NULL);
 
 	  preservestr = tstr;
 	  if (!fgets(preservestr + i + 1, INPUT_SIZE, tty))
@@ -804,20 +799,25 @@ static void deletefiles(file_t *files, int prompt, FILE *tty)
   free(preservestr);
 }
 
+
+/* Unused
 static inline int sort_pairs_by_arrival(file_t *f1, file_t *f2)
 {
   if (f2->duplicates != 0) return 1;
 
   return -1;
 }
+*/
 
-static inline int sort_pairs_by_mtime(file_t *f1, file_t *f2)
+
+static int sort_pairs_by_mtime(file_t *f1, file_t *f2)
 {
   if (f1->mtime < f2->mtime) return -1;
   else if (f1->mtime > f2->mtime) return 1;
 
   return 0;
 }
+
 
 #define IS_NUM(a) (((a >= '0') && (a <= '9')) ? 1 : 0)
 static inline int numeric_sort(char *c1, char *c2)
@@ -898,10 +898,12 @@ static inline int numeric_sort(char *c1, char *c2)
 	return 0;
 }
 
-static inline int sort_pairs_by_filename(file_t *f1, file_t *f2)
+
+static int sort_pairs_by_filename(file_t *f1, file_t *f2)
 {
 	return numeric_sort(f1->d_name, f2->d_name);
 }
+
 
 static void registerpair(file_t **matchlist, file_t *newmatch,
 		  int (*comparef)(file_t *f1, file_t *f2))
@@ -938,8 +940,9 @@ static void registerpair(file_t **matchlist, file_t *newmatch,
   }
 }
 
+
 #ifndef NO_HARDLINKS
-static void hardlinkfiles(file_t *files)
+static inline void hardlinkfiles(file_t *files)
 {
   int counter;
   int groups = 0;
@@ -973,10 +976,7 @@ static void hardlinkfiles(file_t *files)
 
   dupelist = (file_t**) malloc(sizeof(file_t*) * max);
 
-  if (!dupelist) {
-    errormsg("out of memory\n");
-    exit(1);
-  }
+  if (!dupelist) errormsg(NULL);
 
   while (files) {
     if (files->hasdupes) {
@@ -1020,7 +1020,7 @@ static void hardlinkfiles(file_t *files)
 #endif /* NO_HARDLINKS */
 
 
-static void help_text()
+static inline void help_text()
 {
   printf("Usage: fdupes [options] DIRECTORY...\n\n");
 
