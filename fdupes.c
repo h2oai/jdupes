@@ -468,9 +468,17 @@ static file_t **checkmatch(filetree_t *checktree, file_t *file)
   /* Hard link checks always fail when building for Windows */
 #ifndef NO_HARDLINKS
   if (!ISFLAG(flags, F_CONSIDERHARDLINKS)) {
+    /* Omit hard linked files */
     if ((s.st_ino ==
         checktree->file->inode) && (s.st_dev ==
         checktree->file->device)) return NULL;
+  } else {
+    /* If considering hard linked files as duplicates, they are
+     * automatically duplicates without being read further since
+     * they point to the exact same inode. */
+    if ((s.st_ino ==
+        checktree->file->inode) && (s.st_dev ==
+        checktree->file->device)) goto confirmed_match;
   }
 #endif
 
@@ -565,6 +573,7 @@ static file_t **checkmatch(filetree_t *checktree, file_t *file)
       return NULL;
     }
   } else {
+confirmed_match:
     /* All compares matched */
     partial_to_full++;
     getfilestats(file);
