@@ -7,7 +7,7 @@
 #####################################################################
 
 #
-# PREFIX indicates the base directory used as the basis for the 
+# PREFIX indicates the base directory used as the basis for the
 # determination of the actual installation directories.
 # Suggested values are "/usr/local", "/usr", "/pkgs/fdupes-$(VERSION)"
 #
@@ -35,13 +35,13 @@ include VERSION
 PROGRAM_NAME=fdupes
 
 #
-# BIN_DIR indicates directory where program is to be installed. 
+# BIN_DIR indicates directory where program is to be installed.
 # Suggested value is "$(PREFIX)/bin"
 #
 BIN_DIR = $(PREFIX)/bin
 
 #
-# MAN_DIR indicates directory where the fdupes man page is to be 
+# MAN_DIR indicates directory where the fdupes man page is to be
 # installed. Suggested value is "$(PREFIX)/man/man1"
 #
 MAN_BASE_DIR = $(PREFIX)/share/man
@@ -58,7 +58,7 @@ INSTALL = install	# install : UCB/GNU Install compatiable
 RM      = rm -f
 
 MKDIR   = mkdir -p
-#MKDIR   = mkdirhier 
+#MKDIR   = mkdirhier
 #MKDIR   = mkinstalldirs
 
 

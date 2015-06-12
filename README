@@ -1,7 +1,7 @@
 Introduction
 --------------------------------------------------------------------
 FDUPES is a program for identifying duplicate files residing
-within specified directories. 
+within specified directories.
 
 
 Usage
@@ -44,23 +44,23 @@ Usage: fdupes [options] DIRECTORY...
  -v --version          display fdupes version
  -h --help             display this help message
 
-Unless -1 or --sameline is specified, duplicate files are listed 
+Unless -1 or --sameline is specified, duplicate files are listed
 together in groups, each file displayed on a separate line. The
 groups are then separated from each other by blank lines.
 
-When -1 or --sameline is specified, spaces and backslash characters (\) 
+When -1 or --sameline is specified, spaces and backslash characters (\)
 appearing in a filename are preceded by a backslash character. For
 instance, "with spaces" becomes "with\ spaces".
 
 When using -d or --delete, care should be taken to insure against
 accidental data loss. While no information will be immediately
-lost, using this option together with -s or --symlink can lead 
+lost, using this option together with -s or --symlink can lead
 to confusing information being presented to the user when prompted
 for files to preserve. Specifically, a user could accidentally
 preserve a symlink while deleting the file it points to. A similar
-problem arises when specifying a particular directory more than 
+problem arises when specifying a particular directory more than
 once. All files within that directory will be listed as their own
-duplicates, leading to data loss should a user preserve a file 
+duplicates, leading to data loss should a user preserve a file
 without its "duplicate" (the file itself!).
 
 
@@ -86,10 +86,10 @@ subject to the following conditions:
 The above copyright notice and this permission notice shall be
 included in all copies or substantial portions of the Software.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS 
-OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF 
-MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
-IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY 
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
-TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.

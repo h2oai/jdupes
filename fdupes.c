@@ -773,9 +773,9 @@ static void deletefiles(file_t *files, int prompt, FILE *tty)
 	}
 
 	for (x = 1; x <= counter; x++) preserve[x] = 0;
-	
+
 	token = strtok(preservestr, " ,\n");
-	
+
 	while (token != NULL) {
 	  if (strncasecmp(token, "all", 4) == 0)
 	    for (x = 0; x <= counter; x++) preserve[x] = 1;

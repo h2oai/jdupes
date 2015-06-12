@@ -3,7 +3,7 @@ to fdupes. Every item on the list includes, inside square brackets,
 a list of indentifiers referring to the people who contributed
 that particular item. When more than one person is listed the person
 who contributed the patch or idea appears first, followed by
-those who've otherwise worked on that item. For a list of 
+those who've otherwise worked on that item. For a list of
 contributors names and identifiers please see the CONTRIBUTORS file.
 
 Changes from 1.51-jody5 to 1.51-jody6 [JLB]
@@ -78,7 +78,7 @@ Changes from 1.40 to 1.50-PR2
 
 Changes from 1.31 to 1.40
 
-- Added option to omit the first file in each group 
+- Added option to omit the first file in each group
   of matches. [LM, AL]
 - Added escaping of filenames containing spaces when
   sameline option is specified. [AL]
@@ -90,7 +90,7 @@ Changes from 1.31 to 1.40
 Changes from 1.30 to 1.31
 
 - Added interactive option to preserve all files during
-  delete procedure (something similar was already in 
+  delete procedure (something similar was already in
   place, but now it's official). [AL]
 - Updated delete procedure prompt format. [AL]
 - Cosmetic code changes. [AL]
@@ -112,7 +112,7 @@ Changes from 1.12 to 1.20
   scanned were named pipes or sockets. [FD]
 - Fix against security risk resulting from the use of a
   temporary file to store md5sum output. [FD, AL]
-- Using an external md5sum program is now optional. Started 
+- Using an external md5sum program is now optional. Started
   using L. Peter Deutsh's MD5 library instead. [FD, AL]
 - Added hardlinks option to distinguish between hard links
   and actual duplicate files. [FD, AL]
@@ -121,7 +121,7 @@ Changes from 1.12 to 1.20
 
 Changes from 1.11 to 1.12
 
-- Improved handling of extremely long input on preserve 
+- Improved handling of extremely long input on preserve
   prompt (delete option). [SSD, AL]
 
 Changes from 1.1 to 1.11
