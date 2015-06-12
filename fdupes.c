@@ -22,6 +22,7 @@
 
 #include <stdio.h>
 #include <stdarg.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <dirent.h>
@@ -41,6 +42,10 @@
  #define ON_WINDOWS 1
  #define NO_SYMLINKS 1
  #define NO_HARDLINKS 1
+ #ifndef WIN32_LEAN_AND_MEAN
+  #define WIN32_LEAN_AND_MEAN
+ #endif
+ #include <windows.h>
 #endif
 
 /* How many operations to wait before updating progress counters */
@@ -478,7 +483,7 @@ static file_t **checkmatch(filetree_t *checktree, file_t *file)
      * they point to the exact same inode. */
     if ((s.st_ino ==
         checktree->file->inode) && (s.st_dev ==
-        checktree->file->device)) goto confirmed_match;
+        checktree->file->device)) goto hardlink_match;
   }
 #endif
 
@@ -573,7 +578,9 @@ static file_t **checkmatch(filetree_t *checktree, file_t *file)
       return NULL;
     }
   } else {
-confirmed_match:
+#ifndef NO_HARDLINKS
+hardlink_match:
+#endif
     /* All compares matched */
     partial_to_full++;
     getfilestats(file);
