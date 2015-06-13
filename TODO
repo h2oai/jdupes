@@ -61,3 +61,14 @@
 
 - Do a little commenting, to avoid rolling eyes and/or snickering.
 
+- Add a way to store stat() info + inital and full hashes for
+  explicit loading in future runs to speed up repeated calls to
+  the program.
+
+- Add an option to exclude files in the same directory from being
+  matched. This should be extensible so that various exclusion
+  criteria can be added later.
+  - Also add code to make directory ordering of pair matching more
+    stable; for instance, if dirs 'foo' and 'bar' are specified,
+    always put 'foo' at the start of the dupe set (which makes it
+    take precedence over 'bar' in this example.)
