@@ -66,7 +66,7 @@ MKDIR   = mkdir -p
 # Make Configuration
 #
 CC ?= gcc
-COMPILER_OPTIONS = -Wall -pedantic -std=gnu99 -O2 -g -D_FILE_OFFSET_BITS=64
+COMPILER_OPTIONS = -Wall -Wextra -pedantic -std=gnu99 -O2 -g -D_FILE_OFFSET_BITS=64
 
 # MinGW needs this for printf() conversions to work
 ifeq ($(OS), Windows_NT)

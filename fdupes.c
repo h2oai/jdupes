@@ -154,8 +154,8 @@ static void errormsg(char *message, ...)
 
 static void escapefilename(char *escape_list, char **filename_ptr)
 {
-  int x;
-  int tx;
+  unsigned int x;
+  unsigned int tx;
   char *tmp;
   char *filename;
 
@@ -181,7 +181,7 @@ static void escapefilename(char *escape_list, char **filename_ptr)
 
 static inline char **cloneargs(const int argc, char **argv)
 {
-  unsigned int x;
+  int x;
   char **args;
 
   args = (char **) malloc(sizeof(char*) * argc);
@@ -200,7 +200,7 @@ static inline char **cloneargs(const int argc, char **argv)
 static int findarg(const char * const arg, const int start,
 		const int argc, char **argv)
 {
-  unsigned int x;
+  int x;
 
   for (x = start; x < argc; x++)
     if (strcmp(argv[x], arg) == 0)
