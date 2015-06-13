@@ -361,7 +361,7 @@ static hash_t *getcrcsignatureuntil(const char * const filename,
   off_t bytes_to_read;
   /* This is an array because we return a pointer to it */
   static hash_t hash[1];
-  static char chunk[CHUNK_SIZE];
+  static hash_t chunk[(CHUNK_SIZE / sizeof(hash_t))];
   FILE *file;
   struct stat s;
 
@@ -379,15 +379,15 @@ static hash_t *getcrcsignatureuntil(const char * const filename,
 
   while (fsize > 0) {
     bytes_to_read = (fsize >= CHUNK_SIZE) ? CHUNK_SIZE : fsize;
-    if (fread(chunk, bytes_to_read, 1, file) != 1) {
+    if (fread((void *)chunk, bytes_to_read, 1, file) != 1) {
       errormsg("error reading from file %s\n", filename);
       fclose(file);
       return NULL;
     }
 
     *hash = 0;
-    *hash = jody_block_hash((hash_t *)chunk, *hash, bytes_to_read);
-    if (bytes_to_read > fsize) fsize = 0;
+    *hash = jody_block_hash(chunk, *hash, bytes_to_read);
+    if (bytes_to_read > fsize) break;
     else fsize -= bytes_to_read;
   }
 
