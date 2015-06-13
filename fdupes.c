@@ -1,5 +1,6 @@
-/* FDUPES Copyright (c) 1999-2002 Adrian Lopez
+/* FDUPES Copyright (c) 1999-2015 Adrian Lopez
    Ported to MinGW by Jody Bruchon <jody@jodybruchon.com>
+   Includes jody_hash (C) 2015 by Jody Bruchon
 
    Permission is hereby granted, free of charge, to any person
    obtaining a copy of this software and associated documentation files
@@ -1077,7 +1078,7 @@ static inline void help_text()
   printf("                  \tpermission bits as duplicates\n");
   printf(" -o --order=BY    \tselect sort order for output, linking and deleting; by\n");
   printf("                  \tmtime (BY='time'; default) or filename (BY='name')\n");
-  printf(" -v --version     \tdisplay fdupes version\n");
+  printf(" -v --version     \tdisplay fdupes version and license information\n");
   printf(" -h --help        \tdisplay this help message\n\n");
 #ifdef OMIT_GETOPT_LONG
   printf("Note: Long options are not supported in this fdupes build.\n\n");
@@ -1222,6 +1223,25 @@ int main(int argc, char **argv) {
       break;
     case 'v':
       printf("fdupes %s\n", VERSION);
+      printf("\nCopyright (c) 1999-2015 Adrian Lopez\n");
+      printf("Ported to MinGW by Jody Bruchon <jody@jodybruchon.com>\n");
+      printf("Includes jody_hash (C) 2015 by Jody Bruchon\n\n");
+      printf("Permission is hereby granted, free of charge, to any person\n");
+      printf("obtaining a copy of this software and associated documentation files\n");
+      printf("(the \"Software\"), to deal in the Software without restriction,\n");
+      printf("including without limitation the rights to use, copy, modify, merge,\n");
+      printf("publish, distribute, sublicense, and/or sell copies of the Software,\n");
+      printf("and to permit persons to whom the Software is furnished to do so,\n");
+      printf("subject to the following conditions:\n\n");
+      printf("The above copyright notice and this permission notice shall be\n");
+      printf("included in all copies or substantial portions of the Software.\n\n");
+      printf("THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS\n");
+      printf("OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF\n");
+      printf("MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.\n");
+      printf("IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY\n");
+      printf("CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,\n");
+      printf("TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE\n");
+      printf("SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.\n");
       exit(0);
     case 'h':
       help_text();
