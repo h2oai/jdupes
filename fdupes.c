@@ -617,8 +617,12 @@ static inline int confirmmatch(FILE * const file1, FILE * const file2)
 
 static void summarizematches(file_t *files)
 {
-  int numsets = 0;
+  unsigned int numsets = 0;
+#ifdef NO_FLOAT
+  off_t numbytes = 0;
+#else
   double numbytes = 0.0;
+#endif /* NO_FLOAT */
   int numfiles = 0;
   file_t *tmpfile;
 
@@ -639,13 +643,16 @@ static void summarizematches(file_t *files)
     printf("No duplicates found.\n");
   else
   {
-    if (numbytes < 1024.0)
-      printf("%d duplicate files (in %d sets), occupying %.0f bytes.\n", numfiles, numsets, numbytes);
-    else if (numbytes <= (1000.0 * 1000.0))
-      printf("%d duplicate files (in %d sets), occupying %.1f kilobytes\n", numfiles, numsets, numbytes / 1000.0);
-    else
-      printf("%d duplicate files (in %d sets), occupying %.1f megabytes\n", numfiles, numsets, numbytes / (1000.0 * 1000.0));
-
+    printf("%d duplicate files (in %d sets), occupying ", numfiles, numsets);
+#ifdef NO_FLOAT
+    if (numbytes < 1000) printf("%ld bytes\n", numbytes);
+    else if (numbytes <= 1000000) printf("%ld KB\n", numbytes / 1000);
+    else printf("%ld MB\n", numbytes / 1000000);
+#else
+    if (numbytes < 1000.0) printf("%.0f bytes\n", numbytes);
+    else if (numbytes <= (1000.0 * 1000.0)) printf("%.1f KB\n", numbytes / 1000.0);
+    else printf("%.1f MB\n", numbytes / (1000.0 * 1000.0));
+#endif /* NO_FLOAT */
   }
 }
 

@@ -17,8 +17,15 @@ PREFIX = /usr/local
 # Certain platforms do not support long options (command line options).
 # To disable long options, uncomment the following line.
 #
-#OMIT_GETOPT_LONG = -DOMIT_GETOPT_LONG
+#CFLAGS_CONFIG += -DOMIT_GETOPT_LONG
 
+#
+# 'Summarize matches' can use floating point calculations and show
+# summaries with fractional amounts. Floating point support can add
+# code and in some instances is better to avoid. Uncomment this line
+# to only use integer arithmetic and drop all floating point code.
+#
+CFLAGS_CONFIG += -DNO_FLOAT
 
 #####################################################################
 # Developer Configuration Section                                   #
@@ -66,15 +73,15 @@ MKDIR   = mkdir -p
 # Make Configuration
 #
 CC ?= gcc
-COMPILER_OPTIONS = -Wall -Wextra -Wcast-align -Wstrict-aliasing=2 -fstrict-aliasing -pedantic
-COMPILER_OPTIONS += -std=gnu99 -O2 -g -D_FILE_OFFSET_BITS=64
+COMPILER_OPTIONS = -Wall -Wextra -Wcast-align -Wstrict-aliasing -pedantic -Wstrict-overflow
+COMPILER_OPTIONS += -std=gnu99 -O2 -g -D_FILE_OFFSET_BITS=64 -fstrict-aliasing
 
 # MinGW needs this for printf() conversions to work
 ifeq ($(OS), Windows_NT)
 	COMPILER_OPTIONS += -D__USE_MINGW_ANSI_STDIO=1
 endif
 
-CFLAGS= $(COMPILER_OPTIONS) -I. -DVERSION=\"$(VERSION)\" $(OMIT_GETOPT_LONG) $(CFLAGS_EXTRA)
+CFLAGS= $(COMPILER_OPTIONS) -I. -DVERSION=\"$(VERSION)\" $(CFLAGS_CONFIG) $(CFLAGS_EXTRA)
 
 INSTALL_PROGRAM = $(INSTALL) -c -m 0755
 INSTALL_DATA    = $(INSTALL) -c -m 0644
