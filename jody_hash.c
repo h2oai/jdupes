@@ -44,6 +44,9 @@ extern hash_t jody_block_hash(const hash_t * restrict data,
 	unsigned int len;
 	hash_t tail;
 
+	/* Don't bother trying to hash a zero-length block */
+	if (count == 0) return hash;
+
 	len = count / sizeof(hash_t);
 	for (; len > 0; len--) {
 		element = *data;

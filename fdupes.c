@@ -99,7 +99,11 @@ typedef struct _file {
   hash_t crcsignature;
   dev_t device;
   ino_t inode;
+  mode_t mode;
+  uid_t uid;
+  gid_t gid;
   time_t mtime;
+  uint_fast8_t valid_stat; /* Only call stat() once per file */
   uint_fast8_t hasdupes; /* true only if file is first on duplicate chain */
   uint_fast8_t crcpartial_set;  /* 1 = crcpartial is valid */
   uint_fast8_t crcsignature_set;  /* 1 = crcsignature is valid */
@@ -230,20 +234,50 @@ static int nonoptafter(const char *option, const int argc,
   return x;
 }
 
-static int grokdir(const char *dir, file_t ** const filelistp)
+
+static inline void getfilestats(file_t * const restrict file)
+{
+  static struct stat s;
+
+  /* Don't stat() the same file more than once */
+  if (file->valid_stat == 1) return;
+  file->valid_stat = 1;
+
+  if (stat(file->d_name, &s) != 0) {
+/* These are already set during file entry initialization */
+    /* file->size = -1;
+    file->inode = 0;
+    file->device = 0;
+    file->mtime = 0;
+    file->mode = 0;
+    file->uid = 0;
+    file->gid = 0; */
+    return;
+  }
+  file->size = s.st_size;
+  file->inode = s.st_ino;
+  file->device = s.st_dev;
+  file->mtime = s.st_mtime;
+  file->mode = s.st_mode;
+  file->uid = s.st_uid;
+  file->gid = s.st_gid;
+  return;
+}
+
+
+static int grokdir(const char * const restrict dir, file_t ** const restrict filelistp)
 {
   DIR *cd;
   file_t *newfile;
-  struct dirent *dirinfo;
+  static struct dirent *dirinfo;
   int lastchar;
   int filecount = 0;
-  struct stat info;
 #ifndef NO_SYMLINKS
-  struct stat linfo;
+  static struct stat linfo;
 #endif
   static int progress = 0;
   static int delay = DELAY_COUNT;
-  static char indicator[] = "-\\|/";
+  static const char indicator[] = "-\\|/";
   char *fullname, *name;
 
   cd = opendir(dir);
@@ -263,12 +297,19 @@ static int grokdir(const char *dir, file_t ** const filelistp)
         } else delay++;
       }
 
-      newfile = (file_t*) malloc(sizeof(file_t));
+      /* Initialize to zero at allocation so we don't have to */
+      newfile = (file_t *)malloc(sizeof(file_t));
       if (!newfile) errormsg(NULL);
       else newfile->next = *filelistp;
 
+      newfile->size = -1;
       newfile->device = 0;
       newfile->inode = 0;
+      newfile->mtime = 0;
+      newfile->mode = 0;
+      newfile->uid = 0;
+      newfile->gid = 0;
+      newfile->valid_stat = 0;
       newfile->crcsignature_set = 0;
       newfile->crcsignature = 0;
       newfile->crcpartial_set = 0;
@@ -296,25 +337,30 @@ static int grokdir(const char *dir, file_t ** const filelistp)
         free(fullname);
       }
 
-      if (stat(newfile->d_name, &info) == -1) {
+      /* Get file information and check for validity */
+      getfilestats(newfile);
+      if (newfile->size == -1) {
 	free(newfile->d_name);
 	free(newfile);
 	continue;
       }
 
-      if (!S_ISDIR(info.st_mode) && info.st_size == 0 && ISFLAG(flags, F_EXCLUDEEMPTY)) {
+      /* Exclude zero-length files if requested */
+      if (!S_ISDIR(newfile->mode) && newfile->size == 0 && ISFLAG(flags, F_EXCLUDEEMPTY)) {
 	free(newfile->d_name);
 	free(newfile);
 	continue;
       }
 
-      if (!S_ISDIR(info.st_mode) && ISFLAG(flags, F_EXCLUDESIZE) && info.st_size < excludesize) {
+      /* Exclude files below --xsize parameter */
+      if (!S_ISDIR(newfile->mode) && ISFLAG(flags, F_EXCLUDESIZE) && newfile->size < excludesize) {
 	free(newfile->d_name);
 	free(newfile);
 	continue;
       }
 
 #ifndef NO_SYMLINKS
+      /* Get lstat() information */
       if (lstat(newfile->d_name, &linfo) == -1) {
 	free(newfile->d_name);
 	free(newfile);
@@ -322,7 +368,8 @@ static int grokdir(const char *dir, file_t ** const filelistp)
       }
 #endif
 
-      if (S_ISDIR(info.st_mode)) {
+      /* Optionally recurse directories, including symlinked ones if requested */
+      if (S_ISDIR(newfile->mode)) {
 #ifndef NO_SYMLINKS
 	if (ISFLAG(flags, F_RECURSE) && (ISFLAG(flags, F_FOLLOWLINKS) || !S_ISLNK(linfo.st_mode)))
           filecount += grokdir(newfile->d_name, filelistp);
@@ -333,12 +380,12 @@ static int grokdir(const char *dir, file_t ** const filelistp)
 	free(newfile->d_name);
 	free(newfile);
       } else {
+        /* Add regular files to list, including symlink targets if requested */
 #ifndef NO_SYMLINKS
         if (S_ISREG(linfo.st_mode) || (S_ISLNK(linfo.st_mode) && ISFLAG(flags, F_FOLLOWLINKS))) {
 #else
-        if (S_ISREG(info.st_mode)) {
+        if (S_ISREG(newfile->mode)) {
 #endif
-          newfile->size = info.st_size;
 	  *filelistp = newfile;
 	  filecount++;
 	} else {
@@ -355,7 +402,7 @@ static int grokdir(const char *dir, file_t ** const filelistp)
 }
 
 /* Use Jody Bruchon's hash function on part or all of a file */
-static hash_t *getcrcsignatureuntil(const char * const filename,
+static hash_t *getcrcsignatureuntil(file_t * const checkfile,
 		const off_t max_read)
 {
   off_t fsize;
@@ -364,24 +411,24 @@ static hash_t *getcrcsignatureuntil(const char * const filename,
   static hash_t hash[1];
   static hash_t chunk[(CHUNK_SIZE / sizeof(hash_t))];
   FILE *file;
-  struct stat s;
 
-  if (stat(filename, &s) == -1) return NULL;
-  fsize = s.st_size;
+  getfilestats(checkfile);
+  if (checkfile->size == -1) return NULL;
+  fsize = checkfile->size;
 
   if (max_read != 0 && fsize > max_read)
     fsize = max_read;
 
-  file = fopen(filename, "rb");
+  file = fopen(checkfile->d_name, "rb");
   if (file == NULL) {
-    errormsg("error opening file %s\n", filename);
+    errormsg("error opening file %s\n", checkfile->d_name);
     return NULL;
   }
 
   while (fsize > 0) {
     bytes_to_read = (fsize >= CHUNK_SIZE) ? CHUNK_SIZE : fsize;
     if (fread((void *)chunk, bytes_to_read, 1, file) != 1) {
-      errormsg("error reading from file %s\n", filename);
+      errormsg("error reading from file %s\n", checkfile->d_name);
       fclose(file);
       return NULL;
     }
@@ -406,25 +453,6 @@ static inline void purgetree(filetree_t *checktree)
 }
 
 
-static inline void getfilestats(file_t * const file)
-{
-  struct stat s;
-
-  if (stat(file->d_name, &s) != 0) {
-    file->size = -1;
-    file->inode = 0;
-    file->device = 0;
-    file->mtime = 0;
-    return;
-  }
-  file->size = s.st_size;
-  file->inode = s.st_ino;
-  file->device = s.st_dev;
-  file->mtime = s.st_mtime;
-  return;
-}
-
-
 static inline void registerfile(filetree_t **branch, file_t *file)
 {
   getfilestats(file);
@@ -440,68 +468,51 @@ static inline void registerfile(filetree_t **branch, file_t *file)
 }
 
 
-static inline int same_permissions(char* name1, char* name2)
+static file_t **checkmatch(filetree_t * const restrict checktree,
+		file_t * const restrict file)
 {
-    struct stat s1, s2;
-
-    if (stat(name1, &s1) != 0) return -1;
-    if (stat(name2, &s2) != 0) return -1;
-
-    return (s1.st_mode == s2.st_mode &&
-            s1.st_uid == s2.st_uid &&
-            s1.st_gid == s2.st_gid);
-}
-
-
-static file_t **checkmatch(filetree_t *checktree, file_t *file)
-{
-  int cmpresult;
+  int cmpresult = 0;
   hash_t *crcsignature;
-  off_t fsize;
-  struct stat s;
 
   /* If device and inode fields are equal one of the files is a
-     hard link to the other or the files have been listed twice
-     unintentionally. We don't want to flag these files as
-     duplicates unless the user specifies otherwise.
-  */
+   * hard link to the other or the files have been listed twice
+   * unintentionally. We don't want to flag these files as
+   * duplicates unless the user specifies otherwise. */
 
-  if (stat(file->d_name, &s)) {
-    s.st_size = -1;
-    s.st_ino = 0;
-    s.st_dev = 0;
-  }
+  getfilestats(file);
+
   /* Hard link checks always fail when building for Windows */
 #ifndef NO_HARDLINKS
   if (!ISFLAG(flags, F_CONSIDERHARDLINKS)) {
     /* Omit hard linked files */
-    if ((s.st_ino ==
-        checktree->file->inode) && (s.st_dev ==
+    if ((file->inode ==
+        checktree->file->inode) && (file->device ==
         checktree->file->device)) return NULL;
   } else {
     /* If considering hard linked files as duplicates, they are
      * automatically duplicates without being read further since
      * they point to the exact same inode. */
-    if ((s.st_ino ==
-        checktree->file->inode) && (s.st_dev ==
+    if ((file->inode ==
+        checktree->file->inode) && (file->device ==
         checktree->file->device)) goto hardlink_match;
   }
 #endif
 
-  fsize = s.st_size;
-
   /* Exclude files that are not the same size */
-  if (fsize < checktree->file->size) cmpresult = -1;
-  else if (fsize > checktree->file->size) cmpresult = 1;
+  if (file->size < checktree->file->size) cmpresult = -1;
+  else if (file->size > checktree->file->size) cmpresult = 1;
   /* Exclude files by permissions if requested */
-  else if (ISFLAG(flags, F_PERMISSIONS) &&
-        !same_permissions(file->d_name, checktree->file->d_name))
-        cmpresult = -1;
+  else if (ISFLAG(flags, F_PERMISSIONS)) {
+        if (file->mode != checktree->file->mode ||
+            file->uid  != checktree->file->uid  ||
+            file->gid  != checktree->file->gid)
+          cmpresult = -1;
+  }
   else {
     /* Attempt to exclude files quickly with partial file hashing */
     partial_hash++;
     if (checktree->file->crcpartial_set == 0) {
-      crcsignature = getcrcpartialsignature(checktree->file->d_name);
+      crcsignature = getcrcpartialsignature(checktree->file);
       if (crcsignature == NULL) {
         errormsg("cannot read file %s\n", checktree->file->d_name);
         return NULL;
@@ -512,7 +523,7 @@ static file_t **checkmatch(filetree_t *checktree, file_t *file)
     }
 
     if (file->crcpartial_set == 0) {
-      crcsignature = getcrcpartialsignature(file->d_name);
+      crcsignature = getcrcpartialsignature(file);
       if (crcsignature == NULL) {
         errormsg("cannot read file %s\n", file->d_name);
         return NULL;
@@ -539,7 +550,7 @@ static file_t **checkmatch(filetree_t *checktree, file_t *file)
     } else if (cmpresult == 0) {
       /* If partial match was correct, perform a full file hash match */
       if (checktree->file->crcsignature_set == 0) {
-	crcsignature = getcrcsignature(checktree->file->d_name);
+	crcsignature = getcrcsignature(checktree->file);
 	if (crcsignature == NULL) return NULL;
 
 	checktree->file->crcsignature = *crcsignature;
@@ -547,7 +558,7 @@ static file_t **checkmatch(filetree_t *checktree, file_t *file)
       }
 
       if (file->crcsignature_set == 0) {
-	crcsignature = getcrcsignature(file->d_name);
+	crcsignature = getcrcsignature(file);
 	if (crcsignature == NULL) return NULL;
 
 	file->crcsignature = *crcsignature;
