@@ -431,10 +431,11 @@ static int grokdir(const char * const restrict dir, file_t ** const restrict fil
         } else delay++;
       }
 
-      /* Initialize to zero at allocation so we don't have to */
-      newfile = (file_t *)malloc(sizeof(file_t));
+      /* Allocate the file_t and the d_name entries in one shot */
+      newfile = (file_t *)malloc(sizeof(file_t) + strlen(dir) + strlen(dirinfo->d_name) + 2);
       if (!newfile) errormsg(NULL);
       else newfile->next = *filelistp;
+      newfile->d_name = (char *)newfile + sizeof(file_t);
 
       newfile->size = -1;
       newfile->device = 0;
@@ -453,9 +454,6 @@ static int grokdir(const char * const restrict dir, file_t ** const restrict fil
       newfile->duplicates = NULL;
       newfile->hasdupes = 0;
 
-      newfile->d_name = string_malloc(strlen(dir)+strlen(dirinfo->d_name)+2);
-      if (!newfile->d_name) errormsg(NULL);
-
       strcpy(newfile->d_name, dir);
       lastchar = strlen(dir) - 1;
       if (lastchar >= 0 && dir[lastchar] != '/')
@@ -466,8 +464,7 @@ static int grokdir(const char * const restrict dir, file_t ** const restrict fil
         fullname = strdup(newfile->d_name);
         name = basename(fullname);
         if (name[0] == '.' && strcmp(name, ".") && strcmp(name, "..")) {
-          string_free(newfile->d_name);
-          free(newfile);
+          string_free((char *)newfile);
           continue;
         }
         free(fullname);
@@ -476,30 +473,26 @@ static int grokdir(const char * const restrict dir, file_t ** const restrict fil
       /* Get file information and check for validity */
       getfilestats(newfile);
       if (newfile->size == -1) {
-	string_free(newfile->d_name);
-	free(newfile);
+	string_free((char *)newfile);
 	continue;
       }
 
       /* Exclude zero-length files if requested */
       if (!S_ISDIR(newfile->mode) && newfile->size == 0 && ISFLAG(flags, F_EXCLUDEEMPTY)) {
-	string_free(newfile->d_name);
-	free(newfile);
+	string_free((char *)newfile);
 	continue;
       }
 
       /* Exclude files below --xsize parameter */
       if (!S_ISDIR(newfile->mode) && ISFLAG(flags, F_EXCLUDESIZE) && newfile->size < excludesize) {
-	string_free(newfile->d_name);
-	free(newfile);
+	string_free((char *)newfile);
 	continue;
       }
 
 #ifndef NO_SYMLINKS
       /* Get lstat() information */
       if (lstat(newfile->d_name, &linfo) == -1) {
-	string_free(newfile->d_name);
-	free(newfile);
+	string_free((char *)newfile);
 	continue;
       }
 #endif
@@ -513,8 +506,7 @@ static int grokdir(const char * const restrict dir, file_t ** const restrict fil
 	if (ISFLAG(flags, F_RECURSE))
           filecount += grokdir(newfile->d_name, filelistp);
 #endif
-	string_free(newfile->d_name);
-	free(newfile);
+	string_free((char *)newfile);
       } else {
         /* Add regular files to list, including symlink targets if requested */
 #ifndef NO_SYMLINKS
@@ -525,8 +517,7 @@ static int grokdir(const char * const restrict dir, file_t ** const restrict fil
 	  *filelistp = newfile;
 	  filecount++;
 	} else {
-	  string_free(newfile->d_name);
-	  free(newfile);
+	  string_free((char *)newfile);
 	}
       }
     }
@@ -1542,11 +1533,13 @@ int main(int argc, char **argv) {
     }
   }
 
+  /*
   while (files) {
     curfile = files->next;
     free(files);
     files = curfile;
   }
+  */
 
   purgetree(checktree);
   string_malloc_destroy();
