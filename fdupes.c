@@ -43,7 +43,7 @@
  #define ON_WINDOWS 1
  #define NO_SYMLINKS 1
  #define NO_HARDLINKS 1
- #define NO_UID_GID 1
+ #define NO_PERMS 1
  #ifndef WIN32_LEAN_AND_MEAN
   #define WIN32_LEAN_AND_MEAN
  #endif
@@ -100,8 +100,8 @@ typedef struct _file {
   hash_t crcsignature;
   dev_t device;
   ino_t inode;
+#ifndef NO_PERMS
   mode_t mode;
-#ifndef NO_UID_GID
   uid_t uid;
   gid_t gid;
 #endif
@@ -164,15 +164,13 @@ static void escapefilename(char *escape_list, char **filename_ptr)
 {
   unsigned int x;
   unsigned int tx;
-  char *tmp;
+  static char tmp[8192];
   char *filename;
 
   filename = *filename_ptr;
 
-  tmp = (char*) malloc(strlen(filename) * 2 + 1);
-  if (tmp == NULL) errormsg(NULL);
-
   for (x = 0, tx = 0; x < strlen(filename); x++) {
+    if (tx >= 8192) errormsg("escapefilename() path overflow");
     if (strchr(escape_list, filename[x]) != NULL) tmp[tx++] = '\\';
     tmp[tx++] = filename[x];
   }
@@ -261,8 +259,8 @@ static inline void getfilestats(file_t * const restrict file)
   file->inode = s.st_ino;
   file->device = s.st_dev;
   file->mtime = s.st_mtime;
+#ifndef NO_PERMS
   file->mode = s.st_mode;
-#ifndef NO_UID_GID
   file->uid = s.st_uid;
   file->gid = s.st_gid;
 #endif
@@ -312,7 +310,7 @@ static int grokdir(const char * const restrict dir, file_t ** const restrict fil
       newfile->inode = 0;
       newfile->mtime = 0;
       newfile->mode = 0;
-#ifndef NO_UID_GID
+#ifndef NO_PERMS
       newfile->uid = 0;
       newfile->gid = 0;
 #endif
@@ -509,15 +507,14 @@ static file_t **checkmatch(filetree_t * const restrict checktree,
   if (file->size < checktree->file->size) cmpresult = -1;
   else if (file->size > checktree->file->size) cmpresult = 1;
   /* Exclude files by permissions if requested */
+#ifndef NO_PERMS
   else if (ISFLAG(flags, F_PERMISSIONS) &&
             (file->mode != checktree->file->mode
-#ifndef NO_UID_GID
             || file->uid != checktree->file->uid
             || file->gid != checktree->file->gid
+	    )) cmpresult = -1;
 #endif
-	    )) {
-	  cmpresult = -1;
-  } else {
+  else {
     /* Attempt to exclude files quickly with partial file hashing */
     partial_hash++;
     if (checktree->file->crcpartial_set == 0) {
@@ -1101,10 +1098,12 @@ static inline void help_text()
   printf(" -N --noprompt    \ttogether with --delete, preserve the first file in\n");
   printf("                  \teach set of duplicates and delete the rest without\n");
   printf("                  \tprompting the user\n");
+#ifndef NO_PERMS
   printf(" -p --permissions \tdon't consider files with different owner/group or\n");
   printf("                  \tpermission bits as duplicates\n");
+#endif
   printf(" -o --order=BY    \tselect sort order for output, linking and deleting; by\n");
-  printf("                  \tmtime (BY='time'; default) or filename (BY='name')\n");
+  printf("                  \tmtime (BY=time; default) or filename (BY=name)\n");
   printf(" -v --version     \tdisplay fdupes version and license information\n");
   printf(" -h --help        \tdisplay this help message\n\n");
 #ifdef OMIT_GETOPT_LONG
@@ -1156,7 +1155,9 @@ int main(int argc, char **argv) {
     { "noprompt", 0, 0, 'N' },
     { "summarize", 0, 0, 'm'},
     { "summary", 0, 0, 'm' },
+#ifndef NO_PERMS
     { "permissions", 0, 0, 'p' },
+#endif
     { "order", 1, 0, 'o' },
     { 0, 0, 0, 0 }
   };
@@ -1170,15 +1171,7 @@ int main(int argc, char **argv) {
   oldargv = cloneargs(argc, argv);
 
   while ((opt = GETOPT(argc, argv,
-#ifndef ON_WINDOWS
   "frRq1SsHLnx:AdvhNmpo:"
-#else
-  #ifdef NO_SYMLINKS
-  "frRq1Snx:AdvhNmpo:"
-  #else
-  "frRq1Ssnx:AdvhNmpo:"
-  #endif /* NO_SYMLINKS */
-#endif /* ON_WINDOWS */
 #ifndef OMIT_GETOPT_LONG
           , long_options, NULL
 #endif
