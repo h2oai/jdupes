@@ -100,8 +100,8 @@ typedef struct _file {
   hash_t crcsignature;
   dev_t device;
   ino_t inode;
-#ifndef NO_PERMS
   mode_t mode;
+#ifndef NO_PERMS
   uid_t uid;
   gid_t gid;
 #endif
@@ -259,8 +259,8 @@ static inline void getfilestats(file_t * const restrict file)
   file->inode = s.st_ino;
   file->device = s.st_dev;
   file->mtime = s.st_mtime;
-#ifndef NO_PERMS
   file->mode = s.st_mode;
+#ifndef NO_PERMS
   file->uid = s.st_uid;
   file->gid = s.st_gid;
 #endif
@@ -507,13 +507,13 @@ static file_t **checkmatch(filetree_t * const restrict checktree,
   if (file->size < checktree->file->size) cmpresult = -1;
   else if (file->size > checktree->file->size) cmpresult = 1;
   /* Exclude files by permissions if requested */
-#ifndef NO_PERMS
   else if (ISFLAG(flags, F_PERMISSIONS) &&
             (file->mode != checktree->file->mode
+#ifndef NO_PERMS
             || file->uid != checktree->file->uid
             || file->gid != checktree->file->gid
-	    )) cmpresult = -1;
 #endif
+	    )) cmpresult = -1;
   else {
     /* Attempt to exclude files quickly with partial file hashing */
     partial_hash++;
