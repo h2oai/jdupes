@@ -43,6 +43,7 @@
  #define ON_WINDOWS 1
  #define NO_SYMLINKS 1
  #define NO_HARDLINKS 1
+ #define NO_UID_GID 1
  #ifndef WIN32_LEAN_AND_MEAN
   #define WIN32_LEAN_AND_MEAN
  #endif
@@ -100,8 +101,10 @@ typedef struct _file {
   dev_t device;
   ino_t inode;
   mode_t mode;
+#ifndef NO_UID_GID
   uid_t uid;
   gid_t gid;
+#endif
   time_t mtime;
   uint_fast8_t valid_stat; /* Only call stat() once per file */
   uint_fast8_t hasdupes; /* true only if file is first on duplicate chain */
@@ -259,8 +262,10 @@ static inline void getfilestats(file_t * const restrict file)
   file->device = s.st_dev;
   file->mtime = s.st_mtime;
   file->mode = s.st_mode;
+#ifndef NO_UID_GID
   file->uid = s.st_uid;
   file->gid = s.st_gid;
+#endif
   return;
 }
 
@@ -307,8 +312,10 @@ static int grokdir(const char * const restrict dir, file_t ** const restrict fil
       newfile->inode = 0;
       newfile->mtime = 0;
       newfile->mode = 0;
+#ifndef NO_UID_GID
       newfile->uid = 0;
       newfile->gid = 0;
+#endif
       newfile->valid_stat = 0;
       newfile->crcsignature_set = 0;
       newfile->crcsignature = 0;
@@ -502,13 +509,15 @@ static file_t **checkmatch(filetree_t * const restrict checktree,
   if (file->size < checktree->file->size) cmpresult = -1;
   else if (file->size > checktree->file->size) cmpresult = 1;
   /* Exclude files by permissions if requested */
-  else if (ISFLAG(flags, F_PERMISSIONS)) {
-        if (file->mode != checktree->file->mode ||
-            file->uid  != checktree->file->uid  ||
-            file->gid  != checktree->file->gid)
-          cmpresult = -1;
-  }
-  else {
+  else if (ISFLAG(flags, F_PERMISSIONS) &&
+            (file->mode != checktree->file->mode
+#ifndef NO_UID_GID
+            || file->uid != checktree->file->uid
+            || file->gid != checktree->file->gid
+#endif
+	    )) {
+	  cmpresult = -1;
+  } else {
     /* Attempt to exclude files quickly with partial file hashing */
     partial_hash++;
     if (checktree->file->crcpartial_set == 0) {
@@ -656,9 +665,9 @@ static void summarizematches(file_t *files)
   {
     printf("%d duplicate files (in %d sets), occupying ", numfiles, numsets);
 #ifdef NO_FLOAT
-    if (numbytes < 1000) printf("%ld bytes\n", numbytes);
-    else if (numbytes <= 1000000) printf("%ld KB\n", numbytes / 1000);
-    else printf("%ld MB\n", numbytes / 1000000);
+    if (numbytes < 1000) printf("%jd byte%c\n", numbytes, (numbytes != 1) ? 's' : ' ');
+    else if (numbytes <= 1000000) printf("%jd KB\n", numbytes / 1000);
+    else printf("%jd MB\n", numbytes / 1000000);
 #else
     if (numbytes < 1000.0) printf("%.0f bytes\n", numbytes);
     else if (numbytes <= (1000.0 * 1000.0)) printf("%.1f KB\n", numbytes / 1000.0);
