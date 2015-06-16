@@ -123,8 +123,139 @@ typedef struct _filetree {
 /* Hash/compare performance statistics */
 int small_file = 0, partial_hash = 0, partial_to_full = -1, hash_fail = 0;
 
-
 /***** End definitions, begin code *****/
+
+/*
+ * String table allocator
+ * A replacement for malloc() for tables of fixed strings
+ *
+ * Copyright (C) 2015 by Jody Bruchon <jody@jodybruchon.com>
+ * Released under The MIT License or GNU GPL v2 (your choice)
+ *
+ * Included here using the license for this software
+ * (Inlined for performance reasons)
+ */
+
+/* Must be divisible by uintptr_t */
+#define SMA_PAGE_SIZE 65536
+
+static char *sma_head = NULL;
+static uintptr_t *sma_lastpage = NULL;
+static unsigned int sma_pages = 0;
+static unsigned int sma_lastfree = 0;
+static unsigned int sma_nextfree = sizeof(uintptr_t);
+
+
+void dump_string_table(void)
+{
+	char *p = sma_head;
+	unsigned int i = sizeof(uintptr_t);
+	int pg = sma_pages;
+
+	while (pg > 0) {
+		while (i < SMA_PAGE_SIZE && *(p+i) == '\0') i++;
+		i += strlen(p+i);
+		if (pg <= 1 && i >= sma_nextfree) return;
+		if (i < SMA_PAGE_SIZE) i++;
+		else {
+			p = (char *)*(uintptr_t *)p;
+			pg--;
+			i = sizeof(uintptr_t);
+		}
+		if (p == NULL) return;
+	}
+
+	return;
+}
+
+
+static inline char *string_malloc_page(void)
+{
+	uintptr_t * restrict pageptr;
+
+	/* Allocate page and set up pointers at page starts */
+	pageptr = (uintptr_t *)malloc(SMA_PAGE_SIZE);
+	if (pageptr == NULL) return NULL;
+	*pageptr = (uintptr_t)NULL;
+
+	/* Link previous page to this page, if applicable */
+	if (sma_lastpage != NULL) *sma_lastpage = (uintptr_t)pageptr;
+
+	/* Update last page pointers and total page counter */
+	sma_lastpage = pageptr;
+	sma_pages++;
+
+	return (char *)pageptr;
+}
+
+
+static char *string_malloc(const int len)
+{
+	const char * restrict page = (char *)sma_lastpage;
+	char *retval;
+
+	/* Calling with no actual length is invalid */
+	if (len < 1) return NULL;
+
+	/* Refuse to allocate a space larger than we can store */
+	if (len > (int)(SMA_PAGE_SIZE - sizeof(uintptr_t))) return NULL;
+
+	/* Initialize on first use */
+	if (sma_pages == 0) {
+		sma_head = string_malloc_page();
+		sma_nextfree = sizeof(uintptr_t);
+		page = sma_head;
+	}
+
+	/* Allocate new pages when objects don't fit anymore */
+	if ((sma_nextfree + len) > SMA_PAGE_SIZE) {
+		page = string_malloc_page();
+		sma_nextfree = sizeof(uintptr_t);
+	}
+
+	/* Allocate the space */
+	retval = (char *)page + sma_nextfree;
+	sma_lastfree = sma_nextfree;
+	sma_nextfree += len;
+
+	return retval;
+}
+
+
+/* Roll back the last allocation */
+static inline void string_free(char *addr)
+{
+	const char * restrict p;
+
+	/* Do nothing on NULL address or no last length */
+	if (addr == NULL) return;
+	if (sma_lastfree < sizeof(uintptr_t)) return;
+
+	p = (char *)sma_lastpage + sma_lastfree;
+
+	/* Only take action on the last pointer in the page */
+	if ((uintptr_t)addr != (uintptr_t)p) return;
+
+	sma_nextfree = sma_lastfree;
+	sma_lastfree = 0;
+	return;
+}
+
+/* Destroy all allocated pages */
+static inline void string_malloc_destroy(void)
+{
+	uintptr_t *next;
+
+	while (sma_pages > 0) {
+		next = (uintptr_t *)*(uintptr_t *)sma_head;
+		free(sma_head);
+		sma_head = (char *)next;
+		sma_pages--;
+	}
+	sma_head = NULL;
+	return;
+}
+
 
 
 /* Compare two jody_hashes like memcmp() */
@@ -190,11 +321,11 @@ static inline char **cloneargs(const int argc, char **argv)
   int x;
   char **args;
 
-  args = (char **) malloc(sizeof(char*) * argc);
+  args = (char **) string_malloc(sizeof(char*) * argc);
   if (args == NULL) errormsg(NULL);
 
   for (x = 0; x < argc; x++) {
-    args[x] = (char*) malloc(strlen(argv[x]) + 1);
+    args[x] = string_malloc(strlen(argv[x]) + 1);
     if (args[x] == NULL) errormsg(NULL);
     strcpy(args[x], argv[x]);
   }
@@ -322,7 +453,7 @@ static int grokdir(const char * const restrict dir, file_t ** const restrict fil
       newfile->duplicates = NULL;
       newfile->hasdupes = 0;
 
-      newfile->d_name = (char*)malloc(strlen(dir)+strlen(dirinfo->d_name)+2);
+      newfile->d_name = string_malloc(strlen(dir)+strlen(dirinfo->d_name)+2);
       if (!newfile->d_name) errormsg(NULL);
 
       strcpy(newfile->d_name, dir);
@@ -335,7 +466,7 @@ static int grokdir(const char * const restrict dir, file_t ** const restrict fil
         fullname = strdup(newfile->d_name);
         name = basename(fullname);
         if (name[0] == '.' && strcmp(name, ".") && strcmp(name, "..")) {
-          free(newfile->d_name);
+          string_free(newfile->d_name);
           free(newfile);
           continue;
         }
@@ -345,21 +476,21 @@ static int grokdir(const char * const restrict dir, file_t ** const restrict fil
       /* Get file information and check for validity */
       getfilestats(newfile);
       if (newfile->size == -1) {
-	free(newfile->d_name);
+	string_free(newfile->d_name);
 	free(newfile);
 	continue;
       }
 
       /* Exclude zero-length files if requested */
       if (!S_ISDIR(newfile->mode) && newfile->size == 0 && ISFLAG(flags, F_EXCLUDEEMPTY)) {
-	free(newfile->d_name);
+	string_free(newfile->d_name);
 	free(newfile);
 	continue;
       }
 
       /* Exclude files below --xsize parameter */
       if (!S_ISDIR(newfile->mode) && ISFLAG(flags, F_EXCLUDESIZE) && newfile->size < excludesize) {
-	free(newfile->d_name);
+	string_free(newfile->d_name);
 	free(newfile);
 	continue;
       }
@@ -367,7 +498,7 @@ static int grokdir(const char * const restrict dir, file_t ** const restrict fil
 #ifndef NO_SYMLINKS
       /* Get lstat() information */
       if (lstat(newfile->d_name, &linfo) == -1) {
-	free(newfile->d_name);
+	string_free(newfile->d_name);
 	free(newfile);
 	continue;
       }
@@ -382,7 +513,7 @@ static int grokdir(const char * const restrict dir, file_t ** const restrict fil
 	if (ISFLAG(flags, F_RECURSE))
           filecount += grokdir(newfile->d_name, filelistp);
 #endif
-	free(newfile->d_name);
+	string_free(newfile->d_name);
 	free(newfile);
       } else {
         /* Add regular files to list, including symlink targets if requested */
@@ -394,7 +525,7 @@ static int grokdir(const char * const restrict dir, file_t ** const restrict fil
 	  *filelistp = newfile;
 	  filecount++;
 	} else {
-	  free(newfile->d_name);
+	  string_free(newfile->d_name);
 	  free(newfile);
 	}
       }
@@ -1413,16 +1544,12 @@ int main(int argc, char **argv) {
 
   while (files) {
     curfile = files->next;
-    free(files->d_name);
     free(files);
     files = curfile;
   }
 
-  for (x = 0; x < argc; x++)
-    free(oldargv[x]);
-
-  free(oldargv);
   purgetree(checktree);
+  string_malloc_destroy();
 
   /* Uncomment this to see hash statistics after running the program
   fprintf(stderr, "\n%d partial (+%d small) -> %d full (%d partial elim) (%d hash fail)\n",
