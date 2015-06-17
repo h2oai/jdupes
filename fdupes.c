@@ -146,7 +146,8 @@ static unsigned int sma_lastfree = 0;
 static unsigned int sma_nextfree = sizeof(uintptr_t);
 
 
-void dump_string_table(void)
+/*
+static void dump_string_table(void)
 {
 	char *p = sma_head;
 	unsigned int i = sizeof(uintptr_t);
@@ -154,6 +155,7 @@ void dump_string_table(void)
 
 	while (pg > 0) {
 		while (i < SMA_PAGE_SIZE && *(p+i) == '\0') i++;
+		printf("[%16p] (%jd) '%s'\n", p+i, strlen(p+i), p+i);
 		i += strlen(p+i);
 		if (pg <= 1 && i >= sma_nextfree) return;
 		if (i < SMA_PAGE_SIZE) i++;
@@ -167,6 +169,7 @@ void dump_string_table(void)
 
 	return;
 }
+*/
 
 
 static inline char *string_malloc_page(void)
@@ -189,7 +192,7 @@ static inline char *string_malloc_page(void)
 }
 
 
-static char *string_malloc(const int len)
+static char *string_malloc(unsigned int len)
 {
 	const char * restrict page = (char *)sma_lastpage;
 	char *retval;
@@ -197,8 +200,14 @@ static char *string_malloc(const int len)
 	/* Calling with no actual length is invalid */
 	if (len < 1) return NULL;
 
+	/* Align objects where possible */
+	if (len & (sizeof(uintptr_t) - 1)) {
+		len &= ~(sizeof(uintptr_t) - 1);
+		len += sizeof(uintptr_t);
+	}
+
 	/* Refuse to allocate a space larger than we can store */
-	if (len > (int)(SMA_PAGE_SIZE - sizeof(uintptr_t))) return NULL;
+	if (len > (unsigned int)(SMA_PAGE_SIZE - sizeof(uintptr_t))) return NULL;
 
 	/* Initialize on first use */
 	if (sma_pages == 0) {
@@ -223,7 +232,7 @@ static char *string_malloc(const int len)
 
 
 /* Roll back the last allocation */
-static inline void string_free(char *addr)
+static inline void string_free(void *addr)
 {
 	const char * restrict p;
 
@@ -309,7 +318,8 @@ static void escapefilename(char *escape_list, char **filename_ptr)
   tmp[tx] = '\0';
 
   if (x != tx) {
-    *filename_ptr = realloc(*filename_ptr, strlen(tmp) + 1);
+    //*filename_ptr = realloc(*filename_ptr, strlen(tmp) + 1);
+    *filename_ptr = string_malloc(strlen(tmp) + 1);
     if (*filename_ptr == NULL) errormsg(NULL);
     strcpy(*filename_ptr, tmp);
   }
@@ -413,6 +423,7 @@ static int grokdir(const char * const restrict dir, file_t ** const restrict fil
   static int delay = DELAY_COUNT;
   static const char indicator[] = "-\\|/";
   char *fullname, *name;
+  static char tempname[8192];
 
   cd = opendir(dir);
 
@@ -431,8 +442,15 @@ static int grokdir(const char * const restrict dir, file_t ** const restrict fil
         } else delay++;
       }
 
+      /* Assemble the file's full path name */
+      strcpy(tempname, dir);
+      lastchar = strlen(dir) - 1;
+      if (lastchar >= 0 && dir[lastchar] != '/')
+        strcat(tempname, "/");
+      strcat(tempname, dirinfo->d_name);
+
       /* Allocate the file_t and the d_name entries in one shot */
-      newfile = (file_t *)malloc(sizeof(file_t) + strlen(dir) + strlen(dirinfo->d_name) + 2);
+      newfile = (file_t *)string_malloc(sizeof(file_t) + strlen(dir) + strlen(dirinfo->d_name) + 2);
       if (!newfile) errormsg(NULL);
       else newfile->next = *filelistp;
       newfile->d_name = (char *)newfile + sizeof(file_t);
@@ -454,11 +472,7 @@ static int grokdir(const char * const restrict dir, file_t ** const restrict fil
       newfile->duplicates = NULL;
       newfile->hasdupes = 0;
 
-      strcpy(newfile->d_name, dir);
-      lastchar = strlen(dir) - 1;
-      if (lastchar >= 0 && dir[lastchar] != '/')
-        strcat(newfile->d_name, "/");
-      strcat(newfile->d_name, dirinfo->d_name);
+      strcpy(newfile->d_name, tempname);
 
       if (ISFLAG(flags, F_EXCLUDEHIDDEN)) {
         fullname = strdup(newfile->d_name);
@@ -576,15 +590,15 @@ static inline void purgetree(filetree_t *checktree)
 {
   if (checktree->left != NULL) purgetree(checktree->left);
   if (checktree->right != NULL) purgetree(checktree->right);
-  free(checktree);
+  string_free(checktree);
 }
 
 
-static inline void registerfile(filetree_t **branch, file_t *file)
+static inline void registerfile(filetree_t ** restrict branch, file_t * restrict file)
 {
   getfilestats(file);
 
-  *branch = (filetree_t*) malloc(sizeof(filetree_t));
+  *branch = (filetree_t*)string_malloc(sizeof(filetree_t));
   if (*branch == NULL) errormsg(NULL);
 
   (*branch)->file = file;
@@ -599,7 +613,7 @@ static file_t **checkmatch(filetree_t * const restrict checktree,
 		file_t * const restrict file)
 {
   int cmpresult = 0;
-  hash_t *crcsignature;
+  hash_t * restrict crcsignature;
 
   /* If device and inode fields are equal one of the files is a
    * hard link to the other or the files have been listed twice
@@ -754,7 +768,7 @@ static inline int confirmmatch(FILE * const file1, FILE * const file2)
   return 1;
 }
 
-static void summarizematches(file_t *files)
+static void summarizematches(const file_t * restrict files)
 {
   unsigned int numsets = 0;
 #ifdef NO_FLOAT
@@ -796,9 +810,9 @@ static void summarizematches(file_t *files)
 }
 
 
-static void printmatches(file_t *files)
+static void printmatches(file_t * restrict files)
 {
-  file_t *tmpfile;
+  file_t * restrict tmpfile;
 
   while (files != NULL) {
     if (files->hasdupes) {
@@ -983,7 +997,8 @@ static int sort_pairs_by_mtime(file_t *f1, file_t *f2)
 
 
 #define IS_NUM(a) (((a >= '0') && (a <= '9')) ? 1 : 0)
-static inline int numeric_sort(char *c1, char *c2)
+static inline int numeric_sort(const char * restrict c1,
+		const char * restrict c2)
 {
 	int len1 = 0, len2 = 0;
 	int precompare = 0;
