@@ -72,3 +72,8 @@
     stable; for instance, if dirs 'foo' and 'bar' are specified,
     always put 'foo' at the start of the dupe set (which makes it
     take precedence over 'bar' in this example.)
+
+- The way that duplicates are sorted does not seem to work properly. The
+  sorting needs to be separated into its own function that sorts fully.
+  As it stands, sorting is only correct on specific match pairs and is
+  sometimes overridden by other match pairs to mess up the sort.

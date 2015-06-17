@@ -1093,6 +1093,10 @@ static void registerpair(file_t **matchlist, file_t *newmatch,
   back = 0;
   traverse = *matchlist;
 
+  /* FIXME: This needs to be changed! As it currently stands, the compare
+   * function only runs on a pair as it is registered and future pairs can
+   * mess up the sort order. A separate sorting function should happen before
+   * the dupe chain is acted upon rather than while pairs are registered. */
   while (traverse) {
     if (comparef(newmatch, traverse) <= 0) {
       newmatch->duplicates = traverse;
