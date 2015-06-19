@@ -1523,8 +1523,10 @@ int main(int argc, char **argv) {
     curfile = curfile->next;
 
     if (!ISFLAG(flags, F_HIDEPROGRESS)) {
-      /* If file size is larger than 1 MiB, make progress update faster */
+      /* If file size is larger than 1 MiB, make progress update faster
+       * If confirmmatch() is run on a file, speed up progress even further */
       if (curfile != NULL) delay += (curfile->size >> 20);
+      if (match != NULL) delay++;
       if ((delay >= DELAY_COUNT)) {
         delay = 0;
         fprintf(stderr, "\rProgress [%ld/%ld, %ld pairs matched] %ld%% ", progress, filecount,
