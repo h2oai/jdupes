@@ -1261,8 +1261,9 @@ int main(int argc, char **argv) {
   file_t *curfile;
   file_t **match = NULL;
   filetree_t *checktree = NULL;
-  int filecount = 0;
-  int progress = 0;
+  long filecount = 0;
+  long progress = 0;
+  long dupecount = 0;
   char **oldargv;
   int firstrecurse;
   ordertype_t ordertype = ORDER_TIME;
@@ -1512,6 +1513,7 @@ int main(int argc, char **argv) {
       if (confirmmatch(file1, file2)) {
         registerpair(match, curfile,
             (ordertype == ORDER_TIME) ? sort_pairs_by_mtime : sort_pairs_by_filename);
+	dupecount++;
       } else hash_fail++;
 
       fclose(file1);
@@ -1525,8 +1527,8 @@ int main(int argc, char **argv) {
       if (curfile != NULL) delay += (curfile->size >> 20);
       if ((delay >= DELAY_COUNT)) {
         delay = 0;
-        fprintf(stderr, "\rProgress [%d/%d] %d%% ", progress, filecount,
-          (int)((progress * 100) / filecount));
+        fprintf(stderr, "\rProgress [%ld/%ld, %ld pairs matched] %ld%% ", progress, filecount,
+          dupecount, (long)((progress * 100) / filecount));
       } else delay++;
       progress++;
     }
