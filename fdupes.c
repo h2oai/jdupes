@@ -139,7 +139,7 @@ int small_file = 0, partial_hash = 0, partial_to_full = -1, hash_fail = 0;
 /* Must be divisible by uintptr_t */
 #define SMA_PAGE_SIZE 65536
 
-static char *sma_head = NULL;
+static void *sma_head = NULL;
 static uintptr_t *sma_lastpage = NULL;
 static unsigned int sma_pages = 0;
 static unsigned int sma_lastfree = 0;
@@ -172,7 +172,7 @@ static void dump_string_table(void)
 */
 
 
-static inline char *string_malloc_page(void)
+static inline void *string_malloc_page(void)
 {
 	uintptr_t * restrict pageptr;
 
@@ -192,7 +192,7 @@ static inline char *string_malloc_page(void)
 }
 
 
-static char *string_malloc(unsigned int len)
+static void *string_malloc(unsigned int len)
 {
 	const char * restrict page = (char *)sma_lastpage;
 	char *retval;
