@@ -1,4 +1,4 @@
-/* FDUPES Copyright (c) 1999-2015 Adrian Lopez
+/* FDUPES Copyright (C) 1999-2015 Adrian Lopez
    Ported to MinGW by Jody Bruchon <jody@jodybruchon.com>
    Includes jody_hash (C) 2015 by Jody Bruchon
 
@@ -1385,9 +1385,11 @@ int main(int argc, char **argv) {
       break;
     case 'v':
       printf("fdupes %s\n", VERSION);
-      printf("\nCopyright (c) 1999-2015 Adrian Lopez\n");
-      printf("Ported to MinGW by Jody Bruchon <jody@jodybruchon.com>\n");
-      printf("Includes jody_hash (C) 2015 by Jody Bruchon\n\n");
+      printf("Copyright (C) 1999-2015 Adrian Lopez\n");
+#ifdef ON_WINDOWS
+      printf("Ported to Windows (MinGW-w64) by Jody Bruchon\n");
+#endif
+      printf("Includes jody_hash (C) 2015 by Jody Bruchon <jody@jodybruchon.com>\n\n");
       printf("Permission is hereby granted, free of charge, to any person\n");
       printf("obtaining a copy of this software and associated documentation files\n");
       printf("(the \"Software\"), to deal in the Software without restriction,\n");

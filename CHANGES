@@ -10,6 +10,17 @@ Changes from 1.51-jody5 to 1.51-jody6 [JLB]
 
 - Increased "chunk size" for better performance and to solve the disk
   thrashing problem when checking two large files for a match
+- When using the -H option, hard links now automatically match each
+  other without performing any file reads
+- Changed primary memory allocator to string_alloc by Jody Bruchon
+  to improve performance over generic malloc/calloc
+- Progress indicator now lists the number of duplicate pairs found in
+  addition to the usual file progress count and completion percentage
+- Progress is updated more rapidly when full file comparisons happen
+  so users are less likely to think fdupes is "frozen"
+- Floating point code was made optional and is removed by default
+- A comparison script was added to check built fdupes behavior against
+  whatever fdupes is currently installed on the system
 
 Changes from 1.51-jody4-jkl1 to 1.51-jody5 [JLB]
 
