@@ -58,22 +58,23 @@
 
 /* Behavior modification flags */
 uint_fast32_t flags = 0;
-#define F_RECURSE           0x000001
-#define F_HIDEPROGRESS      0x000002
-#define F_DSAMELINE         0x000004
-#define F_FOLLOWLINKS       0x000008
-#define F_DELETEFILES       0x000010
-#define F_EXCLUDEEMPTY      0x000020
-#define F_CONSIDERHARDLINKS 0x000040
-#define F_SHOWSIZE          0x000080
-#define F_OMITFIRST         0x000100
-#define F_RECURSEAFTER      0x000200
-#define F_NOPROMPT          0x000400
-#define F_SUMMARIZEMATCHES  0x000800
-#define F_EXCLUDEHIDDEN     0x001000
-#define F_PERMISSIONS       0x002000
-#define F_HARDLINKFILES     0x004000
-#define F_EXCLUDESIZE       0x008000
+#define F_RECURSE		0x00000001
+#define F_HIDEPROGRESS		0x00000002
+#define F_DSAMELINE		0x00000004
+#define F_FOLLOWLINKS		0x00000008
+#define F_DELETEFILES		0x00000010
+#define F_EXCLUDEEMPTY		0x00000020
+#define F_CONSIDERHARDLINKS	0x00000040
+#define F_SHOWSIZE		0x00000080
+#define F_OMITFIRST		0x00000100
+#define F_RECURSEAFTER		0x00000200
+#define F_NOPROMPT		0x00000400
+#define F_SUMMARIZEMATCHES	0x00000800
+#define F_EXCLUDEHIDDEN		0x00001000
+#define F_PERMISSIONS		0x00002000
+#define F_HARDLINKFILES		0x00004000
+#define F_EXCLUDESIZE		0x00008000
+#define F_QUICKCOMPARE		0x00010000
 
 typedef enum {
   ORDER_TIME = 0,
@@ -745,7 +746,7 @@ hardlink_match:
 }
 
 
-/* Do a bit-for-bit comparison in case two different files produce the
+/* Do a byte-by-byte comparison in case two different files produce the
    same signature. Unlikely, but better safe than sorry. */
 static inline int confirmmatch(FILE * const file1, FILE * const file2)
 {
@@ -1230,6 +1231,10 @@ static inline void help_text()
   printf(" -S --size        \tshow size of duplicate files\n");
   printf(" -m --summarize   \tsummarize dupe information\n");
   printf(" -q --quiet       \thide progress indicator\n");
+/* This is undocumented in the quick help because it is a dangerous option. If you
+ * really want it, uncomment it here, and may your data rest in peace. */
+/*  printf(" -Q --quick       \tskip byte-by-byte duplicate verification. WARNING:\n");
+  printf("                  \tthis may delete non-duplicates! Read the manual first!\n"); */
   printf(" -d --delete      \tprompt user for files to preserve and delete all\n");
   printf("                  \tothers; important: under particular circumstances,\n");
   printf("                  \tdata may be lost when using this option together\n");
@@ -1279,6 +1284,7 @@ int main(int argc, char **argv) {
     { "recurse:", 0, 0, 'R' },
     { "recursive:", 0, 0, 'R' },
     { "quiet", 0, 0, 'q' },
+    { "quick", 0, 0, 'Q' },
     { "sameline", 0, 0, '1' },
     { "size", 0, 0, 'S' },
 #ifndef NO_SYMLINKS
@@ -1313,7 +1319,7 @@ int main(int argc, char **argv) {
   oldargv = cloneargs(argc, argv);
 
   while ((opt = GETOPT(argc, argv,
-  "frRq1SsHLnx:AdvhNmpo:"
+  "frRqQ1SsHLnx:AdvhNmpo:"
 #ifndef OMIT_GETOPT_LONG
           , long_options, NULL
 #endif
@@ -1330,6 +1336,9 @@ int main(int argc, char **argv) {
       break;
     case 'q':
       SETFLAG(flags, F_HIDEPROGRESS);
+      break;
+    case 'Q':
+      SETFLAG(flags, F_QUICKCOMPARE);
       break;
     case '1':
       SETFLAG(flags, F_DSAMELINE);
@@ -1499,6 +1508,14 @@ int main(int argc, char **argv) {
 
     /* Byte-for-byte check that a matched pair are actually matched */
     if (match != NULL) {
+      /* Quick comparison mode will never run confirmmatch() */
+      if (ISFLAG(flags, F_QUICKCOMPARE)) {
+        registerpair(match, curfile,
+            (ordertype == ORDER_TIME) ? sort_pairs_by_mtime : sort_pairs_by_filename);
+	dupecount++;
+	goto skip_full_check;
+      }
+
       file1 = fopen(curfile->d_name, "rb");
       if (!file1) {
 	curfile = curfile->next;
@@ -1522,6 +1539,7 @@ int main(int argc, char **argv) {
       fclose(file2);
     }
 
+skip_full_check:
     curfile = curfile->next;
 
     if (!ISFLAG(flags, F_HIDEPROGRESS)) {

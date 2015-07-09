@@ -66,6 +66,10 @@ summarize duplicate files information
 .B -q --quiet
 hide progress indicator
 .TP
+.B -Q --quick
+.B [WARNING: RISK OF DATA LOSS, SEE CAVEATS]
+skip byte-for-byte verification of duplicate pairs (use hashes only)
+.TP
 .B -d --delete
 prompt user for files to preserve, deleting all others (see
 .B CAVEATS
@@ -136,6 +140,17 @@ Furthermore, when specifying a particular directory more than once, all
 files within that directory will be listed as their own duplicates,
 leading to data loss should a user preserve a file without its "duplicate"
 (the file itself!).
+
+The
+.B \-Q
+or
+.BR \-\-quick
+option only reads each file once, hashes it, and performs comparisons
+based solely on the hashes. There is a small but significant risk of a
+hash collision which is the purpose of the failsafe byte-for-byte
+comparison that this option explicitly bypasses. Do not use it on ANY data
+set for which any amount of data loss is unacceptable.
+.B You have been warned!
 
 .SH AUTHOR
 Adrian Lopez <adrian2@caribe.net>
