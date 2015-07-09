@@ -149,7 +149,8 @@ option only reads each file once, hashes it, and performs comparisons
 based solely on the hashes. There is a small but significant risk of a
 hash collision which is the purpose of the failsafe byte-for-byte
 comparison that this option explicitly bypasses. Do not use it on ANY data
-set for which any amount of data loss is unacceptable.
+set for which any amount of data loss is unacceptable. This option is not
+included in the help text for the program due to its risky nature.
 .B You have been warned!
 
 .SH AUTHOR
