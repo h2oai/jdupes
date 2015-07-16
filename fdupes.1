@@ -92,6 +92,11 @@ order files according to WORD:
 time - sort by modification time
 name - sort by filename
 .TP
+.B -O --paramorder
+parameter order preservation is more important than the chosen sort; this
+is particularly useful with the \fB\-N\fP option to ensure that automatic
+deletion behaves in a controllable way
+.TP
 .B -v --version
 display fdupes version
 .TP
@@ -120,14 +125,29 @@ will follow subdirectories under b, but not those under a.
 .TP
 .B fdupes a --recurse b
 will follow subdirectories under both a and b.
+.TP
+.B fdupes -O dir1 dir3 dir2
+will always place 'dir1' results first in any match set (where relevant)
 
 .SH CAVEATS
 When using
 .B \-d
 or
 .BR \-\-delete ,
-care should be taken to insure
-against accidental data loss.
+care should be taken to insure against accidental data loss.
+
+The
+.B \-O
+or
+.BR \-\-paramorder
+option allows the user greater control over what appears in the first
+position of a match set, specifically for keeping the \fB\-N\fP option
+from deleting all but one file in a set in a seemingly random way. All
+directories specified on the command line will be used as the sorting
+order of result sets first, followed by the sorting algorithm set by
+the \fB\-o\fP or \fB\-\-order\fP option. This means that the order of
+all match pairs for a single directory specification will retain the
+old sorting behavior even if this option is specified.
 
 When used together with options
 .B \-s

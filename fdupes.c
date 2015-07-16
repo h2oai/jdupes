@@ -75,6 +75,7 @@ uint_fast32_t flags = 0;
 #define F_HARDLINKFILES		0x00004000
 #define F_EXCLUDESIZE		0x00008000
 #define F_QUICKCOMPARE		0x00010000
+#define F_USEPARAMORDER		0x00020000
 
 typedef enum {
   ORDER_TIME = 0,
@@ -97,6 +98,7 @@ off_t excludesize = 0;
 typedef struct _file {
   char *d_name;
   off_t size;
+  int user_order;	/* Order of the originating command-line parameter */
   hash_t crcpartial;
   hash_t crcsignature;
   dev_t device;
@@ -123,6 +125,9 @@ typedef struct _filetree {
 
 /* Hash/compare performance statistics */
 int small_file = 0, partial_hash = 0, partial_to_full = -1, hash_fail = 0;
+
+/* Directory parameter position counter */
+int user_dir_count = 0;
 
 /***** End definitions, begin code *****/
 
@@ -454,8 +459,9 @@ static int grokdir(const char * const restrict dir, file_t ** const restrict fil
       newfile = (file_t *)string_malloc(sizeof(file_t) + strlen(dir) + strlen(dirinfo->d_name) + 2);
       if (!newfile) errormsg(NULL);
       else newfile->next = *filelistp;
-      newfile->d_name = (char *)newfile + sizeof(file_t);
 
+      newfile->d_name = (char *)newfile + sizeof(file_t);
+      newfile->user_order = user_dir_count;
       newfile->size = -1;
       newfile->device = 0;
       newfile->inode = 0;
@@ -988,8 +994,21 @@ static inline int sort_pairs_by_arrival(file_t *f1, file_t *f2)
 */
 
 
+static int sort_pairs_by_param_order(file_t *f1, file_t *f2)
+{
+  if (!ISFLAG(flags, F_USEPARAMORDER)) return 0;
+  if (f1->user_order < f2->user_order) return -1;
+  if (f1->user_order > f2->user_order) return 1;
+  return 0;
+}
+
+
 static int sort_pairs_by_mtime(file_t *f1, file_t *f2)
 {
+  int po = sort_pairs_by_param_order(f1, f2);
+
+  if (po != 0) return po;
+
   if (f1->mtime < f2->mtime) return -1;
   else if (f1->mtime > f2->mtime) return 1;
 
@@ -1080,7 +1099,11 @@ static inline int numeric_sort(const char * restrict c1,
 
 static int sort_pairs_by_filename(file_t *f1, file_t *f2)
 {
-	return numeric_sort(f1->d_name, f2->d_name);
+  int po = sort_pairs_by_param_order(f1, f2);
+
+  if (po != 0) return po;
+
+  return numeric_sort(f1->d_name, f2->d_name);
 }
 
 
@@ -1250,6 +1273,7 @@ static inline void help_text()
 #endif
   printf(" -o --order=BY    \tselect sort order for output, linking and deleting; by\n");
   printf("                  \tmtime (BY=time; default) or filename (BY=name)\n");
+  printf(" -O --paramorder  \tParameter order is more important than selected -O sort\n");
   printf(" -v --version     \tdisplay fdupes version and license information\n");
   printf(" -h --help        \tdisplay this help message\n\n");
 #ifdef OMIT_GETOPT_LONG
@@ -1306,6 +1330,7 @@ int main(int argc, char **argv) {
 #ifndef NO_PERMS
     { "permissions", 0, 0, 'p' },
 #endif
+    { "paramorder", 0, 0, 'O' },
     { "order", 1, 0, 'o' },
     { 0, 0, 0, 0 }
   };
@@ -1319,7 +1344,7 @@ int main(int argc, char **argv) {
   oldargv = cloneargs(argc, argv);
 
   while ((opt = GETOPT(argc, argv,
-  "frRqQ1SsHLnx:AdvhNmpo:"
+  "frRqQ1SsHLnx:AdvhNmpo:O"
 #ifndef OMIT_GETOPT_LONG
           , long_options, NULL
 #endif
@@ -1428,6 +1453,9 @@ int main(int argc, char **argv) {
     case 'p':
       SETFLAG(flags, F_PERMISSIONS);
       break;
+    case 'O':
+      SETFLAG(flags, F_USEPARAMORDER);
+      break;
     case 'o':
       if (!strncasecmp("name", optarg, 5)) {
         ordertype = ORDER_NAME;
@@ -1482,17 +1510,23 @@ int main(int argc, char **argv) {
     }
 
     /* F_RECURSE is not set for directories before --recurse: */
-    for (x = optind; x < firstrecurse; x++)
+    for (x = optind; x < firstrecurse; x++) {
       filecount += grokdir(argv[x], &files);
+      user_dir_count++;
+    }
 
     /* Set F_RECURSE for directories after --recurse: */
     SETFLAG(flags, F_RECURSE);
 
-    for (x = firstrecurse; x < argc; x++)
+    for (x = firstrecurse; x < argc; x++) {
       filecount += grokdir(argv[x], &files);
+      user_dir_count++;
+    }
   } else {
-    for (x = optind; x < argc; x++)
+    for (x = optind; x < argc; x++) {
       filecount += grokdir(argv[x], &files);
+      user_dir_count++;
+    }
   }
 
   if (!files) {
