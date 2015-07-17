@@ -127,7 +127,7 @@ typedef struct _filetree {
 int small_file = 0, partial_hash = 0, partial_to_full = -1, hash_fail = 0;
 
 /* Directory parameter position counter */
-int user_dir_count = 0;
+int user_dir_count = 1;
 
 /***** End definitions, begin code *****/
 
@@ -425,12 +425,15 @@ static uintmax_t grokdir(const char * const restrict dir, file_t ** const restri
 #ifndef NO_SYMLINKS
   static struct stat linfo;
 #endif
-  static uintmax_t progress = 0;
+  static uintmax_t progress = 0, dir_progress = 0;
+  static int grokdir_level = 0;
   static int delay = DELAY_COUNT;
   char *fullname, *name;
   static char tempname[8192];
 
   cd = opendir(dir);
+  dir_progress++;
+  grokdir_level++;
 
   if (!cd) {
     errormsg("could not chdir to %s\n", dir);
@@ -442,7 +445,8 @@ static uintmax_t grokdir(const char * const restrict dir, file_t ** const restri
       if (!ISFLAG(flags, F_HIDEPROGRESS)) {
         if (delay >= DELAY_COUNT) {
           delay = 0;
-          fprintf(stderr, "\rBuilding file list (%ju so far)", progress);
+          fprintf(stderr, "\rScanning: %ju files, %ju dirs (in %u specified)",
+			  progress, dir_progress, user_dir_count);
         } else delay++;
       }
 
@@ -545,6 +549,11 @@ static uintmax_t grokdir(const char * const restrict dir, file_t ** const restri
 
   closedir(cd);
 
+  grokdir_level--;
+  if (grokdir_level == 0 && !ISFLAG(flags, F_HIDEPROGRESS)) {
+    fprintf(stderr, "\rExamining %ju files, %ju dirs (in %u specified)",
+            progress, dir_progress, user_dir_count);
+  }
   return filecount;
 }
 
@@ -1523,10 +1532,9 @@ int main(int argc, char **argv) {
     }
   }
 
-  if (!files) {
-    if (!ISFLAG(flags, F_HIDEPROGRESS)) fprintf(stderr, "\r%40s\r", " ");
-    exit(0);
-  }
+//  if (!ISFLAG(flags, F_HIDEPROGRESS)) fprintf(stderr, "\r%60s\r", " ");
+  if (!ISFLAG(flags, F_HIDEPROGRESS)) fprintf(stderr, "\n");
+  if (!files) exit(0);
 
   curfile = files;
 
@@ -1577,14 +1585,14 @@ skip_full_check:
       if (match != NULL) delay++;
       if ((delay >= DELAY_COUNT)) {
         delay = 0;
-        fprintf(stderr, "\rProgress [%ld/%ld, %ld pairs matched] %ju%% ", progress, filecount,
-          dupecount, (uintmax_t)((progress * 100) / filecount));
+        fprintf(stderr, "\rProgress [%ju/%ju, %ju pairs matched] %ju%%", progress, filecount,
+          dupecount, (progress * 100) / filecount);
       } else delay++;
       progress++;
     }
   }
 
-  if (!ISFLAG(flags, F_HIDEPROGRESS)) fprintf(stderr, "\r%40s\r", " ");
+  if (!ISFLAG(flags, F_HIDEPROGRESS)) fprintf(stderr, "\r%60s\r", " ");
 
   if (ISFLAG(flags, F_DELETEFILES)) {
     if (ISFLAG(flags, F_NOPROMPT)) deletefiles(files, 0, 0);
