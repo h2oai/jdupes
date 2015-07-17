@@ -415,19 +415,18 @@ static inline void getfilestats(file_t * const restrict file)
 }
 
 
-static int grokdir(const char * const restrict dir, file_t ** const restrict filelistp)
+static uintmax_t grokdir(const char * const restrict dir, file_t ** const restrict filelistp)
 {
   DIR *cd;
   file_t *newfile;
   static struct dirent *dirinfo;
   int lastchar;
-  int filecount = 0;
+  uintmax_t filecount = 0;
 #ifndef NO_SYMLINKS
   static struct stat linfo;
 #endif
-  static int progress = 0;
+  static uintmax_t progress = 0;
   static int delay = DELAY_COUNT;
-  static const char indicator[] = "-\\|/";
   char *fullname, *name;
   static char tempname[8192];
 
@@ -443,8 +442,7 @@ static int grokdir(const char * const restrict dir, file_t ** const restrict fil
       if (!ISFLAG(flags, F_HIDEPROGRESS)) {
         if (delay >= DELAY_COUNT) {
           delay = 0;
-          fprintf(stderr, "\rBuilding file list %c ", indicator[progress]);
-          progress = (progress + 1) % 4;
+          fprintf(stderr, "\rBuilding file list (%ju so far)", progress);
         } else delay++;
       }
 
@@ -537,6 +535,7 @@ static int grokdir(const char * const restrict dir, file_t ** const restrict fil
 #endif
 	  *filelistp = newfile;
 	  filecount++;
+          progress++;
 	} else {
 	  string_free((char *)newfile);
 	}
@@ -1150,12 +1149,10 @@ static void registerpair(file_t **matchlist, file_t *newmatch,
 #ifndef NO_HARDLINKS
 static inline void hardlinkfiles(file_t *files)
 {
-  int counter;
-  int groups = 0;
-  int curgroup = 0;
   file_t *tmpfile;
   file_t *curfile;
   file_t **dupelist;
+  int counter;
   int max = 0;
   int x = 0;
 
@@ -1164,8 +1161,6 @@ static inline void hardlinkfiles(file_t *files)
   while (curfile) {
     if (curfile->hasdupes) {
       counter = 1;
-      groups++;
-
       tmpfile = curfile->duplicates;
       while (tmpfile) {
        counter++;
@@ -1186,7 +1181,6 @@ static inline void hardlinkfiles(file_t *files)
 
   while (files) {
     if (files->hasdupes) {
-      curgroup++;
       counter = 1;
       dupelist[counter] = files;
 
@@ -1202,7 +1196,7 @@ static inline void hardlinkfiles(file_t *files)
       if (!ISFLAG(flags, F_HIDEPROGRESS)) printf("   [+] %s\n", dupelist[1]->d_name);
       for (x = 2; x <= counter; x++) {
          if (unlink(dupelist[x]->d_name) == 0) {
-            if ( link(dupelist[1]->d_name, dupelist[x]->d_name) == 0) {
+            if (link(dupelist[1]->d_name, dupelist[x]->d_name) == 0) {
               if (!ISFLAG(flags, F_HIDEPROGRESS)) printf("   [h] %s\n", dupelist[x]->d_name);
             } else {
               if (!ISFLAG(flags, F_HIDEPROGRESS)) {
@@ -1290,9 +1284,9 @@ int main(int argc, char **argv) {
   file_t *curfile;
   file_t **match = NULL;
   filetree_t *checktree = NULL;
-  long filecount = 0;
-  long progress = 0;
-  long dupecount = 0;
+  uintmax_t filecount = 0;
+  uintmax_t progress = 0;
+  uintmax_t dupecount = 0;
   char **oldargv;
   int firstrecurse;
   ordertype_t ordertype = ORDER_TIME;
@@ -1583,8 +1577,8 @@ skip_full_check:
       if (match != NULL) delay++;
       if ((delay >= DELAY_COUNT)) {
         delay = 0;
-        fprintf(stderr, "\rProgress [%ld/%ld, %ld pairs matched] %ld%% ", progress, filecount,
-          dupecount, (long)((progress * 100) / filecount));
+        fprintf(stderr, "\rProgress [%ld/%ld, %ld pairs matched] %ju%% ", progress, filecount,
+          dupecount, (uintmax_t)((progress * 100) / filecount));
       } else delay++;
       progress++;
     }
