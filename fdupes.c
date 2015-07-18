@@ -1164,6 +1164,8 @@ static inline void hardlinkfiles(file_t *files)
   int counter;
   int max = 0;
   int x = 0;
+  int i;
+  char temp_path[4096];
 
   curfile = files;
 
@@ -1200,24 +1202,44 @@ static inline void hardlinkfiles(file_t *files)
        tmpfile = tmpfile->duplicates;
       }
 
-      /* preserve only the first file */
+      /* Link every file to the first file */
 
       if (!ISFLAG(flags, F_HIDEPROGRESS)) printf("   [+] %s\n", dupelist[1]->d_name);
       for (x = 2; x <= counter; x++) {
-         if (unlink(dupelist[x]->d_name) == 0) {
-            if (link(dupelist[1]->d_name, dupelist[x]->d_name) == 0) {
-              if (!ISFLAG(flags, F_HIDEPROGRESS)) printf("   [h] %s\n", dupelist[x]->d_name);
-            } else {
-              if (!ISFLAG(flags, F_HIDEPROGRESS)) {
-                printf("-- unable to create a hard link for the file: %s\n", strerror(errno));
-                printf("   [!] %s ", dupelist[x]->d_name);
-	      }
-            }
-         } else if (!ISFLAG(flags, F_HIDEPROGRESS)) {
-           printf("   [!] %s ", dupelist[x]->d_name);
-           printf("-- unable to delete the file!\n");
-         }
-       }
+        /* Safe hard linking: don't actually delete until the link succeeds */
+        strcpy(temp_path, dupelist[x]->d_name);
+        strcat(temp_path, "._fd_tmp");
+        i = rename(dupelist[x]->d_name, temp_path);
+        if (i != 0) {
+          i = rename(temp_path, dupelist[x]->d_name);
+	  fprintf(stderr, "warning: cannot move hard link target to a temporary name\n");
+	  if (i != 0) {
+            fprintf(stderr, "error: hard link failed and can't rename back to original file\n");
+	    fprintf(stderr, "original: %s\n", dupelist[x]->d_name);
+	    fprintf(stderr, "current:  %s\n", temp_path);
+	  }
+          continue;
+        }
+
+	errno = 0;
+        if (link(dupelist[1]->d_name, dupelist[x]->d_name) == 0) {
+          if (!ISFLAG(flags, F_HIDEPROGRESS)) printf("   [h] %s\n", dupelist[x]->d_name);
+        } else {
+          if (!ISFLAG(flags, F_HIDEPROGRESS)) {
+            printf("-- unable to hard link file: %s\n", strerror(errno));
+            printf("   [!] %s ", dupelist[x]->d_name);
+          }
+          i = rename(temp_path, dupelist[x]->d_name);
+	  if (i != 0) {
+		  fprintf(stderr, "error: cannot rename temp file back to original\n");
+		  fprintf(stderr, "original: %s\n", dupelist[x]->d_name);
+		  fprintf(stderr, "current:  %s\n", temp_path);
+	  }
+	  continue;
+        }
+        i = unlink(temp_path);
+	if (i != 0) printf("\n-- warning: can't delete temp file: %s\n", temp_path);
+      }
       if (!ISFLAG(flags, F_HIDEPROGRESS)) printf("\n");
     }
 

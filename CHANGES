@@ -24,6 +24,19 @@ Changes from 1.51-jody5 to 1.51-jody6 [JLB]
 - Added "undocumented" -Q / --quick option which is not fully safe but can
   be used to drastically reduce run time for large data sets if some risk
   of data loss is acceptable to the user
+- Added -O/--paramorder option to sort files by the order their parent
+  directory set was specified on the command line first. This makes it
+  possible to choose what directories' files get preserved over others
+  while using -d and -N together
+- The file list loading progress indicator was revamped. Rather than a
+  simple "spinning pipe" indicator, it now shows the number of files and
+  directories scanned as well as which command line specified set the
+  scanning is currently happening in
+- fdupes was enhanced to support more than 2 million files total by
+  changing from 'int' internal sizes to the maximum supported by the
+  platform being compiled for
+- Hard link code was modified to be much safer; now any file is only
+  permanently deleted after a hard link succeeds
 
 Changes from 1.51-jody4-jkl1 to 1.51-jody5 [JLB]
 
