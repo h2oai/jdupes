@@ -85,3 +85,7 @@
   - '--xsize=+3M' only examine files 3 MB or greater
   - '--xsize=512-1024' only examine files between 512 and 1024 bytes
   - '--xsize=1M-3M,+20M' examine files 1-3 MB and >20 MB in size
+
+- The -L (hard link) option doesn't always work but also doesn't throw
+  any errors to indicate link failures. It does not appear to cause
+  data loss but it needs to be fixed.
