@@ -79,6 +79,7 @@ COMPILER_OPTIONS += -std=gnu99 -O2 -g -D_FILE_OFFSET_BITS=64 -fstrict-aliasing -
 # MinGW needs this for printf() conversions to work
 ifeq ($(OS), Windows_NT)
 	COMPILER_OPTIONS += -D__USE_MINGW_ANSI_STDIO=1
+	OBJECT_FILES += getino.o
 endif
 
 CFLAGS= $(COMPILER_OPTIONS) -I. -DVERSION=\"$(VERSION)\" $(CFLAGS_CONFIG) $(CFLAGS_EXTRA)
@@ -92,7 +93,7 @@ INSTALL_DATA    = $(INSTALL) -c -m 0644
 #
 #ADDITIONAL_OBJECTS = getopt.o
 
-OBJECT_FILES = fdupes.o jody_hash.o $(ADDITIONAL_OBJECTS)
+OBJECT_FILES += fdupes.o jody_hash.o $(ADDITIONAL_OBJECTS)
 
 #####################################################################
 # no need to modify anything beyond this point                      #

@@ -42,12 +42,13 @@
 #if defined _WIN32 || defined __CYGWIN__
  #define ON_WINDOWS 1
  #define NO_SYMLINKS 1
- #define NO_HARDLINKS 1
  #define NO_PERMS 1
  #ifndef WIN32_LEAN_AND_MEAN
   #define WIN32_LEAN_AND_MEAN
  #endif
  #include <windows.h>
+ #include "getino.h"
+// #define NO_HARDLINKS 1
 #endif
 
 /* How many operations to wait before updating progress counters */
@@ -403,7 +404,6 @@ static inline void getfilestats(file_t * const restrict file)
     return;
   }
   file->size = s.st_size;
-  file->inode = s.st_ino;
   file->device = s.st_dev;
   file->mtime = s.st_mtime;
   file->mode = s.st_mode;
@@ -411,6 +411,11 @@ static inline void getfilestats(file_t * const restrict file)
   file->uid = s.st_uid;
   file->gid = s.st_gid;
 #endif
+#ifdef ON_WINDOWS
+  file->inode = getino(file->d_name);
+#else
+  file->inode = s.st_ino;
+#endif /* ON_WINDOWS */
   return;
 }
 
@@ -1223,8 +1228,11 @@ static inline void hardlinkfiles(file_t *files)
         }
 
 	errno = 0;
-        i = link(dupelist[1]->d_name, dupelist[x]->d_name);
-        if (i == 0) {
+#ifdef ON_WINDOWS
+        if (CreateHardLink(dupelist[x]->d_name, dupelist[1]->d_name, NULL) == TRUE) {
+#else
+        if (link(dupelist[1]->d_name, dupelist[x]->d_name) == 0) {
+#endif /* ON_WINDOWS */
           if (!ISFLAG(flags, F_HIDEPROGRESS)) printf("   [h] %s\n", dupelist[x]->d_name);
         } else {
           /* The hard link failed. Warn the user and put the link target back */
