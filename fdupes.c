@@ -573,15 +573,28 @@ static hash_t *getcrcsignatureuntil(file_t * const checkfile,
   static hash_t chunk[(CHUNK_SIZE / sizeof(hash_t))];
   FILE *file;
 
+  /* Get the file size. If we can't read it, bail out early */
   getfilestats(checkfile);
   if (checkfile->size == -1) return NULL;
   fsize = checkfile->size;
 
-  /* Initialize the hash to zero */
-  *hash = 0;
-
+  /* Do not read more than the requested number of bytes */
   if (max_read != 0 && fsize > max_read)
     fsize = max_read;
+
+  /* Initialize the hash and file read parameters (with crcpartial skipped)
+   *
+   * If we already hashed the first chunk of this file, we don't want to
+   * wastefully read and hash it again, so skip the first chunk and use
+   * the computed hash for that chunk as our starting point.
+   *
+   * WARNING: We assume max_read is NEVER less than CHUNK_SIZE here! */
+
+  if (checkfile->crcpartial_set) {
+    *hash = checkfile->crcpartial;
+    /* Don't bother going further if max_read is already fulfilled */
+    if (max_read <= CHUNK_SIZE) return hash;
+  } else *hash = 0;
 
   file = fopen(checkfile->d_name, "rb");
   if (file == NULL) {
@@ -589,6 +602,18 @@ static hash_t *getcrcsignatureuntil(file_t * const checkfile,
     return NULL;
   }
 
+  /* Actually seek past the first chunk if applicable
+   * This is part of the crcpartial skip optimization */
+  if (checkfile->crcpartial_set) {
+    if (!fseeko(file, CHUNK_SIZE, SEEK_SET)) {
+      fclose(file);
+      errormsg("error seeking in file %s\n", checkfile->d_name);
+      return NULL;
+    }
+    fsize -= CHUNK_SIZE;
+  }
+
+  /* Read the file in CHUNK_SIZE chunks until we've read it all. */
   while (fsize > 0) {
     bytes_to_read = (fsize >= CHUNK_SIZE) ? CHUNK_SIZE : fsize;
     if (fread((void *)chunk, bytes_to_read, 1, file) != 1) {
