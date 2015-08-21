@@ -577,6 +577,9 @@ static hash_t *getcrcsignatureuntil(file_t * const checkfile,
   if (checkfile->size == -1) return NULL;
   fsize = checkfile->size;
 
+  /* Initialize the hash to zero */
+  *hash = 0;
+
   if (max_read != 0 && fsize > max_read)
     fsize = max_read;
 
@@ -594,7 +597,6 @@ static hash_t *getcrcsignatureuntil(file_t * const checkfile,
       return NULL;
     }
 
-    *hash = 0;
     *hash = jody_block_hash(chunk, *hash, bytes_to_read);
     if (bytes_to_read > fsize) break;
     else fsize -= bytes_to_read;
