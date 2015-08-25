@@ -1321,7 +1321,7 @@ static inline void help_text()
 #endif
   printf(" -n --noempty     \texclude zero-length files from consideration\n");
   printf(" -x --xsize=SIZE  \texclude files of size < SIZE from consideration; the\n");
-  printf("                  \tSIZE argument accepts 'k', 'M' and 'G' unit suffix\n");
+  printf("                  \tSIZE argument accepts 'K', 'M' and 'G' unit suffix\n");
   printf(" -A --nohidden    \texclude hidden files from consideration\n");
   printf(" -f --omitfirst   \tomit the first file in each set of matches\n");
   printf(" -1 --sameline    \tlist each set of matches on a single line\n");
@@ -1466,13 +1466,16 @@ int main(int argc, char **argv) {
       excludesize = strtoull(optarg, &endptr, 0);
       switch (*endptr) {
         case 'k':
+	case 'K':
           excludesize = excludesize * 1024;
           endptr++;
           break;
+        case 'm':
         case 'M':
           excludesize = excludesize * 1024 * 1024;
           endptr++;
           break;
+        case 'g':
         case 'G':
           excludesize = excludesize * 1024 * 1024 * 1024;
           endptr++;
