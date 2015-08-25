@@ -1236,12 +1236,25 @@ static inline void hardlinkfiles(file_t *files)
 
       /* Link every file to the first file */
 
-      if (!ISFLAG(flags, F_HIDEPROGRESS)) printf("   [+] %s\n", dupelist[1]->d_name);
+      if (!ISFLAG(flags, F_HIDEPROGRESS)) printf("[SRC] %s\n", dupelist[1]->d_name);
       for (x = 2; x <= counter; x++) {
+        /* Can't hard link files on different devices */
+        if (dupelist[1]->device != dupelist[x]->device) {
+	  fprintf(stderr, "warning: hard link target on different device, not linking:\n-//-> %s\n",
+		  dupelist[x]->d_name);
+	  continue;
+	} else {
+          /* The devices for the files are the same, but we still need to skip
+           * anything that is already hard linked (-L and -H both set) */
+          if (dupelist[1]->inode == dupelist[x]->inode) {
+            if (!ISFLAG(flags, F_HIDEPROGRESS)) printf("-==-> %s\n", dupelist[x]->d_name);
+            continue;
+          }
+        }
         /* Do not attempt to hard link files for which we don't have write access */
 	if (access(dupelist[x]->d_name, W_OK) != 0) {
-	  fprintf(stderr, "warning: hard link target is a read-only file, not linking:\n%s\n-> %s\n",
-		  dupelist[1]->d_name, dupelist[x]->d_name);
+	  fprintf(stderr, "warning: hard link target is a read-only file, not linking:\n-//-> %s\n",
+		  dupelist[x]->d_name);
 	  continue;
 	}
         /* Safe hard linking: don't actually delete until the link succeeds */
@@ -1249,8 +1262,8 @@ static inline void hardlinkfiles(file_t *files)
         strcat(temp_path, "._fd_tmp");
         i = rename(dupelist[x]->d_name, temp_path);
         if (i != 0) {
-	  fprintf(stderr, "warning: cannot move hard link target to a temporary name, not linking:\n%s\n-> %s\n",
-		  dupelist[1]->d_name, dupelist[x]->d_name);
+	  fprintf(stderr, "warning: cannot move hard link target to a temporary name, not linking:\n-//-> %s\n",
+		  dupelist[x]->d_name);
           continue;
         }
 
@@ -1260,13 +1273,11 @@ static inline void hardlinkfiles(file_t *files)
 #else
         if (link(dupelist[1]->d_name, dupelist[x]->d_name) == 0) {
 #endif /* ON_WINDOWS */
-          if (!ISFLAG(flags, F_HIDEPROGRESS)) printf("   [h] %s\n", dupelist[x]->d_name);
+          if (!ISFLAG(flags, F_HIDEPROGRESS)) printf("----> %s\n", dupelist[x]->d_name);
         } else {
           /* The hard link failed. Warn the user and put the link target back */
-          if (!ISFLAG(flags, F_HIDEPROGRESS)) {
-            printf("-- unable to hard link file: %s\n", strerror(errno));
-            printf("   [!] %s ", dupelist[x]->d_name);
-          } else fprintf(stderr, "warning: unable to hard link '%s' -> '%s': %s\n",
+          if (!ISFLAG(flags, F_HIDEPROGRESS)) printf("-//-> %s ", dupelist[x]->d_name);
+	  fprintf(stderr, "warning: unable to hard link '%s' -> '%s': %s\n",
 			  dupelist[x]->d_name, dupelist[1]->d_name, strerror(errno));
           i = rename(temp_path, dupelist[x]->d_name);
 	  if (i != 0) {
@@ -1546,10 +1557,6 @@ int main(int argc, char **argv) {
     exit(1);
   }
 
-  if (ISFLAG(flags, F_HARDLINKFILES) && ISFLAG(flags, F_CONSIDERHARDLINKS)) {
-    errormsg("options --linkhard and --hardlinks are not compatible\n");
-    exit(1);
-  }
 #endif	/* NO_HARDLINKS */
   if (ISFLAG(flags, F_RECURSE) && ISFLAG(flags, F_RECURSEAFTER)) {
     errormsg("options --recurse and --recurse: are not compatible\n");
