@@ -6,8 +6,11 @@ who contributed the patch or idea appears first, followed by
 those who've otherwise worked on that item. For a list of
 contributors names and identifiers please see the CONTRIBUTORS file.
 
-Changes from 1.51-jody5 to 1.51-jody6 [JLB]
+Changes from 1.51-jody5 to 2.0 [JLB]
 
+- Bumped major version to 2.0 due to the number of behavioral changes
+  and improvements to the code, plus it looks less messy than the
+  hyphenated versioning
 - Increased "chunk size" for better performance and to solve the disk
   thrashing problem when checking two large files for a match
 - When using the -H option, hard links now automatically match each
@@ -37,6 +40,11 @@ Changes from 1.51-jody5 to 1.51-jody6 [JLB]
   platform being compiled for
 - Hard link code was modified to be much safer; now any file is only
   permanently deleted after a hard link succeeds
+- Hard links on Windows (on supporting filesystems) are now supported
+- Hashing code was optimized for a benchmarked 8.4% improvement in file
+  processing overhead (and much more under typical real-world conditions)
+- Hard linking checks for more error conditions and output is much
+  clearer about what action was taken on any given file
 
 Changes from 1.51-jody4-jkl1 to 1.51-jody5 [JLB]
 
