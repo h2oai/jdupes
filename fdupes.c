@@ -96,12 +96,15 @@ off_t excludesize = 0;
 #define getcrcsignature(a) getcrcsignatureuntil(a, 0)
 #define getcrcpartialsignature(a) getcrcsignatureuntil(a, PARTIAL_HASH_SIZE)
 
+/* TODO: Cachegrind indicates that size, inode, and device get hammered hard
+ * in the checkmatch() code and trigger lots of cache line evictions.
+ * Maybe we can compact these into a separate structure to improve speed.
+ * Also look into compacting the true/false flags into one integer and see
+ * if that improves performance (it'll certainly lower memory usage) */
 typedef struct _file {
   char *d_name;
+  uint_fast8_t valid_stat; /* Only call stat() once per file (1 = stat'ed) */
   off_t size;
-  int user_order;	/* Order of the originating command-line parameter */
-  hash_t crcpartial;
-  hash_t crcsignature;
   dev_t device;
   ino_t inode;
   mode_t mode;
@@ -110,10 +113,12 @@ typedef struct _file {
   gid_t gid;
 #endif
   time_t mtime;
-  uint_fast8_t valid_stat; /* Only call stat() once per file */
-  uint_fast8_t hasdupes; /* true only if file is first on duplicate chain */
+  int user_order; /* Order of the originating command-line parameter */
+  hash_t crcpartial;
+  hash_t crcsignature;
   uint_fast8_t crcpartial_set;  /* 1 = crcpartial is valid */
   uint_fast8_t crcsignature_set;  /* 1 = crcsignature is valid */
+  uint_fast8_t hasdupes; /* 1 only if file is first on duplicate chain */
   struct _file *duplicates;
   struct _file *next;
 } file_t;
