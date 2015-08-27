@@ -674,20 +674,16 @@ static file_t **checkmatch(filetree_t * const restrict checktree,
 
   getfilestats(file);
 
-  /* Hard link checks always fail when building for Windows */
+/* If considering hard linked files as duplicates, they are
+ * automatically duplicates without being read further since
+ * they point to the exact same inode. If we aren't considering
+ * hard links as duplicates, we just return NULL. */
 #ifndef NO_HARDLINKS
-  if (!ISFLAG(flags, F_CONSIDERHARDLINKS)) {
-    /* Omit hard linked files */
-    if ((file->inode ==
-        checktree->file->inode) && (file->device ==
-        checktree->file->device)) return NULL;
-  } else {
-    /* If considering hard linked files as duplicates, they are
-     * automatically duplicates without being read further since
-     * they point to the exact same inode. */
-    if ((file->inode ==
-        checktree->file->inode) && (file->device ==
-        checktree->file->device)) return &checktree->file;
+  if ((file->inode ==
+      checktree->file->inode) && (file->device ==
+      checktree->file->device)) {
+    if (ISFLAG(flags, F_CONSIDERHARDLINKS)) return &checktree->file;
+    else return NULL;
   }
 #endif
 
