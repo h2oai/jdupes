@@ -687,7 +687,7 @@ static file_t **checkmatch(filetree_t * const restrict checktree,
      * they point to the exact same inode. */
     if ((file->inode ==
         checktree->file->inode) && (file->device ==
-        checktree->file->device)) goto hardlink_match;
+        checktree->file->device)) return &checktree->file;
   }
 #endif
 
@@ -784,12 +784,8 @@ static file_t **checkmatch(filetree_t * const restrict checktree,
       return NULL;
     }
   } else {
-#ifndef NO_HARDLINKS
-hardlink_match:
-#endif
     /* All compares matched */
     partial_to_full++;
-    getfilestats(file);
     return &checktree->file;
   }
   /* Fall through - should never be reached */
