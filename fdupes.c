@@ -1611,8 +1611,14 @@ int main(int argc, char **argv) {
 
     /* Byte-for-byte check that a matched pair are actually matched */
     if (match != NULL) {
-      /* Quick comparison mode will never run confirmmatch() */
-      if (ISFLAG(flags, F_QUICKCOMPARE)) {
+      /* Quick comparison mode will never run confirmmatch()
+       * Also skip match confirmation for hard-linked files
+       * (This set of comparisons is ugly, but quite efficient) */
+      if (ISFLAG(flags, F_QUICKCOMPARE) ||
+		(ISFLAG(flags, F_CONSIDERHARDLINKS) &&
+		 (curfile->inode == (*match)->inode) &&
+		 (curfile->device == (*match)->device))
+		) {
         registerpair(match, curfile,
             (ordertype == ORDER_TIME) ? sort_pairs_by_mtime : sort_pairs_by_filename);
 	dupecount++;
