@@ -438,7 +438,7 @@ static uintmax_t grokdir(const char * const restrict dir, file_t ** const restri
   static uintmax_t progress = 0, dir_progress = 0;
   static int grokdir_level = 0;
   static int delay = DELAY_COUNT;
-  char *fullname, *name;
+  char *name;
   static char tempname[8192];
 
   cd = opendir(dir);
@@ -494,13 +494,13 @@ static uintmax_t grokdir(const char * const restrict dir, file_t ** const restri
       strcpy(newfile->d_name, tempname);
 
       if (ISFLAG(flags, F_EXCLUDEHIDDEN)) {
-        fullname = strdup(newfile->d_name);
-        name = basename(fullname);
+        /* WARNING: Re-used tempname here to eliminate a strdup() */
+        strcpy(tempname, newfile->d_name);
+        name = basename(tempname);
         if (name[0] == '.' && strcmp(name, ".") && strcmp(name, "..")) {
           string_free((char *)newfile);
           continue;
         }
-        free(fullname);
       }
 
       /* Get file information and check for validity */
