@@ -6,6 +6,13 @@ who contributed the patch or idea appears first, followed by
 those who've otherwise worked on that item. For a list of
 contributors names and identifiers please see the CONTRIBUTORS file.
 
+Changes from 2.0 to 2.0.1 [JLB]
+
+- Hard links were treated as identical in match checking but not in
+  match confirmation. This version fixes the problem, increasing speed
+  with file sets involving lots of hard links.
+- A few minor efficiency improvements were performed
+
 Changes from 1.51-jody5 to 2.0 [JLB]
 
 - Bumped major version to 2.0 due to the number of behavioral changes
