@@ -65,4 +65,4 @@ ino_t getino (char *path)
 	CloseHandle (hFile);
 
 	return ino;
-} 
+}
