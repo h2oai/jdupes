@@ -77,6 +77,7 @@ uint_fast32_t flags = 0;
 #define F_EXCLUDESIZE		0x00008000
 #define F_QUICKCOMPARE		0x00010000
 #define F_USEPARAMORDER		0x00020000
+#define F_DEBUG			0x80000000
 
 typedef enum {
   ORDER_TIME = 0,
@@ -1393,6 +1394,7 @@ int main(int argc, char **argv) {
     { "xsize", 1, 0, 'x' },
     { "nohidden", 0, 0, 'A' },
     { "delete", 0, 0, 'd' },
+    { "debug", 0, 0, 'D' },
     { "version", 0, 0, 'v' },
     { "help", 0, 0, 'h' },
     { "noprompt", 0, 0, 'N' },
@@ -1415,7 +1417,7 @@ int main(int argc, char **argv) {
   oldargv = cloneargs(argc, argv);
 
   while ((opt = GETOPT(argc, argv,
-  "frRqQ1SsHLnx:AdvhNmpo:O"
+  "frRqQ1SsHLnx:AdDvhNmpo:O"
 #ifndef OMIT_GETOPT_LONG
           , long_options, NULL
 #endif
@@ -1490,6 +1492,9 @@ int main(int argc, char **argv) {
       break;
     case 'd':
       SETFLAG(flags, F_DELETEFILES);
+      break;
+    case 'D':
+      SETFLAG(flags, F_DEBUG);
       break;
     case 'v':
       printf("fdupes %s\n", VERSION);
@@ -1696,11 +1701,11 @@ skip_full_check:
   purgetree(checktree);
   string_malloc_destroy();
 
-  /* Uncomment this to see hash statistics after running the program
-  fprintf(stderr, "\n%d partial (+%d small) -> %d full (%d partial elim) (%d hash fail)\n",
-		  partial_hash, small_file, partial_to_full,
-		  (partial_hash - partial_to_full), hash_fail);
-  */
+  if (ISFLAG(flags, F_DEBUG)) {
+    fprintf(stderr, "\n%d partial (+%d small) -> %d full (%d partial elim) (%d hash fail)\n",
+		partial_hash, small_file, partial_to_full,
+		(partial_hash - partial_to_full), hash_fail);
+  }
 
   exit(0);
 
