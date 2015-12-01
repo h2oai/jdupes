@@ -6,6 +6,20 @@ who contributed the patch or idea appears first, followed by
 those who've otherwise worked on that item. For a list of
 contributors names and identifiers please see the CONTRIBUTORS file.
 
+Changes from 2.0.1 to 2.0.2 [JLB]
+
+- Removed redundant getfilestats() calls for a tiny speed boost
+- Added a -D/--debug switch to show a set of statistic counters for
+  various parts of the fdupes algorithms. Can be used to determine what
+  fdupes is doing "under the hood" and give insight into why performance
+  may be slower or behave strangely on your data set. To enable it, use
+  DEBUG=1 with your make command, i.e. 'make DEBUG=1'
+- Performance note: the fdupes algorithm uses a tree data structure and
+  becomes progressively slower as more files are processed and the tree
+  depth grows larger. As of this version, a rewrite of the core
+  algorithm is in progress which will remove this tree structure and
+  significantly improve performance on most large file sets.
+
 Changes from 2.0 to 2.0.1 [JLB]
 
 - Hard links were treated as identical in match checking but not in
