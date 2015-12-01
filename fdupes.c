@@ -131,10 +131,11 @@ typedef struct _filetree {
 } filetree_t;
 
 /* Hash/compare performance statistics */
-int small_file = 0, partial_hash = 0, partial_to_full = -1, hash_fail = 0;
+static unsigned int small_file = 0, partial_hash = 0, partial_to_full = 0, hash_fail = 0;
+static uintmax_t filecount = 0;
 
 /* Directory parameter position counter */
-int user_dir_count = 1;
+static unsigned int user_dir_count = 1;
 
 /***** End definitions, begin code *****/
 
@@ -426,13 +427,12 @@ static inline void getfilestats(file_t * const restrict file)
 }
 
 
-static uintmax_t grokdir(const char * const restrict dir, file_t ** const restrict filelistp)
+static void grokdir(const char * const restrict dir, file_t ** const restrict filelistp)
 {
   DIR *cd;
   file_t *newfile;
   static struct dirent *dirinfo;
   int lastchar;
-  uintmax_t filecount = 0;
 #ifndef NO_SYMLINKS
   static struct stat linfo;
 #endif
@@ -448,7 +448,7 @@ static uintmax_t grokdir(const char * const restrict dir, file_t ** const restri
 
   if (!cd) {
     errormsg("could not chdir to %s\n", dir);
-    return 0;
+    return;
   }
 
   while ((dirinfo = readdir(cd)) != NULL) {
@@ -535,10 +535,10 @@ static uintmax_t grokdir(const char * const restrict dir, file_t ** const restri
       if (S_ISDIR(newfile->mode)) {
 #ifndef NO_SYMLINKS
 	if (ISFLAG(flags, F_RECURSE) && (ISFLAG(flags, F_FOLLOWLINKS) || !S_ISLNK(linfo.st_mode)))
-          filecount += grokdir(newfile->d_name, filelistp);
+          grokdir(newfile->d_name, filelistp);
 #else
 	if (ISFLAG(flags, F_RECURSE))
-          filecount += grokdir(newfile->d_name, filelistp);
+          grokdir(newfile->d_name, filelistp);
 #endif
 	string_free((char *)newfile);
       } else {
@@ -565,7 +565,7 @@ static uintmax_t grokdir(const char * const restrict dir, file_t ** const restri
     fprintf(stderr, "\rExamining %ju files, %ju dirs (in %u specified)",
             progress, dir_progress, user_dir_count);
   }
-  return filecount;
+  return;
 }
 
 /* Use Jody Bruchon's hash function on part or all of a file */
@@ -1362,7 +1362,6 @@ int main(int argc, char **argv) {
   file_t *curfile;
   file_t **match = NULL;
   filetree_t *checktree = NULL;
-  uintmax_t filecount = 0;
   uintmax_t progress = 0;
   uintmax_t dupecount = 0;
   char **oldargv;
@@ -1586,7 +1585,7 @@ int main(int argc, char **argv) {
 
     /* F_RECURSE is not set for directories before --recurse: */
     for (x = optind; x < firstrecurse; x++) {
-      filecount += grokdir(argv[x], &files);
+      grokdir(argv[x], &files);
       user_dir_count++;
     }
 
@@ -1594,12 +1593,12 @@ int main(int argc, char **argv) {
     SETFLAG(flags, F_RECURSE);
 
     for (x = firstrecurse; x < argc; x++) {
-      filecount += grokdir(argv[x], &files);
+      grokdir(argv[x], &files);
       user_dir_count++;
     }
   } else {
     for (x = optind; x < argc; x++) {
-      filecount += grokdir(argv[x], &files);
+      grokdir(argv[x], &files);
       user_dir_count++;
     }
   }
