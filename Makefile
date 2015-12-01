@@ -76,6 +76,11 @@ CC ?= gcc
 COMPILER_OPTIONS = -Wall -Wextra -Wcast-align -Wstrict-aliasing -pedantic -Wstrict-overflow
 COMPILER_OPTIONS += -std=gnu99 -O2 -g -D_FILE_OFFSET_BITS=64 -fstrict-aliasing -pipe
 
+# Debugging code inclusion
+ifdef DEBUG
+COMPILER_OPTIONS += -DDEBUG
+endif
+
 # MinGW needs this for printf() conversions to work
 ifeq ($(OS), Windows_NT)
 	COMPILER_OPTIONS += -D__USE_MINGW_ANSI_STDIO=1

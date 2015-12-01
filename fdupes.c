@@ -51,6 +51,14 @@
 // #define NO_HARDLINKS 1
 #endif
 
+/* Compile out debugging stat counters unless requested */
+#ifdef DEBUG
+#define DBG(a) a
+#else
+#define DBG(a)
+#endif
+
+
 /* How many operations to wait before updating progress counters */
 #define DELAY_COUNT 512
 
@@ -130,10 +138,15 @@ typedef struct _filetree {
   struct _filetree *right;
 } filetree_t;
 
-/* Hash/compare performance statistics */
+static uintmax_t filecount = 0; // Required for progress indicator code
+
+/* Hash/compare performance statistics (debug mode) */
+#ifdef DEBUG
 static unsigned int small_file = 0, partial_hash = 0, partial_to_full = 0, hash_fail = 0;
-static uintmax_t filecount = 0, comparisons = 0, left_branch = 0, right_branch = 0;
+static uintmax_t comparisons = 0;
+static unsigned int left_branch = 0, right_branch = 0;
 static unsigned int tree_depth = 0, max_depth = 0;
+#endif /* DEBUG */
 
 /* Directory parameter position counter */
 static unsigned int user_dir_count = 1;
@@ -672,7 +685,7 @@ static file_t **checkmatch(filetree_t * const restrict checktree,
    * duplicates unless the user specifies otherwise. */
 
   /* Count the total number of comparisons requested */
-  comparisons++;
+  DBG(comparisons++;)
 
 /* If considering hard linked files as duplicates, they are
  * automatically duplicates without being read further since
@@ -700,7 +713,7 @@ static file_t **checkmatch(filetree_t * const restrict checktree,
 	    )) cmpresult = -1;
   else {
     /* Attempt to exclude files quickly with partial file hashing */
-    partial_hash++;
+    DBG(partial_hash++;)
     if (checktree->file->crcpartial_set == 0) {
       crcsignature = getcrcpartialsignature(checktree->file);
       if (crcsignature == NULL) {
@@ -730,12 +743,12 @@ static file_t **checkmatch(filetree_t * const restrict checktree,
       if (file->crcsignature_set == 0) {
         file->crcsignature = file->crcpartial;
         file->crcsignature_set = 1;
-        small_file++;
+        DBG(small_file++;)
       }
       if (checktree->file->crcsignature_set == 0) {
         checktree->file->crcsignature = checktree->file->crcpartial;
         checktree->file->crcsignature_set = 1;
-        small_file++;
+        DBG(small_file++;)
       }
     } else if (cmpresult == 0) {
       /* If partial match was correct, perform a full file hash match */
@@ -767,31 +780,26 @@ static file_t **checkmatch(filetree_t * const restrict checktree,
 
   if (cmpresult < 0) {
     if (checktree->left != NULL) {
-      left_branch++;
-      tree_depth++;
+      DBG(left_branch++; tree_depth++;)
       return checkmatch(checktree->left, file);
     } else {
       registerfile(&(checktree->left), file);
-      if (max_depth < tree_depth) max_depth = tree_depth;
-      tree_depth = 0;
+      DBG(if (max_depth < tree_depth) max_depth = tree_depth; tree_depth = 0;)
       return NULL;
     }
   } else if (cmpresult > 0) {
     if (checktree->right != NULL) {
-      right_branch++;
-      tree_depth++;
+      DBG(right_branch++; tree_depth++;)
       return checkmatch(checktree->right, file);
     } else {
       registerfile(&(checktree->right), file);
-      if (max_depth < tree_depth) max_depth = tree_depth;
-      tree_depth = 0;
+      DBG(if (max_depth < tree_depth) max_depth = tree_depth; tree_depth = 0;)
       return NULL;
     }
   } else {
     /* All compares matched */
-    partial_to_full++;
-    if (max_depth < tree_depth) max_depth = tree_depth;
-    tree_depth = 0;
+    DBG(partial_to_full++;)
+    DBG(if (max_depth < tree_depth) max_depth = tree_depth; tree_depth = 0;)
     return &checktree->file;
   }
   /* Fall through - should never be reached */
@@ -1502,7 +1510,9 @@ int main(int argc, char **argv) {
       SETFLAG(flags, F_DELETEFILES);
       break;
     case 'D':
+#ifdef DEBUG
       SETFLAG(flags, F_DEBUG);
+#endif
       break;
     case 'v':
       printf("fdupes %s\n", VERSION);
@@ -1655,7 +1665,7 @@ int main(int argc, char **argv) {
         registerpair(match, curfile,
             (ordertype == ORDER_TIME) ? sort_pairs_by_mtime : sort_pairs_by_filename);
 	dupecount++;
-      } else hash_fail++;
+      } DBG(else hash_fail++;)
 
       fclose(file1);
       fclose(file2);
@@ -1709,15 +1719,17 @@ skip_full_check:
   purgetree(checktree);
   string_malloc_destroy();
 
+#ifdef DEBUG
   if (ISFLAG(flags, F_DEBUG)) {
     fprintf(stderr, "\n%d partial (+%d small) -> %d full (%d partial elim) (%d hash fail)\n",
 		partial_hash, small_file, partial_to_full,
 		(partial_hash - partial_to_full), hash_fail);
-    fprintf(stderr, "%ju total files, %ju comparisons, branch L %ju, R %ju, both %ju\n",
+    fprintf(stderr, "%ju total files, %ju comparisons, branch L %u, R %u, both %u\n",
 		    filecount, comparisons, left_branch, right_branch,
 		    left_branch + right_branch);
     fprintf(stderr, "Maximum tree depth reached: %u\n", max_depth);
   }
+#endif /* DEBUG */
 
   exit(0);
 
