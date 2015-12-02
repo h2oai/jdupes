@@ -64,9 +64,7 @@ extern hash_t jody_block_hash(const hash_t * restrict data,
 		hash += element;
 		hash += JODY_HASH_SALT;
 		hash = (hash << JODY_HASH_SHIFT) | hash >> (sizeof(hash_t) * 8 - JODY_HASH_SHIFT);
-		hash += (element & (hash_t)0x000000ff);
 		hash ^= element;
-		hash += (element & (hash_t)0xffffff00);
 		hash = (hash << JODY_HASH_SHIFT) | hash >> (sizeof(hash_t) * 8 - JODY_HASH_SHIFT);
 		hash ^= JODY_HASH_SALT;
 		hash += element;
@@ -82,9 +80,7 @@ extern hash_t jody_block_hash(const hash_t * restrict data,
 		tail &= tail_mask[len];
 		hash += tail;
 		hash = (hash << JODY_HASH_SHIFT) | hash >> (sizeof(hash_t) * 8 - JODY_HASH_SHIFT);
-		hash += (tail & (hash_t)0x000000ff);
 		hash ^= tail;
-		hash += (tail & (hash_t)0xffffff00);
 		hash = (hash << JODY_HASH_SHIFT) | hash >> (sizeof(hash_t) * 8 - JODY_HASH_SHIFT);
 		hash ^= JODY_HASH_SALT;
 		hash += tail;
