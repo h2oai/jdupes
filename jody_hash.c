@@ -53,7 +53,6 @@ extern hash_t jody_block_hash(const hash_t * restrict data,
 	register hash_t hash = start_hash;
 	register hash_t element;
 	unsigned int len;
-	hash_t tail;
 
 	/* Don't bother trying to hash a zero-length block */
 	if (count == 0) return hash;
@@ -74,16 +73,14 @@ extern hash_t jody_block_hash(const hash_t * restrict data,
 	/* Handle data tail (for blocks indivisible by sizeof(hash_t)) */
 	len = count & (sizeof(hash_t) - 1);
 	if (len) {
-		element = *data;
-		tail = element;
-		tail += JODY_HASH_SALT;
-		tail &= tail_mask[len];
-		hash += tail;
+		element = *data & tail_mask[len];
+		hash += element;
+		hash += JODY_HASH_SALT;
 		hash = (hash << JODY_HASH_SHIFT) | hash >> (sizeof(hash_t) * 8 - JODY_HASH_SHIFT);
-		hash ^= tail;
+		hash ^= element;
 		hash = (hash << JODY_HASH_SHIFT) | hash >> (sizeof(hash_t) * 8 - JODY_HASH_SHIFT);
 		hash ^= JODY_HASH_SALT;
-		hash += tail;
+		hash += element;
 	}
 
 	return hash;
