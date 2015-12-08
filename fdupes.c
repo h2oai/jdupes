@@ -154,7 +154,7 @@ static unsigned int tree_depth = 0, max_depth = 0;
 /* Directory parameter position counter */
 static unsigned int user_dir_count = 1;
 
-/* registerfile() direction options */
+/* registerfile() direction options and tree depth tracking */
 enum tree_direction { NONE, LEFT, RIGHT };
 
 /***** End definitions, begin code *****/
@@ -718,27 +718,39 @@ static inline void registerfile(filetree_t **nodeptr,
 
 
 /* How many bits to ignore when considering a rebalance */
-#define WEIGHT_SHIFT 5
+#define BALANCE_THRESHOLD 8
 
 /* Rebalance the file tree to reduce search depth
  * Returns 1 if any changes were made, 0 otherwise */
-static int rebalance_tree(filetree_t *tree)
+static inline int rebalance_tree(filetree_t *tree)
 {
 	filetree_t *branch = tree;
+	int difference;
 	int changes = 0;
 
-	while (branch->left != NULL && branch->right != NULL) {
+	/* Don't do anything if weights are equal */
+	if (branch->left_weight == branch->right_weight) return 0;
+
+	/* Rebalance all children first */
+	if (branch->left) rebalance_tree(branch->left);
+	if (branch->right) rebalance_tree(branch->right);
+
+	/* If weights are within a certain threshold, do nothing */
+	difference = branch->left_weight - branch->right_weight;
+	if (difference < 0) difference = -difference;
+	if (difference < BALANCE_THRESHOLD) return 0;
+
+#if 0
+	while (branch->left != NULL || branch->right != NULL) {
 		unsigned int lw, rw;
 //TODO
-		/* Rebalance all children first */
-		if (branch->left) rebalance_tree(branch->left);
-		if (branch->right) rebalance_tree(branch->right);
 		lw = branch->left  >> WEIGHT_SHIFT;
 		rw = branch->right >> WEIGHT_SHIFT;
 		if (lw > rw) {
 		} else if (lw < rw) {
 		}
 	}
+#endif
 
 	return changes;
 }
@@ -839,13 +851,9 @@ static file_t **checkmatch(filetree_t *checktree,
 	file->crcsignature_set = 1;
       }
 
+      /* Full file hash comparison */
       cmpresult = crc_cmp(file->crcsignature, checktree->file->crcsignature);
 
-      /*if (cmpresult != 0) errormsg("P   on %s vs %s\n",
-          file->d_name, checktree->file->d_name);
-      else errormsg("P F on %s vs %s\n", file->d_name,
-          checktree->file->d_name);
-      printf("%s matches %s\n", file->d_name, checktree->file->d_name);*/
     }
   }
 
@@ -1703,7 +1711,8 @@ int main(int argc, char **argv) {
     if (!checktree) registerfile(&checktree, NONE, curfile);
     else match = checkmatch(checktree, curfile);
 
-    rebalance_tree(checktree);
+    /* Rebalance the match tree afer every 1024 files */
+    if ((progress & 0x4ff) == 0x400) rebalance_tree(checktree);
 
     /* Byte-for-byte check that a matched pair are actually matched */
     if (match != NULL) {
@@ -1757,8 +1766,8 @@ skip_full_check:
         fprintf(stderr, "\rProgress [%ju/%ju, %ju pairs matched] %ju%%", progress, filecount,
           dupecount, (progress * 100) / filecount);
       } else delay++;
-      progress++;
     }
+    progress++;
   }
 
   if (!ISFLAG(flags, F_HIDEPROGRESS)) fprintf(stderr, "\r%60s\r", " ");
