@@ -722,7 +722,7 @@ static inline void registerfile(filetree_t **nodeptr,
 
 
 /* How much difference to ignore when considering a rebalance */
-#define BALANCE_THRESHOLD 3
+#define BALANCE_THRESHOLD 2
 
 /* Rebalance the file tree to reduce search depth
  * Returns 1 if any changes were made, 0 otherwise */
@@ -743,7 +743,7 @@ static inline void rebalance_tree(filetree_t *tree)
 	direction = branch->right_weight - branch->left_weight;
 	difference = direction;
 	if (difference < 0) difference = -difference;
-	if (difference < BALANCE_THRESHOLD) return;
+	if (difference <= BALANCE_THRESHOLD) return;
 
 	/* Determine if a tree rotation will help, and do it if so */
 	if (direction > 0) {
@@ -1789,7 +1789,7 @@ int main(int argc, char **argv) {
     if (!checktree) registerfile(&checktree, NONE, curfile);
     else match = checkmatch(checktree, curfile);
 
-    /* Rebalance the match tree afer every 128 files */
+    /* Rebalance the match tree afer every 128 files processed */
     if ((progress & 0xff) == 0x80) rebalance_tree(checktree);
 //	rebalance_tree(checktree);
 
