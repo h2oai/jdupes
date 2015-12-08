@@ -134,8 +134,11 @@ typedef struct _file {
 
 typedef struct _filetree {
   file_t *file;
+  struct _filetree *parent;
   struct _filetree *left;
   struct _filetree *right;
+  unsigned int left_weight;
+  unsigned int right_weight;
 } filetree_t;
 
 static uintmax_t filecount = 0; // Required for progress indicator code
@@ -150,6 +153,9 @@ static unsigned int tree_depth = 0, max_depth = 0;
 
 /* Directory parameter position counter */
 static unsigned int user_dir_count = 1;
+
+/* registerfile() direction options */
+enum tree_direction { NONE, LEFT, RIGHT };
 
 /***** End definitions, begin code *****/
 
@@ -662,20 +668,83 @@ static inline void purgetree(filetree_t *checktree)
 }
 
 
-static inline void registerfile(filetree_t ** restrict branch, file_t * restrict file)
+static inline void registerfile(filetree_t **nodeptr,
+		enum tree_direction d, file_t * restrict file)
 {
-  *branch = (filetree_t*)string_malloc(sizeof(filetree_t));
-  if (*branch == NULL) errormsg(NULL);
+	filetree_t * restrict node = *nodeptr;
+	filetree_t * restrict branch;
 
-  (*branch)->file = file;
-  (*branch)->left = NULL;
-  (*branch)->right = NULL;
+	/* Allocate and initialize a new node for the file */
+	branch = (filetree_t *)string_malloc(sizeof(filetree_t));
+	if (branch == NULL) errormsg(NULL);
+	branch->file = file;
+	branch->left = NULL;
+	branch->right = NULL;
+	branch->left_weight = 0;
+	branch->right_weight = 0;
 
-  return;
+	/* Attach the new node to the requested branch and the parent */
+	switch (d) {
+		case LEFT:
+			branch->parent = node;
+			node->left = branch;
+			node->left_weight++;
+			break;
+		case RIGHT:
+			branch->parent = node;
+			node->right = branch;
+			node->right_weight++;
+			break;
+		case NONE:
+			/* For the root of the tree only */
+			branch->parent = NULL;
+			*nodeptr = branch;
+			break;
+	}
+
+	/* Propagate weights up the tree */
+	while (branch->parent != NULL) {
+		filetree_t * restrict up;
+
+		up = branch->parent;
+		if (up->left == branch) up->left_weight++;
+		else if (up->right == branch) up->right_weight++;
+		else errormsg("Internal error: file tree linkage is broken\n");
+		branch = up;
+	}
+
+	return;
 }
 
 
-static file_t **checkmatch(filetree_t * const restrict checktree,
+/* How many bits to ignore when considering a rebalance */
+#define WEIGHT_SHIFT 5
+
+/* Rebalance the file tree to reduce search depth
+ * Returns 1 if any changes were made, 0 otherwise */
+static int rebalance_tree(filetree_t *tree)
+{
+	filetree_t *branch = tree;
+	int changes = 0;
+
+	while (branch->left != NULL && branch->right != NULL) {
+		unsigned int lw, rw;
+//TODO
+		/* Rebalance all children first */
+		if (branch->left) rebalance_tree(branch->left);
+		if (branch->right) rebalance_tree(branch->right);
+		lw = branch->left  >> WEIGHT_SHIFT;
+		rw = branch->right >> WEIGHT_SHIFT;
+		if (lw > rw) {
+		} else if (lw < rw) {
+		}
+	}
+
+	return changes;
+}
+
+
+static file_t **checkmatch(filetree_t *checktree,
 		file_t * const restrict file)
 {
   int cmpresult = 0;
@@ -785,7 +854,7 @@ static file_t **checkmatch(filetree_t * const restrict checktree,
       DBG(left_branch++; tree_depth++;)
       return checkmatch(checktree->left, file);
     } else {
-      registerfile(&(checktree->left), file);
+      registerfile(&checktree, LEFT, file);
       DBG(if (max_depth < tree_depth) max_depth = tree_depth; tree_depth = 0;)
       return NULL;
     }
@@ -794,7 +863,7 @@ static file_t **checkmatch(filetree_t * const restrict checktree,
       DBG(right_branch++; tree_depth++;)
       return checkmatch(checktree->right, file);
     } else {
-      registerfile(&(checktree->right), file);
+      registerfile(&checktree, RIGHT, file);
       DBG(if (max_depth < tree_depth) max_depth = tree_depth; tree_depth = 0;)
       return NULL;
     }
@@ -1631,8 +1700,10 @@ int main(int argc, char **argv) {
   curfile = files;
 
   while (curfile) {
-    if (!checktree) registerfile(&checktree, curfile);
+    if (!checktree) registerfile(&checktree, NONE, curfile);
     else match = checkmatch(checktree, curfile);
+
+    rebalance_tree(checktree);
 
     /* Byte-for-byte check that a matched pair are actually matched */
     if (match != NULL) {
