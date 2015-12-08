@@ -722,37 +722,70 @@ static inline void registerfile(filetree_t **nodeptr,
 
 /* Rebalance the file tree to reduce search depth
  * Returns 1 if any changes were made, 0 otherwise */
-static inline int rebalance_tree(filetree_t *tree)
+static inline void rebalance_tree(filetree_t *tree)
 {
-	filetree_t *branch = tree;
-	int difference;
-	int changes = 0;
+	filetree_t *branch = tree, *promote, *demote;
+	int difference, direction, l, r, imbalance;
 
 	/* Don't do anything if weights are equal */
-	if (branch->left_weight == branch->right_weight) return 0;
+	if (branch->left_weight == branch->right_weight) return;
 
 	/* Rebalance all children first */
-	if (branch->left) rebalance_tree(branch->left);
-	if (branch->right) rebalance_tree(branch->right);
+	if (branch->left_weight > 2) rebalance_tree(branch->left);
+	if (branch->right_weight > 2) rebalance_tree(branch->right);
 
 	/* If weights are within a certain threshold, do nothing */
-	difference = branch->left_weight - branch->right_weight;
+	direction = branch->right_weight - branch->left_weight;
+	difference = direction;
 	if (difference < 0) difference = -difference;
-	if (difference < BALANCE_THRESHOLD) return 0;
+	if (difference < BALANCE_THRESHOLD) return;
 
-#if 0
-	while (branch->left != NULL || branch->right != NULL) {
-		unsigned int lw, rw;
-//TODO
-		lw = branch->left  >> WEIGHT_SHIFT;
-		rw = branch->right >> WEIGHT_SHIFT;
-		if (lw > rw) {
-		} else if (lw < rw) {
-		}
+	/* Determine if a tree rotation will help, and do it if so */
+	if (direction > 0) {
+		l = branch->right->left_weight + branch->right_weight;
+		r = branch->right->right_weight;
+		imbalance = l - r;
+		if (imbalance < 0) imbalance = -imbalance;
+		/* Don't rotate if imbalance will increase */
+		if (imbalance >= difference) return;
+
+		fprintf(stderr, "rebalance: performing right rotation\n");
+		/* Rotate the right node up one level */
+		promote = branch->right;
+		demote = branch;
+		/* Attach new parent's left tree to old parent */
+		demote->right = promote->left;
+		demote->right_weight = promote->left_weight;
+		/* Attach old parent to new parent */
+		promote->left = demote;
+		promote->left_weight = demote->left_weight + demote->right_weight + 1;
+		/* Reconnect parent linkages */
+		promote->parent = demote->parent;
+		demote->parent = promote;
+	} else {
+		r = branch->left->right_weight + branch->left_weight;
+		l = branch->left->left_weight;
+		imbalance = r - l;
+		if (imbalance < 0) imbalance = -imbalance;
+		/* Don't rotate if imbalance will increase */
+		if (imbalance >= difference) return;
+
+		fprintf(stderr, "rebalance: performing left rotation\n");
+		/* Rotate the left node up one level */
+		promote = branch->left;
+		demote = branch;
+		/* Attach new parent's right tree to old parent */
+		demote->left = promote->right;
+		demote->left_weight = promote->right_weight;
+		/* Attach old parent to new parent */
+		promote->right = demote;
+		promote->right_weight = demote->right_weight + demote->left_weight + 1;
+		/* Reconnect parent linkages */
+		promote->parent = demote->parent;
+		demote->parent = promote;
 	}
-#endif
 
-	return changes;
+	return;
 }
 
 
@@ -1712,7 +1745,8 @@ int main(int argc, char **argv) {
     else match = checkmatch(checktree, curfile);
 
     /* Rebalance the match tree afer every 1024 files */
-    if ((progress & 0x4ff) == 0x400) rebalance_tree(checktree);
+//    if ((progress & 0x4ff) == 0x400) rebalance_tree(checktree);
+	rebalance_tree(checktree);//DEBUG
 
     /* Byte-for-byte check that a matched pair are actually matched */
     if (match != NULL) {
