@@ -141,6 +141,7 @@ typedef struct _filetree {
   unsigned int right_weight;
 } filetree_t;
 
+static filetree_t *checktree = NULL;
 static uintmax_t filecount = 0; // Required for progress indicator code
 
 /* Hash/compare performance statistics (debug mode) */
@@ -319,7 +320,7 @@ static void errormsg(char *message, ...)
   /* A null pointer means "out of memory" */
   if (message == NULL) {
     fprintf(stderr, "\r%40s\rout of memory\n", "");
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 
   va_start(ap, message);
@@ -660,10 +661,10 @@ static hash_t *getcrcsignatureuntil(file_t * const checkfile,
 }
 
 
-static inline void purgetree(filetree_t *checktree)
+static inline void purgetree(filetree_t *tree)
 {
-  if (checktree->left != NULL) purgetree(checktree->left);
-  if (checktree->right != NULL) purgetree(checktree->right);
+  if (tree->left != NULL) purgetree(tree->left);
+  if (tree->right != NULL) purgetree(tree->right);
   string_free(checktree);
 }
 
@@ -709,7 +710,10 @@ static inline void registerfile(filetree_t **nodeptr,
 		up = branch->parent;
 		if (up->left == branch) up->left_weight++;
 		else if (up->right == branch) up->right_weight++;
-		else errormsg("Internal error: file tree linkage is broken\n");
+		else {
+			errormsg("Internal error: file tree linkage is broken\n");
+			exit(EXIT_FAILURE);
+		}
 		branch = up;
 	}
 
@@ -717,8 +721,8 @@ static inline void registerfile(filetree_t **nodeptr,
 }
 
 
-/* How many bits to ignore when considering a rebalance */
-#define BALANCE_THRESHOLD 8
+/* How much difference to ignore when considering a rebalance */
+#define BALANCE_THRESHOLD 3
 
 /* Rebalance the file tree to reduce search depth
  * Returns 1 if any changes were made, 0 otherwise */
@@ -727,12 +731,13 @@ static inline void rebalance_tree(filetree_t *tree)
 	filetree_t *branch = tree, *promote, *demote;
 	int difference, direction, l, r, imbalance;
 
+	if (!tree) return;
 	/* Don't do anything if weights are equal */
-	if (branch->left_weight == branch->right_weight) return;
+	//if (branch->left_weight == branch->right_weight) return;
 
 	/* Rebalance all children first */
-	if (branch->left_weight > 2) rebalance_tree(branch->left);
-	if (branch->right_weight > 2) rebalance_tree(branch->right);
+	if (branch->left_weight > 1) rebalance_tree(branch->left);
+	if (branch->right_weight > 1) rebalance_tree(branch->right);
 
 	/* If weights are within a certain threshold, do nothing */
 	direction = branch->right_weight - branch->left_weight;
@@ -749,10 +754,17 @@ static inline void rebalance_tree(filetree_t *tree)
 		/* Don't rotate if imbalance will increase */
 		if (imbalance >= difference) return;
 
-		fprintf(stderr, "rebalance: performing right rotation\n");
+//		fprintf(stderr, "\nrebalance: performing right rotation: Lw %d, Rw %d, diff %d, imb %d\n",
+//				branch->left_weight, branch->right_weight, difference, imbalance);
 		/* Rotate the right node up one level */
 		promote = branch->right;
 		demote = branch;
+//		fprintf(stderr, "Demote Lw %d, Rw %d; Promote Lw %d, Rw %d\n",
+//				demote->left_weight, demote->right_weight,
+//				promote->left_weight, promote->right_weight);
+//		fprintf(stderr, "Demote %p [L %p P %p R %p], Promote %p [L %p P %p R %p]\n",
+//				demote, demote->left, demote->parent, demote->right,
+//				promote, promote->left, promote->parent, promote->right);
 		/* Attach new parent's left tree to old parent */
 		demote->right = promote->left;
 		demote->right_weight = promote->left_weight;
@@ -761,8 +773,20 @@ static inline void rebalance_tree(filetree_t *tree)
 		promote->left_weight = demote->left_weight + demote->right_weight + 1;
 		/* Reconnect parent linkages */
 		promote->parent = demote->parent;
+		if (demote->right) demote->right->parent = demote;
 		demote->parent = promote;
-	} else {
+		if (promote->parent == NULL) checktree = promote;
+		else if (promote->parent->left == demote) promote->parent->left = promote;
+		else promote->parent->right = promote;
+//		fprintf(stderr, "Demote Lw %d, Rw %d; Promote Lw %d, Rw %d\n",
+//				demote->left_weight, demote->right_weight,
+//				promote->left_weight, promote->right_weight);
+//		fprintf(stderr, "Demote %p [L %p P %p R %p], Promote %p [L %p P %p R %p]\n",
+//				demote, demote->left, demote->parent, demote->right,
+//				promote, promote->left, promote->parent, promote->right);
+		return;
+
+	} else if (direction < 0) {
 		r = branch->left->right_weight + branch->left_weight;
 		l = branch->left->left_weight;
 		imbalance = r - l;
@@ -770,10 +794,17 @@ static inline void rebalance_tree(filetree_t *tree)
 		/* Don't rotate if imbalance will increase */
 		if (imbalance >= difference) return;
 
-		fprintf(stderr, "rebalance: performing left rotation\n");
+//		fprintf(stderr, "\nrebalance: performing left rotation: Lw %d, Rw %d, diff %d, imb %d\n",
+//				branch->left_weight, branch->right_weight, difference, imbalance);
 		/* Rotate the left node up one level */
 		promote = branch->left;
 		demote = branch;
+//		fprintf(stderr, "Demote Lw %d, Rw %d; Promote Lw %d, Rw %d\n",
+//				demote->left_weight, demote->right_weight,
+//				promote->left_weight, promote->right_weight);
+//		fprintf(stderr, "Demote %p [L %p P %p R %p], Promote %p [L %p P %p R %p]\n",
+//				demote, demote->left, demote->parent, demote->right,
+//				promote, promote->left, promote->parent, promote->right);
 		/* Attach new parent's right tree to old parent */
 		demote->left = promote->right;
 		demote->left_weight = promote->right_weight;
@@ -782,14 +813,29 @@ static inline void rebalance_tree(filetree_t *tree)
 		promote->right_weight = demote->right_weight + demote->left_weight + 1;
 		/* Reconnect parent linkages */
 		promote->parent = demote->parent;
+		if (demote->left) demote->left->parent = demote;
 		demote->parent = promote;
+		if (promote->parent == NULL) checktree = promote;
+		else if (promote->parent->left == demote) promote->parent->left = promote;
+		else promote->parent->right = promote;
+//		fprintf(stderr, "Demote Lw %d, Rw %d; Promote Lw %d, Rw %d\n",
+//				demote->left_weight, demote->right_weight,
+//				promote->left_weight, promote->right_weight);
+//		fprintf(stderr, "Demote %p [L %p P %p R %p], Promote %p [L %p P %p R %p]\n",
+//				demote, demote->left, demote->parent, demote->right,
+//				promote, promote->left, promote->parent, promote->right);
+		return;
+
+	} else {
+		errormsg("Internal error: tree weight direction is zero\n");
+		exit(EXIT_FAILURE);
 	}
 
 	return;
 }
 
 
-static file_t **checkmatch(filetree_t *checktree,
+static file_t **checkmatch(filetree_t *tree,
 		file_t * const restrict file)
 {
   int cmpresult = 0;
@@ -809,36 +855,36 @@ static file_t **checkmatch(filetree_t *checktree,
  * hard links as duplicates, we just return NULL. */
 #ifndef NO_HARDLINKS
   if ((file->inode ==
-      checktree->file->inode) && (file->device ==
-      checktree->file->device)) {
-    if (ISFLAG(flags, F_CONSIDERHARDLINKS)) return &checktree->file;
+      tree->file->inode) && (file->device ==
+      tree->file->device)) {
+    if (ISFLAG(flags, F_CONSIDERHARDLINKS)) return &tree->file;
     else return NULL;
   }
 #endif
 
   /* Exclude files that are not the same size */
-  if (file->size < checktree->file->size) cmpresult = -1;
-  else if (file->size > checktree->file->size) cmpresult = 1;
+  if (file->size < tree->file->size) cmpresult = -1;
+  else if (file->size > tree->file->size) cmpresult = 1;
   /* Exclude files by permissions if requested */
   else if (ISFLAG(flags, F_PERMISSIONS) &&
-            (file->mode != checktree->file->mode
+            (file->mode != tree->file->mode
 #ifndef NO_PERMS
-            || file->uid != checktree->file->uid
-            || file->gid != checktree->file->gid
+            || file->uid != tree->file->uid
+            || file->gid != tree->file->gid
 #endif
 	    )) cmpresult = -1;
   else {
     /* Attempt to exclude files quickly with partial file hashing */
     DBG(partial_hash++;)
-    if (checktree->file->crcpartial_set == 0) {
-      crcsignature = getcrcpartialsignature(checktree->file);
+    if (tree->file->crcpartial_set == 0) {
+      crcsignature = getcrcpartialsignature(tree->file);
       if (crcsignature == NULL) {
-        errormsg("cannot read file %s\n", checktree->file->d_name);
+        errormsg("cannot read file %s\n", tree->file->d_name);
         return NULL;
       }
 
-      checktree->file->crcpartial = *crcsignature;
-      checktree->file->crcpartial_set = 1;
+      tree->file->crcpartial = *crcsignature;
+      tree->file->crcpartial_set = 1;
     }
 
     if (file->crcpartial_set == 0) {
@@ -852,7 +898,7 @@ static file_t **checkmatch(filetree_t *checktree,
       file->crcpartial_set = 1;
     }
 
-    cmpresult = crc_cmp(file->crcpartial, checktree->file->crcpartial);
+    cmpresult = crc_cmp(file->crcpartial, tree->file->crcpartial);
 
     if (file->size <= PARTIAL_HASH_SIZE) {
       /* crcpartial = crcsignature if file is small enough */
@@ -861,19 +907,19 @@ static file_t **checkmatch(filetree_t *checktree,
         file->crcsignature_set = 1;
         DBG(small_file++;)
       }
-      if (checktree->file->crcsignature_set == 0) {
-        checktree->file->crcsignature = checktree->file->crcpartial;
-        checktree->file->crcsignature_set = 1;
+      if (tree->file->crcsignature_set == 0) {
+        tree->file->crcsignature = tree->file->crcpartial;
+        tree->file->crcsignature_set = 1;
         DBG(small_file++;)
       }
     } else if (cmpresult == 0) {
       /* If partial match was correct, perform a full file hash match */
-      if (checktree->file->crcsignature_set == 0) {
-	crcsignature = getcrcsignature(checktree->file);
+      if (tree->file->crcsignature_set == 0) {
+	crcsignature = getcrcsignature(tree->file);
 	if (crcsignature == NULL) return NULL;
 
-	checktree->file->crcsignature = *crcsignature;
-        checktree->file->crcsignature_set = 1;
+	tree->file->crcsignature = *crcsignature;
+        tree->file->crcsignature_set = 1;
       }
 
       if (file->crcsignature_set == 0) {
@@ -885,26 +931,26 @@ static file_t **checkmatch(filetree_t *checktree,
       }
 
       /* Full file hash comparison */
-      cmpresult = crc_cmp(file->crcsignature, checktree->file->crcsignature);
+      cmpresult = crc_cmp(file->crcsignature, tree->file->crcsignature);
 
     }
   }
 
   if (cmpresult < 0) {
-    if (checktree->left != NULL) {
+    if (tree->left != NULL) {
       DBG(left_branch++; tree_depth++;)
-      return checkmatch(checktree->left, file);
+      return checkmatch(tree->left, file);
     } else {
-      registerfile(&checktree, LEFT, file);
+      registerfile(&tree, LEFT, file);
       DBG(if (max_depth < tree_depth) max_depth = tree_depth; tree_depth = 0;)
       return NULL;
     }
   } else if (cmpresult > 0) {
-    if (checktree->right != NULL) {
+    if (tree->right != NULL) {
       DBG(right_branch++; tree_depth++;)
-      return checkmatch(checktree->right, file);
+      return checkmatch(tree->right, file);
     } else {
-      registerfile(&checktree, RIGHT, file);
+      registerfile(&tree, RIGHT, file);
       DBG(if (max_depth < tree_depth) max_depth = tree_depth; tree_depth = 0;)
       return NULL;
     }
@@ -912,7 +958,7 @@ static file_t **checkmatch(filetree_t *checktree,
     /* All compares matched */
     DBG(partial_to_full++;)
     DBG(if (max_depth < tree_depth) max_depth = tree_depth; tree_depth = 0;)
-    return &checktree->file;
+    return &tree->file;
   }
   /* Fall through - should never be reached */
   return NULL;
@@ -1490,7 +1536,6 @@ int main(int argc, char **argv) {
   file_t *files = NULL;
   file_t *curfile;
   file_t **match = NULL;
-  filetree_t *checktree = NULL;
   uintmax_t progress = 0;
   uintmax_t dupecount = 0;
   char **oldargv;
@@ -1612,7 +1657,7 @@ int main(int argc, char **argv) {
       }
       if (*endptr != '\0') {
         errormsg("invalid value for --xsize: '%s'\n", optarg);
-        exit(1);
+        exit(EXIT_FAILURE);
       }
       break;
     case 'A':
@@ -1649,10 +1694,10 @@ int main(int argc, char **argv) {
       printf("CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,\n");
       printf("TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE\n");
       printf("SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.\n");
-      exit(0);
+      exit(EXIT_SUCCESS);
     case 'h':
       help_text();
-      exit(1);
+      exit(EXIT_FAILURE);
     case 'N':
       SETFLAG(flags, F_NOPROMPT);
       break;
@@ -1672,35 +1717,35 @@ int main(int argc, char **argv) {
         ordertype = ORDER_TIME;
       } else {
         errormsg("invalid value for --order: '%s'\n", optarg);
-        exit(1);
+        exit(EXIT_FAILURE);
       }
       break;
 
     default:
       fprintf(stderr, "Try `fdupes --help' for more information.\n");
-      exit(1);
+      exit(EXIT_FAILURE);
     }
   }
 
   if (optind >= argc) {
     errormsg("no directories specified\n");
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 #ifndef NO_HARDLINKS
   if (ISFLAG(flags, F_HARDLINKFILES) && ISFLAG(flags, F_DELETEFILES)) {
     errormsg("options --linkhard and --delete are not compatible\n");
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 
 #endif	/* NO_HARDLINKS */
   if (ISFLAG(flags, F_RECURSE) && ISFLAG(flags, F_RECURSEAFTER)) {
     errormsg("options --recurse and --recurse: are not compatible\n");
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 
   if (ISFLAG(flags, F_SUMMARIZEMATCHES) && ISFLAG(flags, F_DELETEFILES)) {
     errormsg("options --summarize and --delete are not compatible\n");
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 
   if (ISFLAG(flags, F_RECURSEAFTER)) {
@@ -1711,7 +1756,7 @@ int main(int argc, char **argv) {
 
     if (firstrecurse == argc) {
       errormsg("-R option must be isolated from other options\n");
-      exit(1);
+      exit(EXIT_FAILURE);
     }
 
     /* F_RECURSE is not set for directories before --recurse: */
@@ -1736,7 +1781,7 @@ int main(int argc, char **argv) {
 
 //  if (!ISFLAG(flags, F_HIDEPROGRESS)) fprintf(stderr, "\r%60s\r", " ");
   if (!ISFLAG(flags, F_HIDEPROGRESS)) fprintf(stderr, "\n");
-  if (!files) exit(0);
+  if (!files) exit(EXIT_SUCCESS);
 
   curfile = files;
 
@@ -1744,9 +1789,9 @@ int main(int argc, char **argv) {
     if (!checktree) registerfile(&checktree, NONE, curfile);
     else match = checkmatch(checktree, curfile);
 
-    /* Rebalance the match tree afer every 1024 files */
-//    if ((progress & 0x4ff) == 0x400) rebalance_tree(checktree);
-	rebalance_tree(checktree);//DEBUG
+    /* Rebalance the match tree afer every 128 files */
+    if ((progress & 0xff) == 0x80) rebalance_tree(checktree);
+//	rebalance_tree(checktree);
 
     /* Byte-for-byte check that a matched pair are actually matched */
     if (match != NULL) {
@@ -1847,6 +1892,6 @@ skip_full_check:
   }
 #endif /* DEBUG */
 
-  exit(0);
+  exit(EXIT_SUCCESS);
 
 }
