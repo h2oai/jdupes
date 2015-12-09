@@ -723,43 +723,47 @@ static inline void registerfile(filetree_t **nodeptr,
 
 /* How much difference to ignore when considering a rebalance */
 #ifndef BALANCE_THRESHOLD
-#define BALANCE_THRESHOLD 3
+#define BALANCE_THRESHOLD 4
 #endif
 
 /* Rebalance the file tree to reduce search depth
  * Returns 1 if any changes were made, 0 otherwise */
-static inline void rebalance_tree(filetree_t *tree)
+static inline void rebalance_tree(filetree_t * const tree)
 {
-	filetree_t *branch, *promote, *demote;
-	int difference, direction, l, r, imbalance;
+	filetree_t * restrict promote;
+	filetree_t * restrict demote;
+	int difference, direction;
+#ifdef CONSIDER_IMBALANCE
+	int l, r, imbalance;
+#endif
 
 	if (!tree) return;
 
 	/* Rebalance all children first */
-	branch = tree;
-	if (branch->left_weight > 2) rebalance_tree(branch->left);
-	if (branch->right_weight > 2) rebalance_tree(branch->right);
+	if (tree->left_weight > BALANCE_THRESHOLD) rebalance_tree(tree->left);
+	if (tree->right_weight > BALANCE_THRESHOLD) rebalance_tree(tree->right);
 
 	/* If weights are within a certain threshold, do nothing */
-	direction = branch->right_weight - branch->left_weight;
+	direction = tree->right_weight - tree->left_weight;
 	difference = direction;
 	if (difference < 0) difference = -difference;
 	if (difference <= BALANCE_THRESHOLD) return;
 
 	/* Determine if a tree rotation will help, and do it if so */
 	if (direction > 0) {
-		l = branch->right->left_weight + branch->right_weight;
-		r = branch->right->right_weight;
+#ifdef CONSIDER_IMBALANCE
+		l = tree->right->left_weight + tree->right_weight;
+		r = tree->right->right_weight;
 		imbalance = l - r;
 		if (imbalance < 0) imbalance = -imbalance;
 		/* Don't rotate if imbalance will increase */
 		if (imbalance >= difference) return;
-
+#endif /* CONSIDER_IMBALANCE */
 //		fprintf(stderr, "\nrebalance: performing right rotation: Lw %d, Rw %d, diff %d, imb %d\n",
-//				branch->left_weight, branch->right_weight, difference, imbalance);
+//				tree->left_weight, tree->right_weight, difference, imbalance);
 		/* Rotate the right node up one level */
-		promote = branch->right;
-		demote = branch;
+		promote = tree->right;
+		demote = tree;
 //		fprintf(stderr, "Demote Lw %d, Rw %d; Promote Lw %d, Rw %d\n",
 //				demote->left_weight, demote->right_weight,
 //				promote->left_weight, promote->right_weight);
@@ -787,18 +791,19 @@ static inline void rebalance_tree(filetree_t *tree)
 //				promote, promote->left, promote->parent, promote->right);
 		return;
 	} else if (direction < 0) {
-		r = branch->left->right_weight + branch->left_weight;
-		l = branch->left->left_weight;
+#ifdef CONSIDER_IMBALANCE
+		r = tree->left->right_weight + tree->left_weight;
+		l = tree->left->left_weight;
 		imbalance = r - l;
 		if (imbalance < 0) imbalance = -imbalance;
 		/* Don't rotate if imbalance will increase */
 		if (imbalance >= difference) return;
-
+#endif /* CONSIDER_IMBALANCE */
 //		fprintf(stderr, "\nrebalance: performing left rotation: Lw %d, Rw %d, diff %d, imb %d\n",
-//				branch->left_weight, branch->right_weight, difference, imbalance);
+//				tree->left_weight, tree->right_weight, difference, imbalance);
 		/* Rotate the left node up one level */
-		promote = branch->left;
-		demote = branch;
+		promote = tree->left;
+		demote = tree;
 //		fprintf(stderr, "Demote Lw %d, Rw %d; Promote Lw %d, Rw %d\n",
 //				demote->left_weight, demote->right_weight,
 //				promote->left_weight, promote->right_weight);
@@ -826,12 +831,9 @@ static inline void rebalance_tree(filetree_t *tree)
 //				promote, promote->left, promote->parent, promote->right);
 		return;
 
-	} else {
-		errormsg("Internal error: tree weight direction is zero\n");
-		exit(EXIT_FAILURE);
 	}
 
-	/* Fall through - should never be reached */
+	/* Fall through */
 	return;
 }
 
@@ -1792,7 +1794,7 @@ int main(int argc, char **argv) {
 
     /* Rebalance the match tree after a certain number of files processed */
 #ifndef BAL_BIT
-#define BAL_BIT 0x800
+#define BAL_BIT 0x1000
 #endif
     if ((progress & ((BAL_BIT << 1) - 1)) == BAL_BIT) rebalance_tree(checktree);
 //	rebalance_tree(checktree);
