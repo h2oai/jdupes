@@ -726,8 +726,7 @@ static inline void registerfile(filetree_t **nodeptr,
 #define BALANCE_THRESHOLD 4
 #endif
 
-/* Rebalance the file tree to reduce search depth
- * Returns 1 if any changes were made, 0 otherwise */
+/* Rebalance the file tree to reduce search depth */
 static inline void rebalance_tree(filetree_t * const tree)
 {
 	filetree_t * restrict promote;
@@ -759,17 +758,10 @@ static inline void rebalance_tree(filetree_t * const tree)
 		/* Don't rotate if imbalance will increase */
 		if (imbalance >= difference) return;
 #endif /* CONSIDER_IMBALANCE */
-//		fprintf(stderr, "\nrebalance: performing right rotation: Lw %d, Rw %d, diff %d, imb %d\n",
-//				tree->left_weight, tree->right_weight, difference, imbalance);
+
 		/* Rotate the right node up one level */
 		promote = tree->right;
 		demote = tree;
-//		fprintf(stderr, "Demote Lw %d, Rw %d; Promote Lw %d, Rw %d\n",
-//				demote->left_weight, demote->right_weight,
-//				promote->left_weight, promote->right_weight);
-//		fprintf(stderr, "Demote %p [L %p P %p R %p], Promote %p [L %p P %p R %p]\n",
-//				demote, demote->left, demote->parent, demote->right,
-//				promote, promote->left, promote->parent, promote->right);
 		/* Attach new parent's left tree to old parent */
 		demote->right = promote->left;
 		demote->right_weight = promote->left_weight;
@@ -783,12 +775,6 @@ static inline void rebalance_tree(filetree_t * const tree)
 		if (promote->parent == NULL) checktree = promote;
 		else if (promote->parent->left == demote) promote->parent->left = promote;
 		else promote->parent->right = promote;
-//		fprintf(stderr, "Demote Lw %d, Rw %d; Promote Lw %d, Rw %d\n",
-//				demote->left_weight, demote->right_weight,
-//				promote->left_weight, promote->right_weight);
-//		fprintf(stderr, "Demote %p [L %p P %p R %p], Promote %p [L %p P %p R %p]\n",
-//				demote, demote->left, demote->parent, demote->right,
-//				promote, promote->left, promote->parent, promote->right);
 		return;
 	} else if (direction < 0) {
 #ifdef CONSIDER_IMBALANCE
@@ -799,17 +785,10 @@ static inline void rebalance_tree(filetree_t * const tree)
 		/* Don't rotate if imbalance will increase */
 		if (imbalance >= difference) return;
 #endif /* CONSIDER_IMBALANCE */
-//		fprintf(stderr, "\nrebalance: performing left rotation: Lw %d, Rw %d, diff %d, imb %d\n",
-//				tree->left_weight, tree->right_weight, difference, imbalance);
+
 		/* Rotate the left node up one level */
 		promote = tree->left;
 		demote = tree;
-//		fprintf(stderr, "Demote Lw %d, Rw %d; Promote Lw %d, Rw %d\n",
-//				demote->left_weight, demote->right_weight,
-//				promote->left_weight, promote->right_weight);
-//		fprintf(stderr, "Demote %p [L %p P %p R %p], Promote %p [L %p P %p R %p]\n",
-//				demote, demote->left, demote->parent, demote->right,
-//				promote, promote->left, promote->parent, promote->right);
 		/* Attach new parent's right tree to old parent */
 		demote->left = promote->right;
 		demote->left_weight = promote->right_weight;
@@ -823,12 +802,6 @@ static inline void rebalance_tree(filetree_t * const tree)
 		if (promote->parent == NULL) checktree = promote;
 		else if (promote->parent->left == demote) promote->parent->left = promote;
 		else promote->parent->right = promote;
-//		fprintf(stderr, "Demote Lw %d, Rw %d; Promote Lw %d, Rw %d\n",
-//				demote->left_weight, demote->right_weight,
-//				promote->left_weight, promote->right_weight);
-//		fprintf(stderr, "Demote %p [L %p P %p R %p], Promote %p [L %p P %p R %p]\n",
-//				demote, demote->left, demote->parent, demote->right,
-//				promote, promote->left, promote->parent, promote->right);
 		return;
 
 	}
@@ -1792,12 +1765,11 @@ int main(int argc, char **argv) {
     if (!checktree) registerfile(&checktree, NONE, curfile);
     else match = checkmatch(checktree, curfile);
 
-    /* Rebalance the match tree after a certain number of files processed */
 #ifndef BAL_BIT
-#define BAL_BIT 0x1000
+#define BAL_BIT 0x2000
 #endif
+    /* Rebalance the match tree after a certain number of files processed */
     if ((progress & ((BAL_BIT << 1) - 1)) == BAL_BIT) rebalance_tree(checktree);
-//	rebalance_tree(checktree);
 
     /* Byte-for-byte check that a matched pair are actually matched */
     if (match != NULL) {
