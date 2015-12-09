@@ -722,22 +722,23 @@ static inline void registerfile(filetree_t **nodeptr,
 
 
 /* How much difference to ignore when considering a rebalance */
-#define BALANCE_THRESHOLD 2
+#ifndef BALANCE_THRESHOLD
+#define BALANCE_THRESHOLD 3
+#endif
 
 /* Rebalance the file tree to reduce search depth
  * Returns 1 if any changes were made, 0 otherwise */
 static inline void rebalance_tree(filetree_t *tree)
 {
-	filetree_t *branch = tree, *promote, *demote;
+	filetree_t *branch, *promote, *demote;
 	int difference, direction, l, r, imbalance;
 
 	if (!tree) return;
-	/* Don't do anything if weights are equal */
-	//if (branch->left_weight == branch->right_weight) return;
 
 	/* Rebalance all children first */
-	if (branch->left_weight > 1) rebalance_tree(branch->left);
-	if (branch->right_weight > 1) rebalance_tree(branch->right);
+	branch = tree;
+	if (branch->left_weight > 2) rebalance_tree(branch->left);
+	if (branch->right_weight > 2) rebalance_tree(branch->right);
 
 	/* If weights are within a certain threshold, do nothing */
 	direction = branch->right_weight - branch->left_weight;
@@ -785,7 +786,6 @@ static inline void rebalance_tree(filetree_t *tree)
 //				demote, demote->left, demote->parent, demote->right,
 //				promote, promote->left, promote->parent, promote->right);
 		return;
-
 	} else if (direction < 0) {
 		r = branch->left->right_weight + branch->left_weight;
 		l = branch->left->left_weight;
@@ -831,6 +831,7 @@ static inline void rebalance_tree(filetree_t *tree)
 		exit(EXIT_FAILURE);
 	}
 
+	/* Fall through - should never be reached */
 	return;
 }
 
@@ -1789,8 +1790,11 @@ int main(int argc, char **argv) {
     if (!checktree) registerfile(&checktree, NONE, curfile);
     else match = checkmatch(checktree, curfile);
 
-    /* Rebalance the match tree afer every 128 files processed */
-    if ((progress & 0xff) == 0x80) rebalance_tree(checktree);
+    /* Rebalance the match tree after a certain number of files processed */
+#ifndef BAL_BIT
+#define BAL_BIT 0x800
+#endif
+    if ((progress & ((BAL_BIT << 1) - 1)) == BAL_BIT) rebalance_tree(checktree);
 //	rebalance_tree(checktree);
 
     /* Byte-for-byte check that a matched pair are actually matched */
