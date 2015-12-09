@@ -134,14 +134,19 @@ typedef struct _file {
 
 typedef struct _filetree {
   file_t *file;
-  struct _filetree *parent;
   struct _filetree *left;
   struct _filetree *right;
+#ifdef USE_TREE_REBALANCE
+  struct _filetree *parent;
   unsigned int left_weight;
   unsigned int right_weight;
+#endif /* USE_TREE_REBALANCE */
 } filetree_t;
 
+#ifdef USE_TREE_REBALANCE
 static filetree_t *checktree = NULL;
+#endif
+
 static uintmax_t filecount = 0; // Required for progress indicator code
 
 /* Hash/compare performance statistics (debug mode) */
@@ -155,7 +160,7 @@ static unsigned int tree_depth = 0, max_depth = 0;
 /* Directory parameter position counter */
 static unsigned int user_dir_count = 1;
 
-/* registerfile() direction options and tree depth tracking */
+/* registerfile() direction options */
 enum tree_direction { NONE, LEFT, RIGHT };
 
 /***** End definitions, begin code *****/
@@ -172,7 +177,9 @@ enum tree_direction { NONE, LEFT, RIGHT };
  */
 
 /* Must be divisible by uintptr_t */
-#define SMA_PAGE_SIZE 65536
+#ifndef SMA_PAGE_SIZE
+#define SMA_PAGE_SIZE 262144
+#endif
 
 static void *sma_head = NULL;
 static uintptr_t *sma_lastpage = NULL;
@@ -665,14 +672,13 @@ static inline void purgetree(filetree_t *tree)
 {
   if (tree->left != NULL) purgetree(tree->left);
   if (tree->right != NULL) purgetree(tree->right);
-  string_free(checktree);
+  string_free(tree);
 }
 
 
 static inline void registerfile(filetree_t **nodeptr,
 		enum tree_direction d, file_t * restrict file)
 {
-	filetree_t * restrict node = *nodeptr;
 	filetree_t * restrict branch;
 
 	/* Allocate and initialize a new node for the file */
@@ -681,20 +687,21 @@ static inline void registerfile(filetree_t **nodeptr,
 	branch->file = file;
 	branch->left = NULL;
 	branch->right = NULL;
+#ifdef USE_TREE_REBALANCE
 	branch->left_weight = 0;
 	branch->right_weight = 0;
 
 	/* Attach the new node to the requested branch and the parent */
 	switch (d) {
 		case LEFT:
-			branch->parent = node;
-			node->left = branch;
-			node->left_weight++;
+			branch->parent = *nodeptr;
+			(*nodeptr)->left = branch;
+			(*nodeptr)->left_weight++;
 			break;
 		case RIGHT:
-			branch->parent = node;
-			node->right = branch;
-			node->right_weight++;
+			branch->parent = *nodeptr;
+			(*nodeptr)->right = branch;
+			(*nodeptr)->right_weight++;
 			break;
 		case NONE:
 			/* For the root of the tree only */
@@ -716,14 +723,38 @@ static inline void registerfile(filetree_t **nodeptr,
 		}
 		branch = up;
 	}
+#else /* USE_TREE_REBALANCE */
+	/* Attach the new node to the requested branch and the parent */
+	switch (d) {
+		case LEFT:
+			(*nodeptr)->left = branch;
+			break;
+		case RIGHT:
+			(*nodeptr)->right = branch;
+			break;
+		case NONE:
+			/* For the root of the tree only */
+			*nodeptr = branch;
+			break;
+	}
+
+#endif /* USE_TREE_REBALANCE */
 
 	return;
 }
 
 
+/* Experimental tree rebalance code. This slows things down in testing
+ * but may be more useful in the future. Pass -DUSE_TREE_REBALANCE
+ * to try it. */
+#ifdef USE_TREE_REBALANCE
+
 /* How much difference to ignore when considering a rebalance */
 #ifndef BALANCE_THRESHOLD
 #define BALANCE_THRESHOLD 4
+#endif
+#ifndef BAL_BIT
+#define BAL_BIT 0x2000
 #endif
 
 /* Rebalance the file tree to reduce search depth */
@@ -809,6 +840,8 @@ static inline void rebalance_tree(filetree_t * const tree)
 	/* Fall through */
 	return;
 }
+
+#endif /* USE_TREE_REBALANCE */
 
 
 static file_t **checkmatch(filetree_t *tree,
@@ -1505,20 +1538,22 @@ static inline void help_text()
 }
 
 int main(int argc, char **argv) {
-  int x;
-  int opt;
   FILE *file1;
   FILE *file2;
-  file_t *files = NULL;
-  file_t *curfile;
-  file_t **match = NULL;
-  uintmax_t progress = 0;
-  uintmax_t dupecount = 0;
-  char **oldargv;
-  int firstrecurse;
-  ordertype_t ordertype = ORDER_TIME;
-  int delay = DELAY_COUNT;
-  char *endptr;
+  static file_t *files = NULL;
+  static file_t *curfile;
+  static file_t **match = NULL;
+  static uintmax_t progress = 0;
+  static uintmax_t dupecount = 0;
+  static char **oldargv;
+  static int firstrecurse;
+  static ordertype_t ordertype = ORDER_TIME;
+  static int opt;
+  static int delay = DELAY_COUNT;
+  static char *endptr;
+#ifndef USE_TREE_REBALANCE
+  filetree_t *checktree = NULL;
+#endif
 
 #ifndef OMIT_GETOPT_LONG
   static struct option long_options[] =
@@ -1736,7 +1771,7 @@ int main(int argc, char **argv) {
     }
 
     /* F_RECURSE is not set for directories before --recurse: */
-    for (x = optind; x < firstrecurse; x++) {
+    for (int x = optind; x < firstrecurse; x++) {
       grokdir(argv[x], &files);
       user_dir_count++;
     }
@@ -1744,12 +1779,12 @@ int main(int argc, char **argv) {
     /* Set F_RECURSE for directories after --recurse: */
     SETFLAG(flags, F_RECURSE);
 
-    for (x = firstrecurse; x < argc; x++) {
+    for (int x = firstrecurse; x < argc; x++) {
       grokdir(argv[x], &files);
       user_dir_count++;
     }
   } else {
-    for (x = optind; x < argc; x++) {
+    for (int x = optind; x < argc; x++) {
       grokdir(argv[x], &files);
       user_dir_count++;
     }
@@ -1765,11 +1800,10 @@ int main(int argc, char **argv) {
     if (!checktree) registerfile(&checktree, NONE, curfile);
     else match = checkmatch(checktree, curfile);
 
-#ifndef BAL_BIT
-#define BAL_BIT 0x2000
-#endif
+#ifdef USE_TREE_REBALANCE
     /* Rebalance the match tree after a certain number of files processed */
     if ((progress & ((BAL_BIT << 1) - 1)) == BAL_BIT) rebalance_tree(checktree);
+#endif /* USE_TREE_REBALANCE */
 
     /* Byte-for-byte check that a matched pair are actually matched */
     if (match != NULL) {
