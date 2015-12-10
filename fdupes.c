@@ -457,15 +457,16 @@ static inline void getfilestats(file_t * const restrict file)
 }
 
 
-static void grokdir(const char * const restrict dir, file_t ** const restrict filelistp)
+static void grokdir(const char * const restrict dir,
+		file_t * restrict * const restrict filelistp)
 {
   DIR *cd;
-  file_t *newfile;
-  static struct dirent *dirinfo;
-  int lastchar;
+  file_t * restrict newfile;
+  static int lastchar;
 #ifndef NO_SYMLINKS
   static struct stat linfo;
 #endif
+  static struct dirent *dirinfo;
   static uintmax_t progress = 0, dir_progress = 0;
   static int grokdir_level = 0;
   static int delay = DELAY_COUNT;
@@ -498,8 +499,9 @@ static void grokdir(const char * const restrict dir, file_t ** const restrict fi
         strcat(tempname, "/");
       strcat(tempname, dirinfo->d_name);
 
-      /* Allocate the file_t and the d_name entries in one shot */
-      newfile = (file_t *)string_malloc(sizeof(file_t) + strlen(dir) + strlen(dirinfo->d_name) + 2);
+      /* Allocate the file_t and the d_name entries in one shot
+       * Reusing lastchar (with a +1) saves us a strlen(dir) here */
+      newfile = (file_t *)string_malloc(sizeof(file_t) + lastchar + strlen(dirinfo->d_name) +3);
       if (!newfile) errormsg(NULL);
       else newfile->next = *filelistp;
 
@@ -599,11 +601,10 @@ static void grokdir(const char * const restrict dir, file_t ** const restrict fi
 }
 
 /* Use Jody Bruchon's hash function on part or all of a file */
-static hash_t *getcrcsignatureuntil(file_t * const checkfile,
+static hash_t *getcrcsignatureuntil(const file_t * const restrict checkfile,
 		const off_t max_read)
 {
   off_t fsize;
-  off_t bytes_to_read;
   /* This is an array because we return a pointer to it */
   static hash_t hash[1];
   static hash_t chunk[(CHUNK_SIZE / sizeof(hash_t))];
@@ -650,6 +651,8 @@ static hash_t *getcrcsignatureuntil(file_t * const checkfile,
 
   /* Read the file in CHUNK_SIZE chunks until we've read it all. */
   while (fsize > 0) {
+    off_t bytes_to_read;
+
     bytes_to_read = (fsize >= CHUNK_SIZE) ? CHUNK_SIZE : fsize;
     if (fread((void *)chunk, bytes_to_read, 1, file) != 1) {
       errormsg("error reading from file %s\n", checkfile->d_name);
@@ -668,7 +671,7 @@ static hash_t *getcrcsignatureuntil(file_t * const checkfile,
 }
 
 
-static inline void purgetree(filetree_t *tree)
+static inline void purgetree(filetree_t * const restrict tree)
 {
   if (tree->left != NULL) purgetree(tree->left);
   if (tree->right != NULL) purgetree(tree->right);
@@ -676,8 +679,8 @@ static inline void purgetree(filetree_t *tree)
 }
 
 
-static inline void registerfile(filetree_t **nodeptr,
-		enum tree_direction d, file_t * restrict file)
+static inline void registerfile(filetree_t * restrict * const restrict nodeptr,
+		const enum tree_direction d, file_t * const restrict file)
 {
 	filetree_t * restrict branch;
 
@@ -844,11 +847,11 @@ static inline void rebalance_tree(filetree_t * const tree)
 #endif /* USE_TREE_REBALANCE */
 
 
-static file_t **checkmatch(filetree_t *tree,
+static file_t **checkmatch(filetree_t * restrict tree,
 		file_t * const restrict file)
 {
   int cmpresult = 0;
-  hash_t * restrict crcsignature;
+  const hash_t * restrict crcsignature;
 
   /* If device and inode fields are equal one of the files is a
    * hard link to the other or the files have been listed twice
@@ -976,12 +979,12 @@ static file_t **checkmatch(filetree_t *tree,
 
 /* Do a byte-by-byte comparison in case two different files produce the
    same signature. Unlikely, but better safe than sorry. */
-static inline int confirmmatch(FILE * const file1, FILE * const file2)
+static inline int confirmmatch(FILE * const restrict file1, FILE * const restrict file2)
 {
   static char c1[CHUNK_SIZE];
   static char c2[CHUNK_SIZE];
-  size_t r1;
-  size_t r2;
+  static size_t r1;
+  static size_t r2;
 
   fseek(file1, 0, SEEK_SET);
   fseek(file2, 0, SEEK_SET);
@@ -1335,7 +1338,7 @@ static void registerpair(file_t **matchlist, file_t *newmatch,
   file_t *back;
 
   (*matchlist)->hasdupes = 1;
-  back = 0;
+  back = NULL;
   traverse = *matchlist;
 
   /* FIXME: This needs to be changed! As it currently stands, the compare
@@ -1346,7 +1349,7 @@ static void registerpair(file_t **matchlist, file_t *newmatch,
     if (comparef(newmatch, traverse) <= 0) {
       newmatch->duplicates = traverse;
 
-      if (back == 0) {
+      if (!back) {
 	*matchlist = newmatch; /* update pointer to head of list */
 	newmatch->hasdupes = 1;
 	traverse->hasdupes = 0; /* flag is only for first file in dupe chain */
@@ -1356,7 +1359,7 @@ static void registerpair(file_t **matchlist, file_t *newmatch,
     } else {
       if (traverse->duplicates == 0) {
 	traverse->duplicates = newmatch;
-	if (back == 0) traverse->hasdupes = 1;
+	if(!back) traverse->hasdupes = 1;
 
 	break;
       }
@@ -1371,14 +1374,14 @@ static void registerpair(file_t **matchlist, file_t *newmatch,
 #ifndef NO_HARDLINKS
 static inline void hardlinkfiles(file_t *files)
 {
-  file_t *tmpfile;
-  file_t *curfile;
-  file_t **dupelist;
-  int counter;
-  int max = 0;
-  int x = 0;
-  int i;
-  char temp_path[4096];
+  static file_t *tmpfile;
+  static file_t *curfile;
+  static file_t ** restrict dupelist;
+  static int counter;
+  static int max = 0;
+  static int x = 0;
+  static int i;
+  static char temp_path[4096];
 
   curfile = files;
 
@@ -1482,7 +1485,7 @@ static inline void hardlinkfiles(file_t *files)
 #endif /* NO_HARDLINKS */
 
 
-static inline void help_text()
+static inline void help_text(void)
 {
   printf("Usage: fdupes [options] DIRECTORY...\n\n");
 
@@ -1538,22 +1541,16 @@ static inline void help_text()
 }
 
 int main(int argc, char **argv) {
-  FILE *file1;
-  FILE *file2;
   static file_t *files = NULL;
   static file_t *curfile;
-  static file_t **match = NULL;
-  static uintmax_t progress = 0;
-  static uintmax_t dupecount = 0;
   static char **oldargv;
-  static int firstrecurse;
-  static ordertype_t ordertype = ORDER_TIME;
-  static int opt;
-  static int delay = DELAY_COUNT;
   static char *endptr;
 #ifndef USE_TREE_REBALANCE
-  filetree_t *checktree = NULL;
+    filetree_t *checktree = NULL;
 #endif
+  static int firstrecurse;
+  static int opt;
+  static ordertype_t ordertype = ORDER_TIME;
 
 #ifndef OMIT_GETOPT_LONG
   static struct option long_options[] =
@@ -1797,6 +1794,13 @@ int main(int argc, char **argv) {
   curfile = files;
 
   while (curfile) {
+    static uintmax_t progress = 0;
+    static uintmax_t dupecount = 0;
+    static file_t **match = NULL;
+    static FILE *file1;
+    static FILE *file2;
+    static unsigned int delay = DELAY_COUNT;
+
     if (!checktree) registerfile(&checktree, NONE, curfile);
     else match = checkmatch(checktree, curfile);
 
