@@ -1682,7 +1682,7 @@ int main(int argc, char **argv) {
 #endif
       break;
     case 'v':
-      printf("fdupes %s\n", VERSION);
+      printf("fdupes-jody %s\n", VERSION);
       printf("Copyright (C) 1999-2015 Adrian Lopez\n");
 #ifdef ON_WINDOWS
       printf("Ported to Windows (MinGW-w64) by Jody Bruchon\n");
