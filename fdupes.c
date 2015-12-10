@@ -274,7 +274,7 @@ static void *string_malloc(unsigned int len)
 
 
 /* Roll back the last allocation */
-static inline void string_free(void *addr)
+static inline void string_free(const void * const restrict addr)
 {
 	static const char * restrict p;
 
@@ -295,12 +295,14 @@ static inline void string_free(void *addr)
 /* Destroy all allocated pages */
 static inline void string_malloc_destroy(void)
 {
+	static void *cur;
 	static uintptr_t *next;
 
+	cur = (void *)sma_head;
 	while (sma_pages > 0) {
-		next = (uintptr_t *)*(uintptr_t *)sma_head;
-		free(sma_head);
-		sma_head = (char *)next;
+		next = (uintptr_t *)*(uintptr_t *)cur;
+		free(cur);
+		cur = (void *)next;
 		sma_pages--;
 	}
 	sma_head = NULL;
@@ -320,7 +322,7 @@ static inline int crc_cmp(const hash_t hash1, const hash_t hash2)
 
 
 /* Print error message. NULL will output "out of memory" and exit */
-static void errormsg(char *message, ...)
+static void errormsg(const char *message, ...)
 {
   va_list ap;
 
