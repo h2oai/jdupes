@@ -6,6 +6,17 @@ who contributed the patch or idea appears first, followed by
 those who've otherwise worked on that item. For a list of
 contributors names and identifiers please see the CONTRIBUTORS file.
 
+Changes from 2.0.2 to 2.0.3 [JLB]
+
+- Minor performance improvements to hashing and memory allocation code
+- Added an experimental tree rebalancing function. It is compiled out
+  by default because benchmarks indicated either no improvement or a
+  slight slowdown compared to an unbalanced tree. To compile it in,
+  try 'make CFLAGS_EXTRA=-DUSE_TREE_REBALANCE'
+- Increased size of string_malloc pages from 64K to 256K since testing
+  shows a minor performance improvement with large file sets
+- Made variable scope and type changes for a tiny performance boost
+
 Changes from 2.0.1 to 2.0.2 [JLB]
 
 - Removed redundant getfilestats() calls for a tiny speed boost
