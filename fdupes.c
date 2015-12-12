@@ -312,6 +312,8 @@ static inline void string_malloc_destroy(void)
 
 
 /* Compare two jody_hashes like memcmp() */
+#define CRC_COMPARE(a,b) ((a > b) ? 1:((a == b) ? 0:-1))
+#if 0
 static inline int crc_cmp(const hash_t hash1, const hash_t hash2)
 {
 	if (hash1 > hash2) return 1;
@@ -319,7 +321,7 @@ static inline int crc_cmp(const hash_t hash1, const hash_t hash2)
 	/* No need to compare a third time */
 	return -1;
 }
-
+#endif
 
 /* Print error message. NULL will output "out of memory" and exit */
 static void errormsg(const char *message, ...)
@@ -464,7 +466,6 @@ static void grokdir(const char * const restrict dir,
 {
   DIR *cd;
   file_t * restrict newfile;
-  static int lastchar;
 #ifndef NO_SYMLINKS
   static struct stat linfo;
 #endif
@@ -472,7 +473,6 @@ static void grokdir(const char * const restrict dir,
   static uintmax_t progress = 0, dir_progress = 0;
   static int grokdir_level = 0;
   static int delay = DELAY_COUNT;
-  char *name;
   static char tempname[8192];
 
   cd = opendir(dir);
@@ -485,6 +485,10 @@ static void grokdir(const char * const restrict dir,
   }
 
   while ((dirinfo = readdir(cd)) != NULL) {
+    char * restrict tp = tempname;
+    size_t dirlen;
+    size_t d_name_len;
+
     if (strcmp(dirinfo->d_name, ".") && strcmp(dirinfo->d_name, "..")) {
       if (!ISFLAG(flags, F_HIDEPROGRESS)) {
         if (delay >= DELAY_COUNT) {
@@ -494,16 +498,23 @@ static void grokdir(const char * const restrict dir,
         } else delay++;
       }
 
-      /* Assemble the file's full path name */
-      strcpy(tempname, dir);
-      lastchar = strlen(dir) - 1;
-      if (lastchar >= 0 && dir[lastchar] != '/')
-        strcat(tempname, "/");
-      strcat(tempname, dirinfo->d_name);
+      /* Assemble the file's full path name, optimized to avoid strcat() */
+      dirlen = strlen(dir);
+      d_name_len = strlen(dirinfo->d_name);
+      memcpy(tp, dir, dirlen+1);
+      if (dirlen != 0 && tp[dirlen-1] != '/') {
+        tp[dirlen] = '/';
+        dirlen++;
+      }
+      tp += dirlen;
+      memcpy(tp, dirinfo->d_name, d_name_len);
+      tp += d_name_len;
+      *tp = '\0';
+      d_name_len++;
 
       /* Allocate the file_t and the d_name entries in one shot
        * Reusing lastchar (with a +1) saves us a strlen(dir) here */
-      newfile = (file_t *)string_malloc(sizeof(file_t) + lastchar + strlen(dirinfo->d_name) +3);
+      newfile = (file_t *)string_malloc(sizeof(file_t) + dirlen + d_name_len + 2);
       if (!newfile) errormsg(NULL);
       else newfile->next = *filelistp;
 
@@ -526,13 +537,14 @@ static void grokdir(const char * const restrict dir,
       newfile->duplicates = NULL;
       newfile->hasdupes = 0;
 
-      strcpy(newfile->d_name, tempname);
+      tp = tempname;
+      memcpy(newfile->d_name, tp, dirlen + d_name_len);
 
       if (ISFLAG(flags, F_EXCLUDEHIDDEN)) {
-        /* WARNING: Re-used tempname here to eliminate a strdup() */
-        strcpy(tempname, newfile->d_name);
-        name = basename(tempname);
-        if (name[0] == '.' && strcmp(name, ".") && strcmp(name, "..")) {
+        /* WARNING: Re-used tp here to eliminate a strdup() */
+        strcpy(tp, newfile->d_name);
+        tp = basename(tp);
+        if (tp[0] == '.' && strcmp(tp, ".") && strcmp(tp, "..")) {
           string_free((char *)newfile);
           continue;
         }
@@ -912,7 +924,7 @@ static file_t **checkmatch(filetree_t * restrict tree,
       file->crcpartial_set = 1;
     }
 
-    cmpresult = crc_cmp(file->crcpartial, tree->file->crcpartial);
+    cmpresult = CRC_COMPARE(file->crcpartial, tree->file->crcpartial);
 
     if (file->size <= PARTIAL_HASH_SIZE) {
       /* crcpartial = crcsignature if file is small enough */
@@ -945,7 +957,7 @@ static file_t **checkmatch(filetree_t * restrict tree,
       }
 
       /* Full file hash comparison */
-      cmpresult = crc_cmp(file->crcsignature, tree->file->crcsignature);
+      cmpresult = CRC_COMPARE(file->crcsignature, tree->file->crcsignature);
 
     }
   }
