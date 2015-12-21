@@ -27,6 +27,11 @@ PREFIX = /usr/local
 #
 CFLAGS_CONFIG += -DNO_FLOAT
 
+#
+# Whether we have btrfs/ioctl.h. Needed for --dedupe.
+#
+# HAVE_BTRFS_IOCTL_H = -DHAVE_BTRFS_IOCTL_H
+
 #####################################################################
 # Developer Configuration Section                                   #
 #####################################################################
@@ -87,7 +92,7 @@ ifeq ($(OS), Windows_NT)
 	OBJECT_FILES += getino.o
 endif
 
-CFLAGS= $(COMPILER_OPTIONS) -I. -DVERSION=\"$(VERSION)\" $(CFLAGS_CONFIG) $(CFLAGS_EXTRA)
+CFLAGS= $(COMPILER_OPTIONS) -I. -DVERSION=\"$(VERSION)\" $(CFLAGS_CONFIG) $(CFLAGS_EXTRA) $(HAVE_BTRFS_IOCTL_H)
 
 INSTALL_PROGRAM = $(INSTALL) -c -m 0755
 INSTALL_DATA    = $(INSTALL) -c -m 0644

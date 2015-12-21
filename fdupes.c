@@ -38,6 +38,17 @@
 #include <libgen.h>
 #include "jody_hash.h"
 
+/* Optional btrfs support */
+#ifdef ENABLE_BTRFS
+#define HAVE_BTRFS_IOCTL_H
+#endif
+#ifdef HAVE_BTRFS_IOCTL_H
+#include <sys/types.h>
+#include <fcntl.h>
+#include <sys/ioctl.h>
+#include <btrfs/ioctl.h>
+#endif
+
 /* Detect Windows and modify as needed */
 #if defined _WIN32 || defined __CYGWIN__
  #define ON_WINDOWS 1
@@ -85,6 +96,7 @@ static uint_fast32_t flags = 0;
 #define F_EXCLUDESIZE		0x00008000
 #define F_QUICKCOMPARE		0x00010000
 #define F_USEPARAMORDER		0x00020000
+#define F_DEDUPEFILES		0x00040000
 #define F_DEBUG			0x80000000
 
 typedef enum {
@@ -1082,6 +1094,140 @@ static void printmatches(file_t * restrict files)
   }
 }
 
+void get_max_dupes(file_t *files, int *max, int *n_files) {
+  file_t *curdupe;
+  int n_dupes;
+
+  *max = 0;
+  if (n_files)
+    *n_files = 0;
+
+  while (files) {
+    if (files->hasdupes) {
+      if (files->size && n_files)
+        (*n_files)++;
+
+      n_dupes = 1;
+
+      for (curdupe = files->duplicates; curdupe; curdupe = curdupe->duplicates)
+        n_dupes++;
+
+      if (n_dupes > *max)
+        *max = n_dupes;
+
+    }
+
+    files = files->next;
+  }
+}
+
+#ifdef HAVE_BTRFS_IOCTL_H
+static char *dedupeerrstr(int err) {
+  static char buf[1024];
+
+  if (err == BTRFS_SAME_DATA_DIFFERS) {
+    return "BTRFS_SAME_DATA_DIFFERS (data modified in the meantime?)";
+  } else if (err < 0) {
+    return strerror(-err);
+  } else {
+    snprintf(buf, sizeof(buf), "Unknown error %d", err);
+    buf[sizeof(buf)-1] = '\0';
+    return buf;
+  }
+}
+
+void dedupefiles(file_t *files)
+{
+  struct btrfs_ioctl_same_args *same;
+  char **dupe_filenames; /* maps to same->info indices */
+
+  file_t *curfile;
+  int n_dupes, max_dupes, cur_info;
+  int cur_file = 0, max_files;
+
+  int fd;
+  int ret, status;
+
+  get_max_dupes(files, &max_dupes, &max_files);
+  same = calloc(sizeof(struct btrfs_ioctl_same_args) +
+                sizeof(struct btrfs_ioctl_same_extent_info) * max_dupes, 1);
+  dupe_filenames = malloc(max_dupes * sizeof(char *));
+  if (!same || !dupe_filenames) {
+    errormsg("out of memory\n");
+    exit(EXIT_FAILURE);
+  }
+
+  while (files) {
+    if (files->hasdupes && files->size) {
+      cur_file++;
+      if (!ISFLAG(flags, F_HIDEPROGRESS)) {
+        fprintf(stderr, "\rDedupe [%d/%d] %d%% ", cur_file, max_files,
+            cur_file*100 / max_files);
+      }
+
+      cur_info = 0;
+      for (curfile = files->duplicates; curfile; curfile = curfile->duplicates) {
+          dupe_filenames[cur_info] = curfile->d_name;
+          fd = open(curfile->d_name, O_RDONLY);
+          if (fd == -1) {
+            errormsg("Unable to open(\"%s\", O_RDONLY): %s\n",
+              curfile->d_name, strerror(errno));
+            continue;
+          }
+
+          same->info[cur_info].fd = fd;
+          same->info[cur_info].logical_offset = 0;
+          cur_info++;
+      }
+      n_dupes = cur_info;
+
+      same->logical_offset = 0;
+      same->length = files->size;
+      same->dest_count = n_dupes;
+
+      fd = open(files->d_name, O_RDONLY);
+      if (fd == -1) {
+        errormsg("Unable to open(\"%s\", O_RDONLY): %s\n", files->d_name,
+          strerror(errno));
+        goto cleanup;
+      }
+
+      ret = ioctl(fd, BTRFS_IOC_FILE_EXTENT_SAME, same);
+      if (close(fd) == -1)
+        errormsg("Unable to close(\"%s\"): %s\n", files->d_name, strerror(errno));
+
+      if (ret == -1) {
+        errormsg("ioctl(\"%s\", BTRFS_IOC_FILE_EXTENT_SAME, [%d files]): %s\n",
+          files->d_name, n_dupes, strerror(errno));
+        goto cleanup;
+      }
+
+      for (cur_info = 0; cur_info < n_dupes; cur_info++) {
+        if ((status = same->info[cur_info].status) != 0) {
+          errormsg("Couldn't dedupe %s => %s: %s\n", files->d_name,
+            dupe_filenames[cur_info], dedupeerrstr(status));
+        }
+      }
+
+cleanup:
+      for (cur_info = 0; cur_info < n_dupes; cur_info++) {
+        if (close(same->info[cur_info].fd) == -1) {
+          errormsg("Unable to close(\"%s\"): %s", dupe_filenames[cur_info],
+            strerror(errno));
+        }
+      }
+
+    } /* has dupes */
+
+    files = files->next;
+  }
+
+  if (!ISFLAG(flags, F_HIDEPROGRESS))
+    fprintf(stderr, "\r%40s\r", " ");
+  free(same);
+  free(dupe_filenames);
+}
+#endif
 
 static void deletefiles(file_t *files, int prompt, FILE *tty)
 {
@@ -1089,7 +1235,6 @@ static void deletefiles(file_t *files, int prompt, FILE *tty)
   int groups = 0;
   int curgroup = 0;
   file_t *tmpfile;
-  file_t *curfile;
   file_t **dupelist;
   int *preserve;
   char *preservestr;
@@ -1097,27 +1242,10 @@ static void deletefiles(file_t *files, int prompt, FILE *tty)
   char *tstr;
   int number;
   int sum;
-  int max = 0;
+  int max;
   int x, i;
 
-  curfile = files;
-
-  while (curfile) {
-    if (curfile->hasdupes) {
-      counter = 1;
-      groups++;
-
-      tmpfile = curfile->duplicates;
-      while (tmpfile) {
-	counter++;
-	tmpfile = tmpfile->duplicates;
-      }
-
-      if (counter > max) max = counter;
-    }
-
-    curfile = curfile->next;
-  }
+  get_max_dupes(files, &max, NULL);
 
   max++;
 
@@ -1537,6 +1665,10 @@ static inline void help_text(void)
   printf("                  \twith -s or --symlinks, or when specifying a\n");
   printf("                  \tparticular directory more than once; refer to the\n");
   printf("                  \tfdupes documentation for additional information\n");
+#ifdef HAVE_BTRFS_IOCTL_H
+  printf(" -B --dedupe      \tCall the btrfs same-extent ioctl to deduplicate\n");
+  printf("                  \tdata on disk\n");
+#endif
   printf(" -N --noprompt    \ttogether with --delete, preserve the first file in\n");
   printf("                  \teach set of duplicates and delete the rest without\n");
   printf("                  \tprompting the user\n");
@@ -1600,6 +1732,7 @@ int main(int argc, char **argv) {
 #endif
     { "paramorder", 0, 0, 'O' },
     { "order", 1, 0, 'o' },
+    { "dedupe", 0, 0, 'B' },
     { 0, 0, 0, 0 }
   };
 #define GETOPT getopt_long
@@ -1612,7 +1745,7 @@ int main(int argc, char **argv) {
   oldargv = cloneargs(argc, argv);
 
   while ((opt = GETOPT(argc, argv,
-  "frRqQ1SsHLnx:AdDvhNmpo:O"
+  "frRqQ1SsHLnx:AdDvhNmpo:OB"
 #ifndef OMIT_GETOPT_LONG
           , long_options, NULL
 #endif
@@ -1742,6 +1875,16 @@ int main(int argc, char **argv) {
         exit(EXIT_FAILURE);
       }
       break;
+    case 'B':
+#ifdef HAVE_BTRFS_IOCTL_H
+    SETFLAG(flags, F_DEDUPEFILES);
+    /* btrfs will do the byte-for-byte check itself */
+    SETFLAG(flags, F_QUICKCOMPARE);
+#else
+    errormsg("This version of fdupes was built without btrfs support\n");
+    exit(EXIT_FAILURE);
+#endif
+    break;
 
     default:
       fprintf(stderr, "Try `fdupes --help' for more information.\n");
@@ -1753,13 +1896,6 @@ int main(int argc, char **argv) {
     errormsg("no directories specified\n");
     exit(EXIT_FAILURE);
   }
-#ifndef NO_HARDLINKS
-  if (ISFLAG(flags, F_HARDLINKFILES) && ISFLAG(flags, F_DELETEFILES)) {
-    errormsg("options --linkhard and --delete are not compatible\n");
-    exit(EXIT_FAILURE);
-  }
-
-#endif	/* NO_HARDLINKS */
   if (ISFLAG(flags, F_RECURSE) && ISFLAG(flags, F_RECURSEAFTER)) {
     errormsg("options --recurse and --recurse: are not compatible\n");
     exit(EXIT_FAILURE);
@@ -1769,6 +1905,13 @@ int main(int argc, char **argv) {
     errormsg("options --summarize and --delete are not compatible\n");
     exit(EXIT_FAILURE);
   }
+  if (!!ISFLAG(flags, F_SUMMARIZEMATCHES) +
+      !!ISFLAG(flags, F_DELETEFILES) +
+      !!ISFLAG(flags, F_HARDLINKFILES) +
+      !!ISFLAG(flags, F_DEDUPEFILES) > 1) {
+      errormsg("Only one of --summarize, --delete, --linkhard or --dedupe may be used\n");
+      exit(EXIT_FAILURE);
+   }
 
   if (ISFLAG(flags, F_RECURSEAFTER)) {
     firstrecurse = nonoptafter("--recurse:", argc, oldargv, argv, optind);
@@ -1893,6 +2036,9 @@ skip_full_check:
 #else
     if (0) {}
 #endif /* NO_HARDLINKS */
+#ifdef HAVE_BTRFS_IOCTL_H
+    else if (ISFLAG(flags, F_DEDUPEFILES)) dedupefiles(files);
+#endif /* HAVE_BTRFS_IOCTL_H */
     else {
       if (ISFLAG(flags, F_SUMMARIZEMATCHES)) summarizematches(files);
       else printmatches(files);
