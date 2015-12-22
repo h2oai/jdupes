@@ -15,6 +15,14 @@
 #ifndef GETINO_H
 #define GETINO_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 ino_t getino (char *path);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* GETINO_H */
