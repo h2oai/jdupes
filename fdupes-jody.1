@@ -2,7 +2,7 @@
 .\" NAME should be all caps, SECTION should be 1-8, maybe w/ subsection
 .\" other parms are allowed: see man(7), man(1)
 .SH NAME
-fdupes \- finds duplicate files in a given set of directories
+fdupes-jody \- finds and performs actions upon duplicate files
 .SH SYNOPSIS
 .B fdupes
 [
@@ -75,17 +75,14 @@ prompt user for files to preserve, deleting all others (see
 .B CAVEATS
 below)
 .TP
-<<<<<<<
-=======
 .B -B --dedupe
 issue the btrfs same-extents ioctl to trigger a deduplication on
-disk. fdupes needs to be built with btrfs support for this option
+disk. fdupes-jody needs to be built with btrfs support for this option
 to be available
 .TP
 .B -N --noprompt
 when used together with \-\-delete, preserve the first file in each
 set of duplicates and delete the others without prompting the user
->>>>>>>
 .B -L --hardlink
 replace all duplicate files with hardlinks to the first file in each set
 of duplicates
@@ -109,7 +106,7 @@ is particularly useful with the \fB\-N\fP option to ensure that automatic
 deletion behaves in a controllable way
 .TP
 .B -v --version
-display fdupes version
+display fdupes-jody version
 .TP
 .B -h --help
 displays help
@@ -131,13 +128,13 @@ a filename are preceded by a backslash character.
 
 .SH EXAMPLES
 .TP
-.B fdupes a --recurse: b
+.B fdupes-jody a --recurse: b
 will follow subdirectories under b, but not those under a.
 .TP
-.B fdupes a --recurse b
+.B fdupes-jody a --recurse b
 will follow subdirectories under both a and b.
 .TP
-.B fdupes -O dir1 dir3 dir2
+.B fdupes-jody -O dir1 dir3 dir2
 will always place 'dir1' results first in any match set (where relevant)
 
 .SH CAVEATS
@@ -184,8 +181,13 @@ set for which any amount of data loss is unacceptable. This option is not
 included in the help text for the program due to its risky nature.
 .B You have been warned!
 
-.SH AUTHOR
-Adrian Lopez <adrian2@caribe.net>
+.SH REPORTING BUGS
+Send all bug reports to jody@jodybruchon.com or use the Issue tracker at
+http://github.com/jbruchon/fdupes-jody/issues
 
-This version, 'fdupes-jody', was forked, is maintained by, and contains
+.SH AUTHOR
+fdupes-jody is a fork of 'fdupes' which is maintained by and contains
 extra code copyrighted by Jody Bruchon <jody@jodybruchon.com>
+
+Based on 'fdupes' created by Adrian Lopez <adrian2@caribe.net>
+

@@ -5,14 +5,22 @@
 
 ERR=0
 
-test ! -e ./fdupes && echo "Build fdupes first, silly" && exit 1
+# Detect installed program type (fdupes or fdupes-jody)
+FDUPES=fdupes
+fdupes -v 2>/dev/null >/dev/null || FDUPES=fdupes-jody
+if [ $FDUPES -v 2>/dev/null >/dev/null ]
+	then echo "Cannot run installed fdupes or fdupes-jody"
+	exit 1
+fi
 
-echo -n "Installed fdupes:"
+test ! -e ./fdupes-jody && echo "Build fdupes first, silly" && exit 1
+
+echo -n "Installed '$FDUPES':"
 sync
-time fdupes -nrq "$@" > foo || ERR=1
-echo -en "\nBuilt fdupes:"
+time $FDUPES -nrq "$@" > foo || ERR=1
+echo -en "\nBuilt fdupes-jody:"
 sync
-time ./fdupes -nrq "$@" > bar || ERR=1
+time ./fdupes-jody -nrq "$@" > bar || ERR=1
 diff -Nau foo bar
 rm foo bar
 test "$ERR" != "0" && echo "Errors were returned during execution"

@@ -37,6 +37,7 @@
 #include <errno.h>
 #include <libgen.h>
 #include "jody_hash.h"
+#include "version.h"
 
 /* Optional btrfs support */
 #ifdef ENABLE_BTRFS
@@ -352,7 +353,7 @@ static void errormsg(const char *message, ...)
 #ifndef ON_WINDOWS
   fprintf(stderr, "\r%40s\r%s: ", "", program_name);
 #else
-  fprintf(stderr, "\r%40s\r%s: ", "", "fdupes");
+  fprintf(stderr, "\r%40s\r%s: ", "", "fdupes-jody");
 #endif
   vfprintf(stderr, message, ap);
 }
@@ -1629,7 +1630,7 @@ static inline void hardlinkfiles(file_t *files)
 
 static inline void help_text(void)
 {
-  printf("Usage: fdupes [options] DIRECTORY...\n\n");
+  printf("Usage: fdupes-jody [options] DIRECTORY...\n\n");
 
   printf(" -r --recurse     \tfor every directory given follow subdirectories\n");
   printf("                  \tencountered within\n");
@@ -1664,11 +1665,7 @@ static inline void help_text(void)
   printf("                  \tdata may be lost when using this option together\n");
   printf("                  \twith -s or --symlinks, or when specifying a\n");
   printf("                  \tparticular directory more than once; refer to the\n");
-  printf("                  \tfdupes documentation for additional information\n");
-#ifdef HAVE_BTRFS_IOCTL_H
-  printf(" -B --dedupe      \tCall the btrfs same-extent ioctl to deduplicate\n");
-  printf("                  \tdata on disk\n");
-#endif
+  printf("                  \tdocumentation for additional information\n");
   printf(" -N --noprompt    \ttogether with --delete, preserve the first file in\n");
   printf("                  \teach set of duplicates and delete the rest without\n");
   printf("                  \tprompting the user\n");
@@ -1679,10 +1676,13 @@ static inline void help_text(void)
   printf(" -o --order=BY    \tselect sort order for output, linking and deleting; by\n");
   printf("                  \tmtime (BY=time; default) or filename (BY=name)\n");
   printf(" -O --paramorder  \tParameter order is more important than selected -O sort\n");
-  printf(" -v --version     \tdisplay fdupes version and license information\n");
+#ifdef HAVE_BTRFS_IOCTL_H
+  printf(" -B --dedupe      \tSend matches to btrfs for block-level deduplication\n");
+#endif
+  printf(" -v --version     \tdisplay fdupes-jody version and license information\n");
   printf(" -h --help        \tdisplay this help message\n\n");
 #ifdef OMIT_GETOPT_LONG
-  printf("Note: Long options are not supported in this fdupes build.\n\n");
+  printf("Note: Long options are not supported in this build.\n\n");
 #endif
 }
 
@@ -1827,12 +1827,13 @@ int main(int argc, char **argv) {
 #endif
       break;
     case 'v':
-      printf("fdupes-jody %s\n", VERSION);
-      printf("Copyright (C) 1999-2015 Adrian Lopez\n");
+      printf("fdupes-jody %s (%s)\n", VER, VERDATE);
+      printf("Copyright (C) 2015 by Jody Bruchon\n");
+      printf("Derived from 'fdupes' (C) 1999-2015 by Adrian Lopez\n");
+      printf("Includes jody_hash (C) 2015 by Jody Bruchon <jody@jodybruchon.com>\n\n");
 #ifdef ON_WINDOWS
       printf("Ported to Windows (MinGW-w64) by Jody Bruchon\n");
 #endif
-      printf("Includes jody_hash (C) 2015 by Jody Bruchon <jody@jodybruchon.com>\n\n");
       printf("Permission is hereby granted, free of charge, to any person\n");
       printf("obtaining a copy of this software and associated documentation files\n");
       printf("(the \"Software\"), to deal in the Software without restriction,\n");
@@ -1881,13 +1882,13 @@ int main(int argc, char **argv) {
     /* btrfs will do the byte-for-byte check itself */
     SETFLAG(flags, F_QUICKCOMPARE);
 #else
-    errormsg("This version of fdupes was built without btrfs support\n");
+    errormsg("This program was built without btrfs support\n");
     exit(EXIT_FAILURE);
 #endif
     break;
 
     default:
-      fprintf(stderr, "Try `fdupes --help' for more information.\n");
+      fprintf(stderr, "Try `fdupes-jody --help' for more information.\n");
       exit(EXIT_FAILURE);
     }
   }

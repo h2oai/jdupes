@@ -1,6 +1,6 @@
 Introduction
 --------------------------------------------------------------------
-FDUPES is a program for identifying duplicate files residing
+fdupes-jody is a program for identifying duplicate files residing
 within specified directories. This fork known as 'fdupes-jody' is
 heavily modified from and improved over the original. See CHANGES
 for details.
@@ -43,7 +43,8 @@ Usage: fdupes [options] DIRECTORY...
                        permission bits as duplicates
  -o --order=BY         select sort order for output, linking and deleting; by
                        mtime (BY='time'; default) or filename (BY='name')
- -O --paramorder        Parameter order is more important than selected -O sort
+ -O --paramorder       Parameter order is more important than selected -O sort
+ -B --dedupe           Send matches to btrfs for block-level deduplication
  -v --version          display fdupes version
  -h --help             display this help message
 
@@ -69,15 +70,16 @@ without its "duplicate" (the file itself!).
 
 Contact Information
 --------------------------------------------------------------------
-(Original FDUPES author) Adrian Lopez: adrian2@caribe.net
 (fdupes-jody maintainer) Jody Bruchon: jody@jodybruchon.com
+(Original fdupes author) Adrian Lopez: adrian2@caribe.net
+Please do not contact Adrian Lopez about issues with fdupes-jody.
 
 
 Legal Information
 --------------------------------------------------------------------
-FDUPES Copyright (c) 1999-2015 Adrian Lopez
-
-jody_hash (C) 2015 Jody Bruchon <jody@jodybruchon.com>
+fdupes-jody is Copyright (C) 2015 by Jody Bruchon
+Derived from the original 'fdupes' (C) 1999-2015 by Adrian Lopez
+Includes jody_hash (C) 2015 Jody Bruchon <jody@jodybruchon.com>
 
 Permission is hereby granted, free of charge, to any person
 obtaining a copy of this software and associated documentation files

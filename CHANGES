@@ -6,7 +6,22 @@ who contributed the patch or idea appears first, followed by
 those who've otherwise worked on that item. For a list of
 contributors names and identifiers please see the CONTRIBUTORS file.
 
-Changes from 2.0.2 to 2.0.3 [JLB]
+Changes from 2.1 to 2.2 [JLB]
+
+- Changed fdupes-jody executable names and document texts to use the
+  full 'fdupes-jody' name instead of 'fdupes'. Moved copyrights and
+  contact information to reflect 'fdupes-jody' code responsibility.
+  This is primarily intended to keep fdupes-jody distinctly separate
+  from the fdupes by Adrian Lopez upon which it is based, and to make
+  certain that the correct person gets harassed if it breaks ;-)
+- Added '-B/--dedupe' feature (not compiled in by default) which
+  sends file match lists directly to the kernel btrfs driver to do
+  block-level data de-duplication. Patch submitted by Sebastian
+  Schmidt <yath@yath.de>. Thanks!
+- Remove and replace some string function calls. Performance increase
+  shows on benchmarks but not significant in most cases.
+
+Changes from 2.0.2 to 2.1 [JLB]
 
 - Minor performance improvements to hashing and memory allocation code
 - Added an experimental tree rebalancing function. It is compiled out
