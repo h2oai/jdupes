@@ -1,6 +1,6 @@
-/* FDUPES Copyright (C) 1999-2015 Adrian Lopez
-   Ported to MinGW by Jody Bruchon <jody@jodybruchon.com>
-   Includes jody_hash (C) 2015 by Jody Bruchon
+/* fdupes-jody (C) 2015-2016 Jody Bruchon <jody@jodybruchon.com>
+   Derived from fdupes (C) 1999-2016 Adrian Lopez
+   Includes jody_hash (C) 2015-2016 by Jody Bruchon
 
    Permission is hereby granted, free of charge, to any person
    obtaining a copy of this software and associated documentation files
@@ -114,6 +114,47 @@ static off_t excludesize = 0;
 #define INPUT_SIZE 256
 #define PARTIAL_HASH_SIZE 4096
 
+/* Assemble extension string from compile-time options */
+static const char *extensions[] = {
+	#ifdef ENABLE_BTRFS
+	"btrfs",
+	#endif
+	#ifdef ON_WINDOWS
+	"windows",
+	#endif
+	#ifdef OMIT_GETOPT_LONG
+	"nolong",
+	#endif
+	#ifdef NO_FLOAT
+	"nofloat",
+	#endif
+	#ifdef DEBUG
+	"debug",
+	#endif
+	#ifdef SMA_PAGE_SIZE
+	"smapage",
+	#endif
+	#ifdef NO_PERMS
+	"noperm",
+	#endif
+	#ifdef NO_SYMLINKS
+	"nosymlink",
+	#endif
+	#ifdef USE_TREE_REBALANCE
+	"rebal",
+	#endif
+	#ifdef CONSIDER_IMBALANCE
+	"ci",
+	#endif
+	#ifdef BALANCE_THRESHOLD
+	"bt",
+	#endif
+	#ifdef BAL_BIT
+	"bb",
+	#endif
+	NULL
+};
+
 /* These used to be functions. This way saves lots of call overhead */
 #define getcrcsignature(a) getcrcsignatureuntil(a, 0)
 #define getcrcpartialsignature(a) getcrcsignatureuntil(a, PARTIAL_HASH_SIZE)
@@ -182,7 +223,7 @@ enum tree_direction { NONE, LEFT, RIGHT };
  * String table allocator
  * A replacement for malloc() for tables of fixed strings
  *
- * Copyright (C) 2015 by Jody Bruchon <jody@jodybruchon.com>
+ * Copyright (C) 2015-2016 by Jody Bruchon <jody@jodybruchon.com>
  * Released under The MIT License or GNU GPL v2 (your choice)
  *
  * Included here using the license for this software
@@ -1828,9 +1869,17 @@ int main(int argc, char **argv) {
       break;
     case 'v':
       printf("fdupes-jody %s (%s)\n", VER, VERDATE);
-      printf("Copyright (C) 2015 by Jody Bruchon\n");
-      printf("Derived from 'fdupes' (C) 1999-2015 by Adrian Lopez\n");
-      printf("Includes jody_hash (C) 2015 by Jody Bruchon <jody@jodybruchon.com>\n\n");
+      printf("\nCompile-time extensions:");
+      if (*extensions != NULL) {
+	      int c = 0;
+	      while (extensions[c] != NULL) {
+		      printf(" %s", extensions[c]);
+		      c++;
+	      }
+      } else printf(" none");
+      printf("\n\nCopyright (C) 2015-2016 by Jody Bruchon\n");
+      printf("Derived from 'fdupes' (C) 1999-2016 by Adrian Lopez\n");
+      printf("Includes jody_hash (C) 2015-2016 by Jody Bruchon <jody@jodybruchon.com>\n\n");
 #ifdef ON_WINDOWS
       printf("Ported to Windows (MinGW-w64) by Jody Bruchon\n");
 #endif

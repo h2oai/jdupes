@@ -8,7 +8,7 @@ for details.
 
 Usage
 --------------------------------------------------------------------
-Usage: fdupes [options] DIRECTORY...
+Usage: fdupes-jody [options] DIRECTORY...
 
  -r --recurse          for every directory given follow subdirectories
                        encountered within
@@ -35,7 +35,7 @@ Usage: fdupes [options] DIRECTORY...
                        data may be lost when using this option together
                        with -s or --symlinks, or when specifying a
                        particular directory more than once; refer to the
-                       fdupes documentation for additional information
+                       fdupes-jody documentation for additional information
  -N --noprompt         together with --delete, preserve the first file in
                        each set of duplicates and delete the rest without
                        prompting the user
@@ -45,7 +45,7 @@ Usage: fdupes [options] DIRECTORY...
                        mtime (BY='time'; default) or filename (BY='name')
  -O --paramorder       Parameter order is more important than selected -O sort
  -B --dedupe           Send matches to btrfs for block-level deduplication
- -v --version          display fdupes version
+ -v --version          display version, feature, and license information
  -h --help             display this help message
 
 Unless -1 or --sameline is specified, duplicate files are listed
@@ -77,9 +77,9 @@ Please do not contact Adrian Lopez about issues with fdupes-jody.
 
 Legal Information
 --------------------------------------------------------------------
-fdupes-jody is Copyright (C) 2015 by Jody Bruchon
-Derived from the original 'fdupes' (C) 1999-2015 by Adrian Lopez
-Includes jody_hash (C) 2015 Jody Bruchon <jody@jodybruchon.com>
+fdupes-jody is Copyright (C) 2015-2016 by Jody Bruchon
+Derived from the original 'fdupes' (C) 1999-2016 by Adrian Lopez
+Includes jody_hash (C) 2015-2016 Jody Bruchon <jody@jodybruchon.com>
 
 Permission is hereby granted, free of charge, to any person
 obtaining a copy of this software and associated documentation files
