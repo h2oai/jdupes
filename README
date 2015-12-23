@@ -6,6 +6,22 @@ heavily modified from and improved over the original. See CHANGES
 for details.
 
 
+Why use fdupes-jody instead of the original fdupes or other forks?
+--------------------------------------------------------------------
+The biggest reason is also the most important one: raw speed. In testing on
+various data sets, fdupes-jody is *over 7 times faster* than fdupes-1.51 on
+average.
+
+It's also quite stable. All releases of fdupes-jody are compared against a
+known working reference version of fdupes or fdupes-jody to be certain that
+output does not change. You get the benefits of an aggressive development
+process without putting your data at increased risk.
+
+fdupes-jody includes features that are not found in fdupes. Examples of
+such features include btrfs block-level deduplication and control over
+which file is kept when a match set is automatically deleted.
+
+
 Usage
 --------------------------------------------------------------------
 Usage: fdupes-jody [options] DIRECTORY...
