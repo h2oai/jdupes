@@ -17,9 +17,9 @@
 #
 # Normal output and testing dirs
 #
-/fdupes
-/fdupes-jody
-/fdupes*.exe
+/?dupes
+/?dupes-jody
+/?dupes*.exe
 
 #
 # Backups / patches
