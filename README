@@ -1,30 +1,38 @@
 Introduction
---------------------------------------------------------------------
-fdupes-jody is a program for identifying duplicate files residing
-within specified directories. This fork known as 'fdupes-jody' is
+--------------------------------------------------------------------------
+jdupes is a program for identifying duplicate files residing
+within specified directories. This fork known as 'jdupes' is
 heavily modified from and improved over the original. See CHANGES
 for details.
 
 
-Why use fdupes-jody instead of the original fdupes or other forks?
---------------------------------------------------------------------
+Why use jdupes instead of the original fdupes or other forks?
+--------------------------------------------------------------------------
 The biggest reason is also the most important one: raw speed. In testing on
-various data sets, fdupes-jody is *over 7 times faster* than fdupes-1.51 on
+various data sets, jdupes is *over 7 times faster* than fdupes-1.51 on
 average.
 
-It's also quite stable. All releases of fdupes-jody are compared against a
-known working reference version of fdupes or fdupes-jody to be certain that
+It's also quite stable. All releases of jdupes are compared against a
+known working reference version of fdupes or jdupes to be certain that
 output does not change. You get the benefits of an aggressive development
 process without putting your data at increased risk.
 
-fdupes-jody includes features that are not found in fdupes. Examples of
+jdupes includes features that are not found in fdupes. Examples of
 such features include btrfs block-level deduplication and control over
 which file is kept when a match set is automatically deleted.
 
+The downside is that jdupes development is never guaranteed to be bug-free!
+If the program eats your dog or sets fire to your lawn, the authors cannot
+be held responsible. If you notice a bug, please report it!
+
+While jdupes maintains some degree of compatibility with fdupes from which
+it was originally derived, there is no guarantee that it will continue to
+maintain such compatibility in the future.
+
 
 Usage
---------------------------------------------------------------------
-Usage: fdupes-jody [options] DIRECTORY...
+--------------------------------------------------------------------------
+Usage: jdupes [options] DIRECTORY...
 
  -r --recurse          for every directory given follow subdirectories
                        encountered within
@@ -51,7 +59,7 @@ Usage: fdupes-jody [options] DIRECTORY...
                        data may be lost when using this option together
                        with -s or --symlinks, or when specifying a
                        particular directory more than once; refer to the
-                       fdupes-jody documentation for additional information
+                       jdupes documentation for additional information
  -N --noprompt         together with --delete, preserve the first file in
                        each set of duplicates and delete the rest without
                        prompting the user
@@ -85,15 +93,14 @@ without its "duplicate" (the file itself!).
 
 
 Contact Information
---------------------------------------------------------------------
-(fdupes-jody maintainer) Jody Bruchon: jody@jodybruchon.com
-(Original fdupes author) Adrian Lopez: adrian2@caribe.net
-Please do not contact Adrian Lopez about issues with fdupes-jody.
+--------------------------------------------------------------------------
+For all jdupes inquiries, contact Jody Bruchon <jody@jodybruchon.com>
+Please do NOT contact Adrian Lopez about issues with jdupes!
 
 
 Legal Information
---------------------------------------------------------------------
-fdupes-jody is Copyright (C) 2015-2016 by Jody Bruchon
+--------------------------------------------------------------------------
+jdupes is Copyright (C) 2015-2016 by Jody Bruchon
 Derived from the original 'fdupes' (C) 1999-2016 by Adrian Lopez
 Includes jody_hash (C) 2015-2016 Jody Bruchon <jody@jodybruchon.com>
 

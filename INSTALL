@@ -1,4 +1,4 @@
-Installing fdupes
+Installing jdupes
 --------------------------------------------------------------------
 To install the program, issue the following commands:
 
@@ -31,29 +31,18 @@ CONSIDER_IMBALANCE *   Change tree rebalance to analyze weights first
 * These options may slow down the program somewhat and are off by
   default. Do not enable them unless you are experimenting.
 
-OLD UPGRADE NOTE: When upgrading from a version prior to 1.2, it should
-be noted that the default installation directory for the fdupes man
-page has changed from "/usr/man" to "/usr/local/man". If installing
-to the default location you should delete the old man page before
-proceeding. This file would be named "/usr/man/man1/fdupes.1".
-
-This program was originally called "fdupes" but has been renamed to
-"fdupes-jody" to keep it distinctly separate from Adrian Lopez's program.
-Be aware of the name change and any problems it may cause on your system
-before using fdupes-jody.
-
 A test directory is included so that you may familiarise yourself
-with the way fdupes operates. You may test the program before
-installing it by issuing a command such as "./fdupes testdir"
-or "./fdupes -r testdir", just to name a couple of examples. Refer
+with the way jdupes operates. You may test the program before
+installing it by issuing a command such as "./jdupes testdir"
+or "./jdupes -r testdir", just to name a couple of examples. Refer
 to the documentation for information on valid options.
 
 A comparison shell script is also included. It will run your natively
-installed 'fdupes' or 'fdupes-jody' with the directories and extra
+installed 'jdupes' or 'jdupes' with the directories and extra
 options you specify and compare the run times and output a 'diff' of
 the two program outputs. Unless the core algorithm or sort behavior is
 changed, both programs should produce identical outputs and the 'diff'
 output shouldn't appear at all. To use it, type:
 
-./compare_fdupes.sh [options]
+./compare_jdupes.sh [options]
 

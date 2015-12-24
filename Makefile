@@ -39,7 +39,7 @@ CFLAGS_CONFIG += -DNO_FLOAT
 #
 # PROGRAM_NAME determines the installation name and manual page name
 #
-PROGRAM_NAME=fdupes-jody
+PROGRAM_NAME=jdupes
 
 #
 # BIN_DIR indicates directory where program is to be installed.
@@ -48,7 +48,7 @@ PROGRAM_NAME=fdupes-jody
 BIN_DIR = $(PREFIX)/bin
 
 #
-# MAN_DIR indicates directory where the fdupes-jody man page is to be
+# MAN_DIR indicates directory where the jdupes man page is to be
 # installed. Suggested value is "$(PREFIX)/man/man1"
 #
 MAN_BASE_DIR = $(PREFIX)/share/man
@@ -98,24 +98,24 @@ INSTALL_DATA    = $(INSTALL) -c -m 0644
 #
 #ADDITIONAL_OBJECTS = getopt.o
 
-OBJECT_FILES += fdupes-jody.o jody_hash.o $(ADDITIONAL_OBJECTS)
+OBJECT_FILES += jdupes.o jody_hash.o $(ADDITIONAL_OBJECTS)
 
 #####################################################################
 # no need to modify anything beyond this point                      #
 #####################################################################
 
-all: fdupes-jody
+all: jdupes
 
-fdupes-jody: $(OBJECT_FILES)
-	$(CC) $(CFLAGS) -o fdupes-jody $(OBJECT_FILES)
+jdupes: $(OBJECT_FILES)
+	$(CC) $(CFLAGS) -o jdupes $(OBJECT_FILES)
 
 installdirs:
 	test -d $(DESTDIR)$(BIN_DIR) || $(MKDIR) $(DESTDIR)$(BIN_DIR)
 	test -d $(DESTDIR)$(MAN_DIR) || $(MKDIR) $(DESTDIR)$(MAN_DIR)
 
-install: fdupes-jody installdirs
-	$(INSTALL_PROGRAM)	fdupes-jody   $(DESTDIR)$(BIN_DIR)/$(PROGRAM_NAME)
-	$(INSTALL_DATA)		fdupes-jody.1 $(DESTDIR)$(MAN_DIR)/$(PROGRAM_NAME).$(MAN_EXT)
+install: jdupes installdirs
+	$(INSTALL_PROGRAM)	jdupes   $(DESTDIR)$(BIN_DIR)/$(PROGRAM_NAME)
+	$(INSTALL_DATA)		jdupes.1 $(DESTDIR)$(MAN_DIR)/$(PROGRAM_NAME).$(MAN_EXT)
 
 clean:
-	$(RM) $(OBJECT_FILES) fdupes-jody fdupes-jody.exe *~
+	$(RM) $(OBJECT_FILES) jdupes jdupes.exe *~

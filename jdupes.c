@@ -1,4 +1,4 @@
-/* fdupes-jody (C) 2015-2016 Jody Bruchon <jody@jodybruchon.com>
+/* jdupes (C) 2015-2016 Jody Bruchon <jody@jodybruchon.com>
    Derived from fdupes (C) 1999-2016 Adrian Lopez
    Includes jody_hash (C) 2015-2016 by Jody Bruchon
 
@@ -394,7 +394,7 @@ static void errormsg(const char *message, ...)
 #ifndef ON_WINDOWS
   fprintf(stderr, "\r%40s\r%s: ", "", program_name);
 #else
-  fprintf(stderr, "\r%40s\r%s: ", "", "fdupes-jody");
+  fprintf(stderr, "\r%40s\r%s: ", "", "jdupes");
 #endif
   vfprintf(stderr, message, ap);
 }
@@ -1671,7 +1671,7 @@ static inline void hardlinkfiles(file_t *files)
 
 static inline void help_text(void)
 {
-  printf("Usage: fdupes-jody [options] DIRECTORY...\n\n");
+  printf("Usage: jdupes [options] DIRECTORY...\n\n");
 
   printf(" -r --recurse     \tfor every directory given follow subdirectories\n");
   printf("                  \tencountered within\n");
@@ -1720,7 +1720,7 @@ static inline void help_text(void)
 #ifdef HAVE_BTRFS_IOCTL_H
   printf(" -B --dedupe      \tSend matches to btrfs for block-level deduplication\n");
 #endif
-  printf(" -v --version     \tdisplay fdupes-jody version and license information\n");
+  printf(" -v --version     \tdisplay jdupes version and license information\n");
   printf(" -h --help        \tdisplay this help message\n\n");
 #ifdef OMIT_GETOPT_LONG
   printf("Note: Long options are not supported in this build.\n\n");
@@ -1868,7 +1868,7 @@ int main(int argc, char **argv) {
 #endif
       break;
     case 'v':
-      printf("fdupes-jody %s (%s)\n", VER, VERDATE);
+      printf("jdupes %s (%s)\n", VER, VERDATE);
       printf("\nCompile-time extensions:");
       if (*extensions != NULL) {
 	      int c = 0;
@@ -1937,7 +1937,7 @@ int main(int argc, char **argv) {
     break;
 
     default:
-      fprintf(stderr, "Try `fdupes-jody --help' for more information.\n");
+      fprintf(stderr, "Try `jdupes --help' for more information.\n");
       exit(EXIT_FAILURE);
     }
   }

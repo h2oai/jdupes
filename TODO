@@ -2,7 +2,7 @@
 
 - A bug causes the following behavior:
 
-  $ fdupes --symlinks testdir
+  $ jdupes --symlinks testdir
   testdir/with spaces b
   testdir/with spaces a
 
@@ -13,7 +13,7 @@
   testdir/twice_one
 
   $ cp testdir/two testdir/two_again
-  $ fdupes --symlinks testdir
+  $ jdupes --symlinks testdir
   testdir/two_again
   testdir/two
   testdir/twice_one
@@ -27,7 +27,7 @@
 
   ** This is not the desired behavior. Likewise:
 
-  $ fdupes testdir
+  $ jdupes testdir
   testdir/with spaces b
   testdir/with spaces a
 
@@ -37,7 +37,7 @@
   testdir/twice_one
   testdir/two
 
-  $ fdupes --symlinks testdir
+  $ jdupes --symlinks testdir
   testdir/with spaces b
   testdir/with spaces a
 
@@ -48,8 +48,8 @@
   testdir/twice_one
 
 - Option -R should not have to be separated from the rest,
-  such that "fdupes -dR testdir", "fdupes -d -R testdir",
-  "fdupes -Rd testdir", etc., all yield the same results.
+  such that "jdupes -dR testdir", "jdupes -d -R testdir",
+  "jdupes -Rd testdir", etc., all yield the same results.
 
 - Add option to highlight or identify symlinked files (suggest
   using --classify to identify symlinks with @ suffix... when
