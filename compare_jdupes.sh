@@ -7,10 +7,10 @@ ERR=0
 
 # Detect installed program type (fdupes or jdupes)
 ORIG_DUPE=false
-jdupes -v 2>/dev/null >/dev/null || ORIG_DUPE=jdupes
-fdupes-jody -v 2>/dev/null >/dev/null || ORIG_DUPE=fdupes-jody
-fdupes -v 2>/dev/null >/dev/null || ORIG_DUPE=fdupes
-if [ $ORIG_DUPE -v 2>/dev/null >/dev/null ]
+jdupes -v 2>/dev/null >/dev/null && ORIG_DUPE=jdupes
+fdupes-jody -v 2>/dev/null >/dev/null && ORIG_DUPE=fdupes-jody
+fdupes -v 2>/dev/null >/dev/null && ORIG_DUPE=fdupes
+if [ ! $ORIG_DUPE -v 2>/dev/null >/dev/null ]
 	then echo "Cannot run installed jdupes, fdupes-jody, or fdupes"
 	exit 1
 fi
