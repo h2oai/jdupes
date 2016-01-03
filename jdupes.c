@@ -1139,9 +1139,10 @@ static void printmatches(file_t * restrict files)
   }
 }
 
-void get_max_dupes(file_t *files, int *max, int *n_files) {
+int get_max_dupes(file_t *files, int *max, int *n_files) {
   file_t *curdupe;
   int n_dupes;
+  int groups = 0;
 
   *max = 0;
   if (n_files)
@@ -1149,6 +1150,7 @@ void get_max_dupes(file_t *files, int *max, int *n_files) {
 
   while (files) {
     if (files->hasdupes) {
+      groups++;
       if (files->size && n_files)
         (*n_files)++;
 
@@ -1164,6 +1166,7 @@ void get_max_dupes(file_t *files, int *max, int *n_files) {
 
     files = files->next;
   }
+  return groups;
 }
 
 #ifdef HAVE_BTRFS_IOCTL_H
@@ -1277,7 +1280,7 @@ cleanup:
 static void deletefiles(file_t *files, int prompt, FILE *tty)
 {
   int counter;
-  int groups = 0;
+  int groups;
   int curgroup = 0;
   file_t *tmpfile;
   file_t **dupelist;
@@ -1290,7 +1293,7 @@ static void deletefiles(file_t *files, int prompt, FILE *tty)
   int max;
   int x, i;
 
-  get_max_dupes(files, &max, NULL);
+  groups = get_max_dupes(files, &max, NULL);
 
   max++;
 
