@@ -403,7 +403,7 @@ static void errormsg(const char *message, ...)
 }
 
 
-static void escapefilename(char *escape_list, char **filename_ptr)
+static void escapefilename(const char *escape_list, char **filename_ptr)
 {
   static unsigned int x;
   static unsigned int tx;
@@ -1116,18 +1116,19 @@ static void summarizematches(const file_t * restrict files)
 static void printmatches(file_t * restrict files)
 {
   file_t * restrict tmpfile;
+  const char escapestring[] = "\\ ";
 
   while (files != NULL) {
     if (files->hasdupes) {
       if (!ISFLAG(flags, F_OMITFIRST)) {
 	if (ISFLAG(flags, F_SHOWSIZE)) printf("%jd byte%c each:\n", (intmax_t)files->size,
 	 (files->size != 1) ? 's' : ' ');
-	if (ISFLAG(flags, F_DSAMELINE)) escapefilename("\\ ", &files->d_name);
+	if (ISFLAG(flags, F_DSAMELINE)) escapefilename(escapestring, &files->d_name);
 	printf("%s%c", files->d_name, ISFLAG(flags, F_DSAMELINE)?' ':'\n');
       }
       tmpfile = files->duplicates;
       while (tmpfile != NULL) {
-	if (ISFLAG(flags, F_DSAMELINE)) escapefilename("\\ ", &tmpfile->d_name);
+	if (ISFLAG(flags, F_DSAMELINE)) escapefilename(escapestring, &tmpfile->d_name);
 	printf("%s%c", tmpfile->d_name, ISFLAG(flags, F_DSAMELINE)?' ':'\n');
 	tmpfile = tmpfile->duplicates;
       }
