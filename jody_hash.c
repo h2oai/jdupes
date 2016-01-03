@@ -14,14 +14,14 @@
 #include "jody_hash.h"
 
 /* DO NOT modify the shift unless you know what you're doing.
- *  * This shift was decided upon after lots of testing and
- *   * changing it will likely cause lots of hash collisions. */
+ * This shift was decided upon after lots of testing and
+ * changing it will likely cause lots of hash collisions. */
 #define JODY_HASH_SHIFT 11
 
 /* The salt value's purpose is to cause each byte in the
- *  * hash_t word to have a positionally dependent variation.
- *   * It is injected into the calculation to prevent a string of
- *    * identical bytes from easily producing an identical hash. */
+ * hash_t word to have a positionally dependent variation.
+ * It is injected into the calculation to prevent a string of
+ * identical bytes from easily producing an identical hash. */
 #define JODY_HASH_SALT 0x1f3d5b79
 
 /* The tail mask table is used for block sizes that are
