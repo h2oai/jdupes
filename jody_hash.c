@@ -48,11 +48,11 @@ static const hash_t tail_mask[] = {
  * hash_t, it is MANDATORY that the caller provide a data buffer
  * which is divisible by sizeof(hash_t). */
 extern hash_t jody_block_hash(const hash_t * restrict data,
-		const hash_t start_hash, const unsigned int count)
+		const hash_t start_hash, const size_t count)
 {
 	register hash_t hash = start_hash;
 	register hash_t element;
-	unsigned int len;
+	size_t len;
 
 	/* Don't bother trying to hash a zero-length block */
 	if (count == 0) return hash;

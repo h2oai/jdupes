@@ -179,7 +179,7 @@ typedef struct _file {
   gid_t gid;
 #endif
   time_t mtime;
-  int user_order; /* Order of the originating command-line parameter */
+  unsigned int user_order; /* Order of the originating command-line parameter */
   hash_t crcpartial;
   hash_t crcsignature;
   uint_fast8_t crcpartial_set;  /* 1 = crcpartial is valid */
@@ -241,8 +241,8 @@ enum tree_direction { NONE, LEFT, RIGHT };
 static void *sma_head = NULL;
 static uintptr_t *sma_lastpage = NULL;
 static unsigned int sma_pages = 0;
-static unsigned int sma_lastfree = 0;
-static unsigned int sma_nextfree = sizeof(uintptr_t);
+static size_t sma_lastfree = 0;
+static size_t sma_nextfree = sizeof(uintptr_t);
 
 
 /*
@@ -291,7 +291,7 @@ static inline void *string_malloc_page(void)
 }
 
 
-static void *string_malloc(unsigned int len)
+static void *string_malloc(size_t len)
 {
 	const char * restrict page = (char *)sma_lastpage;
 	static char *retval;
@@ -409,7 +409,7 @@ static void escapefilename(char **filename_ptr)
   static unsigned int tx;
   static char tmp[8192];
   static char *filename;
-  static unsigned int sl;
+  static size_t sl;
 
   filename = *filename_ptr;
   sl = strlen(filename);
@@ -673,7 +673,7 @@ static void grokdir(const char * const restrict dir,
 
 /* Use Jody Bruchon's hash function on part or all of a file */
 static hash_t *getcrcsignatureuntil(const file_t * const restrict checkfile,
-		const off_t max_read)
+		const size_t max_read)
 {
   off_t fsize;
   /* This is an array because we return a pointer to it */
@@ -686,8 +686,8 @@ static hash_t *getcrcsignatureuntil(const file_t * const restrict checkfile,
   fsize = checkfile->size;
 
   /* Do not read more than the requested number of bytes */
-  if (max_read != 0 && fsize > max_read)
-    fsize = max_read;
+  if (max_read > 0 && fsize > (off_t)max_read)
+    fsize = (off_t)max_read;
 
   /* Initialize the hash and file read parameters (with crcpartial skipped)
    *
@@ -722,7 +722,7 @@ static hash_t *getcrcsignatureuntil(const file_t * const restrict checkfile,
 
   /* Read the file in CHUNK_SIZE chunks until we've read it all. */
   while (fsize > 0) {
-    off_t bytes_to_read;
+    size_t bytes_to_read;
 
     bytes_to_read = (fsize >= CHUNK_SIZE) ? CHUNK_SIZE : fsize;
     if (fread((void *)chunk, bytes_to_read, 1, file) != 1) {
@@ -732,8 +732,8 @@ static hash_t *getcrcsignatureuntil(const file_t * const restrict checkfile,
     }
 
     *hash = jody_block_hash(chunk, *hash, bytes_to_read);
-    if (bytes_to_read > fsize) break;
-    else fsize -= bytes_to_read;
+    if ((off_t)bytes_to_read > fsize) break;
+    else fsize -= (off_t)bytes_to_read;
   }
 
   fclose(file);
@@ -1287,7 +1287,8 @@ static void deletefiles(file_t *files, int prompt, FILE *tty)
   char *preservestr;
   char *token;
   char *tstr;
-  unsigned int number, sum, max, x, i;
+  unsigned int number, sum, max, x;
+  size_t i;
 
   groups = get_max_dupes(files, &max, NULL);
 
@@ -2008,7 +2009,7 @@ int main(int argc, char **argv) {
     static file_t **match = NULL;
     static FILE *file1;
     static FILE *file2;
-    static unsigned int delay = DELAY_COUNT;
+    static off_t delay = DELAY_COUNT;
 
     if (!checktree) registerfile(&checktree, NONE, curfile);
     else match = checkmatch(checktree, curfile);
