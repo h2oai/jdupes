@@ -125,6 +125,9 @@ static const char *extensions[] = {
 	#ifdef OMIT_GETOPT_LONG
 	"nolong",
 	#endif
+	#ifdef __FAST_MATH__
+	"fastmath",
+	#endif
 	#ifdef NO_FLOAT
 	"nofloat",
 	#endif
@@ -421,7 +424,7 @@ static void escapefilename(char *escape_list, char **filename_ptr)
 
   if (x != tx) {
     //*filename_ptr = realloc(*filename_ptr, strlen(tmp) + 1);
-    *filename_ptr = string_malloc(strlen(tmp) + 1);
+    *filename_ptr = (char *)string_malloc(strlen(tmp) + 1);
     if (*filename_ptr == NULL) errormsg(NULL);
     strcpy(*filename_ptr, tmp);
   }
@@ -437,7 +440,7 @@ static inline char **cloneargs(const int argc, char **argv)
   if (args == NULL) errormsg(NULL);
 
   for (x = 0; x < argc; x++) {
-    args[x] = string_malloc(strlen(argv[x]) + 1);
+    args[x] = (char *)string_malloc(strlen(argv[x]) + 1);
     if (args[x] == NULL) errormsg(NULL);
     strcpy(args[x], argv[x]);
   }
