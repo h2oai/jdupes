@@ -1139,10 +1139,10 @@ static void printmatches(file_t * restrict files)
   }
 }
 
-int get_max_dupes(file_t *files, int *max, int *n_files) {
+unsigned int get_max_dupes(file_t *files, unsigned int *max, unsigned int *n_files) {
   file_t *curdupe;
-  int n_dupes;
-  int groups = 0;
+  unsigned int n_dupes;
+  unsigned int groups = 0;
 
   *max = 0;
   if (n_files)
@@ -1190,8 +1190,8 @@ void dedupefiles(file_t *files)
   char **dupe_filenames; /* maps to same->info indices */
 
   file_t *curfile;
-  int n_dupes, max_dupes, cur_info;
-  int cur_file = 0, max_files;
+  unsigned int n_dupes, max_dupes, cur_info;
+  unsigned int cur_file = 0, max_files;
 
   int fd;
   int ret, status;
@@ -1209,7 +1209,7 @@ void dedupefiles(file_t *files)
     if (files->hasdupes && files->size) {
       cur_file++;
       if (!ISFLAG(flags, F_HIDEPROGRESS)) {
-        fprintf(stderr, "\rDedupe [%d/%d] %d%% ", cur_file, max_files,
+        fprintf(stderr, "\rDedupe [%u/%u] %u%% ", cur_file, max_files,
             cur_file*100 / max_files);
       }
 
@@ -1245,7 +1245,7 @@ void dedupefiles(file_t *files)
         errormsg("Unable to close(\"%s\"): %s\n", files->d_name, strerror(errno));
 
       if (ret == -1) {
-        errormsg("ioctl(\"%s\", BTRFS_IOC_FILE_EXTENT_SAME, [%d files]): %s\n",
+        errormsg("ioctl(\"%s\", BTRFS_IOC_FILE_EXTENT_SAME, [%u files]): %s\n",
           files->d_name, n_dupes, strerror(errno));
         goto cleanup;
       }
@@ -1279,19 +1279,15 @@ cleanup:
 
 static void deletefiles(file_t *files, int prompt, FILE *tty)
 {
-  int counter;
-  int groups;
-  int curgroup = 0;
+  unsigned int counter, groups;
+  unsigned int curgroup = 0;
   file_t *tmpfile;
   file_t **dupelist;
   int *preserve;
   char *preservestr;
   char *token;
   char *tstr;
-  int number;
-  int sum;
-  int max;
-  int x, i;
+  unsigned int number, sum, max, x, i;
 
   groups = get_max_dupes(files, &max, NULL);
 
@@ -1309,13 +1305,13 @@ static void deletefiles(file_t *files, int prompt, FILE *tty)
       counter = 1;
       dupelist[counter] = files;
 
-      if (prompt) printf("[%d] %s\n", counter, files->d_name);
+      if (prompt) printf("[%u] %s\n", counter, files->d_name);
 
       tmpfile = files->duplicates;
 
       while (tmpfile) {
 	dupelist[++counter] = tmpfile;
-	if (prompt) printf("[%d] %s\n", counter, tmpfile->d_name);
+	if (prompt) printf("[%u] %s\n", counter, tmpfile->d_name);
 	tmpfile = tmpfile->duplicates;
       }
 
@@ -1327,9 +1323,9 @@ static void deletefiles(file_t *files, int prompt, FILE *tty)
         for (x = 2; x <= counter; x++) preserve[x] = 0;
       } else do {
         /* prompt for files to preserve */
-	printf("Set %d of %d: keep which files? (1 - %d, [a]ll)",
+	printf("Set %u of %u: keep which files? (1 - %u, [a]ll)",
           curgroup, groups, counter);
-	if (ISFLAG(flags, F_SHOWSIZE)) printf(" (%jd byte%c each)", (intmax_t)files->size,
+	if (ISFLAG(flags, F_SHOWSIZE)) printf(" (%ju byte%c each)", (uintmax_t)files->size,
 	  (files->size != 1) ? 's' : ' ');
 	printf(": ");
 	fflush(stdout);
@@ -1363,7 +1359,7 @@ static void deletefiles(file_t *files, int prompt, FILE *tty)
 	    for (x = 0; x <= counter; x++) preserve[x] = 1;
 
 	  number = 0;
-	  sscanf(token, "%d", &number);
+	  sscanf(token, "%u", &number);
 	  if (number > 0 && number <= counter) preserve[number] = 1;
 
 	  token = strtok(NULL, " ,\n");
