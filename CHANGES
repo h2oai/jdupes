@@ -1,3 +1,11 @@
+jdupes 1.0.1
+
+- Fix bug in deletion set counter that would show e.g. "Set 1 of 0"
+- Minor size reductions by merging repeated fixed strings
+- Add feature flag 'fastmath' to show when compiled with -ffast-math
+- Corrections to code driven by -Wconversion and -Wwrite-strings
+
+
 jdupes 1.0
 
 First release. For changes before the 'jdupes' name change, see OLD_CHANGES
