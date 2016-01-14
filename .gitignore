@@ -36,3 +36,5 @@ core
 .gdb_history
 .gdbinit
 
+# Mac OS
+.DS_Store

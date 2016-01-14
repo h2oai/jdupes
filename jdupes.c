@@ -1101,9 +1101,9 @@ static void summarizematches(const file_t * restrict files)
   {
     printf("%d duplicate files (in %d sets), occupying ", numfiles, numsets);
 #ifdef NO_FLOAT
-    if (numbytes < 1000) printf("%jd byte%c\n", numbytes, (numbytes != 1) ? 's' : ' ');
-    else if (numbytes <= 1000000) printf("%jd KB\n", numbytes / 1000);
-    else printf("%jd MB\n", numbytes / 1000000);
+    if (numbytes < 1000) printf("%jd byte%c\n", (intmax_t)numbytes, (numbytes != 1) ? 's' : ' ');
+    else if (numbytes <= 1000000) printf("%jd KB\n", (intmax_t)(numbytes / 1000));
+    else printf("%jd MB\n", (intmax_t)(numbytes / 1000000));
 #else
     if (numbytes < 1000.0) printf("%.0f bytes\n", numbytes);
     else if (numbytes <= (1000.0 * 1000.0)) printf("%.1f KB\n", numbytes / 1000.0);
