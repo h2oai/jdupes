@@ -19,7 +19,7 @@ extern "C" {
 typedef uint64_t hash_t;
 
 /* Version increments when algorithm changes incompatibly */
-#define JODY_HASH_VERSION 3
+#define JODY_HASH_VERSION 4
 
 extern hash_t jody_block_hash(const hash_t * restrict data,
 		const hash_t start_hash, const size_t count);
