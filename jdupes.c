@@ -243,6 +243,11 @@ static uintptr_t *sma_lastpage = NULL;
 static unsigned int sma_pages = 0;
 static size_t sma_lastfree = 0;
 static size_t sma_nextfree = sizeof(uintptr_t);
+#ifdef DEBUG
+static uintmax_t sma_allocs = 0;
+static uintmax_t sma_free_ignored = 0;
+static uintmax_t sma_free_good = 0;
+#endif
 
 
 /*
@@ -326,6 +331,9 @@ static void *string_malloc(size_t len)
 	sma_lastfree = sma_nextfree;
 	sma_nextfree += len;
 
+#ifdef DEBUG
+	sma_allocs++;
+#endif
 	return retval;
 }
 
@@ -336,16 +344,28 @@ static inline void string_free(const void * const restrict addr)
 	static const char * restrict p;
 
 	/* Do nothing on NULL address or no last length */
-	if (addr == NULL) return;
-	if (sma_lastfree < sizeof(uintptr_t)) return;
+	if ((addr == NULL) || (sma_lastfree < sizeof(uintptr_t))) {
+#ifdef DEBUG
+		sma_free_ignored++;
+#endif
+		return;
+	}
 
 	p = (char *)sma_lastpage + sma_lastfree;
 
 	/* Only take action on the last pointer in the page */
-	if ((uintptr_t)addr != (uintptr_t)p) return;
+	if ((uintptr_t)addr != (uintptr_t)p) {
+#ifdef DEBUG
+		sma_free_ignored++;
+#endif
+		return;
+	}
 
 	sma_nextfree = sma_lastfree;
 	sma_lastfree = 0;
+#ifdef DEBUG
+	sma_free_good++;
+#endif
 	return;
 }
 
@@ -2117,7 +2137,8 @@ skip_full_check:
     fprintf(stderr, "%ju total files, %ju comparisons, branch L %u, R %u, both %u\n",
 		    filecount, comparisons, left_branch, right_branch,
 		    left_branch + right_branch);
-    fprintf(stderr, "Maximum tree depth reached: %u\n", max_depth);
+    fprintf(stderr, "Max tree depth: %u; SMA alloc: %ju, free ign: %ju, free good: %ju\n",
+		    max_depth, sma_allocs, sma_free_ignored, sma_free_good);
   }
 #endif /* DEBUG */
 
