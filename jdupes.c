@@ -311,6 +311,8 @@ static void *string_malloc(size_t len)
 		len &= ~(sizeof(uintptr_t) - 1);
 		len += sizeof(uintptr_t);
 	}
+	/* Make room for size prefix */
+	len += sizeof(size_t);
 
 	/* Refuse to allocate a space larger than we can store */
 	if (len > (unsigned int)(SMA_PAGE_SIZE - sizeof(uintptr_t))) return NULL;
@@ -332,6 +334,9 @@ static void *string_malloc(size_t len)
 
 	/* Allocate the space */
 	address = (char *)page + sma_nextfree;
+	/* Prefix object with its size */
+	*(size_t *)address = (size_t)len;
+	address += sizeof(size_t);
 	sma_lastfree = sma_nextfree;
 	sma_nextfree += len;
 
@@ -343,7 +348,7 @@ static void *string_malloc(size_t len)
 
 
 /* Roll back the last allocation */
-static inline void string_free(const void * const restrict addr)
+static inline void string_free(const void * restrict addr)
 {
 	static const char * restrict p;
 
@@ -358,6 +363,7 @@ static inline void string_free(const void * const restrict addr)
 	p = (char *)sma_lastpage + sma_lastfree;
 
 	/* Only take action on the last pointer in the page */
+	addr = (void *)((uintptr_t)addr - sizeof(size_t));
 	if ((uintptr_t)addr != (uintptr_t)p) {
 #ifdef DEBUG
 		sma_free_ignored++;
