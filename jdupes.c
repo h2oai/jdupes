@@ -284,6 +284,8 @@ static inline void *string_malloc_page(void)
 	pageptr = (uintptr_t *)malloc(SMA_PAGE_SIZE);
 	if (pageptr == NULL) return NULL;
 	*pageptr = (uintptr_t)NULL;
+	/* Link this page to the previous page */
+	*(pageptr + sizeof(uintptr_t)) = (uintptr_t)sma_lastpage;
 
 	/* Link previous page to this page, if applicable */
 	if (sma_lastpage != NULL) *sma_lastpage = (uintptr_t)pageptr;
@@ -299,7 +301,7 @@ static inline void *string_malloc_page(void)
 static void *string_malloc(size_t len)
 {
 	const char * restrict page = (char *)sma_lastpage;
-	static char *retval;
+	static char *address;
 
 	/* Calling with no actual length is invalid */
 	if (len < 1) return NULL;
@@ -317,7 +319,7 @@ static void *string_malloc(size_t len)
 	if (sma_pages == 0) {
 		sma_head = string_malloc_page();
 		if (!sma_head) return NULL;
-		sma_nextfree = sizeof(uintptr_t);
+		sma_nextfree = (2 * sizeof(uintptr_t));
 		page = sma_head;
 	}
 
@@ -325,18 +327,18 @@ static void *string_malloc(size_t len)
 	if ((sma_nextfree + len) > SMA_PAGE_SIZE) {
 		page = string_malloc_page();
 		if (!page) return NULL;
-		sma_nextfree = sizeof(uintptr_t);
+		sma_nextfree = (2 * sizeof(uintptr_t));
 	}
 
 	/* Allocate the space */
-	retval = (char *)page + sma_nextfree;
+	address = (char *)page + sma_nextfree;
 	sma_lastfree = sma_nextfree;
 	sma_nextfree += len;
 
 #ifdef DEBUG
 	sma_allocs++;
 #endif
-	return retval;
+	return address;
 }
 
 
