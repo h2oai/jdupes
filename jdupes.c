@@ -316,6 +316,7 @@ static void *string_malloc(size_t len)
 	/* Initialize on first use */
 	if (sma_pages == 0) {
 		sma_head = string_malloc_page();
+		if (!sma_head) return NULL;
 		sma_nextfree = sizeof(uintptr_t);
 		page = sma_head;
 	}
@@ -323,6 +324,7 @@ static void *string_malloc(size_t len)
 	/* Allocate new pages when objects don't fit anymore */
 	if ((sma_nextfree + len) > SMA_PAGE_SIZE) {
 		page = string_malloc_page();
+		if (!page) return NULL;
 		sma_nextfree = sizeof(uintptr_t);
 	}
 
