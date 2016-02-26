@@ -18,98 +18,103 @@ byte-by-byte comparison.
 
 .SH OPTIONS
 .TP
-.B -r --recurse
-for every directory given follow subdirectories encountered within
-.TP
-.B -R --recurse:
-for each directory given after this option follow subdirectories
-encountered within (note the ':' at the end of option; see the
-Examples section below for further explanation)
-.TP
-.B -s --symlinks
-follow symlinked directories
-.TP
-.B -H --hardlinks
-normally, when two or more files point to the same disk area they are
-treated as non-duplicates; this option will change this behavior
-.TP
-.B -n --noempty
-exclude zero-length files from consideration
-.TP
-.B -x --xsize=SIZE
-exclude files of size < SIZE from consideration; following suffixes can
-be used:
-.RS
-.IP `k'
-for kilobytes (units of 1024 bytes)
-.IP `M'
-for Megabytes (units of 1024 x 1024 bytes)
-.IP `G'
-for Gigabytes (units of 1024 x 1024 x 1024 bytes)
-.RE
-.TP
-.B -f --omitfirst
-omit the first file in each set of matches
+.B -1 --sameline
+list each set of matches on a single line
 .TP
 .B -A --nohidden
 exclude hidden files from consideration
 .TP
-.B -1 --sameline
-list each set of matches on a single line
+.B -B --dedupe
+issue the btrfs same-extents ioctl to trigger a deduplication on
+disk. The program must be built with btrfs support for this option
+to be available
 .TP
-.B -S --size
-show size of duplicate files
-.TP
-.B -m --summarize
-summarize duplicate files information
-.TP
-.B -q --quiet
-hide progress indicator
-.TP
-.B -Q --quick
-.B [WARNING: RISK OF DATA LOSS, SEE CAVEATS]
-skip byte-for-byte verification of duplicate pairs (use hashes only)
+.B -D --debug
+if this feature is compiled in, show debugging statistics and info
+at the end of program execution
 .TP
 .B -d --delete
 prompt user for files to preserve, deleting all others (see
 .B CAVEATS
 below)
 .TP
-.B -B --dedupe
-issue the btrfs same-extents ioctl to trigger a deduplication on
-disk. jdupes needs to be built with btrfs support for this option
-to be available
+.B -f --omitfirst
+omit the first file in each set of matches
 .TP
-.B -N --noprompt
-when used together with \-\-delete, preserve the first file in each
-set of duplicates and delete the others without prompting the user
+.B -H --hardlinks
+normally, when two or more files point to the same disk area they are
+treated as non-duplicates; this option will change this behavior
+.TP
+.B -h --help
+displays help
+.TP
 .B -L --hardlink
 replace all duplicate files with hardlinks to the first file in each set
 of duplicates
+.TP
+.B -m --summarize
+summarize duplicate files information
 .TP
 .B -N --noprompt
 when used together with \-\-delete, preserve the first file in each set of
 duplicates and delete the others without prompting the user
 .TP
-.B -p --permissions
-don't consider files with different owner/group or permission bits as
-duplicates
-.TP
-.B -o --order\fR=\fIWORD\fR
-order files according to WORD:
-time - sort by modification time
-name - sort by filename
+.B -n --noempty
+exclude zero-length files from consideration
 .TP
 .B -O --paramorder
 parameter order preservation is more important than the chosen sort; this
 is particularly useful with the \fB\-N\fP option to ensure that automatic
 deletion behaves in a controllable way
 .TP
-.B -v --version
-display jdupes version
+.B -o --order\fR=\fIWORD\fR
+order files according to WORD:
+time - sort by modification time
+name - sort by filename
 .TP
-.B -h --help
-displays help
+.B -p --permissions
+don't consider files with different owner/group or permission bits as
+duplicates
+.TP
+.B -Q --quick
+.B [WARNING: RISK OF DATA LOSS, SEE CAVEATS]
+skip byte-for-byte verification of duplicate pairs (use hashes only)
+.TP
+.B -q --quiet
+hide progress indicator
+.TP
+.B -R --recurse:
+for each directory given after this option follow subdirectories
+encountered within (note the ':' at the end of option; see the
+Examples section below for further explanation)
+.TP
+.B -r --recurse
+for every directory given follow subdirectories encountered within
+.TP
+.B -S --size
+show size of duplicate files
+.TP
+.B -s --symlinks
+follow symlinked directories
+.TP
+.B -v --version
+display jdupes version and compilation feature flags
+.TP
+.B -x --xsize=[+]SIZE
+exclude files of size less than SIZE from consideration, or if SIZE is
+prefixed with a + (i.e.
+.B -x +226
+) then exclude files larger than SIZE. The following suffixes can be used
+and are not case-sensitive:
+.RS
+.IP `K'
+for kilobytes (units of 1024 bytes)
+.IP `M'
+for Megabytes (units of 1024 x 1024 bytes)
+.IP `G'
+for Gigabytes (units of 1024 x 1024 x 1024 bytes)
+
+.RE
 .SH NOTES
 Unless
 .B -1

@@ -108,6 +108,10 @@ typedef enum {
 static const char *program_name;
 
 static off_t excludesize = 0;
+static enum {
+	SMALLERTHAN,
+	LARGERTHAN
+} excludetype = SMALLERTHAN;
 
 /* Larger chunk size makes large files process faster but uses more RAM */
 #define CHUNK_SIZE 1048576
@@ -651,9 +655,14 @@ static void grokdir(const char * const restrict dir,
       }
 
       /* Exclude files below --xsize parameter */
-      if (!S_ISDIR(newfile->mode) && ISFLAG(flags, F_EXCLUDESIZE) && newfile->size < excludesize) {
-	string_free((char *)newfile);
-	continue;
+      if (!S_ISDIR(newfile->mode) && ISFLAG(flags, F_EXCLUDESIZE)) {
+	      if (
+		  ((excludetype == SMALLERTHAN) && (newfile->size < excludesize)) ||
+		  ((excludetype == LARGERTHAN) && (newfile->size > excludesize))
+			      ) {
+		string_free((char *)newfile);
+		continue;
+	      }
       }
 
 #ifndef NO_SYMLINKS
@@ -1706,55 +1715,57 @@ static inline void help_text(void)
 {
   printf("Usage: jdupes [options] DIRECTORY...\n\n");
 
-  printf(" -r --recurse     \tfor every directory given follow subdirectories\n");
-  printf("                  \tencountered within\n");
-  printf(" -R --recurse:    \tfor each directory given after this option follow\n");
-  printf("                  \tsubdirectories encountered within (note the ':' at\n");
-  printf("                  \tthe end of the option, manpage for more details)\n");
-#ifndef NO_SYMLINKS
-  printf(" -s --symlinks    \tfollow symlinks\n");
-#endif
-#ifndef NO_HARDLINKS
-  printf(" -H --hardlinks   \tnormally, when two or more files point to the same\n");
-  printf("                  \tdisk area they are treated as non-duplicates; this\n");
-  printf("                  \toption will change this behavior\n");
-  printf(" -L --linkhard    \thard link duplicate files to the first file in\n");
-  printf("                  \teach set of duplicates without prompting the user\n");
-#endif
-  printf(" -n --noempty     \texclude zero-length files from consideration\n");
-  printf(" -x --xsize=SIZE  \texclude files of size < SIZE from consideration; the\n");
-  printf("                  \tSIZE argument accepts 'K', 'M' and 'G' unit suffix\n");
-  printf(" -A --nohidden    \texclude hidden files from consideration\n");
-  printf(" -f --omitfirst   \tomit the first file in each set of matches\n");
   printf(" -1 --sameline    \tlist each set of matches on a single line\n");
-  printf(" -S --size        \tshow size of duplicate files\n");
-  printf(" -m --summarize   \tsummarize dupe information\n");
-  printf(" -q --quiet       \thide progress indicator\n");
-/* This is undocumented in the quick help because it is a dangerous option. If you
- * really want it, uncomment it here, and may your data rest in peace. */
-/*  printf(" -Q --quick       \tskip byte-by-byte duplicate verification. WARNING:\n");
-  printf("                  \tthis may delete non-duplicates! Read the manual first!\n"); */
+  printf(" -A --nohidden    \texclude hidden files from consideration\n");
+#ifdef HAVE_BTRFS_IOCTL_H
+  printf(" -B --dedupe      \tSend matches to btrfs for block-level deduplication\n");
+#endif
   printf(" -d --delete      \tprompt user for files to preserve and delete all\n");
   printf("                  \tothers; important: under particular circumstances,\n");
   printf("                  \tdata may be lost when using this option together\n");
   printf("                  \twith -s or --symlinks, or when specifying a\n");
   printf("                  \tparticular directory more than once; refer to the\n");
   printf("                  \tdocumentation for additional information\n");
+  printf(" -f --omitfirst   \tomit the first file in each set of matches\n");
+#ifndef NO_HARDLINKS
+  printf(" -H --hardlinks   \ttreat hard-linked files as duplicate files. Normally\n");
+  printf("                  \thard links are treated as non-duplicates for safety\n");
+#endif
+  printf(" -h --help        \tdisplay this help message\n\n");
+#ifndef NO_HARDLINKS
+  printf(" -L --linkhard    \thard link duplicate files to the first file in\n");
+  printf("                  \teach set of duplicates without prompting the user\n");
+#endif
+  printf(" -m --summarize   \tsummarize dupe information\n");
   printf(" -N --noprompt    \ttogether with --delete, preserve the first file in\n");
   printf("                  \teach set of duplicates and delete the rest without\n");
   printf("                  \tprompting the user\n");
+  printf(" -n --noempty     \texclude zero-length files from consideration\n");
+  printf(" -O --paramorder  \tParameter order is more important than selected -O sort\n");
+  printf(" -o --order=BY    \tselect sort order for output, linking and deleting; by\n");
+  printf("                  \tmtime (BY=time; default) or filename (BY=name)\n");
 #ifndef NO_PERMS
   printf(" -p --permissions \tdon't consider files with different owner/group or\n");
   printf("                  \tpermission bits as duplicates\n");
 #endif
-  printf(" -o --order=BY    \tselect sort order for output, linking and deleting; by\n");
-  printf("                  \tmtime (BY=time; default) or filename (BY=name)\n");
-  printf(" -O --paramorder  \tParameter order is more important than selected -O sort\n");
-#ifdef HAVE_BTRFS_IOCTL_H
-  printf(" -B --dedupe      \tSend matches to btrfs for block-level deduplication\n");
+  printf(" -r --recurse     \tfor every directory given follow subdirectories\n");
+  printf("                  \tencountered within\n");
+  printf(" -R --recurse:    \tfor each directory given after this option follow\n");
+  printf("                  \tsubdirectories encountered within (note the ':' at\n");
+  printf("                  \tthe end of the option, manpage for more details)\n");
+  printf(" -S --size        \tshow size of duplicate files\n");
+#ifndef NO_SYMLINKS
+  printf(" -s --symlinks    \tfollow symlinks\n");
 #endif
+/* This is undocumented in the quick help because it is a dangerous option. If you
+ * really want it, uncomment it here, and may your data rest in peace. */
+/*  printf(" -Q --quick       \tskip byte-by-byte duplicate verification. WARNING:\n");
+  printf("                  \tthis may delete non-duplicates! Read the manual first!\n"); */
+  printf(" -q --quiet       \thide progress indicator\n");
   printf(" -v --version     \tdisplay jdupes version and license information\n");
-  printf(" -h --help        \tdisplay this help message\n\n");
+  printf(" -x --xsize=SIZE  \texclude files of size < SIZE bytes from consideration\n");
+  printf("    --xsize=+SIZE \t'+' specified before SIZE, exclude size > SIZE\n");
+  printf("                  \tK/M/G size suffixes can be used (case-insensitive)\n");
 #ifdef OMIT_GETOPT_LONG
   printf("Note: Long options are not supported in this build.\n\n");
 #endif
@@ -1864,6 +1875,10 @@ int main(int argc, char **argv) {
       break;
     case 'x':
       SETFLAG(flags, F_EXCLUDESIZE);
+      if (*optarg == '+') {
+	      excludetype = LARGERTHAN;
+	      optarg++;
+      }
       excludesize = strtoull(optarg, &endptr, 0);
       switch (*endptr) {
         case 'k':

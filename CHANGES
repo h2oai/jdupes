@@ -1,3 +1,11 @@
+jdupes 1.0.2
+
+- Update jody_hash code to latest version
+- Change string_malloc to enable future string_free() improvements
+- Add string_malloc counters for debug stat mode
+- Add '+size' option to -x/--xsize switch to exclude files larger than
+  the specified size instead of smaller than that size
+
 jdupes 1.0.1
 
 - Fix bug in deletion set counter that would show e.g. "Set 1 of 0"
