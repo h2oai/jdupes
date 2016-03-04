@@ -1735,7 +1735,10 @@ static inline void help_text(void)
 #ifndef NO_HARDLINKS
   printf(" -L --linkhard    \thard link duplicate files to the first file in\n");
   printf("                  \teach set of duplicates without prompting the user\n");
-#endif
+ #ifdef ON_WINDOWS
+  printf("                  \tWindows allows a maximum of 1023 hard links per file\n");
+ #endif /* ON_WINDOWS */
+#endif /* NO_HARDLINKS */
   printf(" -m --summarize   \tsummarize dupe information\n");
   printf(" -N --noprompt    \ttogether with --delete, preserve the first file in\n");
   printf("                  \teach set of duplicates and delete the rest without\n");
