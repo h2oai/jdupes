@@ -524,17 +524,7 @@ static inline void getfilestats(file_t * const restrict file)
   if (file->valid_stat == 1) return;
   file->valid_stat = 1;
 
-  if (stat(file->d_name, &s) != 0) {
-/* These are already set during file entry initialization */
-    /* file->size = -1;
-    file->inode = 0;
-    file->device = 0;
-    file->mtime = 0;
-    file->mode = 0;
-    file->uid = 0;
-    file->gid = 0; */
-    return;
-  }
+  if (stat(file->d_name, &s) != 0) return;
   file->size = s.st_size;
   file->device = s.st_dev;
   file->mtime = s.st_mtime;
