@@ -1687,7 +1687,7 @@ static inline void hardlinkfiles(file_t *files)
           if (!ISFLAG(flags, F_HIDEPROGRESS)) printf("----> %s\n", dupelist[x]->d_name);
         } else {
           /* The hard link failed. Warn the user and put the link target back */
-          if (!ISFLAG(flags, F_HIDEPROGRESS)) printf("-//-> %s ", dupelist[x]->d_name);
+          if (!ISFLAG(flags, F_HIDEPROGRESS)) printf("-//-> %s\n", dupelist[x]->d_name);
 	  fprintf(stderr, "warning: unable to hard link '%s' -> '%s': %s\n",
 			  dupelist[x]->d_name, dupelist[1]->d_name, strerror(errno));
           i = rename(temp_path, dupelist[x]->d_name);
