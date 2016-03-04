@@ -75,9 +75,7 @@
   sometimes overridden by other match pairs to mess up the sort.
 
 - The --xsize option can be improved. Instead of simply specifying an
-  exclusion size minimum, the option should offer multiple ways to
+  exclusion size min/max, the option should offer multiple ways to
   specify allowed file sizes. Examples:
-  - '--xsize=-1M' only examine files 1 MB or less
-  - '--xsize=+3M' only examine files 3 MB or greater
   - '--xsize=512-1024' only examine files between 512 and 1024 bytes
   - '--xsize=1M-3M,+20M' examine files 1-3 MB and >20 MB in size
