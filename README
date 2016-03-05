@@ -92,6 +92,15 @@ duplicates, leading to data loss should a user preserve a file
 without its "duplicate" (the file itself!).
 
 
+Hard linking status symbols
+--------------------------------------------------------------------------
+A set of arrows are used in hard linking to show what action was taken on
+each link candidate. These arrows are as follows:
+
+----> File was hard linked to the first file in the duplicate chain
+-==-> Already a hard link to the first file in the chain
+-//-> Hard linking failed due to an error during the linking process
+
 Microsoft Windows platform-specific notes
 --------------------------------------------------------------------------
 The Windows port does not support Unicode, only ANSI file names. This is

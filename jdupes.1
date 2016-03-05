@@ -116,6 +116,21 @@ for Gigabytes (units of 1024 x 1024 x 1024 bytes)
 
 .RE
 .SH NOTES
+A set of arrows are used in hard linking to show what action was taken on
+each link candidate. These arrows are as follows:
+
+.TP
+.B ---->
+This file was successfully hard linked to the first file in the duplicate 
+chain
+.TP
+.B -==->
+This file was already a hard link to the first file in the chain
+.TP
+.B -//->
+Hard linking this file failed due to an error during the linking process
+
+.PP
 Unless
 .B -1
 or
@@ -124,6 +139,7 @@ is specified, duplicate files are listed together in groups, each file
 displayed on a separate line. The groups are then separated from each
 other by blank lines.
 
+.PP
 When
 .B -1
 or
