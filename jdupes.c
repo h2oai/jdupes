@@ -183,7 +183,9 @@ typedef struct _file {
   ino_t inode;
   mode_t mode;
 #ifdef ON_WINDOWS
+ #ifndef NO_HARDLINKS
   nlink_t nlink;
+ #endif
 #endif
 #ifndef NO_PERMS
   uid_t uid;
@@ -223,6 +225,11 @@ static unsigned int small_file = 0, partial_hash = 0, partial_to_full = 0, hash_
 static uintmax_t comparisons = 0;
 static unsigned int left_branch = 0, right_branch = 0;
 static unsigned int tree_depth = 0, max_depth = 0;
+ #ifdef ON_WINDOWS
+  #ifndef NO_HARDLINKS
+static unsigned int hll_exclude = 0;
+  #endif
+ #endif
 #endif /* DEBUG */
 
 /* Directory parameter position counter */
@@ -548,13 +555,27 @@ static int file_has_changed(file_t * const restrict file)
 
 
 #ifdef ON_WINDOWS
+ #ifndef NO_HARDLINKS
 static inline nlink_t get_nlink(file_t * const restrict file)
 {
-  if (stat(file->d_name, &s) != 0) return 0;
-  file->nlink = s.st_nlink;
-  //fprintf(stderr, "nlink: %d for %s\n", s.st_nlink, file->d_name);
-  return s.st_nlink;
+  HANDLE hfile;
+  BY_HANDLE_FILE_INFORMATION bhfi;
+
+  hfile = CreateFile(file->d_name, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
+  if (hfile == INVALID_HANDLE_VALUE) goto failure;
+
+  if (!GetFileInformationByHandle(hfile, &bhfi)) goto failure;
+
+  file->nlink = bhfi.nNumberOfLinks;
+  CloseHandle(hfile);
+  //fprintf(stderr, "get_nlink: %u for %s\n", (unsigned int)bhfi.nNumberOfLinks, file->d_name);
+  return bhfi.nNumberOfLinks;
+
+failure:
+  CloseHandle(hfile);
+  return 0;
 }
+ #endif /* NO_HARDLINKS */
 #endif /* ON_WINDOWS */
 
 
@@ -575,7 +596,9 @@ static inline void getfilestats(file_t * const restrict file)
 #endif
 #ifdef ON_WINDOWS
   file->inode = getino(file->d_name);
-  file->nlink = s.st_nlink;
+ #ifndef NO_HARDLINKS
+  get_nlink(file);
+ #endif /* NO_HARDLINKS */
 #else
   file->inode = s.st_ino;
 #endif /* ON_WINDOWS */
@@ -648,7 +671,9 @@ static void grokdir(const char * const restrict dir,
       newfile->mtime = 0;
       newfile->mode = 0;
 #ifdef ON_WINDOWS
+ #ifndef NO_HARDLINKS
       newfile->nlink = 0;
+ #endif
 #endif
 #ifndef NO_PERMS
       newfile->uid = 0;
@@ -707,6 +732,19 @@ static void grokdir(const char * const restrict dir,
       }
 #endif
 
+      /* Windows has a 1023 (+1) hard link limit. If we're hard linking,
+       * ignore all files that have hit this limit */
+#ifdef ON_WINDOWS
+ #ifndef NO_HARDLINKS
+      if (ISFLAG(flags, F_HARDLINKFILES) && newfile->nlink >= 1024) {
+  #ifdef DEBUG
+        hll_exclude++;
+  #endif
+	string_free((char *)newfile);
+	continue;
+      }
+ #endif
+#endif
       /* Optionally recurse directories, including symlinked ones if requested */
       if (S_ISDIR(newfile->mode)) {
 #ifndef NO_SYMLINKS
@@ -1696,7 +1734,9 @@ static inline void hardlinkfiles(file_t *files)
           /* The devices for the files are the same, but we still need to skip
            * anything that is already hard linked (-L and -H both set) */
           if (srcfile->inode == dupelist[x]->inode) {
-            if (!ISFLAG(flags, F_HIDEPROGRESS)) printf("-==-> %s\n", dupelist[x]->d_name);
+	    /* Don't show == arrows when not matching against other hard links */
+            if (ISFLAG(flags, F_CONSIDERHARDLINKS))
+	      if (!ISFLAG(flags, F_HIDEPROGRESS)) printf("-==-> %s\n", dupelist[x]->d_name);
             continue;
           }
         }
@@ -1709,7 +1749,7 @@ static inline void hardlinkfiles(file_t *files)
 	/* Check file pairs for modification before linking */
         /* Safe hard linking: don't actually delete until the link succeeds */
 	if (file_has_changed(srcfile)) {
-	  fprintf(stderr, "warning: source file modified since scanned, changing source\nfile to %s\n",
+	  fprintf(stderr, "warning: source file modified since scanned; changing source file:\n[SRC] %s\n",
 		  dupelist[x]->d_name);
 	  srcfile = dupelist[x];
 	  continue;
@@ -1720,16 +1760,15 @@ static inline void hardlinkfiles(file_t *files)
 	  continue;
 	}
 #ifdef ON_WINDOWS
-	/* For Windows, the hard link count maximum is 1023; work around
+	/* For Windows, the hard link count maximum is 1023 (+1); work around
 	 * by skipping linking or changing the link source file as needed */
-	// FIXME: This is currently broken since stat() returns a bogus st_nlink!!!
-	if (get_nlink(srcfile) >= 1023) {
-	  fprintf(stderr, "warning: maximum source link count reached, changing source\nfile to %s\n",
+	if (get_nlink(srcfile) >= 1024) {
+	  fprintf(stderr, "warning: maximum source link count reached, changing source file:\n[SRC] %s\n",
 		  dupelist[x]->d_name);
 	  srcfile = dupelist[x];
 	  continue;
 	}
-	if (get_nlink(dupelist[x]) >= 1023) {
+	if (get_nlink(dupelist[x]) >= 1024) {
 	  fprintf(stderr, "warning: maximum destination link count reached, skipping:\n-//-> %s\n",
 		  dupelist[x]->d_name);
 	  continue;
@@ -2234,6 +2273,7 @@ skip_full_check:
 		    left_branch + right_branch);
     fprintf(stderr, "Max tree depth: %u; SMA alloc: %ju, free ign: %ju, free good: %ju\n",
 		    max_depth, sma_allocs, sma_free_ignored, sma_free_good);
+    fprintf(stderr, "Exclusions based on Windows hard link limit: %u\n", hll_exclude);
   }
 #endif /* DEBUG */
 
