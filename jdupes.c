@@ -1194,6 +1194,7 @@ static void printmatches(file_t * restrict files)
   }
 }
 
+
 unsigned int get_max_dupes(file_t *files, unsigned int *max, unsigned int *n_files) {
   file_t *curdupe;
   unsigned int n_dupes;
@@ -1223,6 +1224,7 @@ unsigned int get_max_dupes(file_t *files, unsigned int *max, unsigned int *n_fil
   }
   return groups;
 }
+
 
 #ifdef HAVE_BTRFS_IOCTL_H
 static char *dedupeerrstr(int err) {
@@ -1254,7 +1256,7 @@ void dedupefiles(file_t *files)
   get_max_dupes(files, &max_dupes, &max_files);
   same = calloc(sizeof(struct btrfs_ioctl_same_args) +
                 sizeof(struct btrfs_ioctl_same_extent_info) * max_dupes, 1);
-  dupe_filenames = malloc(max_dupes * sizeof(char *));
+  dupe_filenames = string_malloc(max_dupes * sizeof(char *));
   if (!same || !dupe_filenames) {
     errormsg("out of memory\n");
     exit(EXIT_FAILURE);
@@ -1327,7 +1329,7 @@ cleanup:
 
   if (!ISFLAG(flags, F_HIDEPROGRESS))
     fprintf(stderr, "\r%40s\r", " ");
-  free(same);
+  string_free(same);
   free(dupe_filenames);
 }
 #endif
