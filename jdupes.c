@@ -1432,11 +1432,14 @@ static void deletefiles(file_t *files, int prompt, FILE *tty)
 	if (preserve[x])
 	  printf("   [+] %s\n", dupelist[x]->d_name);
 	else {
-	  if (remove(dupelist[x]->d_name) == 0) {
+	  if (file_has_changed(dupelist[x])) {
+	    printf("   [!] %s ", dupelist[x]->d_name);
+	    printf("-- file changed since being scanned\n");
+	  } else if (remove(dupelist[x]->d_name) == 0) {
 	    printf("   [-] %s\n", dupelist[x]->d_name);
 	  } else {
 	    printf("   [!] %s ", dupelist[x]->d_name);
-	    printf("-- unable to delete file!\n");
+	    printf("-- unable to delete file\n");
 	  }
 	}
       }
@@ -1727,7 +1730,7 @@ static inline void hardlinkfiles(file_t *files)
 	  }
 	  continue;
         }
-        i = unlink(temp_path);
+        i = remove(temp_path);
 	if (i != 0) fprintf(stderr, "\nwarning: can't delete temp file: %s\n", temp_path);
       }
       if (!ISFLAG(flags, F_HIDEPROGRESS)) printf("\n");
