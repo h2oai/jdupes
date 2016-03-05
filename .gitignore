@@ -30,11 +30,12 @@
 /*.patch
 
 #
-# debugging stuff
+# debugging and editor stuff
 #
 core
 .gdb_history
 .gdbinit
+.*.swp
 
 # Mac OS
 .DS_Store

@@ -516,6 +516,32 @@ static int nonoptafter(const char *option, const int argc,
 }
 
 
+/* Check file's stat() info to make sure nothing has changed
+ * Returns 1 if changed, 0 if not changed, -1 if error */
+static inline int file_has_changed(file_t * const restrict file)
+{
+  static struct stat s;
+
+  if (file->valid_stat == 0) return -1;
+
+  if (stat(file->d_name, &s) != 0) return -1;
+  if (file->size != s.st_size) return 1;
+  if (file->device != s.st_dev) return 1;
+  if (file->mtime != s.st_mtime) return 1;
+  if (file->mode != s.st_mode) return 1;
+#ifndef NO_PERMS
+  if (file->uid != s.st_uid) return 1;
+  if (file->gid != s.st_gid) return 1;
+#endif
+#ifdef ON_WINDOWS
+  if (file->inode != getino(file->d_name)) return 1;
+#else
+  if (file->inode != s.st_ino) return 1;
+#endif /* ON_WINDOWS */
+  return 0;
+}
+
+
 static inline void getfilestats(file_t * const restrict file)
 {
   static struct stat s;
@@ -1591,6 +1617,7 @@ static void registerpair(file_t **matchlist, file_t *newmatch,
 static inline void hardlinkfiles(file_t *files)
 {
   static file_t *tmpfile;
+  static file_t *srcfile;
   static file_t *curfile;
   static file_t ** restrict dupelist;
   static int counter;
@@ -1637,17 +1664,18 @@ static inline void hardlinkfiles(file_t *files)
 
       /* Link every file to the first file */
 
-      if (!ISFLAG(flags, F_HIDEPROGRESS)) printf("[SRC] %s\n", dupelist[1]->d_name);
+      srcfile = dupelist[1];
+      if (!ISFLAG(flags, F_HIDEPROGRESS)) printf("[SRC] %s\n", srcfile->d_name);
       for (x = 2; x <= counter; x++) {
         /* Can't hard link files on different devices */
-        if (dupelist[1]->device != dupelist[x]->device) {
+        if (srcfile->device != dupelist[x]->device) {
 	  fprintf(stderr, "warning: hard link target on different device, not linking:\n-//-> %s\n",
 		  dupelist[x]->d_name);
 	  continue;
 	} else {
           /* The devices for the files are the same, but we still need to skip
            * anything that is already hard linked (-L and -H both set) */
-          if (dupelist[1]->inode == dupelist[x]->inode) {
+          if (srcfile->inode == dupelist[x]->inode) {
             if (!ISFLAG(flags, F_HIDEPROGRESS)) printf("-==-> %s\n", dupelist[x]->d_name);
             continue;
           }
@@ -1658,7 +1686,19 @@ static inline void hardlinkfiles(file_t *files)
 		  dupelist[x]->d_name);
 	  continue;
 	}
+	/* Check file pairs for modification before linking */
         /* Safe hard linking: don't actually delete until the link succeeds */
+	if (file_has_changed(srcfile)) {
+	  fprintf(stderr, "warning: source file modified since scanned, changing source\nfile to %s\n",
+		  dupelist[x]->d_name);
+	  srcfile = dupelist[x];
+	  continue;
+	}
+	if (file_has_changed(dupelist[x])) {
+	  fprintf(stderr, "warning: target file modified since scanned, not linking:\n-//-> %s\n",
+		  dupelist[x]->d_name);
+	  continue;
+	}
         strcpy(temp_path, dupelist[x]->d_name);
         strcat(temp_path, "._fd_tmp");
         i = rename(dupelist[x]->d_name, temp_path);
@@ -1670,16 +1710,16 @@ static inline void hardlinkfiles(file_t *files)
 
 	errno = 0;
 #ifdef ON_WINDOWS
-        if (CreateHardLink(dupelist[x]->d_name, dupelist[1]->d_name, NULL) == TRUE) {
+        if (CreateHardLink(dupelist[x]->d_name, srcfile->d_name, NULL) == TRUE) {
 #else
-        if (link(dupelist[1]->d_name, dupelist[x]->d_name) == 0) {
+        if (link(srcfile->d_name, dupelist[x]->d_name) == 0) {
 #endif /* ON_WINDOWS */
           if (!ISFLAG(flags, F_HIDEPROGRESS)) printf("----> %s\n", dupelist[x]->d_name);
         } else {
           /* The hard link failed. Warn the user and put the link target back */
           if (!ISFLAG(flags, F_HIDEPROGRESS)) printf("-//-> %s\n", dupelist[x]->d_name);
 	  fprintf(stderr, "warning: unable to hard link '%s' -> '%s': %s\n",
-			  dupelist[x]->d_name, dupelist[1]->d_name, strerror(errno));
+			  dupelist[x]->d_name, srcfile->d_name, strerror(errno));
           i = rename(temp_path, dupelist[x]->d_name);
 	  if (i != 0) {
 		  fprintf(stderr, "error: cannot rename temp file back to original\n");
