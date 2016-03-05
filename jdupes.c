@@ -2273,7 +2273,8 @@ skip_full_check:
 		    left_branch + right_branch);
     fprintf(stderr, "Max tree depth: %u; SMA alloc: %ju, free ign: %ju, free good: %ju\n",
 		    max_depth, sma_allocs, sma_free_ignored, sma_free_good);
-    fprintf(stderr, "Exclusions based on Windows hard link limit: %u\n", hll_exclude);
+    if (ISFLAG(flags, F_HARDLINKFILES))
+	    fprintf(stderr, "Exclusions based on Windows hard link limit: %u\n", hll_exclude);
   }
 #endif /* DEBUG */
 
