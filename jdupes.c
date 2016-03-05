@@ -26,6 +26,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 #include <dirent.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -44,7 +45,6 @@
 #define HAVE_BTRFS_IOCTL_H
 #endif
 #ifdef HAVE_BTRFS_IOCTL_H
-#include <sys/types.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <btrfs/ioctl.h>
@@ -60,6 +60,7 @@
  #endif
  #include <windows.h>
  #include "getino.h"
+typedef short nlink_t;
 // #define NO_HARDLINKS 1
 #endif
 
@@ -106,6 +107,9 @@ typedef enum {
 } ordertype_t;
 
 static const char *program_name;
+
+/* This gets used in many functions */
+static struct stat s;
 
 static off_t excludesize = 0;
 static enum {
@@ -178,6 +182,9 @@ typedef struct _file {
   dev_t device;
   ino_t inode;
   mode_t mode;
+#ifdef ON_WINDOWS
+  nlink_t nlink;
+#endif
 #ifndef NO_PERMS
   uid_t uid;
   gid_t gid;
@@ -518,10 +525,8 @@ static int nonoptafter(const char *option, const int argc,
 
 /* Check file's stat() info to make sure nothing has changed
  * Returns 1 if changed, 0 if not changed, -1 if error */
-static inline int file_has_changed(file_t * const restrict file)
+static int file_has_changed(file_t * const restrict file)
 {
-  static struct stat s;
-
   if (file->valid_stat == 0) return -1;
 
   if (stat(file->d_name, &s) != 0) return -1;
@@ -542,10 +547,19 @@ static inline int file_has_changed(file_t * const restrict file)
 }
 
 
+#ifdef ON_WINDOWS
+static inline nlink_t get_nlink(file_t * const restrict file)
+{
+  if (stat(file->d_name, &s) != 0) return 0;
+  file->nlink = s.st_nlink;
+  //fprintf(stderr, "nlink: %d for %s\n", s.st_nlink, file->d_name);
+  return s.st_nlink;
+}
+#endif /* ON_WINDOWS */
+
+
 static inline void getfilestats(file_t * const restrict file)
 {
-  static struct stat s;
-
   /* Don't stat() the same file more than once */
   if (file->valid_stat == 1) return;
   file->valid_stat = 1;
@@ -561,6 +575,7 @@ static inline void getfilestats(file_t * const restrict file)
 #endif
 #ifdef ON_WINDOWS
   file->inode = getino(file->d_name);
+  file->nlink = s.st_nlink;
 #else
   file->inode = s.st_ino;
 #endif /* ON_WINDOWS */
@@ -632,6 +647,9 @@ static void grokdir(const char * const restrict dir,
       newfile->inode = 0;
       newfile->mtime = 0;
       newfile->mode = 0;
+#ifdef ON_WINDOWS
+      newfile->nlink = 0;
+#endif
 #ifndef NO_PERMS
       newfile->uid = 0;
       newfile->gid = 0;
@@ -1701,6 +1719,23 @@ static inline void hardlinkfiles(file_t *files)
 		  dupelist[x]->d_name);
 	  continue;
 	}
+#ifdef ON_WINDOWS
+	/* For Windows, the hard link count maximum is 1023; work around
+	 * by skipping linking or changing the link source file as needed */
+	// FIXME: This is currently broken since stat() returns a bogus st_nlink!!!
+	if (get_nlink(srcfile) >= 1023) {
+	  fprintf(stderr, "warning: maximum source link count reached, changing source\nfile to %s\n",
+		  dupelist[x]->d_name);
+	  srcfile = dupelist[x];
+	  continue;
+	}
+	if (get_nlink(dupelist[x]) >= 1023) {
+	  fprintf(stderr, "warning: maximum destination link count reached, skipping:\n-//-> %s\n",
+		  dupelist[x]->d_name);
+	  continue;
+	}
+#endif
+
         strcpy(temp_path, dupelist[x]->d_name);
         strcat(temp_path, "._fd_tmp");
         i = rename(dupelist[x]->d_name, temp_path);
