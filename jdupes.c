@@ -1357,7 +1357,7 @@ static void deletefiles(file_t *files, int prompt, FILE *tty)
 
   if (!dupelist || !preserve || !preservestr) errormsg(NULL);
 
-  while (files) {
+  for (; files; files = files->next) {
     if (files->hasdupes) {
       curgroup++;
       counter = 1;
@@ -1442,10 +1442,7 @@ static void deletefiles(file_t *files, int prompt, FILE *tty)
       }
       printf("\n");
     }
-
-    files = files->next;
   }
-
   free(dupelist);
   free(preserve);
   free(preservestr);
