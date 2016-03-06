@@ -1298,7 +1298,7 @@ static char *dedupeerrstr(int err) {
   }
 }
 
-void dedupefiles(file_t *files)
+void dedupefiles(file_t * restrict files)
 {
   struct btrfs_ioctl_same_args *same;
   char **dupe_filenames; /* maps to same->info indices */
@@ -1315,7 +1315,7 @@ void dedupefiles(file_t *files)
                 sizeof(struct btrfs_ioctl_same_extent_info) * max_dupes, 1);
   dupe_filenames = string_malloc(max_dupes * sizeof(char *));
   if (!same || !dupe_filenames) {
-    errormsg("out of memory\n");
+    errormsg(NULL);
     exit(EXIT_FAILURE);
   }
 
@@ -2142,7 +2142,6 @@ int main(int argc, char **argv) {
     }
   }
 
-//  if (!ISFLAG(flags, F_HIDEPROGRESS)) fprintf(stderr, "\r%60s\r", " ");
   if (!ISFLAG(flags, F_HIDEPROGRESS)) fprintf(stderr, "\n");
   if (!files) exit(EXIT_SUCCESS);
 
@@ -2242,14 +2241,6 @@ skip_full_check:
       else printmatches(files);
     }
   }
-
-  /*
-  while (files) {
-    curfile = files->next;
-    free(files);
-    files = curfile;
-  }
-  */
 
   purgetree(checktree);
   string_malloc_destroy();
