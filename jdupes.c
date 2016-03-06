@@ -1509,16 +1509,6 @@ static void deletefiles(file_t *files, int prompt, FILE *tty)
 }
 
 
-/* Unused
-static inline int sort_pairs_by_arrival(file_t *f1, file_t *f2)
-{
-  if (f2->duplicates != 0) return 1;
-
-  return -1;
-}
-*/
-
-
 static int sort_pairs_by_param_order(file_t *f1, file_t *f2)
 {
   if (!ISFLAG(flags, F_USEPARAMORDER)) return 0;
