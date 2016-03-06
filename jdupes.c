@@ -1389,7 +1389,7 @@ cleanup:
   string_free(same);
   free(dupe_filenames);
 }
-#endif
+#endif /* HAVE_BTRFS_IOCTL_H */
 
 static void deletefiles(file_t *files, int prompt, FILE *tty)
 {
@@ -1772,6 +1772,8 @@ static inline void hardlinkfiles(file_t *files)
         if (i != 0) {
 	  fprintf(stderr, "warning: cannot move hard link target to a temporary name, not linking:\n-//-> %s\n",
 		  dupelist[x]->d_name);
+	  /* Just in case the rename succeeded yet still returned an error */
+          rename(temp_path, dupelist[x]->d_name);
           continue;
         }
 
@@ -1795,8 +1797,25 @@ static inline void hardlinkfiles(file_t *files)
 	  }
 	  continue;
         }
+
+	/* Remove temporary file to clean up; if we can't, reverse the linking */
         i = remove(temp_path);
-	if (i != 0) fprintf(stderr, "\nwarning: can't delete temp file: %s\n", temp_path);
+	if (i != 0) {
+	  /* If the temp file can't be deleted, there may be a permissions problem
+	   * so reverse the process and warn the user */
+	  fprintf(stderr, "\nwarning: can't delete temp file, reverting: %s\n", temp_path);
+	  i = remove(dupelist[x]->d_name);
+	  if (i != 0) {
+		  fprintf(stderr, "\nwarning: couldn't remove hard link to restore original file\n");
+	  } else {
+            i = rename(temp_path, dupelist[x]->d_name);
+	    if (i != 0) {
+	        fprintf(stderr, "\nwarning: couldn't revert the file to its original name\n");
+	        fprintf(stderr, "original: %s\n", dupelist[x]->d_name);
+	        fprintf(stderr, "current:  %s\n", temp_path);
+	    }
+	  }
+	}
       }
       if (!ISFLAG(flags, F_HIDEPROGRESS)) printf("\n");
     }
