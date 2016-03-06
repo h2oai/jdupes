@@ -607,7 +607,8 @@ static inline void getfilestats(file_t * const restrict file)
 
 
 static void grokdir(const char * const restrict dir,
-		file_t * restrict * const restrict filelistp)
+		file_t * restrict * const restrict filelistp,
+		int recurse)
 {
   DIR *cd;
   file_t * restrict newfile;
@@ -748,11 +749,11 @@ static void grokdir(const char * const restrict dir,
       /* Optionally recurse directories, including symlinked ones if requested */
       if (S_ISDIR(newfile->mode)) {
 #ifndef NO_SYMLINKS
-	if (ISFLAG(flags, F_RECURSE) && (ISFLAG(flags, F_FOLLOWLINKS) || !S_ISLNK(linfo.st_mode)))
-          grokdir(newfile->d_name, filelistp);
+	if (recurse && (ISFLAG(flags, F_FOLLOWLINKS) || !S_ISLNK(linfo.st_mode)))
+          grokdir(newfile->d_name, filelistp, recurse);
 #else
-	if (ISFLAG(flags, F_RECURSE))
-          grokdir(newfile->d_name, filelistp);
+	if (recurse)
+          grokdir(newfile->d_name, filelistp, recurse);
 #endif
 	string_free((char *)newfile);
       } else {
@@ -2133,7 +2134,7 @@ int main(int argc, char **argv) {
 
     /* F_RECURSE is not set for directories before --recurse: */
     for (int x = optind; x < firstrecurse; x++) {
-      grokdir(argv[x], &files);
+      grokdir(argv[x], &files, 0);
       user_dir_count++;
     }
 
@@ -2141,12 +2142,12 @@ int main(int argc, char **argv) {
     SETFLAG(flags, F_RECURSE);
 
     for (int x = firstrecurse; x < argc; x++) {
-      grokdir(argv[x], &files);
+      grokdir(argv[x], &files, 1);
       user_dir_count++;
     }
   } else {
     for (int x = optind; x < argc; x++) {
-      grokdir(argv[x], &files);
+      grokdir(argv[x], &files, 1);
       user_dir_count++;
     }
   }
