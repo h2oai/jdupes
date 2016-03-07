@@ -1,9 +1,8 @@
 Introduction
 --------------------------------------------------------------------------
-jdupes is a program for identifying duplicate files residing
-within specified directories. This fork known as 'jdupes' is
-heavily modified from and improved over the original. See CHANGES
-for details.
+jdupes is a program for identifying and taking actions upon duplicate
+files. This fork known as 'jdupes' is heavily modified from and improved
+over the original. See CHANGES for details.
 
 
 Why use jdupes instead of the original fdupes or other forks?
@@ -28,6 +27,17 @@ be held responsible. If you notice a bug, please report it!
 While jdupes maintains some degree of compatibility with fdupes from which
 it was originally derived, there is no guarantee that it will continue to
 maintain such compatibility in the future.
+
+
+What jdupes is not: a similar (but not identical) file finding tool
+--------------------------------------------------------------------------
+Please note that jdupes ONLY works on 100% exact matches. It does not have
+any sort of "similarity" matching, nor does it know anything about any
+specific file formats such as images or sounds. Something as simple as a
+change in embedded metadata such as the ID3 tags in an MP3 file or the EXIF
+information in a JPEG image will not change the sound or image presented to
+the user when opened, but technically it makes the file no longer identical
+to the original.
 
 
 Usage
