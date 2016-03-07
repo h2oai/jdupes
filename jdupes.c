@@ -1399,9 +1399,9 @@ static void deletefiles(file_t *files, int prompt, FILE *tty)
 
   max++;
 
-  dupelist = (file_t**) malloc(sizeof(file_t*) * max);
-  preserve = (int*) malloc(sizeof(int) * max);
-  preservestr = (char*) malloc(INPUT_SIZE);
+  dupelist = (file_t **) malloc(sizeof(file_t*) * max);
+  preserve = (int *) malloc(sizeof(int) * max);
+  preservestr = (char *) malloc(INPUT_SIZE);
 
   if (!dupelist || !preserve || !preservestr) errormsg(NULL);
 
