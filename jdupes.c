@@ -73,7 +73,7 @@ typedef short nlink_t;
 
 
 /* How many operations to wait before updating progress counters */
-#define DELAY_COUNT 512
+#define DELAY_COUNT 256
 
 #define ISFLAG(a,b) ((a & b) == b)
 #define SETFLAG(a,b) (a |= b)
