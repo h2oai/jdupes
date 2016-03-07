@@ -1234,7 +1234,7 @@ static void printmatches(file_t * restrict files)
 	printf("%s%c", tmpfile->d_name, ISFLAG(flags, F_DSAMELINE)?' ':'\n');
 	tmpfile = tmpfile->duplicates;
       }
-      printf("\n");
+      if (files->next != NULL) printf("\n");
 
     }
 
