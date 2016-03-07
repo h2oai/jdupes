@@ -59,10 +59,14 @@
   #define WIN32_LEAN_AND_MEAN
  #endif
  #include <windows.h>
- #include "getino.h"
-typedef short nlink_t;
-// #define NO_HARDLINKS 1
-#endif
+typedef uint64_t jdupes_ino_t;
+/* For calling GetFileInformationByHandle() */
+static HANDLE hfile;
+static BY_HANDLE_FILE_INFORMATION bhfi;
+
+#else /* Not Windows */
+typedef ino_t jdupes_ino_t;
+#endif /* _WIN32 || __CYGWIN__ */
 
 /* Compile out debugging stat counters unless requested */
 #ifdef DEBUG
@@ -180,11 +184,11 @@ typedef struct _file {
   uint_fast8_t valid_stat; /* Only call stat() once per file (1 = stat'ed) */
   off_t size;
   dev_t device;
-  ino_t inode;
+  jdupes_ino_t inode;
   mode_t mode;
 #ifdef ON_WINDOWS
  #ifndef NO_HARDLINKS
-  nlink_t nlink;
+  DWORD nlink;
  #endif
 #endif
 #ifndef NO_PERMS
@@ -442,6 +446,55 @@ static void errormsg(const char *message, ...)
 }
 
 
+/***** Start Windows-specific functions *****/
+
+#ifdef ON_WINDOWS
+/* Get the "inode" (file ID) for a file on Windows */
+static inline jdupes_ino_t get_file_id(const char * const restrict filename)
+{
+  static uint64_t fileid;
+
+  hfile = CreateFile(filename, GENERIC_READ, FILE_SHARE_READ,
+		  NULL, OPEN_EXISTING, 0, NULL);
+  if (hfile == INVALID_HANDLE_VALUE) goto failure;
+
+  if (!GetFileInformationByHandle(hfile, &bhfi)) goto failure;
+
+  fileid = ((uint64_t)(bhfi.nFileIndexHigh) << 32) + (uint64_t)bhfi.nFileIndexLow;
+  CloseHandle(hfile);
+  //fprintf(stderr, "get_file_id: 0x%jx for %s\n", (intmax_t)fileid, filename);
+  return fileid;
+
+failure:
+  CloseHandle(hfile);
+  return 0;
+}
+
+
+ #ifndef NO_HARDLINKS
+/* Get the hard link count for a file on Windows */
+static inline DWORD get_nlink(const char * const restrict filename)
+{
+
+  hfile = CreateFile(filename, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
+  if (hfile == INVALID_HANDLE_VALUE) goto failure;
+
+  if (!GetFileInformationByHandle(hfile, &bhfi)) goto failure;
+
+  CloseHandle(hfile);
+  //fprintf(stderr, "get_nlink: %u for %s\n", (unsigned int)bhfi.nNumberOfLinks, filename);
+  return bhfi.nNumberOfLinks;
+
+failure:
+  CloseHandle(hfile);
+  return 0;
+}
+ #endif /* NO_HARDLINKS */
+
+#endif /* ON_WINDOWS */
+
+/***** End Windows-specific functions *****/
+
 static void escapefilename(char **filename_ptr)
 {
   static unsigned int x;
@@ -475,7 +528,7 @@ static inline char **cloneargs(const int argc, char **argv)
   static int x;
   static char **args;
 
-  args = (char **) string_malloc(sizeof(char*) * argc);
+  args = (char **)string_malloc(sizeof(char*) * argc);
   if (args == NULL) errormsg(NULL);
 
   for (x = 0; x < argc; x++) {
@@ -537,37 +590,12 @@ static int file_has_changed(file_t * const restrict file)
   if (file->gid != s.st_gid) return 1;
 #endif
 #ifdef ON_WINDOWS
-  if (file->inode != getino(file->d_name)) return 1;
+  if (file->inode != get_file_id(file->d_name)) return 1;
 #else
   if (file->inode != s.st_ino) return 1;
 #endif /* ON_WINDOWS */
   return 0;
 }
-
-
-#ifdef ON_WINDOWS
- #ifndef NO_HARDLINKS
-static inline nlink_t get_nlink(file_t * const restrict file)
-{
-  HANDLE hfile;
-  BY_HANDLE_FILE_INFORMATION bhfi;
-
-  hfile = CreateFile(file->d_name, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
-  if (hfile == INVALID_HANDLE_VALUE) goto failure;
-
-  if (!GetFileInformationByHandle(hfile, &bhfi)) goto failure;
-
-  file->nlink = bhfi.nNumberOfLinks;
-  CloseHandle(hfile);
-  //fprintf(stderr, "get_nlink: %u for %s\n", (unsigned int)bhfi.nNumberOfLinks, file->d_name);
-  return bhfi.nNumberOfLinks;
-
-failure:
-  CloseHandle(hfile);
-  return 0;
-}
- #endif /* NO_HARDLINKS */
-#endif /* ON_WINDOWS */
 
 
 static inline void getfilestats(file_t * const restrict file)
@@ -586,9 +614,9 @@ static inline void getfilestats(file_t * const restrict file)
   file->gid = s.st_gid;
 #endif
 #ifdef ON_WINDOWS
-  file->inode = getino(file->d_name);
+  file->inode = get_file_id(file->d_name);
  #ifndef NO_HARDLINKS
-  get_nlink(file);
+  file->nlink = get_nlink(file->d_name);
  #endif /* NO_HARDLINKS */
 #else
   file->inode = s.st_ino;
@@ -1744,13 +1772,15 @@ static inline void hardlinkfiles(file_t *files)
 #ifdef ON_WINDOWS
 	/* For Windows, the hard link count maximum is 1023 (+1); work around
 	 * by skipping linking or changing the link source file as needed */
-	if (get_nlink(srcfile) >= 1024) {
+	srcfile->nlink = get_nlink(srcfile->d_name);
+	if (srcfile->nlink >= 1024) {
 	  fprintf(stderr, "warning: maximum source link count reached, changing source file:\n[SRC] %s\n",
 		  dupelist[x]->d_name);
 	  srcfile = dupelist[x];
 	  continue;
 	}
-	if (get_nlink(dupelist[x]) >= 1024) {
+	dupelist[x]->nlink = get_nlink(dupelist[x]->d_name);
+	if (get_nlink(dupelist[x]->d_name) >= 1024) {
 	  fprintf(stderr, "warning: maximum destination link count reached, skipping:\n-//-> %s\n",
 		  dupelist[x]->d_name);
 	  continue;

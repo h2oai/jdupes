@@ -84,7 +84,6 @@ endif
 # MinGW needs this for printf() conversions to work
 ifeq ($(OS), Windows_NT)
 	COMPILER_OPTIONS += -D__USE_MINGW_ANSI_STDIO=1
-	OBJECT_FILES += getino.o
 endif
 
 CFLAGS= $(COMPILER_OPTIONS) -I. $(CFLAGS_CONFIG) $(CFLAGS_EXTRA) $(HAVE_BTRFS_IOCTL_H)
