@@ -76,7 +76,7 @@ Usage: jdupes [options] DIRECTORY...
  -p --permissions      don't consider files with different owner/group or
                        permission bits as duplicates
  -o --order=BY         select sort order for output, linking and deleting; by
-                       mtime (BY='time'; default) or filename (BY='name')
+                       mtime (BY=time) or filename (BY=name, the default)
  -O --paramorder       Parameter order is more important than selected -O sort
  -B --dedupe           Send matches to btrfs for block-level deduplication
  -v --version          display version, feature, and license information

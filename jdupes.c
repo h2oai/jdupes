@@ -1853,7 +1853,7 @@ static inline void help_text(void)
   printf(" -n --noempty     \texclude zero-length files from consideration\n");
   printf(" -O --paramorder  \tParameter order is more important than selected -O sort\n");
   printf(" -o --order=BY    \tselect sort order for output, linking and deleting; by\n");
-  printf("                  \tmtime (BY=time; default) or filename (BY=name)\n");
+  printf("                  \tmtime (BY=time) or filename (BY=name, the default)\n");
 #ifndef NO_PERMS
   printf(" -p --permissions \tdon't consider files with different owner/group or\n");
   printf("                  \tpermission bits as duplicates\n");
