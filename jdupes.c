@@ -102,8 +102,8 @@ static uint_fast32_t flags = 0;
 #define F_DEBUG			0x80000000
 
 typedef enum {
-  ORDER_TIME = 0,
-  ORDER_NAME
+  ORDER_NAME = 0,
+  ORDER_TIME
 } ordertype_t;
 
 static const char *program_name;
@@ -1891,7 +1891,7 @@ int main(int argc, char **argv) {
 #endif
   static int firstrecurse;
   static int opt;
-  static ordertype_t ordertype = ORDER_TIME;
+  static ordertype_t ordertype = ORDER_NAME;
 
 #ifndef OMIT_GETOPT_LONG
   static struct option long_options[] =
