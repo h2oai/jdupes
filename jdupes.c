@@ -418,15 +418,6 @@ static inline void string_malloc_destroy(void)
 
 /* Compare two jody_hashes like memcmp() */
 #define CRC_COMPARE(a,b) ((a > b) ? 1:((a == b) ? 0:-1))
-#if 0
-static inline int crc_cmp(const hash_t hash1, const hash_t hash2)
-{
-	if (hash1 > hash2) return 1;
-	if (hash1 == hash2) return 0;
-	/* No need to compare a third time */
-	return -1;
-}
-#endif
 
 /* Print error message. NULL will output "out of memory" and exit */
 static void errormsg(const char *message, ...)
