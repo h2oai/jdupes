@@ -1,10 +1,24 @@
+jdupes 1.0.3
+
+- Work around the 1023-link limit for Windows hard linking so that linking
+  can continue even when the limit is reached
+- Update documentation to include hard link arrow explanations
+- Add "time of check to time of use" checks immediately prior to taking
+  actions on files so that files which changed since being checked will not
+  be touched, avoiding potential data loss on "live" data sets
+- Add debug stats for files skipped due to Windows hard link limit
+- Change default sort to filename instead of modification time
+- Replaced Windows "get inode number" code with simpler, faster version
+- Fixed a bug where an extra newline was at the end of printed matches
+- Reduced progress delay interval; it was a bit slow on many large files
+
 jdupes 1.0.2
 
 - Update jody_hash code to latest version
 - Change string_malloc to enable future string_free() improvements
 - Add string_malloc counters for debug stat mode
-- Add '+size' option to -x/--xsize switch to exclude files larger than
-  the specified size instead of smaller than that size
+- Add '+size' option to -x/--xsize switch to exclude files larger than the
+  specified size instead of smaller than that size
 
 jdupes 1.0.1
 
