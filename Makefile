@@ -84,6 +84,7 @@ endif
 # MinGW needs this for printf() conversions to work
 ifeq ($(OS), Windows_NT)
 	COMPILER_OPTIONS += -D__USE_MINGW_ANSI_STDIO=1
+	OBJECT_FILES += win_stat.o
 endif
 
 CFLAGS= $(COMPILER_OPTIONS) -I. $(CFLAGS_CONFIG) $(CFLAGS_EXTRA) $(HAVE_BTRFS_IOCTL_H)
@@ -95,9 +96,9 @@ INSTALL_DATA    = $(INSTALL) -c -m 0644
 # ADDITIONAL_OBJECTS - some platforms will need additional object files
 # to support features not supplied by their vendor. Eg: GNU getopt()
 #
-#ADDITIONAL_OBJECTS = getopt.o
+#ADDITIONAL_OBJECTS += getopt.o
 
-OBJECT_FILES += jdupes.o jody_hash.o $(ADDITIONAL_OBJECTS)
+OBJECT_FILES += jdupes.o jody_hash.o string_malloc.o $(ADDITIONAL_OBJECTS)
 
 #####################################################################
 # no need to modify anything beyond this point                      #
