@@ -19,9 +19,9 @@ extern uintmax_t sma_free_ignored;
 extern uintmax_t sma_free_good;
 #endif
 
-void *string_malloc(size_t len);
-void string_free(const void * restrict addr);
-void string_malloc_destroy(void);
+extern void *string_malloc(size_t len);
+extern void string_free(const void * restrict addr);
+extern void string_malloc_destroy(void);
 
 #ifdef __cplusplus
 }
