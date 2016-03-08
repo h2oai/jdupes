@@ -358,8 +358,13 @@ static int file_has_changed(file_t * const restrict file)
 {
   if (file->valid_stat == 0) return -1;
 
-  if (win_stat(file->d_name, &ws) != 0) return -1;
   if (stat(file->d_name, &s) != 0) return -1;
+#ifdef ON_WINDOWS
+  if (win_stat(file->d_name, &ws) != 0) return -1;
+  if (file->inode != ws.inode) return 1;
+#else
+  if (file->inode != s.st_ino) return 1;
+#endif /* ON_WINDOWS */
 
   if (file->size != s.st_size) return 1;
   if (file->device != s.st_dev) return 1;
@@ -369,11 +374,6 @@ static int file_has_changed(file_t * const restrict file)
   if (file->uid != s.st_uid) return 1;
   if (file->gid != s.st_gid) return 1;
 #endif
-#ifdef ON_WINDOWS
-  if (file->inode != ws.inode) return 1;
-#else
-  if (file->inode != s.st_ino) return 1;
-#endif /* ON_WINDOWS */
   return 0;
 }
 
@@ -384,10 +384,16 @@ static inline int getfilestats(file_t * const restrict file)
   if (file->valid_stat == 1) return 0;
   file->valid_stat = 1;
 
+  if (stat(file->d_name, &s) != 0) return -1;
 #ifdef ON_WINDOWS
   if (win_stat(file->d_name, &ws) != 0) return -1;
+  file->inode = ws.inode;
+ #ifndef NO_HARDLINKS
+  file->nlink = ws.nlink;
+ #endif /* NO_HARDLINKS */
+#else
+  file->inode = s.st_ino;
 #endif /* ON_WINDOWS */
-  if (stat(file->d_name, &s) != 0) return -2;
 
   file->size = s.st_size;
   file->device = s.st_dev;
@@ -397,14 +403,6 @@ static inline int getfilestats(file_t * const restrict file)
   file->uid = s.st_uid;
   file->gid = s.st_gid;
 #endif
-#ifdef ON_WINDOWS
-  file->inode = ws.inode;
- #ifndef NO_HARDLINKS
-  file->nlink = ws.nlink;
- #endif /* NO_HARDLINKS */
-#else
-  file->inode = s.st_ino;
-#endif /* ON_WINDOWS */
   return 0;
 }
 

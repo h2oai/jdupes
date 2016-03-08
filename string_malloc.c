@@ -7,6 +7,7 @@
  */
 
 #include <stdlib.h>
+#include <stdint.h>
 
 /* Must be divisible by uintptr_t */
 #ifndef SMA_PAGE_SIZE
