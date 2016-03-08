@@ -39,6 +39,7 @@
 #include <libgen.h>
 #include "string_malloc.h"
 #include "jody_hash.h"
+#include "win_stat.h"
 #include "version.h"
 
 /* Optional btrfs support */
@@ -61,9 +62,6 @@
  #endif
  #include <windows.h>
 typedef uint64_t jdupes_ino_t;
-/* For calling GetFileInformationByHandle() */
-static HANDLE hfile;
-static BY_HANDLE_FILE_INFORMATION bhfi;
 
 #else /* Not Windows */
 typedef ino_t jdupes_ino_t;
@@ -115,6 +113,9 @@ static const char *program_name;
 
 /* This gets used in many functions */
 static struct stat s;
+#ifdef ON_WINDOWS
+static struct winstat ws;
+#endif
 
 static off_t excludesize = 0;
 static enum {
@@ -272,55 +273,6 @@ static void errormsg(const char *message, ...)
 }
 
 
-/***** Start Windows-specific functions *****/
-
-#ifdef ON_WINDOWS
-/* Get the "inode" (file ID) for a file on Windows */
-static inline jdupes_ino_t get_file_id(const char * const restrict filename)
-{
-  static uint64_t fileid;
-
-  hfile = CreateFile(filename, GENERIC_READ, FILE_SHARE_READ,
-		  NULL, OPEN_EXISTING, 0, NULL);
-  if (hfile == INVALID_HANDLE_VALUE) goto failure;
-
-  if (!GetFileInformationByHandle(hfile, &bhfi)) goto failure;
-
-  fileid = ((uint64_t)(bhfi.nFileIndexHigh) << 32) + (uint64_t)bhfi.nFileIndexLow;
-  CloseHandle(hfile);
-  //fprintf(stderr, "get_file_id: 0x%jx for %s\n", (intmax_t)fileid, filename);
-  return fileid;
-
-failure:
-  CloseHandle(hfile);
-  return 0;
-}
-
-
- #ifndef NO_HARDLINKS
-/* Get the hard link count for a file on Windows */
-static inline DWORD get_nlink(const char * const restrict filename)
-{
-
-  hfile = CreateFile(filename, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
-  if (hfile == INVALID_HANDLE_VALUE) goto failure;
-
-  if (!GetFileInformationByHandle(hfile, &bhfi)) goto failure;
-
-  CloseHandle(hfile);
-  //fprintf(stderr, "get_nlink: %u for %s\n", (unsigned int)bhfi.nNumberOfLinks, filename);
-  return bhfi.nNumberOfLinks;
-
-failure:
-  CloseHandle(hfile);
-  return 0;
-}
- #endif /* NO_HARDLINKS */
-
-#endif /* ON_WINDOWS */
-
-/***** End Windows-specific functions *****/
-
 static void escapefilename(char **filename_ptr)
 {
   static unsigned int x;
@@ -406,7 +358,9 @@ static int file_has_changed(file_t * const restrict file)
 {
   if (file->valid_stat == 0) return -1;
 
+  if (win_stat(file->d_name, &ws) != 0) return -1;
   if (stat(file->d_name, &s) != 0) return -1;
+
   if (file->size != s.st_size) return 1;
   if (file->device != s.st_dev) return 1;
   if (file->mtime != s.st_mtime) return 1;
@@ -416,7 +370,7 @@ static int file_has_changed(file_t * const restrict file)
   if (file->gid != s.st_gid) return 1;
 #endif
 #ifdef ON_WINDOWS
-  if (file->inode != get_file_id(file->d_name)) return 1;
+  if (file->inode != ws.inode) return 1;
 #else
   if (file->inode != s.st_ino) return 1;
 #endif /* ON_WINDOWS */
@@ -424,13 +378,17 @@ static int file_has_changed(file_t * const restrict file)
 }
 
 
-static inline void getfilestats(file_t * const restrict file)
+static inline int getfilestats(file_t * const restrict file)
 {
   /* Don't stat() the same file more than once */
-  if (file->valid_stat == 1) return;
+  if (file->valid_stat == 1) return 0;
   file->valid_stat = 1;
 
-  if (stat(file->d_name, &s) != 0) return;
+#ifdef ON_WINDOWS
+  if (win_stat(file->d_name, &ws) != 0) return -1;
+#endif /* ON_WINDOWS */
+  if (stat(file->d_name, &s) != 0) return -2;
+
   file->size = s.st_size;
   file->device = s.st_dev;
   file->mtime = s.st_mtime;
@@ -440,14 +398,14 @@ static inline void getfilestats(file_t * const restrict file)
   file->gid = s.st_gid;
 #endif
 #ifdef ON_WINDOWS
-  file->inode = get_file_id(file->d_name);
+  file->inode = ws.inode;
  #ifndef NO_HARDLINKS
-  file->nlink = get_nlink(file->d_name);
+  file->nlink = ws.nlink;
  #endif /* NO_HARDLINKS */
 #else
   file->inode = s.st_ino;
 #endif /* ON_WINDOWS */
-  return;
+  return 0;
 }
 
 
@@ -547,8 +505,9 @@ static void grokdir(const char * const restrict dir,
       }
 
       /* Get file information and check for validity */
-      getfilestats(newfile);
-      if (newfile->size == -1) {
+      int i;
+      i = getfilestats(newfile);
+      if (i || newfile->size == -1) {
 	string_free((char *)newfile);
 	continue;
       }
@@ -1598,15 +1557,20 @@ static inline void hardlinkfiles(file_t *files)
 #ifdef ON_WINDOWS
 	/* For Windows, the hard link count maximum is 1023 (+1); work around
 	 * by skipping linking or changing the link source file as needed */
-	srcfile->nlink = get_nlink(srcfile->d_name);
-	if (srcfile->nlink >= 1024) {
+	if (win_stat(srcfile->d_name, &ws) != 0) {
+	  fprintf(stderr, "warning: win_stat() on source file failed, changing source file:\n[SRC] %s\n",
+		  dupelist[x]->d_name);
+	  srcfile = dupelist[x];
+	  continue;
+	}
+	if (ws.nlink >= 1024) {
 	  fprintf(stderr, "warning: maximum source link count reached, changing source file:\n[SRC] %s\n",
 		  dupelist[x]->d_name);
 	  srcfile = dupelist[x];
 	  continue;
 	}
-	dupelist[x]->nlink = get_nlink(dupelist[x]->d_name);
-	if (get_nlink(dupelist[x]->d_name) >= 1024) {
+	if (win_stat(dupelist[x]->d_name, &ws) != 0) continue;
+	if (ws.nlink >= 1024) {
 	  fprintf(stderr, "warning: maximum destination link count reached, skipping:\n-//-> %s\n",
 		  dupelist[x]->d_name);
 	  continue;
@@ -2003,7 +1967,7 @@ int main(int argc, char **argv) {
     }
   } else {
     for (int x = optind; x < argc; x++) {
-      grokdir(argv[x], &files, 1);
+      grokdir(argv[x], &files, ISFLAG(flags, F_RECURSE));
       user_dir_count++;
     }
   }
