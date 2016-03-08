@@ -224,6 +224,7 @@ static filetree_t *checktree = NULL;
 #endif
 
 static uintmax_t filecount = 0; // Required for progress indicator code
+static int did_long_work = 0; // To tell progress indicator to go faster
 
 /* Hash/compare performance statistics (debug mode) */
 #ifdef DEBUG
@@ -912,6 +913,7 @@ static file_t **checkmatch(filetree_t * restrict tree,
     } else if (cmpresult == 0) {
       /* If partial match was correct, perform a full file hash match */
       if (tree->file->crcsignature_set == 0) {
+	did_long_work = 1;
 	crcsignature = getcrcsignature(tree->file);
 	if (crcsignature == NULL) return NULL;
 
@@ -920,6 +922,7 @@ static file_t **checkmatch(filetree_t * restrict tree,
       }
 
       if (file->crcsignature_set == 0) {
+	did_long_work = 1;
 	crcsignature = getcrcsignature(file);
 	if (crcsignature == NULL) return NULL;
 
@@ -971,6 +974,7 @@ static inline int confirmmatch(FILE * const restrict file1, FILE * const restric
   static size_t r1;
   static size_t r2;
 
+  did_long_work = 1;
   fseek(file1, 0, SEEK_SET);
   fseek(file2, 0, SEEK_SET);
 
@@ -2036,7 +2040,10 @@ skip_full_check:
     if (!ISFLAG(flags, F_HIDEPROGRESS)) {
       /* If file size is larger than 1 MiB, make progress update faster
        * If confirmmatch() is run on a file, speed up progress even further */
-      if (curfile != NULL) delay += (curfile->size >> 20);
+      if (curfile != NULL && did_long_work) {
+	      delay += (curfile->size >> 20);
+	      did_long_work = 0;
+      }
       if (match != NULL) delay++;
       if ((delay >= DELAY_COUNT)) {
         delay = 0;
