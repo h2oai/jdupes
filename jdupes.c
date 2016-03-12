@@ -62,9 +62,11 @@
  #endif
  #include <windows.h>
 typedef uint64_t jdupes_ino_t;
+const char *FILE_MODE_RO = "rbS";
 
 #else /* Not Windows */
 typedef ino_t jdupes_ino_t;
+const char *FILE_MODE_RO = "rb";
 #endif /* _WIN32 || __CYGWIN__ */
 
 /* Compile out debugging stat counters unless requested */
@@ -618,7 +620,7 @@ static hash_t *getcrcsignatureuntil(const file_t * const restrict checkfile,
     if (max_read <= CHUNK_SIZE) return hash;
   } else *hash = 0;
 
-  file = fopen(checkfile->d_name, "rb");
+  file = fopen(checkfile->d_name, FILE_MODE_RO);
   if (file == NULL) {
     errormsg("error opening file %s\n", checkfile->d_name);
     return NULL;
@@ -2011,13 +2013,13 @@ int main(int argc, char **argv) {
 	goto skip_full_check;
       }
 
-      file1 = fopen(curfile->d_name, "rb");
+      file1 = fopen(curfile->d_name, FILE_MODE_RO);
       if (!file1) {
 	curfile = curfile->next;
 	continue;
       }
 
-      file2 = fopen((*match)->d_name, "rb");
+      file2 = fopen((*match)->d_name, FILE_MODE_RO);
       if (!file2) {
 	fclose(file1);
 	curfile = curfile->next;
