@@ -118,4 +118,4 @@ install: jdupes installdirs
 	$(INSTALL_DATA)		jdupes.1 $(DESTDIR)$(MAN_DIR)/$(PROGRAM_NAME).$(MAN_EXT)
 
 clean:
-	$(RM) $(OBJECT_FILES) jdupes jdupes.exe *~
+	$(RM) $(OBJECT_FILES) jdupes jdupes.exe *~ *.gcno *.gcda *.gcov

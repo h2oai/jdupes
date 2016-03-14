@@ -38,6 +38,7 @@ core
 .*.swp
 *.gcda
 *.gcno
+*.gcov
 
 # Mac OS
 .DS_Store
