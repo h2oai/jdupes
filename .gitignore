@@ -36,6 +36,8 @@ core
 .gdb_history
 .gdbinit
 .*.swp
+*.gcda
+*.gcno
 
 # Mac OS
 .DS_Store
