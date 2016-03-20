@@ -127,7 +127,7 @@ static enum {
 } excludetype = SMALLERTHAN;
 
 /* Larger chunk size makes large files process faster but uses more RAM */
-#define CHUNK_SIZE 1048576
+#define CHUNK_SIZE 131072
 #define INPUT_SIZE 256
 #define PARTIAL_HASH_SIZE 4096
 
