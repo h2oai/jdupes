@@ -1,3 +1,11 @@
+jdupes 1.2
+
+- Change I/O block size for improved performance
+- Improved progress indicator behavior with large files; now the progress
+  indicator will update more frequently when full file reads are needed
+- Windows read speed boost with _O_SEQUENTIAL file flag
+- Experimental tree rebalance code tuning
+
 jdupes 1.1.1
 
 - Fix a bug where the -r switch was always on even if not specified
