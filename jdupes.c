@@ -72,6 +72,7 @@ const char *FILE_MODE_RO = "rb";
 /* Compile out debugging stat counters unless requested */
 #ifdef DEBUG
 #define DBG(a) a
+#define TREE_DEPTH_STATS
 #else
 #define DBG(a)
 #endif
@@ -168,9 +169,6 @@ static const char *extensions[] = {
 	#ifdef BALANCE_THRESHOLD
 	"bt",
 	#endif
-	#ifdef BAL_BIT
-	"bb",
-	#endif
 	NULL
 };
 
@@ -222,6 +220,10 @@ typedef struct _filetree {
 } filetree_t;
 
 #ifdef USE_TREE_REBALANCE
+ #define TREE_DEPTH_STATS
+ #ifndef INITIAL_DEPTH_THRESHOLD
+  #define INITIAL_DEPTH_THRESHOLD 8
+ #endif
 static filetree_t *checktree = NULL;
 #endif
 
@@ -233,13 +235,16 @@ static int did_long_work = 0; // To tell progress indicator to go faster
 static unsigned int small_file = 0, partial_hash = 0, partial_to_full = 0, hash_fail = 0;
 static uintmax_t comparisons = 0;
 static unsigned int left_branch = 0, right_branch = 0;
-static unsigned int tree_depth = 0, max_depth = 0;
  #ifdef ON_WINDOWS
   #ifndef NO_HARDLINKS
 static unsigned int hll_exclude = 0;
   #endif
  #endif
 #endif /* DEBUG */
+
+#ifdef TREE_DEPTH_STATS
+static unsigned int tree_depth = 0, max_depth = 0;
+#endif
 
 /* Directory parameter position counter */
 static unsigned int user_dir_count = 1;
@@ -744,9 +749,6 @@ static inline void registerfile(filetree_t * restrict * const restrict nodeptr,
 #ifndef BALANCE_THRESHOLD
 #define BALANCE_THRESHOLD 4
 #endif
-#ifndef BAL_BIT
-#define BAL_BIT 0x2000
-#endif
 
 /* Rebalance the file tree to reduce search depth */
 static inline void rebalance_tree(filetree_t * const tree)
@@ -834,6 +836,12 @@ static inline void rebalance_tree(filetree_t * const tree)
 
 #endif /* USE_TREE_REBALANCE */
 
+
+#ifdef TREE_DEPTH_STATS
+#define TREE_DEPTH_UPDATE_MAX() { if (max_depth < tree_depth) max_depth = tree_depth; tree_depth = 0; }
+#else
+#define TREE_DEPTH_UPDATE_MAX()
+#endif
 
 static file_t **checkmatch(filetree_t * restrict tree,
 		file_t * const restrict file)
@@ -944,7 +952,7 @@ static file_t **checkmatch(filetree_t * restrict tree,
       return checkmatch(tree->left, file);
     } else {
       registerfile(&tree, LEFT, file);
-      DBG(if (max_depth < tree_depth) max_depth = tree_depth; tree_depth = 0;)
+      TREE_DEPTH_UPDATE_MAX();
       return NULL;
     }
   } else if (cmpresult > 0) {
@@ -953,13 +961,13 @@ static file_t **checkmatch(filetree_t * restrict tree,
       return checkmatch(tree->right, file);
     } else {
       registerfile(&tree, RIGHT, file);
-      DBG(if (max_depth < tree_depth) max_depth = tree_depth; tree_depth = 0;)
+      TREE_DEPTH_UPDATE_MAX();
       return NULL;
     }
   } else {
     /* All compares matched */
     DBG(partial_to_full++;)
-    DBG(if (max_depth < tree_depth) max_depth = tree_depth; tree_depth = 0;)
+    TREE_DEPTH_UPDATE_MAX();
     return &tree->file;
   }
   /* Fall through - should never be reached */
@@ -1988,13 +1996,21 @@ int main(int argc, char **argv) {
     static FILE *file1;
     static FILE *file2;
     static off_t delay = DELAY_COUNT;
+#ifdef USE_TREE_REBALANCE
+    static unsigned int depth_threshold = INITIAL_DEPTH_THRESHOLD;
+#endif
 
     if (!checktree) registerfile(&checktree, NONE, curfile);
     else match = checkmatch(checktree, curfile);
 
 #ifdef USE_TREE_REBALANCE
     /* Rebalance the match tree after a certain number of files processed */
-    if ((progress & ((BAL_BIT << 1) - 1)) == BAL_BIT) rebalance_tree(checktree);
+    if (max_depth > depth_threshold) {
+	    rebalance_tree(checktree);
+	    max_depth = 0;
+	    if (depth_threshold < 512) depth_threshold <<= 1;
+	    else depth_threshold += 64;
+    }
 #endif /* USE_TREE_REBALANCE */
 
     /* Byte-for-byte check that a matched pair are actually matched */
