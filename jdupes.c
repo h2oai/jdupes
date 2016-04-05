@@ -1108,13 +1108,14 @@ unsigned int get_max_dupes(file_t *files, unsigned int *max, unsigned int *n_fil
 static char *dedupeerrstr(int err) {
   static char buf[1024];
 
+  buf[sizeof(buf)-1] = '\0';
   if (err == BTRFS_SAME_DATA_DIFFERS) {
-    return "BTRFS_SAME_DATA_DIFFERS (data modified in the meantime?)";
+    snprintf(buf, sizeof(buf), "BTRFS_SAME_DATA_DIFFERS (data modified in the meantime?)");
+    return buf;
   } else if (err < 0) {
     return strerror(-err);
   } else {
     snprintf(buf, sizeof(buf), "Unknown error %d", err);
-    buf[sizeof(buf)-1] = '\0';
     return buf;
   }
 }
