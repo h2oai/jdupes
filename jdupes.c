@@ -69,20 +69,32 @@ typedef ino_t jdupes_ino_t;
 const char *FILE_MODE_RO = "rb";
 #endif /* _WIN32 || __CYGWIN__ */
 
+#define ISFLAG(a,b) ((a & b) == b)
+#define SETFLAG(a,b) (a |= b)
+
+/* Aggressive verbosity for deep debugging */
+#ifdef LOUD_DEBUG
+ #ifndef DEBUG
+  #define DEBUG
+ #endif
+ #define LOUD(...) if ISFLAG(flags, F_LOUD) __VA_ARGS__
+#else
+ #define LOUD(a)
+#endif
+
 /* Compile out debugging stat counters unless requested */
 #ifdef DEBUG
-#define DBG(a) a
-#define TREE_DEPTH_STATS
+ #define DBG(a) a
+ #ifndef TREE_DEPTH_STATS
+  #define TREE_DEPTH_STATS
+ #endif
 #else
-#define DBG(a)
+ #define DBG(a)
 #endif
 
 
 /* How many operations to wait before updating progress counters */
 #define DELAY_COUNT 256
-
-#define ISFLAG(a,b) ((a & b) == b)
-#define SETFLAG(a,b) (a |= b)
 
 /* Behavior modification flags */
 static uint_fast32_t flags = 0;
@@ -105,6 +117,7 @@ static uint_fast32_t flags = 0;
 #define F_QUICKCOMPARE		0x00010000
 #define F_USEPARAMORDER		0x00020000
 #define F_DEDUPEFILES		0x00040000
+#define F_LOUD			0x40000000
 #define F_DEBUG			0x80000000
 
 typedef enum {
@@ -150,6 +163,9 @@ static const char *extensions[] = {
 	#endif
 	#ifdef DEBUG
 	"debug",
+	#endif
+	#ifdef DEBUG
+	"loud",
 	#endif
 	#ifdef SMA_PAGE_SIZE
 	"smapage",
@@ -430,6 +446,7 @@ static void grokdir(const char * const restrict dir,
   static int delay = DELAY_COUNT;
   static char tempname[8192];
 
+  LOUD(fprintf(stderr, "grokdir: scanning '%s'\n", dir));
   cd = opendir(dir);
   dir_progress++;
   grokdir_level++;
@@ -444,6 +461,7 @@ static void grokdir(const char * const restrict dir,
     size_t dirlen;
     size_t d_name_len;
 
+    LOUD(fprintf(stderr, "grokdir: readdir: '%s'\n", dirinfo->d_name));
     if (strcmp(dirinfo->d_name, ".") && strcmp(dirinfo->d_name, "..")) {
       if (!ISFLAG(flags, F_HIDEPROGRESS)) {
         if (delay >= DELAY_COUNT) {
@@ -505,6 +523,7 @@ static void grokdir(const char * const restrict dir,
         strcpy(tp, newfile->d_name);
         tp = basename(tp);
         if (tp[0] == '.' && strcmp(tp, ".") && strcmp(tp, "..")) {
+          LOUD(fprintf(stderr, "grokdir: excluding hidden file (-A on)\n"));
           string_free((char *)newfile);
           continue;
         }
@@ -514,30 +533,34 @@ static void grokdir(const char * const restrict dir,
       int i;
       i = getfilestats(newfile);
       if (i || newfile->size == -1) {
+        LOUD(fprintf(stderr, "grokdir: excluding due to bad stat()\n"));
 	string_free((char *)newfile);
 	continue;
       }
 
       /* Exclude zero-length files if requested */
       if (!S_ISDIR(newfile->mode) && newfile->size == 0 && ISFLAG(flags, F_EXCLUDEEMPTY)) {
+        LOUD(fprintf(stderr, "grokdir: excluding zero-length empty file (-n on)\n"));
 	string_free((char *)newfile);
 	continue;
       }
 
       /* Exclude files below --xsize parameter */
       if (!S_ISDIR(newfile->mode) && ISFLAG(flags, F_EXCLUDESIZE)) {
-	      if (
-		  ((excludetype == SMALLERTHAN) && (newfile->size < excludesize)) ||
-		  ((excludetype == LARGERTHAN) && (newfile->size > excludesize))
-			      ) {
-		string_free((char *)newfile);
-		continue;
-	      }
+        if (
+            ((excludetype == SMALLERTHAN) && (newfile->size < excludesize)) ||
+            ((excludetype == LARGERTHAN) && (newfile->size > excludesize))
+        ) {
+          LOUD(fprintf(stderr, "grokdir: excluding based on xsize limit (-x set)\n"));
+          string_free((char *)newfile);
+          continue;
+        }
       }
 
 #ifndef NO_SYMLINKS
       /* Get lstat() information */
       if (lstat(newfile->d_name, &linfo) == -1) {
+        LOUD(fprintf(stderr, "grokdir: excluding due to bad lstat()\n"));
 	string_free((char *)newfile);
 	continue;
       }
@@ -551,6 +574,7 @@ static void grokdir(const char * const restrict dir,
   #ifdef DEBUG
         hll_exclude++;
   #endif
+        LOUD(fprintf(stderr, "grokdir: excluding due to Windows 1024 hard link limit\n"));
 	string_free((char *)newfile);
 	continue;
       }
@@ -559,12 +583,17 @@ static void grokdir(const char * const restrict dir,
       /* Optionally recurse directories, including symlinked ones if requested */
       if (S_ISDIR(newfile->mode)) {
 #ifndef NO_SYMLINKS
-	if (recurse && (ISFLAG(flags, F_FOLLOWLINKS) || !S_ISLNK(linfo.st_mode)))
+        if (recurse && (ISFLAG(flags, F_FOLLOWLINKS) || !S_ISLNK(linfo.st_mode))) {
+          LOUD(fprintf(stderr, "grokdir: directory: recursing (-r/-R)\n"));
           grokdir(newfile->d_name, filelistp, recurse);
+	}
 #else
-	if (recurse)
+        if (recurse) {
+          LOUD(fprintf(stderr, "grokdir: directory: recursing (-r/-R)\n"));
           grokdir(newfile->d_name, filelistp, recurse);
+	}
 #endif
+        LOUD(fprintf(stderr, "grokdir: directory: not recursing\n"));
 	string_free((char *)newfile);
       } else {
         /* Add regular files to list, including symlink targets if requested */
@@ -604,7 +633,10 @@ static hash_t *getcrcsignatureuntil(const file_t * const restrict checkfile,
   FILE *file;
 
   /* Get the file size. If we can't read it, bail out early */
-  if (checkfile->size == -1) return NULL;
+  if (checkfile->size == -1) {
+    LOUD(fprintf(stderr, "getcrcsignatureuntil: not hashing because stat() info is bad\n"));
+    return NULL;
+  }
   fsize = checkfile->size;
 
   /* Do not read more than the requested number of bytes */
@@ -665,6 +697,7 @@ static hash_t *getcrcsignatureuntil(const file_t * const restrict checkfile,
 
   fclose(file);
 
+  LOUD(fprintf(stderr, "getcrcsignatureuntil: returning hash: 0x%016jx\n", (uintmax_t)*hash));
   return hash;
 }
 
@@ -854,6 +887,8 @@ static file_t **checkmatch(filetree_t * restrict tree,
   int cmpresult = 0;
   const hash_t * restrict crcsignature;
 
+  LOUD(fprintf(stderr, "checkmatch (\"%s\", \"%s\")\n", tree->file->d_name, file->d_name));
+
   /* If device and inode fields are equal one of the files is a
    * hard link to the other or the files have been listed twice
    * unintentionally. We don't want to flag these files as
@@ -870,23 +905,35 @@ static file_t **checkmatch(filetree_t * restrict tree,
   if ((file->inode ==
       tree->file->inode) && (file->device ==
       tree->file->device)) {
-    if (ISFLAG(flags, F_CONSIDERHARDLINKS)) return &tree->file;
-    else return NULL;
+    if (ISFLAG(flags, F_CONSIDERHARDLINKS)) {
+      LOUD(fprintf(stderr, "checkmatch: files match: hard linked (-H on)\n"));
+      return &tree->file;
+    } else {
+      LOUD(fprintf(stderr, "checkmatch: files ignored: hard linked (-H off)\n"));
+      return NULL;
+    }
   }
 #endif
 
   /* Exclude files that are not the same size */
-  if (file->size < tree->file->size) cmpresult = -1;
-  else if (file->size > tree->file->size) cmpresult = 1;
+  if (file->size < tree->file->size) {
+    LOUD(fprintf(stderr, "checkmatch: no match: file1 < file2 (%jd < %jd)\n", (intmax_t)tree->file->size, (intmax_t)file->size));
+    cmpresult = -1;
+  } else if (file->size > tree->file->size) {
+    LOUD(fprintf(stderr, "checkmatch: no match: file1 > file2 (%jd > %jd)\n", (intmax_t)tree->file->size, (intmax_t)file->size));
+    cmpresult = 1;
   /* Exclude files by permissions if requested */
-  else if (ISFLAG(flags, F_PERMISSIONS) &&
+  } else if (ISFLAG(flags, F_PERMISSIONS) &&
             (file->mode != tree->file->mode
 #ifndef NO_PERMS
             || file->uid != tree->file->uid
             || file->gid != tree->file->gid
 #endif
-	    )) cmpresult = -1;
-  else {
+	    )) {
+    cmpresult = -1;
+    LOUD(fprintf(stderr, "checkmatch: no match: permissions/ownership differ (-p on)\n"));
+  } else {
+    LOUD(fprintf(stderr, "checkmatch: starting file data comparisons\n"));
     /* Attempt to exclude files quickly with partial file hashing */
     DBG(partial_hash++;)
     if (tree->file->crcpartial_set == 0) {
@@ -912,8 +959,11 @@ static file_t **checkmatch(filetree_t * restrict tree,
     }
 
     cmpresult = CRC_COMPARE(file->crcpartial, tree->file->crcpartial);
+    LOUD(if (!cmpresult) fprintf(stderr, "checkmatch: partial hashes match\n"));
+    LOUD(if (cmpresult) fprintf(stderr, "checkmatch: partial hashes do not match\n"));
 
     if (file->size <= PARTIAL_HASH_SIZE) {
+      LOUD(fprintf(stderr, "checkmatch: small file: copying partial hash to full hash\n"));
       /* crcpartial = crcsignature if file is small enough */
       if (file->crcsignature_set == 0) {
         file->crcsignature = file->crcpartial;
@@ -947,24 +997,30 @@ static file_t **checkmatch(filetree_t * restrict tree,
 
       /* Full file hash comparison */
       cmpresult = CRC_COMPARE(file->crcsignature, tree->file->crcsignature);
+      LOUD(if (!cmpresult) fprintf(stderr, "checkmatch: full hashes match\n"));
+      LOUD(if (cmpresult) fprintf(stderr, "checkmatch: full hashes do not match\n"));
 
     }
   }
 
   if (cmpresult < 0) {
     if (tree->left != NULL) {
+      LOUD(fprintf(stderr, "checkmatch: recursing tree: left\n"));
       DBG(left_branch++; tree_depth++;)
       return checkmatch(tree->left, file);
     } else {
+      LOUD(fprintf(stderr, "checkmatch: registering file: left\n"));
       registerfile(&tree, LEFT, file);
       TREE_DEPTH_UPDATE_MAX();
       return NULL;
     }
   } else if (cmpresult > 0) {
     if (tree->right != NULL) {
+      LOUD(fprintf(stderr, "checkmatch: recursing tree: right\n"));
       DBG(right_branch++; tree_depth++;)
       return checkmatch(tree->right, file);
     } else {
+      LOUD(fprintf(stderr, "checkmatch: registering file: right\n"));
       registerfile(&tree, RIGHT, file);
       TREE_DEPTH_UPDATE_MAX();
       return NULL;
@@ -973,6 +1029,7 @@ static file_t **checkmatch(filetree_t * restrict tree,
     /* All compares matched */
     DBG(partial_to_full++;)
     TREE_DEPTH_UPDATE_MAX();
+    LOUD(fprintf(stderr, "checkmatch: files appear to match based on hashes\n"));
     return &tree->file;
   }
   /* Fall through - should never be reached */
@@ -988,6 +1045,8 @@ static inline int confirmmatch(FILE * const restrict file1, FILE * const restric
   static char c2[CHUNK_SIZE];
   static size_t r1;
   static size_t r2;
+
+  LOUD(fprintf(stderr, "confirmmatch starting\n"));
 
   did_long_work = 1;
   fseek(file1, 0, SEEK_SET);
@@ -1734,15 +1793,29 @@ int main(int argc, char **argv) {
 #ifndef OMIT_GETOPT_LONG
   static struct option long_options[] =
   {
+    { "loud", 0, 0, '@' },
+    { "sameline", 0, 0, '1' },
+    { "nohidden", 0, 0, 'A' },
+    { "dedupe", 0, 0, 'B' },
+    { "delete", 0, 0, 'd' },
+    { "debug", 0, 0, 'D' },
     { "omitfirst", 0, 0, 'f' },
+    { "help", 0, 0, 'h' },
+    { "summarize", 0, 0, 'm'},
+    { "summary", 0, 0, 'm' },
+    { "noempty", 0, 0, 'n' },
+    { "noprompt", 0, 0, 'N' },
+    { "order", 1, 0, 'o' },
+    { "paramorder", 0, 0, 'O' },
+    { "quiet", 0, 0, 'q' },
+    { "quick", 0, 0, 'Q' },
     { "recurse", 0, 0, 'r' },
     { "recursive", 0, 0, 'r' },
     { "recurse:", 0, 0, 'R' },
     { "recursive:", 0, 0, 'R' },
-    { "quiet", 0, 0, 'q' },
-    { "quick", 0, 0, 'Q' },
-    { "sameline", 0, 0, '1' },
     { "size", 0, 0, 'S' },
+    { "version", 0, 0, 'v' },
+    { "xsize", 1, 0, 'x' },
 #ifndef NO_SYMLINKS
     { "symlinks", 0, 0, 's' },
 #endif
@@ -1750,22 +1823,9 @@ int main(int argc, char **argv) {
     { "hardlinks", 0, 0, 'H' },
     { "linkhard", 0, 0, 'L' },
 #endif
-    { "noempty", 0, 0, 'n' },
-    { "xsize", 1, 0, 'x' },
-    { "nohidden", 0, 0, 'A' },
-    { "delete", 0, 0, 'd' },
-    { "debug", 0, 0, 'D' },
-    { "version", 0, 0, 'v' },
-    { "help", 0, 0, 'h' },
-    { "noprompt", 0, 0, 'N' },
-    { "summarize", 0, 0, 'm'},
-    { "summary", 0, 0, 'm' },
 #ifndef NO_PERMS
     { "permissions", 0, 0, 'p' },
 #endif
-    { "paramorder", 0, 0, 'O' },
-    { "order", 1, 0, 'o' },
-    { "dedupe", 0, 0, 'B' },
     { 0, 0, 0, 0 }
   };
 #define GETOPT getopt_long
@@ -1778,7 +1838,7 @@ int main(int argc, char **argv) {
   oldargv = cloneargs(argc, argv);
 
   while ((opt = GETOPT(argc, argv,
-  "frRqQ1SsHLnx:AdDvhNmpo:OB"
+  "frRqQ1SsHLnx:AdDvhNmpo:OB@"
 #ifndef OMIT_GETOPT_LONG
           , long_options, NULL
 #endif
@@ -1861,6 +1921,11 @@ int main(int argc, char **argv) {
     case 'D':
 #ifdef DEBUG
       SETFLAG(flags, F_DEBUG);
+#endif
+      break;
+    case '@':
+#ifdef LOUD_DEBUG
+      SETFLAG(flags, F_DEBUG | F_LOUD | F_HIDEPROGRESS);
 #endif
       break;
     case 'v':
@@ -2006,6 +2071,8 @@ int main(int argc, char **argv) {
     static unsigned int depth_threshold = INITIAL_DEPTH_THRESHOLD;
 #endif
 
+    LOUD(fprintf(stderr, "\nMAIN: current file: %s\n", curfile->d_name));
+
     if (!checktree) registerfile(&checktree, NONE, curfile);
     else match = checkmatch(checktree, curfile);
 
@@ -2029,6 +2096,7 @@ int main(int argc, char **argv) {
 		 (curfile->inode == (*match)->inode) &&
 		 (curfile->device == (*match)->device))
 		) {
+        LOUD(fprintf(stderr, "MAIN: notice: quick compare match (-Q)\n"));
         registerpair(match, curfile,
             (ordertype == ORDER_TIME) ? sort_pairs_by_mtime : sort_pairs_by_filename);
 	dupecount++;
@@ -2049,6 +2117,7 @@ int main(int argc, char **argv) {
       }
 
       if (confirmmatch(file1, file2)) {
+        LOUD(fprintf(stderr, "MAIN: registering matched file pair\n"));
         registerpair(match, curfile,
             (ordertype == ORDER_TIME) ? sort_pairs_by_mtime : sort_pairs_by_filename);
 	dupecount++;

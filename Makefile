@@ -77,6 +77,10 @@ COMPILER_OPTIONS = -Wall -Wextra -Wwrite-strings -Wcast-align -Wstrict-aliasing 
 COMPILER_OPTIONS += -std=gnu99 -O2 -g -D_FILE_OFFSET_BITS=64 -fstrict-aliasing -pipe
 
 # Debugging code inclusion
+ifdef LOUD
+DEBUG=1
+COMPILER_OPTIONS += -DLOUD_DEBUG
+endif
 ifdef DEBUG
 COMPILER_OPTIONS += -DDEBUG
 endif
