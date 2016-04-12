@@ -102,7 +102,7 @@ duplicates, leading to data loss should a user preserve a file
 without its "duplicate" (the file itself!).
 
 
-Hard linking status symbols
+Hard linking status symbols and behavior
 --------------------------------------------------------------------------
 A set of arrows are used in hard linking to show what action was taken on
 each link candidate. These arrows are as follows:
@@ -111,6 +111,11 @@ each link candidate. These arrows are as follows:
 -==-> Already a hard link to the first file in the chain
 -//-> Hard linking failed due to an error during the linking process
 
+If your data set has hard linked files and you do not use -L to always
+consider them as duplicates, you may still see hard linked files appear
+together in match sets. This is caused by a separate file that matches
+the hard linked files and is the correct behavior.
+
 Microsoft Windows platform-specific notes
 --------------------------------------------------------------------------
 The Windows port does not support Unicode, only ANSI file names. This is
@@ -118,10 +123,11 @@ because Unicode support on Windows is difficult to add to existing code
 without making it very messy or breaking things. Support is eventually
 planned for Unicode on Windows.
 
-Windows has a hard limit of 1,023 hard links per file. There is no way to
+Windows has a hard limit of 1024 hard links per file. There is no way to
 change this. The documentation for CreateHardLink() states: "The maximum
 number of hard links that can be created with this function is 1023 per
 file. If more than 1023 links are created for a file, an error results."
+(The number is actually 1024, but they're ignoring the first file.)
 
 
 Contact Information
