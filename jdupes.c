@@ -591,7 +591,7 @@ static void grokdir(const char * const restrict dir,
         if (recurse) {
           LOUD(fprintf(stderr, "grokdir: directory: recursing (-r/-R)\n"));
           grokdir(newfile->d_name, filelistp, recurse);
-        {
+	}
 #endif
         LOUD(fprintf(stderr, "grokdir: directory: not recursing\n"));
 	string_free((char *)newfile);
