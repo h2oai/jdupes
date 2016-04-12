@@ -697,7 +697,7 @@ static hash_t *getcrcsignatureuntil(const file_t * const restrict checkfile,
 
   fclose(file);
 
-  LOUD(fprintf(stderr, "getcrcsignatureuntil: returning hash: 0x%016jx\n", (uintmax_t)hash));
+  LOUD(fprintf(stderr, "getcrcsignatureuntil: returning hash: 0x%016jx\n", (uintmax_t)*hash));
   return hash;
 }
 
