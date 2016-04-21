@@ -1,6 +1,5 @@
 /* jdupes (C) 2015-2016 Jody Bruchon <jody@jodybruchon.com>
    Derived from fdupes (C) 1999-2016 Adrian Lopez
-   Includes jody_hash (C) 2015-2016 by Jody Bruchon
 
    Permission is hereby granted, free of charge, to any person
    obtaining a copy of this software and associated documentation files
@@ -1930,7 +1929,7 @@ int main(int argc, char **argv) {
       break;
     case 'v':
       printf("jdupes %s (%s)\n", VER, VERDATE);
-      printf("\nCompile-time extensions:");
+      printf("Compile-time extensions:");
       if (*extensions != NULL) {
 	      int c = 0;
 	      while (extensions[c] != NULL) {
@@ -1938,13 +1937,9 @@ int main(int argc, char **argv) {
 		      c++;
 	      }
       } else printf(" none");
-      printf("\n\nCopyright (C) 2015-2016 by Jody Bruchon\n");
+      printf("\nCopyright (C) 2015-2016 by Jody Bruchon\n");
       printf("Derived from 'fdupes' (C) 1999-2016 by Adrian Lopez\n");
-      printf("Includes jody_hash (C) 2015-2016 by Jody Bruchon <jody@jodybruchon.com>\n\n");
-#ifdef ON_WINDOWS
-      printf("Ported to Windows (MinGW-w64) by Jody Bruchon\n");
-#endif
-      printf("Permission is hereby granted, free of charge, to any person\n");
+      printf("\nPermission is hereby granted, free of charge, to any person\n");
       printf("obtaining a copy of this software and associated documentation files\n");
       printf("(the \"Software\"), to deal in the Software without restriction,\n");
       printf("including without limitation the rights to use, copy, modify, merge,\n");
