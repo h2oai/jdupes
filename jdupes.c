@@ -164,7 +164,7 @@ static const char *extensions[] = {
 	#ifdef DEBUG
 	"debug",
 	#endif
-	#ifdef DEBUG
+	#ifdef LOUD_DEBUG
 	"loud",
 	#endif
 	#ifdef SMA_PAGE_SIZE
