@@ -1,3 +1,7 @@
+jdupes 1.2.1
+
+- Fix a serious bug that caused some duplicates to be missed
+
 jdupes 1.2
 
 - Change I/O block size for improved performance
