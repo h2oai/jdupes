@@ -655,7 +655,6 @@ static hash_t *getcrcsignatureuntil(const file_t * const restrict checkfile,
     /* Don't bother going further if max_read is already fulfilled */
     if (max_read <= PARTIAL_HASH_SIZE) return hash;
   } else *hash = 0;
-  *hash = 0;
   file = fopen(checkfile->d_name, FILE_MODE_RO);
   if (file == NULL) {
     errormsg("error opening file %s\n", checkfile->d_name);
