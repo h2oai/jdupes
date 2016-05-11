@@ -650,15 +650,11 @@ static hash_t *getcrcsignatureuntil(const file_t * const restrict checkfile,
    *
    * WARNING: We assume max_read is NEVER less than CHUNK_SIZE here! */
 
-  /* The crcpartial skip optimization is causing match failures as
-   * currently coded, so it's defined out here until fixed. */
-#if 0
   if (checkfile->crcpartial_set) {
     *hash = checkfile->crcpartial;
     /* Don't bother going further if max_read is already fulfilled */
-    if (max_read <= CHUNK_SIZE) return hash;
+    if (max_read <= PARTIAL_HASH_SIZE) return hash;
   } else *hash = 0;
-#endif
   *hash = 0;
   file = fopen(checkfile->d_name, FILE_MODE_RO);
   if (file == NULL) {
@@ -666,18 +662,16 @@ static hash_t *getcrcsignatureuntil(const file_t * const restrict checkfile,
     return NULL;
   }
 
-#if 0
   /* Actually seek past the first chunk if applicable
    * This is part of the crcpartial skip optimization */
   if (checkfile->crcpartial_set) {
-    if (!fseeko(file, CHUNK_SIZE, SEEK_SET)) {
+    if (!fseeko(file, PARTIAL_HASH_SIZE, SEEK_SET)) {
       fclose(file);
       errormsg("error seeking in file %s\n", checkfile->d_name);
       return NULL;
     }
-    fsize -= CHUNK_SIZE;
+    fsize -= PARTIAL_HASH_SIZE;
   }
-#endif
   /* Read the file in CHUNK_SIZE chunks until we've read it all. */
   while (fsize > 0) {
     size_t bytes_to_read;
