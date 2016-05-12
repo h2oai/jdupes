@@ -650,17 +650,20 @@ static hash_t *getcrcsignatureuntil(const file_t * const restrict checkfile,
    *
    * WARNING: We assume max_read is NEVER less than CHUNK_SIZE here! */
 
+  *hash = 0;
+#if 0
   if (checkfile->crcpartial_set) {
     *hash = checkfile->crcpartial;
     /* Don't bother going further if max_read is already fulfilled */
     if (max_read <= PARTIAL_HASH_SIZE) return hash;
-  } else *hash = 0;
+  }
+#endif
   file = fopen(checkfile->d_name, FILE_MODE_RO);
   if (file == NULL) {
     errormsg("error opening file %s\n", checkfile->d_name);
     return NULL;
   }
-
+#if 0
   /* Actually seek past the first chunk if applicable
    * This is part of the crcpartial skip optimization */
   if (checkfile->crcpartial_set) {
@@ -671,6 +674,7 @@ static hash_t *getcrcsignatureuntil(const file_t * const restrict checkfile,
     }
     fsize -= PARTIAL_HASH_SIZE;
   }
+#endif
   /* Read the file in CHUNK_SIZE chunks until we've read it all. */
   while (fsize > 0) {
     size_t bytes_to_read;
