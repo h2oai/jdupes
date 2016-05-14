@@ -247,7 +247,8 @@ static int did_long_work = 0; // To tell progress indicator to go faster
 
 /* Hash/compare performance statistics (debug mode) */
 #ifdef DEBUG
-static unsigned int small_file = 0, partial_hash = 0, partial_to_full = 0, hash_fail = 0;
+static unsigned int small_file = 0, partial_hash = 0, partial_elim = 0;
+static unsigned int full_hash = 0, partial_to_full = 0, hash_fail = 0;
 static uintmax_t comparisons = 0;
 static unsigned int left_branch = 0, right_branch = 0;
  #ifdef ON_WINDOWS
@@ -931,7 +932,6 @@ static file_t **checkmatch(filetree_t * restrict tree,
   } else {
     LOUD(fprintf(stderr, "checkmatch: starting file data comparisons\n"));
     /* Attempt to exclude files quickly with partial file hashing */
-    DBG(partial_hash++;)
     if (tree->file->crcpartial_set == 0) {
       crcsignature = getcrcpartialsignature(tree->file);
       if (crcsignature == NULL) {
@@ -957,6 +957,7 @@ static file_t **checkmatch(filetree_t * restrict tree,
     cmpresult = CRC_COMPARE(file->crcpartial, tree->file->crcpartial);
     LOUD(if (!cmpresult) fprintf(stderr, "checkmatch: partial hashes match\n"));
     LOUD(if (cmpresult) fprintf(stderr, "checkmatch: partial hashes do not match\n"));
+    DBG(partial_hash++;)
 
     if (file->size <= PARTIAL_HASH_SIZE) {
       LOUD(fprintf(stderr, "checkmatch: small file: copying partial hash to full hash\n"));
@@ -995,8 +996,8 @@ static file_t **checkmatch(filetree_t * restrict tree,
       cmpresult = CRC_COMPARE(file->crcsignature, tree->file->crcsignature);
       LOUD(if (!cmpresult) fprintf(stderr, "checkmatch: full hashes match\n"));
       LOUD(if (cmpresult) fprintf(stderr, "checkmatch: full hashes do not match\n"));
-
-    }
+      DBG(full_hash++);
+    } else partial_elim++;
   }
 
   if (cmpresult < 0) {
@@ -2167,9 +2168,9 @@ skip_full_check:
 
 #ifdef DEBUG
   if (ISFLAG(flags, F_DEBUG)) {
-    fprintf(stderr, "\n%d partial (+%d small) -> %d full (%d partial elim) (%d hash fail)\n",
-		partial_hash, small_file, partial_to_full,
-		(partial_hash - partial_to_full), hash_fail);
+    fprintf(stderr, "\n%d partial (+%d small) -> %d full hash -> %d full (%d partial elim) (%d hash fail)\n",
+		partial_hash, small_file, full_hash, partial_to_full,
+		partial_elim, hash_fail);
     fprintf(stderr, "%ju total files, %ju comparisons, branch L %u, R %u, both %u\n",
 		    filecount, comparisons, left_branch, right_branch,
 		    left_branch + right_branch);
