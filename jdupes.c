@@ -997,7 +997,9 @@ static file_t **checkmatch(filetree_t * restrict tree,
       LOUD(if (!cmpresult) fprintf(stderr, "checkmatch: full hashes match\n"));
       LOUD(if (cmpresult) fprintf(stderr, "checkmatch: full hashes do not match\n"));
       DBG(full_hash++);
-    } else partial_elim++;
+    } else {
+      DBG(partial_elim++);
+    }
   }
 
   if (cmpresult < 0) {
