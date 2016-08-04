@@ -116,6 +116,7 @@ static uint_fast32_t flags = 0;
 #define F_QUICKCOMPARE		0x00010000
 #define F_USEPARAMORDER		0x00020000
 #define F_DEDUPEFILES		0x00040000
+#define F_REVERSESORT		0x00080000
 #define F_LOUD			0x40000000
 #define F_DEBUG			0x80000000
 
@@ -267,6 +268,9 @@ static unsigned int user_dir_count = 1;
 
 /* registerfile() direction options */
 enum tree_direction { NONE, LEFT, RIGHT };
+
+/* Sort order reversal */
+static int sort_direction = 1;
 
 /***** End definitions, begin code *****/
 
@@ -1392,8 +1396,8 @@ static void deletefiles(file_t *files, int prompt, FILE *tty)
 static int sort_pairs_by_param_order(file_t *f1, file_t *f2)
 {
   if (!ISFLAG(flags, F_USEPARAMORDER)) return 0;
-  if (f1->user_order < f2->user_order) return -1;
-  if (f1->user_order > f2->user_order) return 1;
+  if (f1->user_order < f2->user_order) return -sort_direction;
+  if (f1->user_order > f2->user_order) return sort_direction;
   return 0;
 }
 
@@ -1404,8 +1408,8 @@ static int sort_pairs_by_mtime(file_t *f1, file_t *f2)
 
   if (po != 0) return po;
 
-  if (f1->mtime < f2->mtime) return -1;
-  else if (f1->mtime > f2->mtime) return 1;
+  if (f1->mtime < f2->mtime) return -sort_direction;
+  else if (f1->mtime > f2->mtime) return sort_direction;
 
   return 0;
 }
@@ -1439,8 +1443,8 @@ static inline int numeric_sort(const char * restrict c1,
 
 			/* Scan numbers and get preliminary results */
 			while (IS_NUM(*c1) && IS_NUM(*c2)) {
-				if (*c1 < *c2) precompare = -1;
-				if (*c1 > *c2) precompare = 1;
+				if (*c1 < *c2) precompare = -sort_direction;
+				if (*c1 > *c2) precompare = sort_direction;
 				len1++; len2++;
 				c1++; c2++;
 
@@ -1458,8 +1462,8 @@ static inline int numeric_sort(const char * restrict c1,
 			/* One numeric and one non-numeric means the
 			 * numeric one is larger and sorts later */
 			if (IS_NUM(*c1) ^ IS_NUM(*c2)) {
-				if (IS_NUM(*c1)) return 1;
-				else return -1;
+				if (IS_NUM(*c1)) return sort_direction;
+				else return -sort_direction;
 			}
 
 			/* If the last test fell through, numbers are
@@ -1473,19 +1477,19 @@ static inline int numeric_sort(const char * restrict c1,
 			c1++; c2++;
 			len1++; len2++;
 		/* Put symbols and spaces after everything else */
-		} else if (*c2 < '.' && *c1 >= '.') return -1;
-		else if (*c1 < '.' && *c2 >= '.') return 1;
+		} else if (*c2 < '.' && *c1 >= '.') return -sort_direction;
+		else if (*c1 < '.' && *c2 >= '.') return sort_direction;
 		/* Normal strcmp() style compare */
-		else if (*c1 > *c2) return 1;
-		else return -1;
+		else if (*c1 > *c2) return sort_direction;
+		else return -sort_direction;
 	}
 
 	/* Longer strings generally sort later */
-	if (len1 < len2) return -1;
-	if (len1 > len2) return 1;
+	if (len1 < len2) return -sort_direction;
+	if (len1 > len2) return sort_direction;
 	/* Normal strcmp() style comparison */
-	if (*c1 == '\0' && *c2 != '\0') return -1;
-	if (*c1 != '\0' && *c2 == '\0') return 1;
+	if (*c1 == '\0' && *c2 != '\0') return -sort_direction;
+	if (*c1 != '\0' && *c2 == '\0') return sort_direction;
 
 	/* Fall through: the strings are equal */
 	return 0;
@@ -1734,7 +1738,8 @@ static inline void help_text(void)
   printf(" -H --hardlinks   \ttreat hard-linked files as duplicate files. Normally\n");
   printf("                  \thard links are treated as non-duplicates for safety\n");
 #endif
-  printf(" -h --help        \tdisplay this help message\n\n");
+  printf(" -h --help        \tdisplay this help message\n");
+  printf(" -i --reverse     \treverse (invert) the match sort order\n");
 #ifndef NO_HARDLINKS
   printf(" -L --linkhard    \thard link duplicate files to the first file in\n");
   printf("                  \teach set of duplicates without prompting the user\n");
@@ -1800,6 +1805,7 @@ int main(int argc, char **argv) {
     { "debug", 0, 0, 'D' },
     { "omitfirst", 0, 0, 'f' },
     { "help", 0, 0, 'h' },
+    { "reverse", 0, 0, 'i' },
     { "summarize", 0, 0, 'm'},
     { "summary", 0, 0, 'm' },
     { "noempty", 0, 0, 'n' },
@@ -1837,12 +1843,15 @@ int main(int argc, char **argv) {
   oldargv = cloneargs(argc, argv);
 
   while ((opt = GETOPT(argc, argv,
-  "frRqQ1SsHLnx:AdDvhNmpo:OB@"
+  "frRqQ1SsHLnx:AdDvhNmpo:OB@i"
 #ifndef OMIT_GETOPT_LONG
           , long_options, NULL
 #endif
 	  )) != EOF) {
     switch (opt) {
+    case 'i':
+      SETFLAG(flags, F_REVERSESORT);
+      break;
     case 'f':
       SETFLAG(flags, F_OMITFIRST);
       break;
@@ -2017,7 +2026,7 @@ int main(int argc, char **argv) {
       !!ISFLAG(flags, F_DEDUPEFILES) > 1) {
       errormsg("Only one of --summarize, --delete, --linkhard or --dedupe may be used\n");
       exit(EXIT_FAILURE);
-   }
+  }
 
   if (ISFLAG(flags, F_RECURSEAFTER)) {
     firstrecurse = nonoptafter("--recurse:", argc, oldargv, argv, optind);
@@ -2050,6 +2059,7 @@ int main(int argc, char **argv) {
     }
   }
 
+  if (ISFLAG(flags, F_REVERSESORT)) sort_direction = -1;
   if (!ISFLAG(flags, F_HIDEPROGRESS)) fprintf(stderr, "\n");
   if (!files) exit(EXIT_SUCCESS);
 

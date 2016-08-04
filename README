@@ -44,43 +44,43 @@ Usage
 --------------------------------------------------------------------------
 Usage: jdupes [options] DIRECTORY...
 
- -r --recurse          for every directory given follow subdirectories
-                       encountered within
- -R --recurse:         for each directory given after this option follow
-                       subdirectories encountered within (note the ':' at
-                       the end of the option, manpage for more details)
- -s --symlinks         follow symlinks
- -H --hardlinks        normally, when two or more files point to the same
-                       disk area they are treated as non-duplicates; this
-                       option will change this behavior
- -L --linkhard         hardlink duplicate files to the first file in
-                       each set of duplicates without prompting the user
- -n --noempty          exclude zero-length files from consideration
- -x --xsize=SIZE       exclude files of size < SIZE from consideration; the
-                       SIZE argument accepts 'k', 'M' and 'G' unit suffix
- -A --nohidden         exclude hidden files from consideration
- -f --omitfirst        omit the first file in each set of matches
- -1 --sameline         list each set of matches on a single line
- -S --size             show size of duplicate files
- -m --summarize        summarize dupe information
- -q --quiet            hide progress indicator
- -d --delete           prompt user for files to preserve and delete all
-                       others; important: under particular circumstances,
-                       data may be lost when using this option together
-                       with -s or --symlinks, or when specifying a
-                       particular directory more than once; refer to the
-                       jdupes documentation for additional information
- -N --noprompt         together with --delete, preserve the first file in
-                       each set of duplicates and delete the rest without
-                       prompting the user
- -p --permissions      don't consider files with different owner/group or
-                       permission bits as duplicates
- -o --order=BY         select sort order for output, linking and deleting; by
-                       mtime (BY=time) or filename (BY=name, the default)
- -O --paramorder       Parameter order is more important than selected -O sort
- -B --dedupe           Send matches to btrfs for block-level deduplication
- -v --version          display version, feature, and license information
- -h --help             display this help message
+ -1 --sameline          list each set of matches on a single line
+ -A --nohidden          exclude hidden files from consideration
+ -d --delete            prompt user for files to preserve and delete all
+                        others; important: under particular circumstances,
+                        data may be lost when using this option together
+                        with -s or --symlinks, or when specifying a
+                        particular directory more than once; refer to the
+                        documentation for additional information
+ -f --omitfirst         omit the first file in each set of matches
+ -H --hardlinks         treat hard-linked files as duplicate files. Normally
+                        hard links are treated as non-duplicates for safety
+ -h --help              display this help message
+
+ -L --linkhard          hard link duplicate files to the first file in
+                        each set of duplicates without prompting the user
+ -m --summarize         summarize dupe information
+ -N --noprompt          together with --delete, preserve the first file in
+                        each set of duplicates and delete the rest without
+                        prompting the user
+ -n --noempty           exclude zero-length files from consideration
+ -O --paramorder        Parameter order is more important than selected -O sort
+ -o --order=BY          select sort order for output, linking and deleting; by
+                        mtime (BY=time) or filename (BY=name, the default)
+ -p --permissions       don't consider files with different owner/group or
+                        permission bits as duplicates
+ -r --recurse           for every directory given follow subdirectories
+                        encountered within
+ -R --recurse:          for each directory given after this option follow
+                        subdirectories encountered within (note the ':' at
+                        the end of the option, manpage for more details)
+ -S --size              show size of duplicate files
+ -s --symlinks          follow symlinks
+ -q --quiet             hide progress indicator
+ -v --version           display jdupes version and license information
+ -x --xsize=SIZE        exclude files of size < SIZE bytes from consideration
+    --xsize=+SIZE       '+' specified before SIZE, exclude size > SIZE
+                        K/M/G size suffixes can be used (case-insensitive)
 
 Unless -1 or --sameline is specified, duplicate files are listed
 together in groups, each file displayed on a separate line. The
@@ -108,7 +108,9 @@ A set of arrows are used in hard linking to show what action was taken on
 each link candidate. These arrows are as follows:
 
 ----> File was hard linked to the first file in the duplicate chain
+
 -==-> Already a hard link to the first file in the chain
+
 -//-> Hard linking failed due to an error during the linking process
 
 If your data set has hard linked files and you do not use -L to always
