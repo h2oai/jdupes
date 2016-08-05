@@ -117,6 +117,7 @@ static uint_fast32_t flags = 0;
 #define F_USEPARAMORDER		0x00020000
 #define F_DEDUPEFILES		0x00040000
 #define F_REVERSESORT		0x00080000
+#define F_ISOLATE		0x00100000
 #define F_LOUD			0x40000000
 #define F_DEBUG			0x80000000
 
@@ -450,7 +451,7 @@ static void grokdir(const char * const restrict dir,
   static int delay = DELAY_COUNT;
   static char tempname[8192];
 
-  LOUD(fprintf(stderr, "grokdir: scanning '%s'\n", dir));
+  LOUD(fprintf(stderr, "grokdir: scanning '%s' (order %d)\n", dir, user_dir_count));
   cd = opendir(dir);
   dir_progress++;
   grokdir_level++;
@@ -916,8 +917,11 @@ static file_t **checkmatch(filetree_t * restrict tree,
   }
 #endif
 
+  if (ISFLAG(flags, F_ISOLATE) && (file->user_order == tree->file->user_order)) {
+	  LOUD(fprintf(stderr, "checkmatch: files ignored: parameter isolation\n"));
+	  cmpresult = -1;
   /* Exclude files that are not the same size */
-  if (file->size < tree->file->size) {
+  } else if (file->size < tree->file->size) {
     LOUD(fprintf(stderr, "checkmatch: no match: file1 < file2 (%jd < %jd)\n", (intmax_t)tree->file->size, (intmax_t)file->size));
     cmpresult = -1;
   } else if (file->size > tree->file->size) {
@@ -1805,32 +1809,33 @@ int main(int argc, char **argv) {
     { "debug", 0, 0, 'D' },
     { "omitfirst", 0, 0, 'f' },
     { "help", 0, 0, 'h' },
+#ifndef NO_HARDLINKS
+    { "hardlinks", 0, 0, 'H' },
+    { "linkhard", 0, 0, 'L' },
+#endif
     { "reverse", 0, 0, 'i' },
+    { "isolate", 0, 0, 'I' },
     { "summarize", 0, 0, 'm'},
     { "summary", 0, 0, 'm' },
     { "noempty", 0, 0, 'n' },
     { "noprompt", 0, 0, 'N' },
     { "order", 1, 0, 'o' },
     { "paramorder", 0, 0, 'O' },
+#ifndef NO_PERMS
+    { "permissions", 0, 0, 'p' },
+#endif
     { "quiet", 0, 0, 'q' },
     { "quick", 0, 0, 'Q' },
     { "recurse", 0, 0, 'r' },
     { "recursive", 0, 0, 'r' },
     { "recurse:", 0, 0, 'R' },
     { "recursive:", 0, 0, 'R' },
-    { "size", 0, 0, 'S' },
-    { "version", 0, 0, 'v' },
-    { "xsize", 1, 0, 'x' },
 #ifndef NO_SYMLINKS
     { "symlinks", 0, 0, 's' },
 #endif
-#ifndef NO_HARDLINKS
-    { "hardlinks", 0, 0, 'H' },
-    { "linkhard", 0, 0, 'L' },
-#endif
-#ifndef NO_PERMS
-    { "permissions", 0, 0, 'p' },
-#endif
+    { "size", 0, 0, 'S' },
+    { "version", 0, 0, 'v' },
+    { "xsize", 1, 0, 'x' },
     { 0, 0, 0, 0 }
   };
 #define GETOPT getopt_long
@@ -1843,41 +1848,32 @@ int main(int argc, char **argv) {
   oldargv = cloneargs(argc, argv);
 
   while ((opt = GETOPT(argc, argv,
-  "frRqQ1SsHLnx:AdDvhNmpo:OB@i"
+  "AdDfiIrRqQ1SsHLnx:vhNmpo:OB@"
 #ifndef OMIT_GETOPT_LONG
           , long_options, NULL
 #endif
 	  )) != EOF) {
     switch (opt) {
-    case 'i':
-      SETFLAG(flags, F_REVERSESORT);
+    case '1':
+      SETFLAG(flags, F_DSAMELINE);
+      break;
+    case 'A':
+      SETFLAG(flags, F_EXCLUDEHIDDEN);
+      break;
+    case 'd':
+      SETFLAG(flags, F_DELETEFILES);
+      break;
+    case 'D':
+#ifdef DEBUG
+      SETFLAG(flags, F_DEBUG);
+#endif
       break;
     case 'f':
       SETFLAG(flags, F_OMITFIRST);
       break;
-    case 'r':
-      SETFLAG(flags, F_RECURSE);
-      break;
-    case 'R':
-      SETFLAG(flags, F_RECURSEAFTER);
-      break;
-    case 'q':
-      SETFLAG(flags, F_HIDEPROGRESS);
-      break;
-    case 'Q':
-      SETFLAG(flags, F_QUICKCOMPARE);
-      break;
-    case '1':
-      SETFLAG(flags, F_DSAMELINE);
-      break;
-    case 'S':
-      SETFLAG(flags, F_SHOWSIZE);
-      break;
-#ifndef NO_SYMLINKS
-    case 's':
-      SETFLAG(flags, F_FOLLOWLINKS);
-      break;
-#endif
+    case 'h':
+      help_text();
+      exit(EXIT_FAILURE);
 #ifndef NO_HARDLINKS
     case 'H':
       SETFLAG(flags, F_CONSIDERHARDLINKS);
@@ -1886,8 +1882,46 @@ int main(int argc, char **argv) {
       SETFLAG(flags, F_HARDLINKFILES);
       break;
 #endif
+    case 'i':
+      SETFLAG(flags, F_REVERSESORT);
+      break;
+    case 'I':
+      SETFLAG(flags, F_ISOLATE);
+      break;
+    case 'm':
+      SETFLAG(flags, F_SUMMARIZEMATCHES);
+      break;
     case 'n':
       SETFLAG(flags, F_EXCLUDEEMPTY);
+      break;
+    case 'N':
+      SETFLAG(flags, F_NOPROMPT);
+      break;
+    case 'O':
+      SETFLAG(flags, F_USEPARAMORDER);
+      break;
+    case 'p':
+      SETFLAG(flags, F_PERMISSIONS);
+      break;
+    case 'q':
+      SETFLAG(flags, F_HIDEPROGRESS);
+      break;
+    case 'Q':
+      SETFLAG(flags, F_QUICKCOMPARE);
+      break;
+    case 'r':
+      SETFLAG(flags, F_RECURSE);
+      break;
+    case 'R':
+      SETFLAG(flags, F_RECURSEAFTER);
+      break;
+#ifndef NO_SYMLINKS
+    case 's':
+      SETFLAG(flags, F_FOLLOWLINKS);
+      break;
+#endif
+    case 'S':
+      SETFLAG(flags, F_SHOWSIZE);
       break;
     case 'x':
       SETFLAG(flags, F_EXCLUDESIZE);
@@ -1919,17 +1953,6 @@ int main(int argc, char **argv) {
         errormsg("invalid value for --xsize: '%s'\n", optarg);
         exit(EXIT_FAILURE);
       }
-      break;
-    case 'A':
-      SETFLAG(flags, F_EXCLUDEHIDDEN);
-      break;
-    case 'd':
-      SETFLAG(flags, F_DELETEFILES);
-      break;
-    case 'D':
-#ifdef DEBUG
-      SETFLAG(flags, F_DEBUG);
-#endif
       break;
     case '@':
 #ifdef LOUD_DEBUG
@@ -1965,21 +1988,6 @@ int main(int argc, char **argv) {
       printf("TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE\n");
       printf("SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.\n");
       exit(EXIT_SUCCESS);
-    case 'h':
-      help_text();
-      exit(EXIT_FAILURE);
-    case 'N':
-      SETFLAG(flags, F_NOPROMPT);
-      break;
-    case 'm':
-      SETFLAG(flags, F_SUMMARIZEMATCHES);
-      break;
-    case 'p':
-      SETFLAG(flags, F_PERMISSIONS);
-      break;
-    case 'O':
-      SETFLAG(flags, F_USEPARAMORDER);
-      break;
     case 'o':
       if (!strncasecmp("name", optarg, 5)) {
         ordertype = ORDER_NAME;
