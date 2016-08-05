@@ -1744,6 +1744,7 @@ static inline void help_text(void)
 #endif
   printf(" -h --help        \tdisplay this help message\n");
   printf(" -i --reverse     \treverse (invert) the match sort order\n");
+  printf(" -I --isolate     \tfiles in the same specified directory won't match\n");
 #ifndef NO_HARDLINKS
   printf(" -L --linkhard    \thard link duplicate files to the first file in\n");
   printf("                  \teach set of duplicates without prompting the user\n");
@@ -2016,7 +2017,7 @@ int main(int argc, char **argv) {
   }
 
   if (optind >= argc) {
-    errormsg("no directories specified\n");
+    errormsg("no directories specified (use -h option for help)\n");
     exit(EXIT_FAILURE);
   }
   if (ISFLAG(flags, F_RECURSE) && ISFLAG(flags, F_RECURSEAFTER)) {

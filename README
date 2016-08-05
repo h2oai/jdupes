@@ -56,7 +56,8 @@ Usage: jdupes [options] DIRECTORY...
  -H --hardlinks         treat hard-linked files as duplicate files. Normally
                         hard links are treated as non-duplicates for safety
  -h --help              display this help message
-
+ -i --reverse           reverse (invert) the match sort order
+ -I --isolate           files in the same specified directory won't match
  -L --linkhard          hard link duplicate files to the first file in
                         each set of duplicates without prompting the user
  -m --summarize         summarize dupe information
