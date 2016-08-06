@@ -102,6 +102,12 @@ once. All files within that directory will be listed as their own
 duplicates, leading to data loss should a user preserve a file
 without its "duplicate" (the file itself!).
 
+The -I/--isolate option attempts to block matches that are contained in
+the same specified directory parameter on the command line. Due to the
+underlying nature of the jdupes algorithm, a lot of matches will be
+blocked by this option that probably should not be. This code could use
+improvement.
+
 
 Hard linking status symbols and behavior
 --------------------------------------------------------------------------
