@@ -1797,7 +1797,7 @@ int main(int argc, char **argv) {
   static ordertype_t ordertype = ORDER_NAME;
 
 #ifndef OMIT_GETOPT_LONG
-  static struct option long_options[] =
+  static const struct option long_options[] =
   {
     { "loud", 0, 0, '@' },
     { "sameline", 0, 0, '1' },
