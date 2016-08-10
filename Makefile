@@ -20,14 +20,6 @@ PREFIX = /usr/local
 #CFLAGS_CONFIG += -DOMIT_GETOPT_LONG
 
 #
-# 'Summarize matches' can use floating point calculations and show
-# summaries with fractional amounts. Floating point support can add
-# code and in some instances is better to avoid. Uncomment this line
-# to only use integer arithmetic and drop all floating point code.
-#
-CFLAGS_CONFIG += -DNO_FLOAT
-
-#
 # Whether we have btrfs/ioctl.h. Needed for --dedupe.
 #
 # HAVE_BTRFS_IOCTL_H = -DHAVE_BTRFS_IOCTL_H

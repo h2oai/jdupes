@@ -159,9 +159,6 @@ static const char *extensions[] = {
 	#ifdef __FAST_MATH__
 	"fastmath",
 	#endif
-	#ifdef NO_FLOAT
-	"nofloat",
-	#endif
 	#ifdef DEBUG
 	"debug",
 	#endif
@@ -1069,15 +1066,11 @@ static inline int confirmmatch(FILE * const restrict file1, FILE * const restric
 static void summarizematches(const file_t * restrict files)
 {
   unsigned int numsets = 0;
-#ifdef NO_FLOAT
   off_t numbytes = 0;
-#else
-  double numbytes = 0.0;
-#endif /* NO_FLOAT */
   int numfiles = 0;
-  file_t *tmpfile;
 
   while (files != NULL) {
+    file_t *tmpfile;
     if (files->hasdupes) {
       numsets++;
       tmpfile = files->duplicates;
@@ -1095,15 +1088,9 @@ static void summarizematches(const file_t * restrict files)
   else
   {
     printf("%d duplicate files (in %d sets), occupying ", numfiles, numsets);
-#ifdef NO_FLOAT
     if (numbytes < 1000) printf("%jd byte%c\n", (intmax_t)numbytes, (numbytes != 1) ? 's' : ' ');
     else if (numbytes <= 1000000) printf("%jd KB\n", (intmax_t)(numbytes / 1000));
     else printf("%jd MB\n", (intmax_t)(numbytes / 1000000));
-#else
-    if (numbytes < 1000.0) printf("%.0f bytes\n", numbytes);
-    else if (numbytes <= (1000.0 * 1000.0)) printf("%.1f KB\n", numbytes / 1000.0);
-    else printf("%.1f MB\n", numbytes / (1000.0 * 1000.0));
-#endif /* NO_FLOAT */
   }
 }
 
