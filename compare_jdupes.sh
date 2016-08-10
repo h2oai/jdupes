@@ -10,6 +10,7 @@ ORIG_DUPE=false
 jdupes -v 2>/dev/null >/dev/null && ORIG_DUPE=jdupes
 fdupes-jody -v 2>/dev/null >/dev/null && ORIG_DUPE=fdupes-jody
 fdupes -v 2>/dev/null >/dev/null && ORIG_DUPE=fdupes
+test ! -z "$WINDIR" && "$WINDIR/jdupes.exe" -v 2>/dev/null >/dev/null && ORIG_DUPE="$WINDIR/jdupes.exe"
 if [ ! $ORIG_DUPE -v 2>/dev/null >/dev/null ]
 	then echo "Cannot run installed jdupes, fdupes-jody, or fdupes"
 	exit 1
@@ -17,7 +18,7 @@ fi
 
 test ! -e ./jdupes && echo "Build jdupes first, silly" && exit 1
 
-echo -n "Installed '$ORIG_DUPE':"
+echo -n "Installed $ORIG_DUPE:"
 sync
 time $ORIG_DUPE -nrq "$@" > foo || ERR=1
 echo -en "\nBuilt jdupes:"
