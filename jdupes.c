@@ -1135,31 +1135,26 @@ static void printmatches(file_t * restrict files)
 }
 
 
-unsigned int get_max_dupes(file_t *files, unsigned int *max, unsigned int *n_files) {
-  file_t *curdupe;
-  unsigned int n_dupes;
+/* Count the following statistics:
+   - Maximum number of files in a duplicate set (length of longest dupe chain)
+   - Number of non-zero-length files that have duplicates (if n_files != NULL)
+   - Total number of duplicate file sets (groups) */
+static unsigned int get_max_dupes(const file_t *files, unsigned int * const restrict max,
+		unsigned int * const restrict n_files) {
   unsigned int groups = 0;
 
   *max = 0;
-  if (n_files)
-    *n_files = 0;
+  if (n_files) *n_files = 0;
 
   while (files) {
+    unsigned int n_dupes;
     if (files->hasdupes) {
       groups++;
-      if (files->size && n_files)
-        (*n_files)++;
-
+      if (n_files && files->size) (*n_files)++;
       n_dupes = 1;
-
-      for (curdupe = files->duplicates; curdupe; curdupe = curdupe->duplicates)
-        n_dupes++;
-
-      if (n_dupes > *max)
-        *max = n_dupes;
-
+      for (file_t *curdupe = files->duplicates; curdupe; curdupe = curdupe->duplicates) n_dupes++;
+      if (n_dupes > *max) *max = n_dupes;
     }
-
     files = files->next;
   }
   return groups;
