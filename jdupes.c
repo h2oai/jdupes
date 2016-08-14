@@ -1304,22 +1304,21 @@ static void deletefiles(file_t *files, int prompt, FILE *tty)
         for (x = 2; x <= counter; x++) preserve[x] = 0;
       } else do {
         /* prompt for files to preserve */
-	printf("Set %u of %u: keep which files? (1 - %u, [a]ll)",
+	printf("Set %u of %u: keep which files? (1 - %u, [a]ll, [n]one)",
           curgroup, groups, counter);
 	if (ISFLAG(flags, F_SHOWSIZE)) printf(" (%ju byte%c each)", (uintmax_t)files->size,
 	  (files->size != 1) ? 's' : ' ');
 	printf(": ");
 	fflush(stdout);
 
-	if (!fgets(preservestr, INPUT_SIZE, tty))
-	  preservestr[0] = '\n'; /* treat fgets() failure as if nothing was entered */
+	/* treat fgets() failure as if nothing was entered */
+	if (!fgets(preservestr, INPUT_SIZE, tty)) preservestr[0] = '\n';
 
 	i = strlen(preservestr) - 1;
 
         /* tail of buffer must be a newline */
-	while (preservestr[i]!='\n') {
-	  tstr = (char*)
-	    realloc(preservestr, strlen(preservestr) + 1 + INPUT_SIZE);
+	while (preservestr[i] != '\n') {
+	  tstr = (char *)realloc(preservestr, strlen(preservestr) + 1 + INPUT_SIZE);
 	  if (!tstr) errormsg(NULL);
 
 	  preservestr = tstr;
@@ -1328,12 +1327,13 @@ static void deletefiles(file_t *files, int prompt, FILE *tty)
 	    preservestr[0] = '\n'; /* treat fgets() failure as if nothing was entered */
 	    break;
 	  }
-	  i = strlen(preservestr)-1;
+	  i = strlen(preservestr) - 1;
 	}
 
 	for (x = 1; x <= counter; x++) preserve[x] = 0;
 
 	token = strtok(preservestr, " ,\n");
+	if (token != NULL && (*token == 'n' || *token == 'N')) goto preserve_none;
 
 	while (token != NULL) {
 	  if (*token == 'a' || *token == 'A')
@@ -1348,6 +1348,7 @@ static void deletefiles(file_t *files, int prompt, FILE *tty)
 
 	for (sum = 0, x = 1; x <= counter; x++) sum += preserve[x];
       } while (sum < 1); /* save at least one file */
+preserve_none:
 
       printf("\n");
 
