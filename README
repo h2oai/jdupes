@@ -44,7 +44,6 @@ Usage
 --------------------------------------------------------------------------
 Usage: jdupes [options] DIRECTORY...
 
- -1 --sameline          list each set of matches on a single line
  -A --nohidden          exclude hidden files from consideration
  -d --delete            prompt user for files to preserve and delete all
                         others; important: under particular circumstances,
@@ -83,13 +82,8 @@ Usage: jdupes [options] DIRECTORY...
     --xsize=+SIZE       '+' specified before SIZE, exclude size > SIZE
                         K/M/G size suffixes can be used (case-insensitive)
 
-Unless -1 or --sameline is specified, duplicate files are listed
-together in groups, each file displayed on a separate line. The
-groups are then separated from each other by blank lines.
-
-When -1 or --sameline is specified, spaces and backslash characters (\)
-appearing in a filename are preceded by a backslash character. For
-instance, "with spaces" becomes "with\ spaces".
+Duplicate files are listed together in groups with each file displayed on a
+Separate line. The groups are then separated from each other by blank lines.
 
 When using -d or --delete, care should be taken to insure against
 accidental data loss. While no information will be immediately

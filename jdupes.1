@@ -18,9 +18,6 @@ byte-by-byte comparison.
 
 .SH OPTIONS
 .TP
-.B -1 --sameline
-list each set of matches on a single line
-.TP
 .B -A --nohidden
 exclude hidden files from consideration
 .TP
@@ -138,21 +135,8 @@ This file was already a hard link to the first file in the chain
 Hard linking this file failed due to an error during the linking process
 
 .PP
-Unless
-.B -1
-or
-.B --sameline
-is specified, duplicate files are listed together in groups, each file
-displayed on a separate line. The groups are then separated from each
-other by blank lines.
-
-.PP
-When
-.B -1
-or
-.B --sameline
-is specified, spaces and backslash characters  (\fB\e\fP) appearing in
-a filename are preceded by a backslash character.
+Duplicate files are listed together in groups with each file displayed on a
+separate line. The groups are then separated from each other by blank lines.
 
 .SH EXAMPLES
 .TP

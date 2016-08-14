@@ -99,7 +99,7 @@ const char *FILE_MODE_RO = "rb";
 static uint_fast32_t flags = 0;
 #define F_RECURSE		0x00000001
 #define F_HIDEPROGRESS		0x00000002
-#define F_DSAMELINE		0x00000004
+//#define F_DSAMELINE		0x00000004
 #define F_FOLLOWLINKS		0x00000008
 #define F_DELETEFILES		0x00000010
 #define F_EXCLUDEEMPTY		0x00000020
@@ -292,34 +292,6 @@ static void errormsg(const char *message, ...)
   fprintf(stderr, "\r%40s\r%s: ", "", "jdupes");
 #endif
   vfprintf(stderr, message, ap);
-}
-
-
-static void escapefilename(char **filename_ptr)
-{
-  static unsigned int x;
-  static unsigned int tx;
-  static char tmp[8192];
-  static char *filename;
-  static size_t sl;
-
-  filename = *filename_ptr;
-  sl = strlen(filename);
-
-  for (x = 0, tx = 0; x < sl; x++) {
-    if (tx >= 8192) errormsg("escapefilename() path overflow");
-    if (strchr("\\ ", filename[x]) != NULL) tmp[tx++] = '\\';
-    tmp[tx++] = filename[x];
-  }
-
-  tmp[tx] = '\0';
-
-  if (x != tx) {
-    //*filename_ptr = realloc(*filename_ptr, strlen(tmp) + 1);
-    *filename_ptr = (char *)string_malloc(strlen(tmp) + 1);
-    if (*filename_ptr == NULL) errormsg(NULL);
-    strcpy(*filename_ptr, tmp);
-  }
 }
 
 
@@ -1104,13 +1076,11 @@ static void printmatches(file_t * restrict files)
       if (!ISFLAG(flags, F_OMITFIRST)) {
 	if (ISFLAG(flags, F_SHOWSIZE)) printf("%jd byte%c each:\n", (intmax_t)files->size,
 	 (files->size != 1) ? 's' : ' ');
-	if (ISFLAG(flags, F_DSAMELINE)) escapefilename(&files->d_name);
-	printf("%s%c", files->d_name, ISFLAG(flags, F_DSAMELINE)?' ':'\n');
+	printf("%s\n", files->d_name);
       }
       tmpfile = files->duplicates;
       while (tmpfile != NULL) {
-	if (ISFLAG(flags, F_DSAMELINE)) escapefilename(&tmpfile->d_name);
-	printf("%s%c", tmpfile->d_name, ISFLAG(flags, F_DSAMELINE)?' ':'\n');
+	printf("%s\n", tmpfile->d_name);
 	tmpfile = tmpfile->duplicates;
       }
       if (files->next != NULL) printf("\n");
@@ -1706,7 +1676,6 @@ static inline void help_text(void)
 {
   printf("Usage: jdupes [options] DIRECTORY...\n\n");
 
-  printf(" -1 --sameline    \tlist each set of matches on a single line\n");
   printf(" -A --nohidden    \texclude hidden files from consideration\n");
 #ifdef HAVE_BTRFS_IOCTL_H
   printf(" -B --dedupe      \tSend matches to btrfs for block-level deduplication\n");
@@ -1783,7 +1752,6 @@ int main(int argc, char **argv) {
   static const struct option long_options[] =
   {
     { "loud", 0, 0, '@' },
-    { "sameline", 0, 0, '1' },
     { "nohidden", 0, 0, 'A' },
     { "dedupe", 0, 0, 'B' },
     { "delete", 0, 0, 'd' },
@@ -1829,15 +1797,12 @@ int main(int argc, char **argv) {
   oldargv = cloneargs(argc, argv);
 
   while ((opt = GETOPT(argc, argv,
-  "AdDfiIrRqQ1SsHLnx:vhNmpo:OB@"
+  "AdDfiIrRqQSsHLnx:vhNmpo:OB@"
 #ifndef OMIT_GETOPT_LONG
           , long_options, NULL
 #endif
 	  )) != EOF) {
     switch (opt) {
-    case '1':
-      SETFLAG(flags, F_DSAMELINE);
-      break;
     case 'A':
       SETFLAG(flags, F_EXCLUDEHIDDEN);
       break;
