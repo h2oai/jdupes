@@ -1833,7 +1833,7 @@ int main(int argc, char **argv) {
   oldargv = cloneargs(argc, argv);
 
   while ((opt = GETOPT(argc, argv,
-  "ABdDfiIOrRqQSshHLmnNpvZo:x:"
+  "@ABdDfhHiILmnNOpqQrRsSvZo:x:"
 #ifndef OMIT_GETOPT_LONG
           , long_options, NULL
 #endif
