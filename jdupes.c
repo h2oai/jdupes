@@ -27,6 +27,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <dirent.h>
+#include <signal.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -56,6 +57,7 @@
  #define ON_WINDOWS 1
  #define NO_SYMLINKS 1
  #define NO_PERMS 1
+ #define NO_SIGACTION 1
  #ifndef WIN32_LEAN_AND_MEAN
   #define WIN32_LEAN_AND_MEAN
  #endif
@@ -99,7 +101,7 @@ const char *FILE_MODE_RO = "rb";
 static uint_fast32_t flags = 0;
 #define F_RECURSE		0x00000001
 #define F_HIDEPROGRESS		0x00000002
-//#define F_DSAMELINE		0x00000004
+#define F_HARDABORT		0x00000004
 #define F_FOLLOWLINKS		0x00000008
 #define F_DELETEFILES		0x00000010
 #define F_EXCLUDEEMPTY		0x00000020
@@ -266,7 +268,20 @@ enum tree_direction { NONE, LEFT, RIGHT };
 /* Sort order reversal */
 static int sort_direction = 1;
 
+/* Signal handler */
+static int interrupt = 0;
+
 /***** End definitions, begin code *****/
+
+
+/* Catch CTRL-C and either notify or terminate */
+void sighandler(const int signum)
+{
+	(void)signum;
+	if (interrupt || ISFLAG(flags, F_HARDABORT)) exit(EXIT_FAILURE);
+	interrupt = 1;
+	return;
+}
 
 
 /* Compare two jody_hashes like memcmp() */
@@ -430,6 +445,9 @@ static void grokdir(const char * const restrict dir,
     char * restrict tp = tempname;
     size_t dirlen;
     size_t d_name_len;
+
+    /* Terminate the program if interrupted during this phase */
+    if (interrupt) exit(EXIT_FAILURE);
 
     LOUD(fprintf(stderr, "grokdir: readdir: '%s'\n", dirinfo->d_name));
     if (strcmp(dirinfo->d_name, ".") && strcmp(dirinfo->d_name, "..")) {
@@ -650,6 +668,7 @@ static hash_t *get_filehash(const file_t * const restrict checkfile,
   while (fsize > 0) {
     size_t bytes_to_read;
 
+    if (interrupt) return 0;
     bytes_to_read = (fsize >= CHUNK_SIZE) ? CHUNK_SIZE : fsize;
     if (fread((void *)chunk, bytes_to_read, 1, file) != 1) {
       errormsg("error reading from file %s\n", checkfile->d_name);
@@ -1025,6 +1044,7 @@ static inline int confirmmatch(FILE * const restrict file1, FILE * const restric
   fseek(file2, 0, SEEK_SET);
 
   do {
+    if (interrupt) return 0;
     r1 = fread(c1, sizeof(char), CHUNK_SIZE, file1);
     r2 = fread(c2, sizeof(char), CHUNK_SIZE, file2);
 
@@ -1043,6 +1063,8 @@ static void summarizematches(const file_t * restrict files)
 
   while (files != NULL) {
     file_t *tmpfile;
+
+    if (interrupt) exit(EXIT_FAILURE);
     if (files->hasdupes) {
       numsets++;
       tmpfile = files->duplicates;
@@ -1064,6 +1086,7 @@ static void summarizematches(const file_t * restrict files)
     else if (numbytes <= 1000000) printf("%jd KB\n", (intmax_t)(numbytes / 1000));
     else printf("%jd MB\n", (intmax_t)(numbytes / 1000000));
   }
+  return;
 }
 
 
@@ -1089,6 +1112,7 @@ static void printmatches(file_t * restrict files)
 
     files = files->next;
   }
+  return;
 }
 
 
@@ -1156,6 +1180,7 @@ void dedupefiles(file_t * restrict files)
   }
 
   while (files) {
+    if (interrupt) exit(EXIT_FAILURE);
     if (files->hasdupes && files->size) {
       cur_file++;
       if (!ISFLAG(flags, F_HIDEPROGRESS)) {
@@ -1222,8 +1247,9 @@ cleanup:
 
   if (!ISFLAG(flags, F_HIDEPROGRESS))
     fprintf(stderr, "\r%40s\r", " ");
-  string_free(same);
-  free(dupe_filenames);
+  free(same);
+  string_free(dupe_filenames);
+  return;
 }
 #endif /* HAVE_BTRFS_IOCTL_H */
 
@@ -1251,6 +1277,7 @@ static void deletefiles(file_t *files, int prompt, FILE *tty)
   if (!dupelist || !preserve || !preservestr) errormsg(NULL);
 
   for (; files; files = files->next) {
+    if (interrupt) exit(EXIT_FAILURE);
     if (files->hasdupes) {
       curgroup++;
       counter = 1;
@@ -1343,6 +1370,7 @@ preserve_none:
   free(dupelist);
   free(preserve);
   free(preservestr);
+  return;
 }
 
 
@@ -1537,6 +1565,7 @@ static inline void hardlinkfiles(file_t *files)
   if (!dupelist) errormsg(NULL);
 
   while (files) {
+    if (interrupt) exit(EXIT_FAILURE);
     if (files->hasdupes) {
       counter = 1;
       dupelist[counter] = files;
@@ -1668,6 +1697,7 @@ static inline void hardlinkfiles(file_t *files)
   }
 
   free(dupelist);
+  return;
 }
 #endif /* NO_HARDLINKS */
 
@@ -1731,10 +1761,12 @@ static inline void help_text(void)
   printf(" -x --xsize=SIZE  \texclude files of size < SIZE bytes from consideration\n");
   printf("    --xsize=+SIZE \t'+' specified before SIZE, exclude size > SIZE\n");
   printf("                  \tK/M/G size suffixes can be used (case-insensitive)\n");
+  printf(" -Z --hardabort   \tIf the user aborts (i.e. CTRL-C) exit immediately\n");
 #ifdef OMIT_GETOPT_LONG
   printf("Note: Long options are not supported in this build.\n\n");
 #endif
 }
+
 
 int main(int argc, char **argv) {
   static file_t *files = NULL;
@@ -1785,6 +1817,7 @@ int main(int argc, char **argv) {
     { "size", 0, 0, 'S' },
     { "version", 0, 0, 'v' },
     { "xsize", 1, 0, 'x' },
+    { "hardabort", 0, 0, 'Z' },
     { 0, 0, 0, 0 }
   };
 #define GETOPT getopt_long
@@ -1792,12 +1825,15 @@ int main(int argc, char **argv) {
 #define GETOPT getopt
 #endif
 
+  /* Catch CTRL-C */
+  signal(SIGINT, sighandler);
+
   program_name = argv[0];
 
   oldargv = cloneargs(argc, argv);
 
   while ((opt = GETOPT(argc, argv,
-  "AdDfiIrRqQSsHLnx:vhNmpo:OB@"
+  "ABdDfiIOrRqQSshHLmnNpvZo:x:"
 #ifndef OMIT_GETOPT_LONG
           , long_options, NULL
 #endif
@@ -1868,6 +1904,9 @@ int main(int argc, char **argv) {
 #endif
     case 'S':
       SETFLAG(flags, F_SHOWSIZE);
+      break;
+    case 'Z':
+      SETFLAG(flags, F_HARDABORT);
       break;
     case 'x':
       SETFLAG(flags, F_EXCLUDESIZE);
@@ -2030,6 +2069,13 @@ int main(int argc, char **argv) {
     static unsigned int depth_threshold = INITIAL_DEPTH_THRESHOLD;
 #endif
 
+    if (interrupt) {
+      if (ISFLAG(flags, F_HARDABORT)) exit(EXIT_FAILURE);
+      interrupt = 0;  /* reset interrupt for re-use */
+      fprintf(stderr, "\nStopping file scan (user abort)\n");
+      goto skip_file_scan;
+    }
+
     LOUD(fprintf(stderr, "\nMAIN: current file: %s\n", curfile->d_name));
 
     if (!checktree) registerfile(&checktree, NONE, curfile);
@@ -2108,6 +2154,7 @@ skip_full_check:
 
   if (!ISFLAG(flags, F_HIDEPROGRESS)) fprintf(stderr, "\r%60s\r", " ");
 
+skip_file_scan:
   if (ISFLAG(flags, F_DELETEFILES)) {
     if (ISFLAG(flags, F_NOPROMPT)) deletefiles(files, 0, 0);
     else deletefiles(files, 1, stdin);

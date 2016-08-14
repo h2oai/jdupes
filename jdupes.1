@@ -106,19 +106,25 @@ display jdupes version and compilation feature flags
 .TP
 .B -x --xsize=[+]SIZE
 exclude files of size less than SIZE from consideration, or if SIZE is
-prefixed with a + (i.e.
-.B -x +226
-) then exclude files larger than SIZE. The following suffixes can be used
+prefixed with a '+' i.e.
+jdupes -x +226 [files]
+then exclude files larger than SIZE. The following suffixes can be used
 and are not case-sensitive:
 .RS
 .IP `K'
 for kilobytes (units of 1024 bytes)
 .IP `M'
-for Megabytes (units of 1024 x 1024 bytes)
+for megabytes (units of 1024 x 1024 bytes)
 .IP `G'
-for Gigabytes (units of 1024 x 1024 x 1024 bytes)
-
+for gigabytes (units of 1024 x 1024 x 1024 bytes)
 .RE
+.TP
+.B -Z --hardabort
+if the user aborts the program (as with CTRL-C) exit immediately. Without
+this option, the duplicates that were found up until the abort was received
+will still be processed. In all cases a second abort signal will cause the
+program to terminate.
+
 .SH NOTES
 A set of arrows are used in hard linking to show what action was taken on
 each link candidate. These arrows are as follows:
