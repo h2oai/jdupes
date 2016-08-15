@@ -2007,6 +2007,12 @@ int main(int argc, char **argv) {
     errormsg("no directories specified (use -h option for help)\n");
     exit(EXIT_FAILURE);
   }
+
+  if (ISFLAG(flags, F_ISOLATE) && optind == (argc - 1)) {
+    errormsg("Isolation requires at least two directories on the command line\n");
+    exit(EXIT_FAILURE);
+  }
+
   if (ISFLAG(flags, F_RECURSE) && ISFLAG(flags, F_RECURSEAFTER)) {
     errormsg("options --recurse and --recurse: are not compatible\n");
     exit(EXIT_FAILURE);
@@ -2016,6 +2022,7 @@ int main(int argc, char **argv) {
     errormsg("options --summarize and --delete are not compatible\n");
     exit(EXIT_FAILURE);
   }
+
   if (!!ISFLAG(flags, F_SUMMARIZEMATCHES) +
       !!ISFLAG(flags, F_DELETEFILES) +
       !!ISFLAG(flags, F_HARDLINKFILES) +
@@ -2184,9 +2191,9 @@ skip_file_scan:
 
 #ifdef DEBUG
   if (ISFLAG(flags, F_DEBUG)) {
-    fprintf(stderr, "\n%d partial (+%d small) -> %d full hash -> %d full (%d partial elim) (%d hash fail)\n",
+    fprintf(stderr, "\n%d partial (+%d small) -> %d full hash -> %d full (%d partial elim) (%d hash%u fail)\n",
 		partial_hash, small_file, full_hash, partial_to_full,
-		partial_elim, hash_fail);
+		partial_elim, hash_fail, (unsigned int)sizeof(hash_t)*8);
     fprintf(stderr, "%ju total files, %ju comparisons, branch L %u, R %u, both %u\n",
 		    filecount, comparisons, left_branch, right_branch,
 		    left_branch + right_branch);
