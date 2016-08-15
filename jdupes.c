@@ -446,12 +446,6 @@ static void grokdir(const char * const restrict dir,
     size_t dirlen;
     size_t d_name_len;
 
-    /* Terminate the program if interrupted during this phase */
-    if (interrupt) {
-      if (!ISFLAG(flags, F_HIDEPROGRESS)) fprintf(stderr, "\n");
-      exit(EXIT_FAILURE);
-    }
-
     LOUD(fprintf(stderr, "grokdir: readdir: '%s'\n", dirinfo->d_name));
     if (strcmp(dirinfo->d_name, ".") && strcmp(dirinfo->d_name, "..")) {
       if (!ISFLAG(flags, F_HIDEPROGRESS)) {
@@ -1067,7 +1061,6 @@ static void summarizematches(const file_t * restrict files)
   while (files != NULL) {
     file_t *tmpfile;
 
-    if (interrupt) exit(EXIT_FAILURE);
     if (files->hasdupes) {
       numsets++;
       tmpfile = files->duplicates;
@@ -1183,7 +1176,6 @@ void dedupefiles(file_t * restrict files)
   }
 
   while (files) {
-    if (interrupt) exit(EXIT_FAILURE);
     if (files->hasdupes && files->size) {
       cur_file++;
       if (!ISFLAG(flags, F_HIDEPROGRESS)) {
@@ -1280,7 +1272,6 @@ static void deletefiles(file_t *files, int prompt, FILE *tty)
   if (!dupelist || !preserve || !preservestr) errormsg(NULL);
 
   for (; files; files = files->next) {
-    if (interrupt) exit(EXIT_FAILURE);
     if (files->hasdupes) {
       curgroup++;
       counter = 1;
@@ -1568,7 +1559,6 @@ static inline void hardlinkfiles(file_t *files)
   if (!dupelist) errormsg(NULL);
 
   while (files) {
-    if (interrupt) exit(EXIT_FAILURE);
     if (files->hasdupes) {
       counter = 1;
       dupelist[counter] = files;
@@ -1828,9 +1818,6 @@ int main(int argc, char **argv) {
 #define GETOPT getopt
 #endif
 
-  /* Catch CTRL-C */
-  signal(SIGINT, sighandler);
-
   program_name = argv[0];
 
   oldargv = cloneargs(argc, argv);
@@ -2068,6 +2055,9 @@ int main(int argc, char **argv) {
 
   curfile = files;
 
+  /* Catch CTRL-C */
+  signal(SIGINT, sighandler);
+
   while (curfile) {
     static uintmax_t progress = 0;
     static uintmax_t dupecount = 0;
@@ -2165,6 +2155,8 @@ skip_full_check:
   if (!ISFLAG(flags, F_HIDEPROGRESS)) fprintf(stderr, "\r%60s\r", " ");
 
 skip_file_scan:
+  /* Stop catching CTRL+C */
+  signal(SIGINT, SIG_DFL);
   if (ISFLAG(flags, F_DELETEFILES)) {
     if (ISFLAG(flags, F_NOPROMPT)) deletefiles(files, 0, 0);
     else deletefiles(files, 1, stdin);
