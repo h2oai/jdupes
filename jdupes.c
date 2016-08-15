@@ -447,7 +447,10 @@ static void grokdir(const char * const restrict dir,
     size_t d_name_len;
 
     /* Terminate the program if interrupted during this phase */
-    if (interrupt) exit(EXIT_FAILURE);
+    if (interrupt) {
+      if (!ISFLAG(flags, F_HIDEPROGRESS)) fprintf(stderr, "\n");
+      exit(EXIT_FAILURE);
+    }
 
     LOUD(fprintf(stderr, "grokdir: readdir: '%s'\n", dirinfo->d_name));
     if (strcmp(dirinfo->d_name, ".") && strcmp(dirinfo->d_name, "..")) {
