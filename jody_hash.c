@@ -16,18 +16,23 @@
 /* DO NOT modify the shift unless you know what you're doing.
  * This shift was decided upon after lots of testing and
  * changing it will likely cause lots of hash collisions. */
+#ifndef JODY_HASH_SHIFT
 #define JODY_HASH_SHIFT 11
+#endif
 
 /* The salt value's purpose is to cause each byte in the
  * hash_t word to have a positionally dependent variation.
  * It is injected into the calculation to prevent a string of
  * identical bytes from easily producing an identical hash. */
-#define JODY_HASH_SALT 0x1f3d5b79
 
 /* The tail mask table is used for block sizes that are
  * indivisible by the width of a hash_t. It is ANDed with the
  * final hash_t-sized element to zero out data in the buffer
  * that is not part of the data to be hashed. */
+
+/* Set hash parameters based on requested hash width */
+#if JODY_HASH_WIDTH == 64
+#define JODY_HASH_SALT 0x1f3d5b79
 static const hash_t tail_mask[] = {
 	0x0000000000000000,
 	0x00000000000000ff,
@@ -39,6 +44,26 @@ static const hash_t tail_mask[] = {
 	0x00ffffffffffffff,
 	0xffffffffffffffff
 };
+#endif /* JODY_HASH_WIDTH == 64 */
+#if JODY_HASH_WIDTH == 32
+#define JODY_HASH_SALT 0x1f3d5b79
+static const hash_t tail_mask[] = {
+	0x00000000,
+	0x000000ff,
+	0x0000ffff,
+	0x00ffffff,
+	0xffffffff,
+};
+#endif /* JODY_HASH_WIDTH == 32 */
+#if JODY_HASH_WIDTH == 16
+#define JODY_HASH_SALT 0x1f5b
+static const hash_t tail_mask[] = {
+	0x0000,
+	0x00ff,
+	0xffff,
+};
+#endif /* JODY_HASH_WIDTH == 16 */
+
 
 /* Hash a block of arbitrary size; must be divisible by sizeof(hash_t)
  * The first block should pass a start_hash of zero.
