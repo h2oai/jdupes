@@ -924,7 +924,7 @@ static file_t **checkmatch(filetree_t * restrict tree,
     if (tree->file->filehash_partial_set == 0) {
       filehash = get_filehash(tree->file, PARTIAL_HASH_SIZE);
       if (filehash == NULL) {
-        errormsg("cannot read file %s\n", tree->file->d_name);
+        if (!interrupt) errormsg("cannot read file %s\n", tree->file->d_name);
         return NULL;
       }
 
@@ -935,7 +935,7 @@ static file_t **checkmatch(filetree_t * restrict tree,
     if (file->filehash_partial_set == 0) {
       filehash = get_filehash(file, PARTIAL_HASH_SIZE);
       if (filehash == NULL) {
-        errormsg("cannot read file %s\n", file->d_name);
+        if (!interrupt) errormsg("cannot read file %s\n", file->d_name);
         return NULL;
       }
 
@@ -966,7 +966,10 @@ static file_t **checkmatch(filetree_t * restrict tree,
       if (tree->file->filehash_set == 0) {
 	did_long_work = 1;
 	filehash = get_filehash(tree->file, 0);
-	if (filehash == NULL) return NULL;
+        if (filehash == NULL) {
+          if (!interrupt) errormsg("cannot read file %s\n", tree->file->d_name);
+          return NULL;
+        }
 
 	tree->file->filehash = *filehash;
         tree->file->filehash_set = 1;
@@ -975,7 +978,10 @@ static file_t **checkmatch(filetree_t * restrict tree,
       if (file->filehash_set == 0) {
 	did_long_work = 1;
 	filehash = get_filehash(file, 0);
-	if (filehash == NULL) return NULL;
+        if (filehash == NULL) {
+          if (!interrupt) errormsg("cannot read file %s\n", file->d_name);
+          return NULL;
+        }
 
 	file->filehash = *filehash;
 	file->filehash_set = 1;
