@@ -4,25 +4,38 @@ jdupes is a program for identifying and taking actions upon duplicate
 files. This fork known as 'jdupes' is heavily modified from and improved
 over the original. See CHANGES for details.
 
+A WORD OF WARNING: jdupes IS NOT a drop-in compatible replacement for
+fdupes! Do not blindly replace fdupes with jdupes in scripts and expect
+everything to work the same way. Option availability and meanings differ
+between the two programs. For example, the -I switch in jdupes means
+"isolate" and blocks intra-argument matching, while in fdupes it means
+"immediately delete files during scanning without prompting the user."
+
 
 Why use jdupes instead of the original fdupes or other forks?
 --------------------------------------------------------------------------
-The biggest reason is also the most important one: raw speed. In testing on
-various data sets, jdupes is *over 7 times faster* than fdupes-1.51 on
-average.
+The biggest reason is raw speed. In testing on various data sets, jdupes is
+over 7 times faster than fdupes-1.51 on average.
 
-It's also quite stable. All releases of jdupes are compared against a
+jdupes is generally stable. All releases of jdupes are compared against a
 known working reference version of fdupes or jdupes to be certain that
 output does not change. You get the benefits of an aggressive development
 process without putting your data at increased risk.
 
+Code in jdupes is written with data loss avoidance as the highest priority.
+If a choice must be made between being aggressive or careful, the careful
+way is always chosen.
+
 jdupes includes features that are not found in fdupes. Examples of
 such features include btrfs block-level deduplication and control over
-which file is kept when a match set is automatically deleted.
+which file is kept when a match set is automatically deleted. jdupes is
+not afraid of dropping features of low value; a prime example is the -1
+switch which outputs all matches in a set on one line, a feature which was
+found to be useless in real-world tests and therefore thrown out.
 
 The downside is that jdupes development is never guaranteed to be bug-free!
 If the program eats your dog or sets fire to your lawn, the authors cannot
-be held responsible. If you notice a bug, please report it!
+be held responsible. If you notice a bug, please report it.
 
 While jdupes maintains some degree of compatibility with fdupes from which
 it was originally derived, there is no guarantee that it will continue to
@@ -38,6 +51,10 @@ change in embedded metadata such as the ID3 tags in an MP3 file or the EXIF
 information in a JPEG image will not change the sound or image presented to
 the user when opened, but technically it makes the file no longer identical
 to the original.
+
+Plenty of excellent tools already exist to "fuzzy match" specific file types
+using knowledge of their file formats to help. There are no plans to add
+this type of matching to jdupes.
 
 
 Usage
