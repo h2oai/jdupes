@@ -12,6 +12,12 @@
 extern "C" {
 #endif
 
+#include <stdint.h>
+#ifndef WIN32_LEAN_AND_MEAN
+ #define WIN32_LEAN_AND_MAN
+#endif
+#include <windows.h>
+
 struct winstat {
 	uint64_t inode;
 	uint64_t size;
@@ -32,7 +38,7 @@ struct winstat {
 #define WS_ISSPARSE(mode) ((mode & FILE_ATTRIBUTE_SPARSE) ? 1 : 0)
 #define WS_ISTEMP(mode) ((mode & FILE_ATTRIBUTE_TEMPORARY) ? 1 : 0)
 
-extern int win_stat(const char * const restrict filename, struct winstat *buf);
+extern int win_stat(const char * const restrict filename, struct winstat * const restrict buf);
 
 #ifdef __cplusplus
 }

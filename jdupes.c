@@ -26,6 +26,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <fcntl.h>
 #include <dirent.h>
 #include <signal.h>
 #include <unistd.h>
@@ -47,7 +48,6 @@
 #define HAVE_BTRFS_IOCTL_H
 #endif
 #ifdef HAVE_BTRFS_IOCTL_H
-#include <fcntl.h>
 #include <sys/ioctl.h>
 #include <btrfs/ioctl.h>
 #endif
@@ -62,6 +62,7 @@
   #define WIN32_LEAN_AND_MEAN
  #endif
  #include <windows.h>
+ #include <io.h>
 typedef uint64_t jdupes_ino_t;
 const char *FILE_MODE_RO = "rbS";
 
@@ -69,6 +70,22 @@ const char *FILE_MODE_RO = "rbS";
 typedef ino_t jdupes_ino_t;
 const char *FILE_MODE_RO = "rb";
 #endif /* _WIN32 || __CYGWIN__ */
+
+/* Last argument to (F)WPRINTF macros is non-wide version*/
+#ifdef UNICODE
+static char wname[PATH_MAX];
+static char wname2[PATH_MAX];
+ #define M2W(a,b) MultiByteToWideChar(CP_UTF8, 0, a, -1, (LPWSTR)b, PATH_MAX)
+ #define FWPRINTF(a,b,c) { _setmode(_fileno(a), _O_U16TEXT); \
+		 fwprintf(a, L"%S\n", b); \
+		 _setmode(_fileno(a), _O_TEXT); }
+ #define WPRINTF(a,b) { _setmode(_fileno(stdout), _O_U16TEXT); \
+		 wprintf(L"%S\n", a); \
+		 _setmode(_fileno(stdout), _O_TEXT); }
+#else
+ #define FWPRINTF(a,b,c) fprintf(a, "%s\n", c)
+ #define WPRINTF(a,b) printf("%s\n", b)
+#endif /* UNICODE */
 
 #define ISFLAG(a,b) ((a & b) == b)
 #define SETFLAG(a,b) (a |= b)
@@ -282,6 +299,38 @@ void sighandler(const int signum)
 	interrupt = 1;
 	return;
 }
+
+
+#ifdef UNICODE
+/* Copy Windows wide character arguments to UTF-8 */
+static void widearg_to_argv(int argc, wchar_t **wargv, char **argv)
+{
+	char temp[PATH_MAX + 1];
+	int len;
+
+	if (!argv) goto error_bad_argv;
+	for (int counter = 0; counter < argc; counter++) {
+		len = WideCharToMultiByte(CP_UTF8, 0, wargv[counter],
+				-1, (LPSTR)&temp, PATH_MAX * 2, NULL, NULL);
+		if (len < 1) goto error_wc2mb;
+
+		argv[counter] = (char *)malloc(len + 1);
+		if (!argv[counter]) goto error_oom;
+		strncpy(argv[counter], temp, len + 1);
+	}
+	return;
+
+error_bad_argv:
+	fprintf(stderr, "fatal: bad argv pointer\n");
+	exit(EXIT_FAILURE);
+error_wc2mb:
+	fprintf(stderr, "fatal: WideCharToMultiByte failed\n");
+	exit(EXIT_FAILURE);
+error_oom:
+	fprintf(stderr, "out of memory\n");
+	exit(EXIT_FAILURE);
+}
+#endif /* UNICODE */
 
 
 /* Compare two jody_hashes like memcmp() */
@@ -1101,13 +1150,20 @@ static void printmatches(file_t * restrict files)
       if (!ISFLAG(flags, F_OMITFIRST)) {
 	if (ISFLAG(flags, F_SHOWSIZE)) printf("%jd byte%c each:\n", (intmax_t)files->size,
 	 (files->size != 1) ? 's' : ' ');
-	printf("%s\n", files->d_name);
+#ifdef UNICODE
+	if (!M2W(files->d_name, wname)) goto nextfile;
+#endif
+	WPRINTF(wname, files->d_name);
       }
       tmpfile = files->duplicates;
       while (tmpfile != NULL) {
-	printf("%s\n", tmpfile->d_name);
+#ifdef UNICODE
+	if (!M2W(tmpfile->d_name, wname)) goto nextfile;
+#endif
+	WPRINTF(wname, tmpfile->d_name);
 	tmpfile = tmpfile->duplicates;
       }
+nextfile:
       if (files->next != NULL) printf("\n");
 
     }
@@ -1283,13 +1339,25 @@ static void deletefiles(file_t *files, int prompt, FILE *tty)
       counter = 1;
       dupelist[counter] = files;
 
-      if (prompt) printf("[%u] %s\n", counter, files->d_name);
+      if (prompt) {
+	      printf("[%u] ", counter);
+#ifdef UNICODE
+	      if (!M2W(files->d_name, wname)) continue;
+#endif
+	      WPRINTF(wname, files->d_name);
+      }
 
       tmpfile = files->duplicates;
 
       while (tmpfile) {
 	dupelist[++counter] = tmpfile;
-	if (prompt) printf("[%u] %s\n", counter, tmpfile->d_name);
+	if (prompt) {
+		printf("[%u] ", counter);
+#ifdef UNICODE
+		if (!M2W(files->d_name, wname)) continue;
+#endif
+		WPRINTF(wname, tmpfile->d_name);
+	}
 	tmpfile = tmpfile->duplicates;
       }
 
@@ -1350,17 +1418,24 @@ preserve_none:
       printf("\n");
 
       for (x = 1; x <= counter; x++) {
-	if (preserve[x])
-	  printf("   [+] %s\n", dupelist[x]->d_name);
-	else {
+#ifdef UNICODE
+	      if (!M2W(dupelist[x]->d_name, wname2)) continue;
+#endif
+	if (preserve[x]) {
+	  printf("   [+] ");
+	  WPRINTF(wname2, dupelist[x]->d_name);
+	} else {
 	  if (file_has_changed(dupelist[x])) {
-	    printf("   [!] %s ", dupelist[x]->d_name);
-	    printf("-- file changed since being scanned\n");
+	    printf("   [!] ");
+	    WPRINTF(wname2, dupelist[x]->d_name);
+	    fprintf(stderr, "-- file changed since being scanned\n");
 	  } else if (remove(dupelist[x]->d_name) == 0) {
-	    printf("   [-] %s\n", dupelist[x]->d_name);
+	    printf("   [-] ");
+	    WPRINTF(wname2, dupelist[x]->d_name);
 	  } else {
-	    printf("   [!] %s ", dupelist[x]->d_name);
-	    printf("-- unable to delete file\n");
+	    printf("   [!] ");
+	    WPRINTF(wname2, dupelist[x]->d_name);
+	    fprintf(stderr, "-- unable to delete file\n");
 	  }
 	}
       }
@@ -1652,7 +1727,19 @@ static inline void hardlinkfiles(file_t *files)
 
 	errno = 0;
 #ifdef ON_WINDOWS
+ #ifdef UNICODE
+	if (!M2W(dupelist[x]->d_name, wname)) {
+		fprintf(stderr, "error: MultiByteToWideChar failed for '%s'\n", dupelist[x]->d_name);
+		continue;
+	}
+	if (!M2W(srcfile->d_name, wname2)) {
+		fprintf(stderr, "error: MultiByteToWideChar failed for '%s'\n", srcfile->d_name);
+		continue;
+	}
+	if (CreateHardLink((LPCWSTR)wname, (LPCWSTR)wname2, NULL) == TRUE) {
+ #else
         if (CreateHardLink(dupelist[x]->d_name, srcfile->d_name, NULL) == TRUE) {
+ #endif
 #else
         if (link(srcfile->d_name, dupelist[x]->d_name) == 0) {
 #endif /* ON_WINDOWS */
@@ -1767,7 +1854,12 @@ static inline void help_text(void)
 }
 
 
-int main(int argc, char **argv) {
+#ifdef UNICODE
+int wmain(int argc, wchar_t **wargv)
+#else
+int main(int argc, char **argv)
+#endif
+{
   static file_t *files = NULL;
   static file_t *curfile;
   static char **oldargv;
@@ -1823,6 +1915,14 @@ int main(int argc, char **argv) {
 #else
 #define GETOPT getopt
 #endif
+
+#ifdef UNICODE
+  /* Create a UTF-8 **argv from the wide version */
+  static char **argv;
+  argv = (char **)malloc(sizeof(char *) * argc);
+  if (!argv) errormsg(NULL);
+  widearg_to_argv(argc, wargv, argv);
+#endif /* UNICODE */
 
   program_name = argv[0];
 
