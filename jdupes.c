@@ -64,19 +64,24 @@
  #include "win_stat.h"
  #define S_ISREG WS_ISREG
  #define S_ISDIR WS_ISDIR
-typedef uint64_t jdupes_ino_t;
-const char *FILE_MODE_RO = "rbS";
+ typedef uint64_t jdupes_ino_t;
+ #ifdef UNICODE
+  const wchar_t *FILE_MODE_RO = L"rbS";
+ #else
+  const char *FILE_MODE_RO = "rbS";
+ #endif /* UNICODE */
 
 #else /* Not Windows */
-#include <sys/stat.h>
-typedef ino_t jdupes_ino_t;
-const char *FILE_MODE_RO = "rb";
+ #include <sys/stat.h>
+ typedef ino_t jdupes_ino_t;
+ const char *FILE_MODE_RO = "rb";
 #endif /* _WIN32 || __CYGWIN__ */
 
 /* Windows + Unicode compilation */
 #ifdef UNICODE
 static char wname[PATH_MAX];
 static char wname2[PATH_MAX];
+static wchar_t wstr[PATH_MAX];
 static int out_mode = _O_TEXT;
  #define M2W(a,b) MultiByteToWideChar(CP_UTF8, 0, a, -1, (LPWSTR)b, PATH_MAX)
  #define W2M(a,b) WideCharToMultiByte(CP_UTF8, 0, a, -1, (LPSTR)b, PATH_MAX, NULL, NULL)
@@ -330,14 +335,15 @@ error_oom:
 /* Print a string that is wide on Windows but normal on POSIX */
 int fwprint(FILE *stream, const char * const restrict str, int cr)
 {
-	static wchar_t wstr[PATH_MAX];
 	int retval;
 
-	if (out_mode == _O_U16TEXT) {
+	if (out_mode != _O_TEXT) {
 		/* Convert to wide string and send to wide console output */
 		if (!MultiByteToWideChar(CP_UTF8, 0, str, -1, (LPWSTR)wstr, PATH_MAX)) return -1;
+		fflush(stream);
 		_setmode(_fileno(stream), out_mode);
 		retval = fwprintf(stream, L"%S%S", wstr, cr ? L"\n" : L"");
+		fflush(stream);
 		_setmode(_fileno(stream), _O_TEXT);
 		return retval;
 	} else {
@@ -483,15 +489,15 @@ static void grokdir(const char * const restrict dir,
 #ifndef NO_SYMLINKS
   static struct stat linfo;
 #endif
-  static struct dirent *dirinfo;
+  struct dirent *dirinfo;
   static uintmax_t progress = 0, dir_progress = 0;
   static int grokdir_level = 0;
   static int delay = DELAY_COUNT;
   static char tempname[8192];
   size_t dirlen;
 #ifdef UNICODE
-  static WIN32_FIND_DATA ffd;
-  static HANDLE hFind = INVALID_HANDLE_VALUE;
+  WIN32_FIND_DATA ffd;
+  HANDLE hFind = INVALID_HANDLE_VALUE;
   char *p;
 #else
   DIR *cd;
@@ -518,7 +524,9 @@ static void grokdir(const char * const restrict dir,
   do {
     char * restrict tp = tempname;
     size_t d_name_len;
-    LOUD(fprintf(stderr, "W2M ffd->d_name\n"));
+
+    /* Get necessary length and allocate d_name */
+    dirinfo = (struct dirent *)string_malloc(sizeof(struct dirent));
     if (!W2M(ffd.cFileName, dirinfo->d_name)) continue;
 #else
   cd = opendir(dir);
@@ -659,9 +667,9 @@ static void grokdir(const char * const restrict dir,
         if (recurse) {
           LOUD(fprintf(stderr, "grokdir: directory: recursing (-r/-R)\n"));
           grokdir(newfile->d_name, filelistp, recurse);
-	}
+	} else {
 #endif
-        LOUD(fprintf(stderr, "grokdir: directory: not recursing\n"));
+        LOUD(fprintf(stderr, "grokdir: directory: not recursing\n")); }
 	string_free((char *)newfile);
       } else {
         /* Add regular files to list, including symlink targets if requested */
@@ -737,7 +745,12 @@ static hash_t *get_filehash(const file_t * const restrict checkfile,
     if (max_read <= PARTIAL_HASH_SIZE) return hash;
   }
 #endif
+#ifdef UNICODE
+  if (!M2W(checkfile->d_name, wstr)) file = NULL;
+  else file = _wfopen(wstr, FILE_MODE_RO);
+#else
   file = fopen(checkfile->d_name, FILE_MODE_RO);
+#endif
   if (file == NULL) {
     fprintf(stderr, "error opening file "); fwprint(stderr, checkfile->d_name, 1);
     return NULL;
@@ -1952,7 +1965,7 @@ int main(int argc, char **argv)
   if (!argv) oom();
   widearg_to_argv(argc, wargv, argv);
   /* Only use UTF-16 for terminal output, else use UTF-8 */
-  if (!_isatty(_fileno(stdout))) out_mode = _O_TEXT;
+  if (!_isatty(_fileno(stdout))) out_mode = _O_U8TEXT;
   else out_mode = _O_U16TEXT;
 #endif /* UNICODE */
 
@@ -2246,13 +2259,23 @@ int main(int argc, char **argv)
 	goto skip_full_check;
       }
 
+#ifdef UNICODE
+      if (!M2W(curfile->d_name, wstr)) file1 = NULL;
+      else file1 = _wfopen(wstr, FILE_MODE_RO);
+#else
       file1 = fopen(curfile->d_name, FILE_MODE_RO);
+#endif
       if (!file1) {
 	curfile = curfile->next;
 	continue;
       }
 
+#ifdef UNICODE
+      if (!M2W((*match)->d_name, wstr)) file2 = NULL;
+      else file2 = _wfopen(wstr, FILE_MODE_RO);
+#else
       file2 = fopen((*match)->d_name, FILE_MODE_RO);
+#endif
       if (!file2) {
 	fclose(file1);
 	curfile = curfile->next;
