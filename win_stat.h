@@ -20,10 +20,13 @@ extern "C" {
 
 struct winstat {
 	uint64_t inode;
-	uint64_t size;
+	int64_t size;
 	uint32_t device;
 	uint32_t nlink;
 	uint32_t mode;
+	time_t ctime;
+	time_t mtime;
+	time_t atime;
 };
 
 /* stat()-like macros for Windows "mode" flags (file attributes) */
@@ -37,6 +40,7 @@ struct winstat {
 #define WS_ISREPARSE(mode) ((mode & FILE_ATTRIBUTE_REPARSE) ? 1 : 0)
 #define WS_ISSPARSE(mode) ((mode & FILE_ATTRIBUTE_SPARSE) ? 1 : 0)
 #define WS_ISTEMP(mode) ((mode & FILE_ATTRIBUTE_TEMPORARY) ? 1 : 0)
+#define WS_ISREG(mode) ((mode & FILE_ATTRIBUTE_DIRECTORY) ? 0 : 1)
 
 extern int win_stat(const char * const restrict filename, struct winstat * const restrict buf);
 

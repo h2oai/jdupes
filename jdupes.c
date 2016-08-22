@@ -24,7 +24,6 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/stat.h>
 #include <sys/types.h>
 #include <fcntl.h>
 #include <dirent.h>
@@ -40,7 +39,6 @@
 #include <libgen.h>
 #include "string_malloc.h"
 #include "jody_hash.h"
-#include "win_stat.h"
 #include "version.h"
 
 /* Optional btrfs support */
@@ -63,20 +61,31 @@
  #endif
  #include <windows.h>
  #include <io.h>
+ #include "win_stat.h"
+ #define S_ISREG WS_ISREG
+ #define S_ISDIR WS_ISDIR
 typedef uint64_t jdupes_ino_t;
 const char *FILE_MODE_RO = "rbS";
 
 #else /* Not Windows */
+#include <sys/stat.h>
 typedef ino_t jdupes_ino_t;
 const char *FILE_MODE_RO = "rb";
 #endif /* _WIN32 || __CYGWIN__ */
 
 /* Windows + Unicode compilation */
 #ifdef UNICODE
+ /* U = build in UNICODE; NU = build without UNICODE */
+ #define U(...) __VA_ARGS__
+ #define NU(...)
 static char wname[PATH_MAX];
 static char wname2[PATH_MAX];
 static int out_mode = _O_TEXT;
  #define M2W(a,b) MultiByteToWideChar(CP_UTF8, 0, a, -1, (LPWSTR)b, PATH_MAX)
+ #define W2M(a,b) WideCharToMultiByte(CP_UTF8, 0, a, -1, (LPSTR)b, PATH_MAX, NULL, NULL)
+#else
+ #define U(...)
+ #define NU(...) __VA_ARGS__
 #endif /* UNICODE */
 
 #define ISFLAG(a,b) ((a & b) == b)
@@ -140,9 +149,10 @@ typedef enum {
 static const char *program_name;
 
 /* This gets used in many functions */
-static struct stat s;
 #ifdef ON_WINDOWS
 static struct winstat ws;
+#else
+static struct stat s;
 #endif
 
 static off_t excludesize = 0;
@@ -297,13 +307,12 @@ void sighandler(const int signum)
 /* Copy Windows wide character arguments to UTF-8 */
 static void widearg_to_argv(int argc, wchar_t **wargv, char **argv)
 {
-	char temp[PATH_MAX + 1];
+	char temp[PATH_MAX];
 	int len;
 
 	if (!argv) goto error_bad_argv;
 	for (int counter = 0; counter < argc; counter++) {
-		len = WideCharToMultiByte(CP_UTF8, 0, wargv[counter],
-				-1, (LPSTR)&temp, PATH_MAX * 2, NULL, NULL);
+		len = W2M(wargv[counter], &temp);
 		if (len < 1) goto error_wc2mb;
 
 		argv[counter] = (char *)malloc(len + 1);
@@ -341,7 +350,6 @@ int fwprint(FILE *stream, const char * const restrict str, int cr)
 		return fprintf(stream, "%s%s", str, cr ? "\n" : "");
 	}
 }
-
 #else
  #define fwprint(a,b,c) fprintf(a, "%s%s", b, c ? "\n" : "")
 #endif /* UNICODE */
@@ -417,51 +425,58 @@ static int file_has_changed(file_t * const restrict file)
 {
   if (file->valid_stat == 0) return -1;
 
-  if (stat(file->d_name, &s) != 0) return -1;
 #ifdef ON_WINDOWS
   if (win_stat(file->d_name, &ws) != 0) return -1;
   if (file->inode != ws.inode) return 1;
+  if (file->size != ws.size) return 1;
+  if (file->device != ws.device) return 1;
+  if (file->mtime != ws.mtime) return 1;
+  if (file->mode != ws.mode) return 1;
 #else
+  if (stat(file->d_name, &s) != 0) return -1;
   if (file->inode != s.st_ino) return 1;
-#endif /* ON_WINDOWS */
-
   if (file->size != s.st_size) return 1;
   if (file->device != s.st_dev) return 1;
   if (file->mtime != s.st_mtime) return 1;
   if (file->mode != s.st_mode) return 1;
-#ifndef NO_PERMS
+ #ifndef NO_PERMS
   if (file->uid != s.st_uid) return 1;
   if (file->gid != s.st_gid) return 1;
-#endif
+ #endif
+#endif /* ON_WINDOWS */
+
   return 0;
 }
 
 
 static inline int getfilestats(file_t * const restrict file)
 {
-  /* Don't stat() the same file more than once */
+  /* Don't stat the same file more than once */
   if (file->valid_stat == 1) return 0;
   file->valid_stat = 1;
 
-  if (stat(file->d_name, &s) != 0) return -1;
 #ifdef ON_WINDOWS
   if (win_stat(file->d_name, &ws) != 0) return -1;
   file->inode = ws.inode;
+  file->size = ws.size;
+  file->device = ws.device;
+  file->mtime = ws.mtime;
+  file->mode = ws.mode;
  #ifndef NO_HARDLINKS
   file->nlink = ws.nlink;
  #endif /* NO_HARDLINKS */
 #else
+  if (stat(file->d_name, &s) != 0) return -1;
   file->inode = s.st_ino;
-#endif /* ON_WINDOWS */
-
   file->size = s.st_size;
   file->device = s.st_dev;
   file->mtime = s.st_mtime;
   file->mode = s.st_mode;
-#ifndef NO_PERMS
+ #ifndef NO_PERMS
   file->uid = s.st_uid;
   file->gid = s.st_gid;
-#endif
+ #endif
+#endif /* ON_WINDOWS */
   return 0;
 }
 
@@ -470,7 +485,6 @@ static void grokdir(const char * const restrict dir,
 		file_t * restrict * const restrict filelistp,
 		int recurse)
 {
-  DIR *cd;
   file_t * restrict newfile;
 #ifndef NO_SYMLINKS
   static struct stat linfo;
@@ -480,21 +494,46 @@ static void grokdir(const char * const restrict dir,
   static int grokdir_level = 0;
   static int delay = DELAY_COUNT;
   static char tempname[8192];
+  size_t dirlen;
+#ifdef UNICODE
+  static WIN32_FIND_DATA ffd;
+  static HANDLE hFind = INVALID_HANDLE_VALUE;
+  char *p;
+#else
+  DIR *cd;
+#endif
 
   LOUD(fprintf(stderr, "grokdir: scanning '%s' (order %d)\n", dir, user_dir_count));
-  cd = opendir(dir);
   dir_progress++;
   grokdir_level++;
 
-  if (!cd) {
-    fprintf(stderr, "could not chdir to "); fwprint(stderr, dir, 1);
-    return;
-  }
+#ifdef UNICODE
+  /* Windows requires \* at the end of directory names */
+  strcpy(tempname, dir);
+  dirlen = strlen(tempname) - 1;
+  p = tempname + dirlen;
+  if (*p == '/' || *p == '\\') *p = '\0';
+  strcat(tempname, "\\*");
+
+  if (!M2W(tempname, wname)) goto error_cd;
+
+  LOUD(fprintf(stderr, "FindFirstFile: %s\n", dir));
+  hFind = FindFirstFile((LPCWSTR)wname, &ffd);
+  if (hFind == INVALID_HANDLE_VALUE) { fprintf(stderr, "handle bad\n"); goto error_cd; }
+  LOUD(fprintf(stderr, "Loop start\n"));
+  do {
+    char * restrict tp = tempname;
+    size_t d_name_len;
+    LOUD(fprintf(stderr, "W2M ffd->d_name\n"));
+    if (!W2M(ffd.cFileName, dirinfo->d_name)) continue;
+#else
+  cd = opendir(dir);
+  if (!cd) goto error_cd;
 
   while ((dirinfo = readdir(cd)) != NULL) {
     char * restrict tp = tempname;
-    size_t dirlen;
     size_t d_name_len;
+#endif /* UNICODE */
 
     LOUD(fprintf(stderr, "grokdir: readdir: '%s'\n", dirinfo->d_name));
     if (strcmp(dirinfo->d_name, ".") && strcmp(dirinfo->d_name, "..")) {
@@ -641,19 +680,29 @@ static void grokdir(const char * const restrict dir,
 	  filecount++;
           progress++;
 	} else {
+	  LOUD(fprintf(stderr, "grokdir: not a regular file: %s\n", newfile->d_name);)
 	  string_free((char *)newfile);
 	}
       }
     }
   }
-
+#ifdef UNICODE
+  while (FindNextFile(hFind, &ffd) != 0);
+  FindClose(hFind);
+#else
   closedir(cd);
+#endif
+
 
   grokdir_level--;
   if (grokdir_level == 0 && !ISFLAG(flags, F_HIDEPROGRESS)) {
     fprintf(stderr, "\rExamining %ju files, %ju dirs (in %u specified)",
             progress, dir_progress, user_dir_count);
   }
+  return;
+
+error_cd:
+  fprintf(stderr, "could not chdir to "); fwprint(stderr, dir, 1);
   return;
 }
 

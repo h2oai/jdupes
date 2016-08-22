@@ -13,11 +13,24 @@
 #include <windows.h>
 #include <stdio.h>
 
+/* Convert NT epoch to UNIX epoch */
+static time_t nttime_to_unixtime(uint64_t *timestamp)
+{
+	uint64_t newstamp;
+
+	memcpy(&newstamp, timestamp, sizeof(uint64_t));
+	newstamp /= 10000000LL;
+	if (newstamp <= 11644473600LL) return 0;
+	newstamp -= 11644473600LL;
+	return newstamp;
+}
+
 /* Get stat()-like extra information for a file on Windows */
 int win_stat(const char * const restrict filename, struct winstat * const restrict buf)
 {
   HANDLE hfile;
   BY_HANDLE_FILE_INFORMATION bhfi;
+  uint64_t timetemp;
 
 #ifdef UNICODE
   static wchar_t wname[PATH_MAX];
@@ -34,6 +47,12 @@ int win_stat(const char * const restrict filename, struct winstat * const restri
 
   buf->inode = ((uint64_t)(bhfi.nFileIndexHigh) << 32) + (uint64_t)bhfi.nFileIndexLow;
   buf->size = ((uint64_t)(bhfi.nFileSizeHigh) << 32) + (uint64_t)bhfi.nFileSizeLow;
+  timetemp = ((uint64_t)(bhfi.ftCreationTime.dwHighDateTime) << 32) + bhfi.ftCreationTime.dwLowDateTime;
+  buf->ctime = nttime_to_unixtime(&timetemp);
+  timetemp = ((uint64_t)(bhfi.ftLastWriteTime.dwHighDateTime) << 32) + bhfi.ftLastWriteTime.dwLowDateTime;
+  buf->mtime = nttime_to_unixtime(&timetemp);
+  timetemp = ((uint64_t)(bhfi.ftLastAccessTime.dwHighDateTime) << 32) + bhfi.ftLastAccessTime.dwLowDateTime;
+  buf->atime = nttime_to_unixtime(&timetemp);
   buf->device = (uint32_t)bhfi.dwVolumeSerialNumber;
   buf->nlink = (uint32_t)bhfi.nNumberOfLinks;
   buf->mode = (uint32_t)bhfi.dwFileAttributes;
