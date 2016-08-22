@@ -324,8 +324,8 @@ error_oom:
 }
 
 
-/* Print a single string that is wide on Windows or normal on POSIX platforms */
-int fwprintstring(FILE *stream, const char * const restrict str, int cr)
+/* Print a string that is wide on Windows but normal on POSIX */
+int fwprint(FILE *stream, const char * const restrict str, int cr)
 {
 	static wchar_t wstr[PATH_MAX];
 	int retval;
@@ -343,7 +343,7 @@ int fwprintstring(FILE *stream, const char * const restrict str, int cr)
 }
 
 #else
- #define fwprintstring(a,b,c) fprintf(a, "%s%s", b, cr ? "\n" : "")
+ #define fwprint(a,b,c) fprintf(a, "%s%s", b, cr ? "\n" : "")
 #endif /* UNICODE */
 
 
@@ -487,8 +487,7 @@ static void grokdir(const char * const restrict dir,
   grokdir_level++;
 
   if (!cd) {
-    fprintf(stderr, "could not chdir to ");
-    fwprintstring(stderr, dir, 1);
+    fprintf(stderr, "could not chdir to "); fwprint(stderr, dir, 1);
     return;
   }
 
@@ -697,7 +696,7 @@ static hash_t *get_filehash(const file_t * const restrict checkfile,
 #endif
   file = fopen(checkfile->d_name, FILE_MODE_RO);
   if (file == NULL) {
-    fprintf(stderr, "error opening file %s\n", checkfile->d_name);
+    fprintf(stderr, "error opening file "); fwprint(stderr, checkfile->d_name, 1);
     return NULL;
   }
 #if 0
@@ -706,7 +705,7 @@ static hash_t *get_filehash(const file_t * const restrict checkfile,
   if (checkfile->filehash_partial_set) {
     if (!fseeko(file, PARTIAL_HASH_SIZE, SEEK_SET)) {
       fclose(file);
-      fprintf(stderr, "error seeking in file %s\n", checkfile->d_name);
+      fprintf(stderr, "error seeking in file "); fwprint(stderr, checkfile->d_name, 1);
       return NULL;
     }
     fsize -= PARTIAL_HASH_SIZE;
@@ -719,7 +718,7 @@ static hash_t *get_filehash(const file_t * const restrict checkfile,
     if (interrupt) return 0;
     bytes_to_read = (fsize >= CHUNK_SIZE) ? CHUNK_SIZE : fsize;
     if (fread((void *)chunk, bytes_to_read, 1, file) != 1) {
-      fprintf(stderr, "error reading from file %s\n", checkfile->d_name);
+      fprintf(stderr, "error reading from file "); fwprint(stderr, checkfile->d_name, 1);
       fclose(file);
       return NULL;
     }
@@ -975,7 +974,7 @@ static file_t **checkmatch(filetree_t * restrict tree,
     if (tree->file->filehash_partial_set == 0) {
       filehash = get_filehash(tree->file, PARTIAL_HASH_SIZE);
       if (filehash == NULL) {
-        if (!interrupt) fprintf(stderr, "cannot read file %s\n", tree->file->d_name);
+        if (!interrupt) fprintf(stderr, "cannot read file "); fwprint(stderr, tree->file->d_name, 1);
         return NULL;
       }
 
@@ -986,7 +985,7 @@ static file_t **checkmatch(filetree_t * restrict tree,
     if (file->filehash_partial_set == 0) {
       filehash = get_filehash(file, PARTIAL_HASH_SIZE);
       if (filehash == NULL) {
-        if (!interrupt) fprintf(stderr, "cannot read file %s\n", file->d_name);
+        if (!interrupt) fprintf(stderr, "cannot read file "); fwprint(stderr, file->d_name, 1);
         return NULL;
       }
 
@@ -1018,7 +1017,7 @@ static file_t **checkmatch(filetree_t * restrict tree,
 	did_long_work = 1;
 	filehash = get_filehash(tree->file, 0);
         if (filehash == NULL) {
-          if (!interrupt) fprintf(stderr, "cannot read file %s\n", tree->file->d_name);
+          if (!interrupt) fprintf(stderr, "cannot read file "); fwprint(stderr, tree->file->d_name, 1);
           return NULL;
         }
 
@@ -1030,7 +1029,7 @@ static file_t **checkmatch(filetree_t * restrict tree,
 	did_long_work = 1;
 	filehash = get_filehash(file, 0);
         if (filehash == NULL) {
-          if (!interrupt) fprintf(stderr, "cannot read file %s\n", file->d_name);
+          if (!interrupt) fprintf(stderr, "cannot read file "); fwprint(stderr, file->d_name, 1);
           return NULL;
         }
 
@@ -1152,11 +1151,11 @@ static void printmatches(file_t * restrict files)
       if (!ISFLAG(flags, F_OMITFIRST)) {
 	if (ISFLAG(flags, F_SHOWSIZE)) printf("%jd byte%c each:\n", (intmax_t)files->size,
 	 (files->size != 1) ? 's' : ' ');
-	fwprintstring(stdout, files->d_name, 1);
+	fwprint(stdout, files->d_name, 1);
       }
       tmpfile = files->duplicates;
       while (tmpfile != NULL) {
-	fwprintstring(stdout, tmpfile->d_name, 1);
+	fwprint(stdout, tmpfile->d_name, 1);
 	tmpfile = tmpfile->duplicates;
       }
       if (files->next != NULL) printf("\n");
@@ -1335,8 +1334,7 @@ static void deletefiles(file_t *files, int prompt, FILE *tty)
       dupelist[counter] = files;
 
       if (prompt) {
-	      printf("[%u] ", counter);
-	      fwprintstring(stdout, files->d_name, 1);
+	      printf("[%u] ", counter); fwprint(stdout, files->d_name, 1);
       }
 
       tmpfile = files->duplicates;
@@ -1344,8 +1342,7 @@ static void deletefiles(file_t *files, int prompt, FILE *tty)
       while (tmpfile) {
 	dupelist[++counter] = tmpfile;
 	if (prompt) {
-		printf("[%u] ", counter);
-	        fwprintstring(stdout, tmpfile->d_name, 1);
+		printf("[%u] ", counter); fwprint(stdout, tmpfile->d_name, 1);
 	}
 	tmpfile = tmpfile->duplicates;
       }
@@ -1408,19 +1405,15 @@ preserve_none:
 
       for (x = 1; x <= counter; x++) {
 	if (preserve[x]) {
-	  printf("   [+] ");
-	  fwprintstring(stdout, dupelist[x]->d_name, 1);
+	  printf("   [+] "); fwprint(stdout, dupelist[x]->d_name, 1);
 	} else {
 	  if (file_has_changed(dupelist[x])) {
-	    printf("   [!] ");
-	    fwprintstring(stdout, dupelist[x]->d_name, 0);
+	    printf("   [!] "); fwprint(stdout, dupelist[x]->d_name, 0);
 	    printf("-- file changed since being scanned\n");
 	  } else if (remove(dupelist[x]->d_name) == 0) {
-	    printf("   [-] ");
-	    fwprintstring(stdout, dupelist[x]->d_name, 1);
+	    printf("   [-] "); fwprint(stdout, dupelist[x]->d_name, 1);
 	  } else {
-	    printf("   [!] ");
-	    fwprintstring(stdout, dupelist[x]->d_name, 0);
+	    printf("   [!] "); fwprint(stdout, dupelist[x]->d_name, 0);
 	    printf("-- unable to delete file\n");
 	  }
 	}
@@ -1641,12 +1634,14 @@ static inline void hardlinkfiles(file_t *files)
       /* Link every file to the first file */
 
       srcfile = dupelist[1];
-      if (!ISFLAG(flags, F_HIDEPROGRESS)) printf("[SRC] %s\n", srcfile->d_name);
+      if (!ISFLAG(flags, F_HIDEPROGRESS)) {
+        printf("[SRC] "); fwprint(stdout, srcfile->d_name, 1);
+      }
       for (x = 2; x <= counter; x++) {
         /* Can't hard link files on different devices */
         if (srcfile->device != dupelist[x]->device) {
-	  fprintf(stderr, "warning: hard link target on different device, not linking:\n-//-> %s\n",
-		  dupelist[x]->d_name);
+	  fprintf(stderr, "warning: hard link target on different device, not linking:\n-//-> ");
+          fwprint(stderr, dupelist[x]->d_name, 1);
 	  continue;
 	} else {
           /* The devices for the files are the same, but we still need to skip
@@ -1654,48 +1649,49 @@ static inline void hardlinkfiles(file_t *files)
           if (srcfile->inode == dupelist[x]->inode) {
 	    /* Don't show == arrows when not matching against other hard links */
             if (ISFLAG(flags, F_CONSIDERHARDLINKS))
-	      if (!ISFLAG(flags, F_HIDEPROGRESS)) printf("-==-> %s\n", dupelist[x]->d_name);
+	      if (!ISFLAG(flags, F_HIDEPROGRESS)) {
+                printf("-==-> "); fwprint(stderr, dupelist[x]->d_name, 1);
+	      }
             continue;
           }
         }
         /* Do not attempt to hard link files for which we don't have write access */
 	if (access(dupelist[x]->d_name, W_OK) != 0) {
-	  fprintf(stderr, "warning: hard link target is a read-only file, not linking:\n-//-> %s\n",
-		  dupelist[x]->d_name);
+	  fprintf(stderr, "warning: hard link target is a read-only file, not linking:\n-//-> ");
+          fwprint(stderr, dupelist[x]->d_name, 1);
 	  continue;
 	}
 	/* Check file pairs for modification before linking */
         /* Safe hard linking: don't actually delete until the link succeeds */
 	if (file_has_changed(srcfile)) {
-	  fprintf(stderr, "warning: source file modified since scanned; changing source file:\n[SRC] %s\n",
-		  dupelist[x]->d_name);
+	  fprintf(stderr, "warning: source file modified since scanned; changing source file:\n[SRC] ");
+          fwprint(stderr, dupelist[x]->d_name, 1);
 	  srcfile = dupelist[x];
 	  continue;
 	}
 	if (file_has_changed(dupelist[x])) {
-	  fprintf(stderr, "warning: target file modified since scanned, not linking:\n-//-> %s\n",
-		  dupelist[x]->d_name);
+	  fprintf(stderr, "warning: target file modified since scanned, not linking:\n-//-> ");
+          fwprint(stderr, dupelist[x]->d_name, 1);
 	  continue;
 	}
 #ifdef ON_WINDOWS
 	/* For Windows, the hard link count maximum is 1023 (+1); work around
 	 * by skipping linking or changing the link source file as needed */
 	if (win_stat(srcfile->d_name, &ws) != 0) {
-	  fprintf(stderr, "warning: win_stat() on source file failed, changing source file:\n[SRC] %s\n",
-		  dupelist[x]->d_name);
+	  fprintf(stderr, "warning: win_stat() on source file failed, changing source file:\n[SRC] ");
+          fwprint(stderr, dupelist[x]->d_name, 1);
 	  srcfile = dupelist[x];
 	  continue;
 	}
 	if (ws.nlink >= 1024) {
-	  fprintf(stderr, "warning: maximum source link count reached, changing source file:\n[SRC] %s\n",
-		  dupelist[x]->d_name);
+	  fprintf(stderr, "warning: maximum source link count reached, changing source file:\n[SRC] ");
 	  srcfile = dupelist[x];
 	  continue;
 	}
 	if (win_stat(dupelist[x]->d_name, &ws) != 0) continue;
 	if (ws.nlink >= 1024) {
-	  fprintf(stderr, "warning: maximum destination link count reached, skipping:\n-//-> %s\n",
-		  dupelist[x]->d_name);
+	  fprintf(stderr, "warning: maximum destination link count reached, skipping:\n-//-> ");
+          fwprint(stderr, dupelist[x]->d_name, 1);
 	  continue;
 	}
 #endif
@@ -1704,8 +1700,8 @@ static inline void hardlinkfiles(file_t *files)
         strcat(temp_path, "._fd_tmp");
         i = rename(dupelist[x]->d_name, temp_path);
         if (i != 0) {
-	  fprintf(stderr, "warning: cannot move hard link target to a temporary name, not linking:\n-//-> %s\n",
-		  dupelist[x]->d_name);
+	  fprintf(stderr, "warning: cannot move hard link target to a temporary name, not linking:\n-//-> ");
+          fwprint(stderr, dupelist[x]->d_name, 1);
 	  /* Just in case the rename succeeded yet still returned an error */
           rename(temp_path, dupelist[x]->d_name);
           continue;
@@ -1732,14 +1728,17 @@ static inline void hardlinkfiles(file_t *files)
           if (!ISFLAG(flags, F_HIDEPROGRESS)) printf("----> %s\n", dupelist[x]->d_name);
         } else {
           /* The hard link failed. Warn the user and put the link target back */
-          if (!ISFLAG(flags, F_HIDEPROGRESS)) printf("-//-> %s\n", dupelist[x]->d_name);
-	  fprintf(stderr, "warning: unable to hard link '%s' -> '%s': %s\n",
-			  dupelist[x]->d_name, srcfile->d_name, strerror(errno));
+          if (!ISFLAG(flags, F_HIDEPROGRESS)) {
+            printf("-//-> "); fwprint(stderr, dupelist[x]->d_name, 1);
+	  }
+	  fprintf(stderr, "warning: unable to hard link '"); fwprint(stderr, dupelist[x]->d_name, 0);
+	  fprintf(stderr, "' -> '"); fwprint(stderr, srcfile->d_name, 0);
+	  fprintf(stderr, "': %s\n", strerror(errno));
           i = rename(temp_path, dupelist[x]->d_name);
 	  if (i != 0) {
 		  fprintf(stderr, "error: cannot rename temp file back to original\n");
-		  fprintf(stderr, "original: %s\n", dupelist[x]->d_name);
-		  fprintf(stderr, "current:  %s\n", temp_path);
+		  fprintf(stderr, "original: "); fwprint(stderr, dupelist[x]->d_name, 1);
+		  fprintf(stderr, "current:  "); fwprint(stderr, temp_path, 1);
 	  }
 	  continue;
         }
@@ -1749,7 +1748,8 @@ static inline void hardlinkfiles(file_t *files)
 	if (i != 0) {
 	  /* If the temp file can't be deleted, there may be a permissions problem
 	   * so reverse the process and warn the user */
-	  fprintf(stderr, "\nwarning: can't delete temp file, reverting: %s\n", temp_path);
+	  fprintf(stderr, "\nwarning: can't delete temp file, reverting: ");
+	  fwprint(stderr, temp_path, 1);
 	  i = remove(dupelist[x]->d_name);
 	  if (i != 0) {
 		  fprintf(stderr, "\nwarning: couldn't remove hard link to restore original file\n");
@@ -1757,8 +1757,8 @@ static inline void hardlinkfiles(file_t *files)
             i = rename(temp_path, dupelist[x]->d_name);
 	    if (i != 0) {
 	        fprintf(stderr, "\nwarning: couldn't revert the file to its original name\n");
-	        fprintf(stderr, "original: %s\n", dupelist[x]->d_name);
-	        fprintf(stderr, "current:  %s\n", temp_path);
+		fprintf(stderr, "original: "); fwprint(stderr, dupelist[x]->d_name, 1);
+		fprintf(stderr, "current:  "); fwprint(stderr, temp_path, 1);
 	    }
 	  }
 	}
