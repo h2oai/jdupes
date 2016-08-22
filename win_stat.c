@@ -11,7 +11,6 @@
  #define WIN32_LEAN_AND_MEAN
 #endif
 #include <windows.h>
-#include <stdio.h>
 
 /* Convert NT epoch to UNIX epoch */
 static time_t nttime_to_unixtime(uint64_t *timestamp)
@@ -26,24 +25,26 @@ static time_t nttime_to_unixtime(uint64_t *timestamp)
 }
 
 /* Get stat()-like extra information for a file on Windows */
-int win_stat(const char * const restrict filename, struct winstat * const restrict buf)
+int win_stat(const char * const filename, struct winstat * const restrict buf)
 {
-  HANDLE hfile;
+  HANDLE hFile;
   BY_HANDLE_FILE_INFORMATION bhfi;
   uint64_t timetemp;
 
 #ifdef UNICODE
   static wchar_t wname[PATH_MAX];
-  if (!MultiByteToWideChar(CP_UTF8, 0, filename, -1, wname, PATH_MAX)) return -1;
-  hfile = CreateFileW(wname, 0, FILE_SHARE_READ, NULL, OPEN_EXISTING,
+  if (!buf) return -127;
+  if (!MultiByteToWideChar(CP_UTF8, 0, filename, -1, wname, PATH_MAX)) return -126;
+  hFile = CreateFileW(wname, 0, FILE_SHARE_READ, NULL, OPEN_EXISTING,
 		  FILE_FLAG_BACKUP_SEMANTICS, NULL);
 #else
-  hfile = CreateFile(filename, 0, FILE_SHARE_READ, NULL, OPEN_EXISTING,
+  if (!buf) return -127;
+  hFile = CreateFile(filename, 0, FILE_SHARE_READ, NULL, OPEN_EXISTING,
 		  FILE_FLAG_BACKUP_SEMANTICS, NULL);
 #endif
 
-  if (hfile == INVALID_HANDLE_VALUE) goto failure;
-  if (!GetFileInformationByHandle(hfile, &bhfi)) goto failure;
+  if (hFile == INVALID_HANDLE_VALUE) goto failure;
+  if (!GetFileInformationByHandle(hFile, &bhfi)) goto failure2;
 
   buf->inode = ((uint64_t)(bhfi.nFileIndexHigh) << 32) + (uint64_t)bhfi.nFileIndexLow;
   buf->size = ((uint64_t)(bhfi.nFileSizeHigh) << 32) + (uint64_t)bhfi.nFileSizeLow;
@@ -57,10 +58,13 @@ int win_stat(const char * const restrict filename, struct winstat * const restri
   buf->nlink = (uint32_t)bhfi.nNumberOfLinks;
   buf->mode = (uint32_t)bhfi.dwFileAttributes;
 
-  CloseHandle(hfile);
+  CloseHandle(hFile);
   return 0;
 
 failure:
-  CloseHandle(hfile);
+  CloseHandle(hFile);
   return -1;
+failure2:
+  CloseHandle(hFile);
+  return -2;
 }

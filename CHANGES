@@ -1,3 +1,13 @@
+jdupes 1.4
+
+- Add support for Unicode file paths on Windows platforms
+- Discard floating point code of dubious value
+- Remove -1/--sameline feature which is not practically useful
+- Process partially complete duplicate scan if CTRL+C is pressed
+- Add -Z/--hardabort option to disable the new CTRL+C behavior
+- Add [n]one option to -d/--delete to discard all files in a match set
+- Minor bug fixes and tweaks to improve behavior
+
 jdupes 1.3
 
 - Add -i/--reverse to invert the match sort order

@@ -17,6 +17,11 @@ Why use jdupes instead of the original fdupes or other forks?
 The biggest reason is raw speed. In testing on various data sets, jdupes is
 over 7 times faster than fdupes-1.51 on average.
 
+jdupes is the only Windows port of fdupes. Most duplicate scanners built on
+Linux and other UNIX-like systems do not compile for Windows out-of-the-box
+and even if they do, they don't support Unicode and other Windows-specific
+quirks and features.
+
 jdupes is generally stable. All releases of jdupes are compared against a
 known working reference version of fdupes or jdupes to be certain that
 output does not change. You get the benefits of an aggressive development
