@@ -79,7 +79,7 @@ endif
 
 # MinGW needs this for printf() conversions to work
 ifeq ($(OS), Windows_NT)
-	COMPILER_OPTIONS += -D__USE_MINGW_ANSI_STDIO=1
+	COMPILER_OPTIONS += -D__USE_MINGW_ANSI_STDIO=1 -municode
 	OBJECT_FILES += win_stat.o
 endif
 

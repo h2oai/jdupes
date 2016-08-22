@@ -79,8 +79,8 @@
 
 /* Windows + Unicode compilation */
 #ifdef UNICODE
-static char wname[PATH_MAX];
-static char wname2[PATH_MAX];
+static wchar_t wname[PATH_MAX];
+static wchar_t wname2[PATH_MAX];
 static wchar_t wstr[PATH_MAX];
 static int out_mode = _O_TEXT;
  #define M2W(a,b) MultiByteToWideChar(CP_UTF8, 0, a, -1, (LPWSTR)b, PATH_MAX)
@@ -162,16 +162,18 @@ static enum {
 
 /* Larger chunk size makes large files process faster but uses more RAM */
 #define CHUNK_SIZE 131072
-#define INPUT_SIZE 256
-#define PARTIAL_HASH_SIZE 4096
+#define INPUT_SIZE 512
+#ifndef PARTIAL_HASH_SIZE
+ #define PARTIAL_HASH_SIZE 4096
+#endif
 
 /* Assemble extension string from compile-time options */
 static const char *extensions[] = {
-	#ifdef ENABLE_BTRFS
-	"btrfs",
-	#endif
 	#ifdef ON_WINDOWS
 	"windows",
+	#endif
+	#ifdef UNICODE
+	"unicode",
 	#endif
 	#ifdef OMIT_GETOPT_LONG
 	"nolong",
@@ -184,6 +186,9 @@ static const char *extensions[] = {
 	#endif
 	#ifdef LOUD_DEBUG
 	"loud",
+	#endif
+	#ifdef ENABLE_BTRFS
+	"btrfs",
 	#endif
 	#ifdef SMA_PAGE_SIZE
 	"smapage",
@@ -340,10 +345,10 @@ int fwprint(FILE *stream, const char * const restrict str, int cr)
 	if (out_mode != _O_TEXT) {
 		/* Convert to wide string and send to wide console output */
 		if (!MultiByteToWideChar(CP_UTF8, 0, str, -1, (LPWSTR)wstr, PATH_MAX)) return -1;
-		fflush(stream);
+		fflush(stdout); fflush(stderr);
 		_setmode(_fileno(stream), out_mode);
 		retval = fwprintf(stream, L"%S%S", wstr, cr ? L"\n" : L"");
-		fflush(stream);
+		fflush(stdout); fflush(stderr);
 		_setmode(_fileno(stream), _O_TEXT);
 		return retval;
 	} else {
@@ -420,20 +425,21 @@ static int nonoptafter(const char *option, const int argc,
 
 
 /* Check file's stat() info to make sure nothing has changed
- * Returns 1 if changed, 0 if not changed, -1 if error */
+ * Returns 1 if changed, 0 if not changed, negative if error */
 static int file_has_changed(file_t * const restrict file)
 {
-  if (file->valid_stat == 0) return -1;
+  int i;
+  if (file->valid_stat == 0) return -66;
 
 #ifdef ON_WINDOWS
-  if (win_stat(file->d_name, &ws) != 0) return -1;
+  if ((i = win_stat(file->d_name, &ws)) != 0) return i;
   if (file->inode != ws.inode) return 1;
   if (file->size != ws.size) return 1;
   if (file->device != ws.device) return 1;
   if (file->mtime != ws.mtime) return 1;
   if (file->mode != ws.mode) return 1;
 #else
-  if (stat(file->d_name, &s) != 0) return -1;
+  if (stat(file->d_name, &s) != 0) return -2;
   if (file->inode != s.st_ino) return 1;
   if (file->size != s.st_size) return 1;
   if (file->device != s.st_dev) return 1;
@@ -1463,10 +1469,21 @@ preserve_none:
 	if (preserve[x]) {
 	  printf("   [+] "); fwprint(stdout, dupelist[x]->d_name, 1);
 	} else {
+#ifdef UNICODE
+	  if (!M2W(dupelist[x]->d_name, wstr)) {
+	    printf("   [!] "); fwprint(stdout, dupelist[x]->d_name, 0);
+	    printf("-- MultiByteToWideChar failed\n");
+            continue;
+	  }
+#endif
 	  if (file_has_changed(dupelist[x])) {
 	    printf("   [!] "); fwprint(stdout, dupelist[x]->d_name, 0);
 	    printf("-- file changed since being scanned\n");
+#ifdef UNICODE
+	  } else if (DeleteFile(wstr) != 0) {
+#else
 	  } else if (remove(dupelist[x]->d_name) == 0) {
+#endif
 	    printf("   [-] "); fwprint(stdout, dupelist[x]->d_name, 1);
 	  } else {
 	    printf("   [!] "); fwprint(stdout, dupelist[x]->d_name, 0);
@@ -1651,6 +1668,7 @@ static inline void hardlinkfiles(file_t *files)
   static int i;
   static char temp_path[4096];
 
+  LOUD(fprintf(stderr, "Running hardlinkfiles()\n");)
   curfile = files;
 
   while (curfile) {
@@ -1711,17 +1729,32 @@ static inline void hardlinkfiles(file_t *files)
             continue;
           }
         }
+
+#ifdef UNICODE
+	if (!M2W(dupelist[x]->d_name, wname)) {
+		fprintf(stderr, "error: MultiByteToWideChar failed: "); fwprint(stderr, dupelist[x]->d_name, 1);
+		continue;
+	}
+#endif /* UNICODE */
+
         /* Do not attempt to hard link files for which we don't have write access */
-	if (access(dupelist[x]->d_name, W_OK) != 0) {
+#ifdef ON_WINDOWS
+	if (dupelist[x]->mode & FILE_ATTRIBUTE_READONLY)
+#else
+	if (access(dupelist[x]->d_name, W_OK) != 0)
+#endif
+	{
 	  fprintf(stderr, "warning: hard link target is a read-only file, not linking:\n-//-> ");
           fwprint(stderr, dupelist[x]->d_name, 1);
 	  continue;
 	}
 	/* Check file pairs for modification before linking */
         /* Safe hard linking: don't actually delete until the link succeeds */
-	if (file_has_changed(srcfile)) {
+	i = file_has_changed(srcfile);
+	if (i) {
 	  fprintf(stderr, "warning: source file modified since scanned; changing source file:\n[SRC] ");
           fwprint(stderr, dupelist[x]->d_name, 1);
+          LOUD(fprintf(stderr, "file_has_changed: %d\n", i);)
 	  srcfile = dupelist[x];
 	  continue;
 	}
@@ -1754,33 +1787,42 @@ static inline void hardlinkfiles(file_t *files)
 
         strcpy(temp_path, dupelist[x]->d_name);
         strcat(temp_path, "._fd_tmp");
+#ifdef UNICODE
+        if (!M2W(temp_path, wname2)) {
+          fprintf(stderr, "error: MultiByteToWideChar failed: "); fwprint(stderr, srcfile->d_name, 1);
+          continue;
+	}
+	i = MoveFile(wname, wname2) ? 0 : 1;
+#else
         i = rename(dupelist[x]->d_name, temp_path);
+#endif
         if (i != 0) {
 	  fprintf(stderr, "warning: cannot move hard link target to a temporary name, not linking:\n-//-> ");
           fwprint(stderr, dupelist[x]->d_name, 1);
 	  /* Just in case the rename succeeded yet still returned an error */
+#ifdef UNICODE
+	  MoveFile(wname2, wname);
+#else
           rename(temp_path, dupelist[x]->d_name);
+#endif
           continue;
         }
 
 	errno = 0;
 #ifdef ON_WINDOWS
  #ifdef UNICODE
-	if (!M2W(dupelist[x]->d_name, wname)) {
-		fprintf(stderr, "error: MultiByteToWideChar failed for '%s'\n", dupelist[x]->d_name);
-		continue;
-	}
 	if (!M2W(srcfile->d_name, wname2)) {
-		fprintf(stderr, "error: MultiByteToWideChar failed for '%s'\n", srcfile->d_name);
+		fprintf(stderr, "error: MultiByteToWideChar failed: "); fwprint(stderr, srcfile->d_name, 1);
 		continue;
 	}
-	if (CreateHardLink((LPCWSTR)wname, (LPCWSTR)wname2, NULL) == TRUE) {
+	if (CreateHardLinkW((LPCWSTR)wname, (LPCWSTR)wname2, NULL) == TRUE)
  #else
-        if (CreateHardLink(dupelist[x]->d_name, srcfile->d_name, NULL) == TRUE) {
+        if (CreateHardLink(dupelist[x]->d_name, srcfile->d_name, NULL) == TRUE)
  #endif
 #else
-        if (link(srcfile->d_name, dupelist[x]->d_name) == 0) {
+        if (link(srcfile->d_name, dupelist[x]->d_name) == 0)
 #endif /* ON_WINDOWS */
+	{
           if (!ISFLAG(flags, F_HIDEPROGRESS)) printf("----> %s\n", dupelist[x]->d_name);
         } else {
           /* The hard link failed. Warn the user and put the link target back */
@@ -1790,7 +1832,15 @@ static inline void hardlinkfiles(file_t *files)
 	  fprintf(stderr, "warning: unable to hard link '"); fwprint(stderr, dupelist[x]->d_name, 0);
 	  fprintf(stderr, "' -> '"); fwprint(stderr, srcfile->d_name, 0);
 	  fprintf(stderr, "': %s\n", strerror(errno));
+#ifdef UNICODE
+	  if (!M2W(temp_path, wname2)) {
+            fprintf(stderr, "error: MultiByteToWideChar failed: "); fwprint(stderr, temp_path, 1);
+            continue;
+	  }
+	  i = MoveFile(wname2, wname) ? 0 : 1;
+#else
           i = rename(temp_path, dupelist[x]->d_name);
+#endif
 	  if (i != 0) {
 		  fprintf(stderr, "error: cannot rename temp file back to original\n");
 		  fprintf(stderr, "original: "); fwprint(stderr, dupelist[x]->d_name, 1);
@@ -1799,18 +1849,33 @@ static inline void hardlinkfiles(file_t *files)
 	  continue;
         }
 
-	/* Remove temporary file to clean up; if we can't, reverse the linking */
+        /* Remove temporary file to clean up; if we can't, reverse the linking */
+#ifdef UNICODE
+	  if (!M2W(temp_path, wname2)) {
+            fprintf(stderr, "error: MultiByteToWideChar failed: "); fwprint(stderr, temp_path, 1);
+            continue;
+	  }
+        i = DeleteFile(wname2) ? 0 : 1;
+#else
         i = remove(temp_path);
-	if (i != 0) {
-	  /* If the temp file can't be deleted, there may be a permissions problem
-	   * so reverse the process and warn the user */
-	  fprintf(stderr, "\nwarning: can't delete temp file, reverting: ");
-	  fwprint(stderr, temp_path, 1);
-	  i = remove(dupelist[x]->d_name);
-	  if (i != 0) {
-		  fprintf(stderr, "\nwarning: couldn't remove hard link to restore original file\n");
-	  } else {
+#endif
+        if (i != 0) {
+          /* If the temp file can't be deleted, there may be a permissions problem
+           * so reverse the process and warn the user */
+          fprintf(stderr, "\nwarning: can't delete temp file, reverting: ");
+          fwprint(stderr, temp_path, 1);
+#ifdef UNICODE
+          i = DeleteFile(wname) ? 0 : 1;
+#else
+          i = remove(dupelist[x]->d_name);
+#endif
+          if (i != 0) fprintf(stderr, "\nwarning: couldn't remove hard link to restore original file\n");
+	  else {
+#ifdef UNICODE
+            i = MoveFile(wname2, wname) ? 0 : 1;
+#else
             i = rename(temp_path, dupelist[x]->d_name);
+#endif
 	    if (i != 0) {
 	        fprintf(stderr, "\nwarning: couldn't revert the file to its original name\n");
 		fprintf(stderr, "original: "); fwprint(stderr, dupelist[x]->d_name, 1);
