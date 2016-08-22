@@ -71,20 +71,12 @@ typedef ino_t jdupes_ino_t;
 const char *FILE_MODE_RO = "rb";
 #endif /* _WIN32 || __CYGWIN__ */
 
-/* Last argument to (F)WPRINTF macros is non-wide version*/
+/* Windows + Unicode compilation */
 #ifdef UNICODE
 static char wname[PATH_MAX];
 static char wname2[PATH_MAX];
+static int out_mode = _O_TEXT;
  #define M2W(a,b) MultiByteToWideChar(CP_UTF8, 0, a, -1, (LPWSTR)b, PATH_MAX)
- #define FWPRINTF(a,b,c) { _setmode(_fileno(a), _O_U16TEXT); \
-		 fwprintf(a, L"%S\n", b); \
-		 _setmode(_fileno(a), _O_TEXT); }
- #define WPRINTF(a,b) { _setmode(_fileno(stdout), _O_U16TEXT); \
-		 wprintf(L"%S\n", a); \
-		 _setmode(_fileno(stdout), _O_TEXT); }
-#else
- #define FWPRINTF(a,b,c) fprintf(a, "%s\n", c)
- #define WPRINTF(a,b) printf("%s\n", b)
 #endif /* UNICODE */
 
 #define ISFLAG(a,b) ((a & b) == b)
@@ -330,32 +322,41 @@ error_oom:
 	fprintf(stderr, "out of memory\n");
 	exit(EXIT_FAILURE);
 }
+
+
+/* Print a single string that is wide on Windows or normal on POSIX platforms */
+int fwprintstring(FILE *stream, const char * const restrict str, int cr)
+{
+	static wchar_t wstr[PATH_MAX];
+	int retval;
+
+	if (out_mode == _O_U16TEXT) {
+		/* Convert to wide string and send to wide console output */
+		if (!MultiByteToWideChar(CP_UTF8, 0, str, -1, (LPWSTR)wstr, PATH_MAX)) return -1;
+		_setmode(_fileno(stream), out_mode);
+		retval = fwprintf(stream, L"%S%S", wstr, cr ? L"\n" : L"");
+		_setmode(_fileno(stream), _O_TEXT);
+		return retval;
+	} else {
+		return fprintf(stream, "%s%s", str, cr ? "\n" : "");
+	}
+}
+
+#else
+ #define fwprintstring(a,b,c) fprintf(a, "%s%s", b, cr ? "\n" : "")
 #endif /* UNICODE */
+
 
 
 /* Compare two jody_hashes like memcmp() */
 #define HASH_COMPARE(a,b) ((a > b) ? 1:((a == b) ? 0:-1))
 
-/* Print error message. NULL will output "out of memory" and exit */
-static void errormsg(const char *message, ...)
+
+/* Out of memory */
+static void oom(void)
 {
-  va_list ap;
-
-  /* A null pointer means "out of memory" */
-  if (message == NULL) {
-    fprintf(stderr, "\r%40s\rout of memory\n", "");
-    exit(EXIT_FAILURE);
-  }
-
-  va_start(ap, message);
-
-  /* Windows will dump the full program path into argv[0] */
-#ifndef ON_WINDOWS
-  fprintf(stderr, "\r%40s\r%s: ", "", program_name);
-#else
-  fprintf(stderr, "\r%40s\r%s: ", "", "jdupes");
-#endif
-  vfprintf(stderr, message, ap);
+	fprintf(stderr, "\nout of memory\n");
+	exit(EXIT_FAILURE);
 }
 
 
@@ -365,11 +366,11 @@ static inline char **cloneargs(const int argc, char **argv)
   static char **args;
 
   args = (char **)string_malloc(sizeof(char*) * argc);
-  if (args == NULL) errormsg(NULL);
+  if (args == NULL) oom();
 
   for (x = 0; x < argc; x++) {
     args[x] = (char *)string_malloc(strlen(argv[x]) + 1);
-    if (args[x] == NULL) errormsg(NULL);
+    if (args[x] == NULL) oom();
     strcpy(args[x], argv[x]);
   }
 
@@ -486,7 +487,8 @@ static void grokdir(const char * const restrict dir,
   grokdir_level++;
 
   if (!cd) {
-    errormsg("could not chdir to %s\n", dir);
+    fprintf(stderr, "could not chdir to ");
+    fwprintstring(stderr, dir, 1);
     return;
   }
 
@@ -522,7 +524,7 @@ static void grokdir(const char * const restrict dir,
       /* Allocate the file_t and the d_name entries in one shot
        * Reusing lastchar (with a +1) saves us a strlen(dir) here */
       newfile = (file_t *)string_malloc(sizeof(file_t) + dirlen + d_name_len + 2);
-      if (!newfile) errormsg(NULL);
+      if (!newfile) oom();
       else newfile->next = *filelistp;
 
       newfile->d_name = (char *)newfile + sizeof(file_t);
@@ -695,7 +697,7 @@ static hash_t *get_filehash(const file_t * const restrict checkfile,
 #endif
   file = fopen(checkfile->d_name, FILE_MODE_RO);
   if (file == NULL) {
-    errormsg("error opening file %s\n", checkfile->d_name);
+    fprintf(stderr, "error opening file %s\n", checkfile->d_name);
     return NULL;
   }
 #if 0
@@ -704,7 +706,7 @@ static hash_t *get_filehash(const file_t * const restrict checkfile,
   if (checkfile->filehash_partial_set) {
     if (!fseeko(file, PARTIAL_HASH_SIZE, SEEK_SET)) {
       fclose(file);
-      errormsg("error seeking in file %s\n", checkfile->d_name);
+      fprintf(stderr, "error seeking in file %s\n", checkfile->d_name);
       return NULL;
     }
     fsize -= PARTIAL_HASH_SIZE;
@@ -717,7 +719,7 @@ static hash_t *get_filehash(const file_t * const restrict checkfile,
     if (interrupt) return 0;
     bytes_to_read = (fsize >= CHUNK_SIZE) ? CHUNK_SIZE : fsize;
     if (fread((void *)chunk, bytes_to_read, 1, file) != 1) {
-      errormsg("error reading from file %s\n", checkfile->d_name);
+      fprintf(stderr, "error reading from file %s\n", checkfile->d_name);
       fclose(file);
       return NULL;
     }
@@ -749,7 +751,7 @@ static inline void registerfile(filetree_t * restrict * const restrict nodeptr,
 
 	/* Allocate and initialize a new node for the file */
 	branch = (filetree_t *)string_malloc(sizeof(filetree_t));
-	if (branch == NULL) errormsg(NULL);
+	if (branch == NULL) oom();
 	branch->file = file;
 	branch->left = NULL;
 	branch->right = NULL;
@@ -784,7 +786,7 @@ static inline void registerfile(filetree_t * restrict * const restrict nodeptr,
 		if (up->left == branch) up->left_weight++;
 		else if (up->right == branch) up->right_weight++;
 		else {
-			errormsg("Internal error: file tree linkage is broken\n");
+			fprintf(stderr, "Internal error: file tree linkage is broken\n");
 			exit(EXIT_FAILURE);
 		}
 		branch = up;
@@ -973,7 +975,7 @@ static file_t **checkmatch(filetree_t * restrict tree,
     if (tree->file->filehash_partial_set == 0) {
       filehash = get_filehash(tree->file, PARTIAL_HASH_SIZE);
       if (filehash == NULL) {
-        if (!interrupt) errormsg("cannot read file %s\n", tree->file->d_name);
+        if (!interrupt) fprintf(stderr, "cannot read file %s\n", tree->file->d_name);
         return NULL;
       }
 
@@ -984,7 +986,7 @@ static file_t **checkmatch(filetree_t * restrict tree,
     if (file->filehash_partial_set == 0) {
       filehash = get_filehash(file, PARTIAL_HASH_SIZE);
       if (filehash == NULL) {
-        if (!interrupt) errormsg("cannot read file %s\n", file->d_name);
+        if (!interrupt) fprintf(stderr, "cannot read file %s\n", file->d_name);
         return NULL;
       }
 
@@ -1016,7 +1018,7 @@ static file_t **checkmatch(filetree_t * restrict tree,
 	did_long_work = 1;
 	filehash = get_filehash(tree->file, 0);
         if (filehash == NULL) {
-          if (!interrupt) errormsg("cannot read file %s\n", tree->file->d_name);
+          if (!interrupt) fprintf(stderr, "cannot read file %s\n", tree->file->d_name);
           return NULL;
         }
 
@@ -1028,7 +1030,7 @@ static file_t **checkmatch(filetree_t * restrict tree,
 	did_long_work = 1;
 	filehash = get_filehash(file, 0);
         if (filehash == NULL) {
-          if (!interrupt) errormsg("cannot read file %s\n", file->d_name);
+          if (!interrupt) fprintf(stderr, "cannot read file %s\n", file->d_name);
           return NULL;
         }
 
@@ -1150,20 +1152,13 @@ static void printmatches(file_t * restrict files)
       if (!ISFLAG(flags, F_OMITFIRST)) {
 	if (ISFLAG(flags, F_SHOWSIZE)) printf("%jd byte%c each:\n", (intmax_t)files->size,
 	 (files->size != 1) ? 's' : ' ');
-#ifdef UNICODE
-	if (!M2W(files->d_name, wname)) goto nextfile;
-#endif
-	WPRINTF(wname, files->d_name);
+	fwprintstring(stdout, files->d_name, 1);
       }
       tmpfile = files->duplicates;
       while (tmpfile != NULL) {
-#ifdef UNICODE
-	if (!M2W(tmpfile->d_name, wname)) goto nextfile;
-#endif
-	WPRINTF(wname, tmpfile->d_name);
+	fwprintstring(stdout, tmpfile->d_name, 1);
 	tmpfile = tmpfile->duplicates;
       }
-nextfile:
       if (files->next != NULL) printf("\n");
 
     }
@@ -1233,7 +1228,7 @@ void dedupefiles(file_t * restrict files)
                 sizeof(struct btrfs_ioctl_same_extent_info) * max_dupes, 1);
   dupe_filenames = string_malloc(max_dupes * sizeof(char *));
   if (!same || !dupe_filenames) {
-    errormsg(NULL);
+    oom();
     exit(EXIT_FAILURE);
   }
 
@@ -1250,7 +1245,7 @@ void dedupefiles(file_t * restrict files)
           dupe_filenames[cur_info] = curfile->d_name;
           fd = open(curfile->d_name, O_RDONLY);
           if (fd == -1) {
-            errormsg("Unable to open(\"%s\", O_RDONLY): %s\n",
+            fprintf(stderr, "Unable to open(\"%s\", O_RDONLY): %s\n",
               curfile->d_name, strerror(errno));
             continue;
           }
@@ -1267,24 +1262,24 @@ void dedupefiles(file_t * restrict files)
 
       fd = open(files->d_name, O_RDONLY);
       if (fd == -1) {
-        errormsg("Unable to open(\"%s\", O_RDONLY): %s\n", files->d_name,
+        fprintf(stderr, "Unable to open(\"%s\", O_RDONLY): %s\n", files->d_name,
           strerror(errno));
         goto cleanup;
       }
 
       ret = ioctl(fd, BTRFS_IOC_FILE_EXTENT_SAME, same);
       if (close(fd) == -1)
-        errormsg("Unable to close(\"%s\"): %s\n", files->d_name, strerror(errno));
+        fprintf(stderr, "Unable to close(\"%s\"): %s\n", files->d_name, strerror(errno));
 
       if (ret == -1) {
-        errormsg("ioctl(\"%s\", BTRFS_IOC_FILE_EXTENT_SAME, [%u files]): %s\n",
+        fprintf(stderr, "ioctl(\"%s\", BTRFS_IOC_FILE_EXTENT_SAME, [%u files]): %s\n",
           files->d_name, n_dupes, strerror(errno));
         goto cleanup;
       }
 
       for (cur_info = 0; cur_info < n_dupes; cur_info++) {
         if ((status = same->info[cur_info].status) != 0) {
-          errormsg("Couldn't dedupe %s => %s: %s\n", files->d_name,
+          fprintf(stderr, "Couldn't dedupe %s => %s: %s\n", files->d_name,
             dupe_filenames[cur_info], dedupeerrstr(status));
         }
       }
@@ -1292,7 +1287,7 @@ void dedupefiles(file_t * restrict files)
 cleanup:
       for (cur_info = 0; cur_info < n_dupes; cur_info++) {
         if (close(same->info[cur_info].fd) == -1) {
-          errormsg("Unable to close(\"%s\"): %s", dupe_filenames[cur_info],
+          fprintf(stderr, "Unable to close(\"%s\"): %s", dupe_filenames[cur_info],
             strerror(errno));
         }
       }
@@ -1331,7 +1326,7 @@ static void deletefiles(file_t *files, int prompt, FILE *tty)
   preserve = (int *) malloc(sizeof(int) * max);
   preservestr = (char *) malloc(INPUT_SIZE);
 
-  if (!dupelist || !preserve || !preservestr) errormsg(NULL);
+  if (!dupelist || !preserve || !preservestr) oom();
 
   for (; files; files = files->next) {
     if (files->hasdupes) {
@@ -1341,10 +1336,7 @@ static void deletefiles(file_t *files, int prompt, FILE *tty)
 
       if (prompt) {
 	      printf("[%u] ", counter);
-#ifdef UNICODE
-	      if (!M2W(files->d_name, wname)) continue;
-#endif
-	      WPRINTF(wname, files->d_name);
+	      fwprintstring(stdout, files->d_name, 1);
       }
 
       tmpfile = files->duplicates;
@@ -1353,10 +1345,7 @@ static void deletefiles(file_t *files, int prompt, FILE *tty)
 	dupelist[++counter] = tmpfile;
 	if (prompt) {
 		printf("[%u] ", counter);
-#ifdef UNICODE
-		if (!M2W(files->d_name, wname)) continue;
-#endif
-		WPRINTF(wname, tmpfile->d_name);
+	        fwprintstring(stdout, tmpfile->d_name, 1);
 	}
 	tmpfile = tmpfile->duplicates;
       }
@@ -1384,7 +1373,7 @@ static void deletefiles(file_t *files, int prompt, FILE *tty)
         /* tail of buffer must be a newline */
 	while (preservestr[i] != '\n') {
 	  tstr = (char *)realloc(preservestr, strlen(preservestr) + 1 + INPUT_SIZE);
-	  if (!tstr) errormsg(NULL);
+	  if (!tstr) oom();
 
 	  preservestr = tstr;
 	  if (!fgets(preservestr + i + 1, INPUT_SIZE, tty))
@@ -1418,24 +1407,21 @@ preserve_none:
       printf("\n");
 
       for (x = 1; x <= counter; x++) {
-#ifdef UNICODE
-	      if (!M2W(dupelist[x]->d_name, wname2)) continue;
-#endif
 	if (preserve[x]) {
 	  printf("   [+] ");
-	  WPRINTF(wname2, dupelist[x]->d_name);
+	  fwprintstring(stdout, dupelist[x]->d_name, 1);
 	} else {
 	  if (file_has_changed(dupelist[x])) {
 	    printf("   [!] ");
-	    WPRINTF(wname2, dupelist[x]->d_name);
-	    fprintf(stderr, "-- file changed since being scanned\n");
+	    fwprintstring(stdout, dupelist[x]->d_name, 0);
+	    printf("-- file changed since being scanned\n");
 	  } else if (remove(dupelist[x]->d_name) == 0) {
 	    printf("   [-] ");
-	    WPRINTF(wname2, dupelist[x]->d_name);
+	    fwprintstring(stdout, dupelist[x]->d_name, 1);
 	  } else {
 	    printf("   [!] ");
-	    WPRINTF(wname2, dupelist[x]->d_name);
-	    fprintf(stderr, "-- unable to delete file\n");
+	    fwprintstring(stdout, dupelist[x]->d_name, 0);
+	    printf("-- unable to delete file\n");
 	  }
 	}
       }
@@ -1637,7 +1623,7 @@ static inline void hardlinkfiles(file_t *files)
 
   dupelist = (file_t**) malloc(sizeof(file_t*) * max);
 
-  if (!dupelist) errormsg(NULL);
+  if (!dupelist) oom();
 
   while (files) {
     if (files->hasdupes) {
@@ -1920,8 +1906,11 @@ int main(int argc, char **argv)
   /* Create a UTF-8 **argv from the wide version */
   static char **argv;
   argv = (char **)malloc(sizeof(char *) * argc);
-  if (!argv) errormsg(NULL);
+  if (!argv) oom();
   widearg_to_argv(argc, wargv, argv);
+  /* Only use UTF-16 for terminal output, else use UTF-8 */
+  if (!_isatty(_fileno(stdout))) out_mode = _O_TEXT;
+  else out_mode = _O_U16TEXT;
 #endif /* UNICODE */
 
   program_name = argv[0];
@@ -2031,7 +2020,7 @@ int main(int argc, char **argv)
           break;
       }
       if (*endptr != '\0') {
-        errormsg("invalid value for --xsize: '%s'\n", optarg);
+        fprintf(stderr, "invalid value for --xsize: '%s'\n", optarg);
         exit(EXIT_FAILURE);
       }
       break;
@@ -2075,7 +2064,7 @@ int main(int argc, char **argv)
       } else if (!strncasecmp("time", optarg, 5)) {
         ordertype = ORDER_TIME;
       } else {
-        errormsg("invalid value for --order: '%s'\n", optarg);
+        fprintf(stderr, "invalid value for --order: '%s'\n", optarg);
         exit(EXIT_FAILURE);
       }
       break;
@@ -2085,7 +2074,7 @@ int main(int argc, char **argv)
     /* btrfs will do the byte-for-byte check itself */
     SETFLAG(flags, F_QUICKCOMPARE);
 #else
-    errormsg("This program was built without btrfs support\n");
+    fprintf(stderr, "This program was built without btrfs support\n");
     exit(EXIT_FAILURE);
 #endif
     break;
@@ -2097,22 +2086,22 @@ int main(int argc, char **argv)
   }
 
   if (optind >= argc) {
-    errormsg("no directories specified (use -h option for help)\n");
+    fprintf(stderr, "no directories specified (use -h option for help)\n");
     exit(EXIT_FAILURE);
   }
 
   if (ISFLAG(flags, F_ISOLATE) && optind == (argc - 1)) {
-    errormsg("Isolation requires at least two directories on the command line\n");
+    fprintf(stderr, "Isolation requires at least two directories on the command line\n");
     exit(EXIT_FAILURE);
   }
 
   if (ISFLAG(flags, F_RECURSE) && ISFLAG(flags, F_RECURSEAFTER)) {
-    errormsg("options --recurse and --recurse: are not compatible\n");
+    fprintf(stderr, "options --recurse and --recurse: are not compatible\n");
     exit(EXIT_FAILURE);
   }
 
   if (ISFLAG(flags, F_SUMMARIZEMATCHES) && ISFLAG(flags, F_DELETEFILES)) {
-    errormsg("options --summarize and --delete are not compatible\n");
+    fprintf(stderr, "options --summarize and --delete are not compatible\n");
     exit(EXIT_FAILURE);
   }
 
@@ -2120,7 +2109,7 @@ int main(int argc, char **argv)
       !!ISFLAG(flags, F_DELETEFILES) +
       !!ISFLAG(flags, F_HARDLINKFILES) +
       !!ISFLAG(flags, F_DEDUPEFILES) > 1) {
-      errormsg("Only one of --summarize, --delete, --linkhard or --dedupe may be used\n");
+      fprintf(stderr, "Only one of --summarize, --delete, --linkhard or --dedupe may be used\n");
       exit(EXIT_FAILURE);
   }
 
@@ -2131,7 +2120,7 @@ int main(int argc, char **argv)
       firstrecurse = nonoptafter("-R", argc, oldargv, argv, optind);
 
     if (firstrecurse == argc) {
-      errormsg("-R option must be isolated from other options\n");
+      fprintf(stderr, "-R option must be isolated from other options\n");
       exit(EXIT_FAILURE);
     }
 
