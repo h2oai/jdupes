@@ -75,17 +75,11 @@ const char *FILE_MODE_RO = "rb";
 
 /* Windows + Unicode compilation */
 #ifdef UNICODE
- /* U = build in UNICODE; NU = build without UNICODE */
- #define U(...) __VA_ARGS__
- #define NU(...)
 static char wname[PATH_MAX];
 static char wname2[PATH_MAX];
 static int out_mode = _O_TEXT;
  #define M2W(a,b) MultiByteToWideChar(CP_UTF8, 0, a, -1, (LPWSTR)b, PATH_MAX)
  #define W2M(a,b) WideCharToMultiByte(CP_UTF8, 0, a, -1, (LPSTR)b, PATH_MAX, NULL, NULL)
-#else
- #define U(...)
- #define NU(...) __VA_ARGS__
 #endif /* UNICODE */
 
 #define ISFLAG(a,b) ((a & b) == b)
