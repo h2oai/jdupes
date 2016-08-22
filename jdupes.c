@@ -428,10 +428,10 @@ static int nonoptafter(const char *option, const int argc,
  * Returns 1 if changed, 0 if not changed, negative if error */
 static int file_has_changed(file_t * const restrict file)
 {
-  int i;
   if (file->valid_stat == 0) return -66;
 
 #ifdef ON_WINDOWS
+  int i;
   if ((i = win_stat(file->d_name, &ws)) != 0) return i;
   if (file->inode != ws.inode) return 1;
   if (file->size != ws.size) return 1;
@@ -673,9 +673,9 @@ static void grokdir(const char * const restrict dir,
         if (recurse) {
           LOUD(fprintf(stderr, "grokdir: directory: recursing (-r/-R)\n"));
           grokdir(newfile->d_name, filelistp, recurse);
-	} else {
+	}
 #endif
-        LOUD(fprintf(stderr, "grokdir: directory: not recursing\n")); }
+        LOUD(fprintf(stderr, "grokdir: directory: not recursing\n"));
 	string_free((char *)newfile);
       } else {
         /* Add regular files to list, including symlink targets if requested */
