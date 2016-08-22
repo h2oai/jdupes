@@ -343,7 +343,7 @@ int fwprint(FILE *stream, const char * const restrict str, int cr)
 }
 
 #else
- #define fwprint(a,b,c) fprintf(a, "%s%s", b, cr ? "\n" : "")
+ #define fwprint(a,b,c) fprintf(a, "%s%s", b, c ? "\n" : "")
 #endif /* UNICODE */
 
 
