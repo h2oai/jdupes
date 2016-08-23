@@ -747,13 +747,14 @@ static hash_t *get_filehash(const file_t * const restrict checkfile,
    * WARNING: We assume max_read is NEVER less than CHUNK_SIZE here! */
 
   *hash = 0;
-#if 0
   if (checkfile->filehash_partial_set) {
     *hash = checkfile->filehash_partial;
     /* Don't bother going further if max_read is already fulfilled */
-    if (max_read <= PARTIAL_HASH_SIZE) return hash;
+    if (max_read != 0 && max_read <= PARTIAL_HASH_SIZE) {
+	    LOUD(fprintf(stderr, "Partial hash size (%d) >= max_read (%lu), not hashing anymore\n", PARTIAL_HASH_SIZE, max_read);)
+	    return hash;
+    }
   }
-#endif
 #ifdef UNICODE
   if (!M2W(checkfile->d_name, wstr)) file = NULL;
   else file = _wfopen(wstr, FILE_MODE_RO);
@@ -764,18 +765,16 @@ static hash_t *get_filehash(const file_t * const restrict checkfile,
     fprintf(stderr, "error opening file "); fwprint(stderr, checkfile->d_name, 1);
     return NULL;
   }
-#if 0
   /* Actually seek past the first chunk if applicable
    * This is part of the filehash_partial skip optimization */
   if (checkfile->filehash_partial_set) {
-    if (!fseeko(file, PARTIAL_HASH_SIZE, SEEK_SET)) {
+    if (fseeko(file, PARTIAL_HASH_SIZE, SEEK_SET) == -1) {
       fclose(file);
       fprintf(stderr, "error seeking in file "); fwprint(stderr, checkfile->d_name, 1);
       return NULL;
     }
     fsize -= PARTIAL_HASH_SIZE;
   }
-#endif
   /* Read the file in CHUNK_SIZE chunks until we've read it all. */
   while (fsize > 0) {
     size_t bytes_to_read;
