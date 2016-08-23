@@ -161,11 +161,14 @@ static enum {
 } excludetype = SMALLERTHAN;
 
 /* Larger chunk size makes large files process faster but uses more RAM */
-#define CHUNK_SIZE 131072
-#define INPUT_SIZE 512
+#ifndef CHUNK_SIZE
+ #define CHUNK_SIZE 65536
+#endif
 #ifndef PARTIAL_HASH_SIZE
  #define PARTIAL_HASH_SIZE 4096
 #endif
+/* For interactive deletion input */
+#define INPUT_SIZE 512
 
 /* Assemble extension string from compile-time options */
 static const char *extensions[] = {
@@ -338,7 +341,7 @@ error_oom:
 
 
 /* Print a string that is wide on Windows but normal on POSIX */
-int fwprint(FILE *stream, const char * const restrict str, int cr)
+static int fwprint(FILE * const restrict stream, const char * const restrict str, const int cr)
 {
 	int retval;
 
@@ -410,7 +413,7 @@ static int nonoptafter(const char *option, const int argc,
   static int x;
   static int targetind;
   static int testind;
-  int startat = 1;
+  static int startat = 1;
 
   targetind = findarg(option, 1, argc, oldargv);
 
@@ -431,7 +434,7 @@ static int file_has_changed(file_t * const restrict file)
   if (file->valid_stat == 0) return -66;
 
 #ifdef ON_WINDOWS
-  int i;
+  static int i;
   if ((i = win_stat(file->d_name, &ws)) != 0) return i;
   if (file->inode != ws.inode) return 1;
   if (file->size != ws.size) return 1;
@@ -718,7 +721,7 @@ error_cd:
 static hash_t *get_filehash(const file_t * const restrict checkfile,
 		const size_t max_read)
 {
-  off_t fsize;
+  static off_t fsize;
   /* This is an array because we return a pointer to it */
   static hash_t hash[1];
   static hash_t chunk[(CHUNK_SIZE / sizeof(hash_t))];
