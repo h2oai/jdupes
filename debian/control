@@ -1,0 +1,38 @@
+Source: jdupes
+Section: unknown
+Priority: optional
+Maintainer: Lubos Medovarsky <lubos@medovarsky.com>
+Build-Depends: debhelper (>= 8.0.0)
+Standards-Version: 3.9.4
+Homepage: https://github.com/jbruchon/jdupes
+Vcs-Git: git://github.com/jbruchon/jdupes.git
+Vcs-Browser: https://github.com/jbruchon/jdupes
+
+Package: jdupes
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: jdupes is a program for identifying and deleting duplicate files
+ jdupes is a program for identifying and taking actions upon duplicate
+ files. This fork known as 'jdupes' is heavily modified from and improved
+ over the original.
+ .
+ Why use jdupes instead of the original fdupes or other forks?
+ .
+ The biggest reason is raw speed. In testing on various data sets, jdupes is
+ over 7 times faster than fdupes-1.51 on average.
+ .
+ jdupes is generally stable. All releases of jdupes are compared against a
+ known working reference version of fdupes or jdupes to be certain that
+ output does not change. You get the benefits of an aggressive development
+ process without putting your data at increased risk.
+ .
+ Code in jdupes is written with data loss avoidance as the highest priority.
+ If a choice must be made between being aggressive or careful, the careful
+ way is always chosen.
+ .
+ jdupes includes features that are not found in fdupes. Examples of
+ such features include btrfs block-level deduplication and control over
+ which file is kept when a match set is automatically deleted. jdupes is
+ not afraid of dropping features of low value; a prime example is the -1
+ switch which outputs all matches in a set on one line, a feature which was
+ found to be useless in real-world tests and therefore thrown out.
