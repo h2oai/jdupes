@@ -1,0 +1,6 @@
+jdupes (1.4-1) unstable; urgency=low
+
+  * Initial release
+  * Package for Debian based systems
+
+ -- Lubos Medovarsky <lubos@medovarsky.com>  Thu, 25 Aug 2016 14:04:49 +0200

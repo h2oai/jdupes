@@ -161,11 +161,14 @@ static enum {
 } excludetype = SMALLERTHAN;
 
 /* Larger chunk size makes large files process faster but uses more RAM */
-#define CHUNK_SIZE 131072
-#define INPUT_SIZE 512
+#ifndef CHUNK_SIZE
+ #define CHUNK_SIZE 65536
+#endif
 #ifndef PARTIAL_HASH_SIZE
  #define PARTIAL_HASH_SIZE 4096
 #endif
+/* For interactive deletion input */
+#define INPUT_SIZE 512
 
 /* Assemble extension string from compile-time options */
 static const char *extensions[] = {
@@ -338,7 +341,7 @@ error_oom:
 
 
 /* Print a string that is wide on Windows but normal on POSIX */
-int fwprint(FILE *stream, const char * const restrict str, int cr)
+static int fwprint(FILE * const restrict stream, const char * const restrict str, const int cr)
 {
 	int retval;
 
@@ -410,7 +413,7 @@ static int nonoptafter(const char *option, const int argc,
   static int x;
   static int targetind;
   static int testind;
-  int startat = 1;
+  static int startat = 1;
 
   targetind = findarg(option, 1, argc, oldargv);
 
@@ -431,7 +434,7 @@ static int file_has_changed(file_t * const restrict file)
   if (file->valid_stat == 0) return -66;
 
 #ifdef ON_WINDOWS
-  int i;
+  static int i;
   if ((i = win_stat(file->d_name, &ws)) != 0) return i;
   if (file->inode != ws.inode) return 1;
   if (file->size != ws.size) return 1;
@@ -718,7 +721,7 @@ error_cd:
 static hash_t *get_filehash(const file_t * const restrict checkfile,
 		const size_t max_read)
 {
-  off_t fsize;
+  static off_t fsize;
   /* This is an array because we return a pointer to it */
   static hash_t hash[1];
   static hash_t chunk[(CHUNK_SIZE / sizeof(hash_t))];
@@ -744,13 +747,14 @@ static hash_t *get_filehash(const file_t * const restrict checkfile,
    * WARNING: We assume max_read is NEVER less than CHUNK_SIZE here! */
 
   *hash = 0;
-#if 0
   if (checkfile->filehash_partial_set) {
     *hash = checkfile->filehash_partial;
     /* Don't bother going further if max_read is already fulfilled */
-    if (max_read <= PARTIAL_HASH_SIZE) return hash;
+    if (max_read != 0 && max_read <= PARTIAL_HASH_SIZE) {
+	    LOUD(fprintf(stderr, "Partial hash size (%d) >= max_read (%lu), not hashing anymore\n", PARTIAL_HASH_SIZE, max_read);)
+	    return hash;
+    }
   }
-#endif
 #ifdef UNICODE
   if (!M2W(checkfile->d_name, wstr)) file = NULL;
   else file = _wfopen(wstr, FILE_MODE_RO);
@@ -761,18 +765,16 @@ static hash_t *get_filehash(const file_t * const restrict checkfile,
     fprintf(stderr, "error opening file "); fwprint(stderr, checkfile->d_name, 1);
     return NULL;
   }
-#if 0
   /* Actually seek past the first chunk if applicable
    * This is part of the filehash_partial skip optimization */
   if (checkfile->filehash_partial_set) {
-    if (!fseeko(file, PARTIAL_HASH_SIZE, SEEK_SET)) {
+    if (fseeko(file, PARTIAL_HASH_SIZE, SEEK_SET) == -1) {
       fclose(file);
       fprintf(stderr, "error seeking in file "); fwprint(stderr, checkfile->d_name, 1);
       return NULL;
     }
     fsize -= PARTIAL_HASH_SIZE;
   }
-#endif
   /* Read the file in CHUNK_SIZE chunks until we've read it all. */
   while (fsize > 0) {
     size_t bytes_to_read;
