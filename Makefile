@@ -1,69 +1,46 @@
-#
 # jdupes Makefile
-#
 
 #####################################################################
 # Standand User Configuration Section                               #
 #####################################################################
 
-#
-# PREFIX indicates the base directory used as the basis for the
-# determination of the actual installation directories.
-# Suggested values are "/usr/local", "/usr", "/home/user/programs"
-#
-PREFIX = /usr/local
+# PREFIX determines where files will be installed. Common examples
+# include "/usr" or "/usr/local".
+PREFIX = /usr
 
-#
 # Certain platforms do not support long options (command line options).
 # To disable long options, uncomment the following line.
-#
 #CFLAGS_CONFIG += -DOMIT_GETOPT_LONG
 
-#
-# Whether we have btrfs/ioctl.h. Needed for --dedupe.
-#
-# HAVE_BTRFS_IOCTL_H = -DHAVE_BTRFS_IOCTL_H
+# Uncomment if you have btrfs/ioctl.h. Needed for --dedupe.
+#HAVE_BTRFS_IOCTL_H = -DHAVE_BTRFS_IOCTL_H
 
 #####################################################################
 # Developer Configuration Section                                   #
 #####################################################################
 
-#
 # PROGRAM_NAME determines the installation name and manual page name
-#
 PROGRAM_NAME=jdupes
 
-#
 # BIN_DIR indicates directory where program is to be installed.
 # Suggested value is "$(PREFIX)/bin"
-#
 BIN_DIR = $(PREFIX)/bin
 
-#
 # MAN_DIR indicates directory where the jdupes man page is to be
 # installed. Suggested value is "$(PREFIX)/man/man1"
-#
 MAN_BASE_DIR = $(PREFIX)/share/man
 MAN_DIR = $(MAN_BASE_DIR)/man1
 MAN_EXT = 1
 
-#
 # Required External Tools
-#
-
 INSTALL = install	# install : UCB/GNU Install compatiable
 #INSTALL = ginstall
-
 RM      = rm -f
-
 MKDIR   = mkdir -p
 #MKDIR   = mkdirhier
 #MKDIR   = mkinstalldirs
 
-
-#
 # Make Configuration
-#
 CC ?= gcc
 COMPILER_OPTIONS = -Wall -Wextra -Wwrite-strings -Wcast-align -Wstrict-aliasing -pedantic -Wstrict-overflow
 COMPILER_OPTIONS += -std=gnu99 -O2 -g -D_FILE_OFFSET_BITS=64 -fstrict-aliasing -pipe
@@ -88,10 +65,8 @@ CFLAGS= $(COMPILER_OPTIONS) -I. $(CFLAGS_CONFIG) $(CFLAGS_EXTRA) $(HAVE_BTRFS_IO
 INSTALL_PROGRAM = $(INSTALL) -c -m 0755
 INSTALL_DATA    = $(INSTALL) -c -m 0644
 
-#
 # ADDITIONAL_OBJECTS - some platforms will need additional object files
 # to support features not supplied by their vendor. Eg: GNU getopt()
-#
 #ADDITIONAL_OBJECTS += getopt.o
 
 OBJECT_FILES += jdupes.o jody_hash.o string_malloc.o $(ADDITIONAL_OBJECTS)
