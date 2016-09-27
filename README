@@ -103,7 +103,7 @@ Usage: jdupes [options] DIRECTORY...
  -x --xsize=SIZE        exclude files of size < SIZE bytes from consideration
     --xsize=+SIZE       '+' specified before SIZE, exclude size > SIZE
                         K/M/G size suffixes can be used (case-insensitive)
- -Z --hardabort         If the user aborts (i.e. CTRL-C) exit immediately
+ -Z --softabort         If the user aborts (i.e. CTRL-C) act on matches so far
 
 Duplicate files are listed together in groups with each file displayed on a
 Separate line. The groups are then separated from each other by blank lines.

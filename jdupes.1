@@ -119,11 +119,11 @@ for megabytes (units of 1024 x 1024 bytes)
 for gigabytes (units of 1024 x 1024 x 1024 bytes)
 .RE
 .TP
-.B -Z --hardabort
-if the user aborts the program (as with CTRL-C) exit immediately. Without
-this option, the duplicates that were found up until the abort was received
-will still be processed. In all cases a second abort signal will cause the
-program to terminate.
+.B -Z --softabort
+if the user aborts the program (as with CTRL-C) act on the matches that
+were found before the abort was received. For example, if -L and -Z are
+specified, all matches found prior to the abort will be hard linked. The
+default behavior without -Z is to abort without taking any actions.
 
 .SH NOTES
 A set of arrows are used in hard linking to show what action was taken on
@@ -161,6 +161,14 @@ When using
 or
 .BR \-\-delete ,
 care should be taken to insure against accidental data loss.
+
+.B \-Z
+or
+.BR \-\-softabort
+used to be --hardabort in jdupes prior to v1.5 and had the opposite behavior.
+Defaulting to taking action on abort is probably not what most users would
+expect. The decision to invert rather than reassign to a different switch
+was made because this feature was still fairly new at the time of the change.
 
 The
 .B \-O

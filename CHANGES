@@ -1,3 +1,10 @@
+jdupes 1.5
+
+- Invert -Z option: only "soft abort" if asked explicitly to do so
+- Tweak internal data chunk size to reduce data cache misses
+- Fix partial hash optimization
+- Change PREFIX for building from /usr/local back to /usr
+
 jdupes 1.4
 
 - Add support for Unicode file paths on Windows platforms

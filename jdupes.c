@@ -118,7 +118,7 @@ static int out_mode = _O_TEXT;
 static uint_fast32_t flags = 0;
 #define F_RECURSE		0x00000001
 #define F_HIDEPROGRESS		0x00000002
-#define F_HARDABORT		0x00000004
+#define F_SOFTABORT		0x00000004
 #define F_FOLLOWLINKS		0x00000008
 #define F_DELETEFILES		0x00000010
 #define F_EXCLUDEEMPTY		0x00000020
@@ -304,7 +304,7 @@ static int interrupt = 0;
 void sighandler(const int signum)
 {
 	(void)signum;
-	if (interrupt || ISFLAG(flags, F_HARDABORT)) exit(EXIT_FAILURE);
+	if (interrupt || !ISFLAG(flags, F_SOFTABORT)) exit(EXIT_FAILURE);
 	interrupt = 1;
 	return;
 }
@@ -1956,7 +1956,7 @@ static inline void help_text(void)
   printf(" -x --xsize=SIZE  \texclude files of size < SIZE bytes from consideration\n");
   printf("    --xsize=+SIZE \t'+' specified before SIZE, exclude size > SIZE\n");
   printf("                  \tK/M/G size suffixes can be used (case-insensitive)\n");
-  printf(" -Z --hardabort   \tIf the user aborts (i.e. CTRL-C) exit immediately\n");
+  printf(" -Z --softabort   \tIf the user aborts (i.e. CTRL-C) act on matches so far\n");
 #ifdef OMIT_GETOPT_LONG
   printf("Note: Long options are not supported in this build.\n\n");
 #endif
@@ -2017,7 +2017,7 @@ int main(int argc, char **argv)
     { "size", 0, 0, 'S' },
     { "version", 0, 0, 'v' },
     { "xsize", 1, 0, 'x' },
-    { "hardabort", 0, 0, 'Z' },
+    { "softabort", 0, 0, 'Z' },
     { 0, 0, 0, 0 }
   };
 #define GETOPT getopt_long
@@ -2114,7 +2114,7 @@ int main(int argc, char **argv)
       SETFLAG(flags, F_SHOWSIZE);
       break;
     case 'Z':
-      SETFLAG(flags, F_HARDABORT);
+      SETFLAG(flags, F_SOFTABORT);
       break;
     case 'x':
       SETFLAG(flags, F_EXCLUDESIZE);
@@ -2288,9 +2288,9 @@ int main(int argc, char **argv)
 #endif
 
     if (interrupt) {
-      if (ISFLAG(flags, F_HARDABORT)) exit(EXIT_FAILURE);
+      fprintf(stderr, "\nStopping file scan due to user abort\n");
+      if (!ISFLAG(flags, F_SOFTABORT)) exit(EXIT_FAILURE);
       interrupt = 0;  /* reset interrupt for re-use */
-      fprintf(stderr, "\nStopping file scan (user abort)\n");
       goto skip_file_scan;
     }
 
