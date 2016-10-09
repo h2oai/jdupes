@@ -74,21 +74,21 @@ Usage: jdupes [options] DIRECTORY...
                         particular directory more than once; refer to the
                         documentation for additional information
  -f --omitfirst         omit the first file in each set of matches
+ -h --help              display this help message
  -H --hardlinks         treat hard-linked files as duplicate files. Normally
                         hard links are treated as non-duplicates for safety
- -h --help              display this help message
  -i --reverse           reverse (invert) the match sort order
  -I --isolate           files in the same specified directory won't match
  -L --linkhard          hard link duplicate files to the first file in
                         each set of duplicates without prompting the user
  -m --summarize         summarize dupe information
+ -n --noempty           exclude zero-length files from consideration
  -N --noprompt          together with --delete, preserve the first file in
                         each set of duplicates and delete the rest without
                         prompting the user
- -n --noempty           exclude zero-length files from consideration
- -O --paramorder        Parameter order is more important than selected -O sort
  -o --order=BY          select sort order for output, linking and deleting; by
                         mtime (BY=time) or filename (BY=name, the default)
+ -O --paramorder        Parameter order is more important than selected -O sort
  -p --permissions       don't consider files with different owner/group or
                         permission bits as duplicates
  -r --recurse           for every directory given follow subdirectories
@@ -96,8 +96,8 @@ Usage: jdupes [options] DIRECTORY...
  -R --recurse:          for each directory given after this option follow
                         subdirectories encountered within (note the ':' at
                         the end of the option, manpage for more details)
- -S --size              show size of duplicate files
  -s --symlinks          follow symlinks
+ -S --size              show size of duplicate files
  -q --quiet             hide progress indicator
  -v --version           display jdupes version and license information
  -x --xsize=SIZE        exclude files of size < SIZE bytes from consideration

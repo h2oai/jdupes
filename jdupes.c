@@ -1912,11 +1912,11 @@ static inline void help_text(void)
   printf("                  \tparticular directory more than once; refer to the\n");
   printf("                  \tdocumentation for additional information\n");
   printf(" -f --omitfirst   \tomit the first file in each set of matches\n");
+  printf(" -h --help        \tdisplay this help message\n");
 #ifndef NO_HARDLINKS
   printf(" -H --hardlinks   \ttreat hard-linked files as duplicate files. Normally\n");
   printf("                  \thard links are treated as non-duplicates for safety\n");
 #endif
-  printf(" -h --help        \tdisplay this help message\n");
   printf(" -i --reverse     \treverse (invert) the match sort order\n");
   printf(" -I --isolate     \tfiles in the same specified directory won't match\n");
 #ifndef NO_HARDLINKS
@@ -1927,12 +1927,12 @@ static inline void help_text(void)
  #endif /* ON_WINDOWS */
 #endif /* NO_HARDLINKS */
   printf(" -m --summarize   \tsummarize dupe information\n");
+  printf(" -n --noempty     \texclude zero-length files from consideration\n");
   printf(" -N --noprompt    \ttogether with --delete, preserve the first file in\n");
   printf("                  \teach set of duplicates and delete the rest without\n");
   printf("                  \tprompting the user\n");
-  printf(" -n --noempty     \texclude zero-length files from consideration\n");
-  printf(" -O --paramorder  \tParameter order is more important than selected -O sort\n");
   printf(" -o --order=BY    \tselect sort order for output, linking and deleting; by\n");
+  printf(" -O --paramorder  \tParameter order is more important than selected -O sort\n");
   printf("                  \tmtime (BY=time) or filename (BY=name, the default)\n");
 #ifndef NO_PERMS
   printf(" -p --permissions \tdon't consider files with different owner/group or\n");
@@ -1943,15 +1943,15 @@ static inline void help_text(void)
   printf(" -R --recurse:    \tfor each directory given after this option follow\n");
   printf("                  \tsubdirectories encountered within (note the ':' at\n");
   printf("                  \tthe end of the option, manpage for more details)\n");
-  printf(" -S --size        \tshow size of duplicate files\n");
 #ifndef NO_SYMLINKS
   printf(" -s --symlinks    \tfollow symlinks\n");
 #endif
+  printf(" -S --size        \tshow size of duplicate files\n");
+  printf(" -q --quiet       \thide progress indicator\n");
 /* This is undocumented in the quick help because it is a dangerous option. If you
  * really want it, uncomment it here, and may your data rest in peace. */
 /*  printf(" -Q --quick       \tskip byte-by-byte duplicate verification. WARNING:\n");
   printf("                  \tthis may delete non-duplicates! Read the manual first!\n"); */
-  printf(" -q --quiet       \thide progress indicator\n");
   printf(" -v --version     \tdisplay jdupes version and license information\n");
   printf(" -x --xsize=SIZE  \texclude files of size < SIZE bytes from consideration\n");
   printf("    --xsize=+SIZE \t'+' specified before SIZE, exclude size > SIZE\n");
