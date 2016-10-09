@@ -137,6 +137,7 @@ static uint_fast32_t flags = 0;
 #define F_DEDUPEFILES		0x00040000
 #define F_REVERSESORT		0x00080000
 #define F_ISOLATE		0x00100000
+#define F_MAKESYMLINKS		0x00200000
 #define F_LOUD			0x40000000
 #define F_DEBUG			0x80000000
 
@@ -156,8 +157,8 @@ static struct stat s;
 
 static off_t excludesize = 0;
 static enum {
-	SMALLERTHAN,
-	LARGERTHAN
+  SMALLERTHAN,
+  LARGERTHAN
 } excludetype = SMALLERTHAN;
 
 /* Larger chunk size makes large files process faster but uses more RAM */
@@ -172,46 +173,46 @@ static enum {
 
 /* Assemble extension string from compile-time options */
 static const char *extensions[] = {
-	#ifdef ON_WINDOWS
-	"windows",
-	#endif
-	#ifdef UNICODE
-	"unicode",
-	#endif
-	#ifdef OMIT_GETOPT_LONG
-	"nolong",
-	#endif
-	#ifdef __FAST_MATH__
-	"fastmath",
-	#endif
-	#ifdef DEBUG
-	"debug",
-	#endif
-	#ifdef LOUD_DEBUG
-	"loud",
-	#endif
-	#ifdef ENABLE_BTRFS
-	"btrfs",
-	#endif
-	#ifdef SMA_PAGE_SIZE
-	"smapage",
-	#endif
-	#ifdef NO_PERMS
-	"noperm",
-	#endif
-	#ifdef NO_SYMLINKS
-	"nosymlink",
-	#endif
-	#ifdef USE_TREE_REBALANCE
-	"rebal",
-	#endif
-	#ifdef CONSIDER_IMBALANCE
-	"ci",
-	#endif
-	#ifdef BALANCE_THRESHOLD
-	"bt",
-	#endif
-	NULL
+  #ifdef ON_WINDOWS
+    "windows",
+    #endif
+    #ifdef UNICODE
+    "unicode",
+    #endif
+    #ifdef OMIT_GETOPT_LONG
+    "nolong",
+    #endif
+    #ifdef __FAST_MATH__
+    "fastmath",
+    #endif
+    #ifdef DEBUG
+    "debug",
+    #endif
+    #ifdef LOUD_DEBUG
+    "loud",
+    #endif
+    #ifdef ENABLE_BTRFS
+    "btrfs",
+    #endif
+    #ifdef SMA_PAGE_SIZE
+    "smapage",
+    #endif
+    #ifdef NO_PERMS
+    "noperm",
+    #endif
+    #ifdef NO_SYMLINKS
+    "nosymlink",
+    #endif
+    #ifdef USE_TREE_REBALANCE
+    "rebal",
+    #endif
+    #ifdef CONSIDER_IMBALANCE
+    "ci",
+    #endif
+    #ifdef BALANCE_THRESHOLD
+    "bt",
+    #endif
+    NULL
 };
 
 /* TODO: Cachegrind indicates that size, inode, and device get hammered hard
@@ -552,7 +553,7 @@ static void grokdir(const char * const restrict dir,
         if (delay >= DELAY_COUNT) {
           delay = 0;
           fprintf(stderr, "\rScanning: %ju files, %ju dirs (in %u specified)",
-			  progress, dir_progress, user_dir_count);
+        		  progress, dir_progress, user_dir_count);
         } else delay++;
       }
 
@@ -619,15 +620,15 @@ static void grokdir(const char * const restrict dir,
       i = getfilestats(newfile);
       if (i || newfile->size == -1) {
         LOUD(fprintf(stderr, "grokdir: excluding due to bad stat()\n"));
-	string_free((char *)newfile);
-	continue;
+        string_free((char *)newfile);
+        continue;
       }
 
       /* Exclude zero-length files if requested */
       if (!S_ISDIR(newfile->mode) && newfile->size == 0 && ISFLAG(flags, F_EXCLUDEEMPTY)) {
         LOUD(fprintf(stderr, "grokdir: excluding zero-length empty file (-n on)\n"));
-	string_free((char *)newfile);
-	continue;
+        string_free((char *)newfile);
+        continue;
       }
 
       /* Exclude files below --xsize parameter */
@@ -646,8 +647,8 @@ static void grokdir(const char * const restrict dir,
       /* Get lstat() information */
       if (lstat(newfile->d_name, &linfo) == -1) {
         LOUD(fprintf(stderr, "grokdir: excluding due to bad lstat()\n"));
-	string_free((char *)newfile);
-	continue;
+        string_free((char *)newfile);
+        continue;
       }
 #endif
 
@@ -660,8 +661,8 @@ static void grokdir(const char * const restrict dir,
         hll_exclude++;
   #endif
         LOUD(fprintf(stderr, "grokdir: excluding due to Windows 1024 hard link limit\n"));
-	string_free((char *)newfile);
-	continue;
+        string_free((char *)newfile);
+        continue;
       }
  #endif
 #endif
@@ -671,15 +672,15 @@ static void grokdir(const char * const restrict dir,
         if (recurse && (ISFLAG(flags, F_FOLLOWLINKS) || !S_ISLNK(linfo.st_mode))) {
           LOUD(fprintf(stderr, "grokdir: directory: recursing (-r/-R)\n"));
           grokdir(newfile->d_name, filelistp, recurse);
-	}
+        }
 #else
         if (recurse) {
           LOUD(fprintf(stderr, "grokdir: directory: recursing (-r/-R)\n"));
           grokdir(newfile->d_name, filelistp, recurse);
-	}
+        }
 #endif
         LOUD(fprintf(stderr, "grokdir: directory: not recursing\n"));
-	string_free((char *)newfile);
+        string_free((char *)newfile);
       } else {
         /* Add regular files to list, including symlink targets if requested */
 #ifndef NO_SYMLINKS
@@ -687,13 +688,13 @@ static void grokdir(const char * const restrict dir,
 #else
         if (S_ISREG(newfile->mode)) {
 #endif
-	  *filelistp = newfile;
-	  filecount++;
+          *filelistp = newfile;
+          filecount++;
           progress++;
-	} else {
-	  LOUD(fprintf(stderr, "grokdir: not a regular file: %s\n", newfile->d_name);)
-	  string_free((char *)newfile);
-	}
+        } else {
+          LOUD(fprintf(stderr, "grokdir: not a regular file: %s\n", newfile->d_name);)
+          string_free((char *)newfile);
+        }
       }
     }
   }
@@ -719,7 +720,7 @@ error_cd:
 
 /* Use Jody Bruchon's hash function on part or all of a file */
 static hash_t *get_filehash(const file_t * const restrict checkfile,
-		const size_t max_read)
+        	const size_t max_read)
 {
   static off_t fsize;
   /* This is an array because we return a pointer to it */
@@ -1658,7 +1659,7 @@ static void registerpair(file_t **matchlist, file_t *newmatch,
 
 
 #ifndef NO_HARDLINKS
-static inline void hardlinkfiles(file_t *files)
+static inline void linkfiles(file_t *files, int hard)
 {
   static file_t *tmpfile;
   static file_t *srcfile;
@@ -1670,7 +1671,7 @@ static inline void hardlinkfiles(file_t *files)
   static int i;
   static char temp_path[4096];
 
-  LOUD(fprintf(stderr, "Running hardlinkfiles()\n");)
+  LOUD(fprintf(stderr, "Running linkfiles(%d)\n", hard);)
   curfile = files;
 
   while (curfile) {
@@ -1714,77 +1715,80 @@ static inline void hardlinkfiles(file_t *files)
         printf("[SRC] "); fwprint(stdout, srcfile->d_name, 1);
       }
       for (x = 2; x <= counter; x++) {
-        /* Can't hard link files on different devices */
-        if (srcfile->device != dupelist[x]->device) {
-	  fprintf(stderr, "warning: hard link target on different device, not linking:\n-//-> ");
-          fwprint(stderr, dupelist[x]->d_name, 1);
-	  continue;
-	} else {
-          /* The devices for the files are the same, but we still need to skip
-           * anything that is already hard linked (-L and -H both set) */
-          if (srcfile->inode == dupelist[x]->inode) {
-	    /* Don't show == arrows when not matching against other hard links */
-            if (ISFLAG(flags, F_CONSIDERHARDLINKS))
-	      if (!ISFLAG(flags, F_HIDEPROGRESS)) {
-                printf("-==-> "); fwprint(stderr, dupelist[x]->d_name, 1);
-	      }
+        if (hard == 1) {
+          /* Can't hard link files on different devices */
+          if (srcfile->device != dupelist[x]->device) {
+            fprintf(stderr, "warning: hard link target on different device, not linking:\n-//-> ");
+            fwprint(stderr, dupelist[x]->d_name, 1);
             continue;
+          } else {
+            /* The devices for the files are the same, but we still need to skip
+             * anything that is already hard linked (-L and -H both set) */
+            if (srcfile->inode == dupelist[x]->inode) {
+              /* Don't show == arrows when not matching against other hard links */
+              if (ISFLAG(flags, F_CONSIDERHARDLINKS))
+                if (!ISFLAG(flags, F_HIDEPROGRESS)) {
+                  printf("-==-> "); fwprint(stderr, dupelist[x]->d_name, 1);
+                }
+            continue;
+            }
           }
+        } else {
+          /* Symlink prerequisite check code can go here */
         }
-
 #ifdef UNICODE
-	if (!M2W(dupelist[x]->d_name, wname)) {
-		fprintf(stderr, "error: MultiByteToWideChar failed: "); fwprint(stderr, dupelist[x]->d_name, 1);
-		continue;
-	}
+        if (!M2W(dupelist[x]->d_name, wname)) {
+          fprintf(stderr, "error: MultiByteToWideChar failed: "); fwprint(stderr, dupelist[x]->d_name, 1);
+          continue;
+        }
 #endif /* UNICODE */
 
         /* Do not attempt to hard link files for which we don't have write access */
 #ifdef ON_WINDOWS
-	if (dupelist[x]->mode & FILE_ATTRIBUTE_READONLY)
+        if (dupelist[x]->mode & FILE_ATTRIBUTE_READONLY)
 #else
-	if (access(dupelist[x]->d_name, W_OK) != 0)
+        if (access(dupelist[x]->d_name, W_OK) != 0)
 #endif
-	{
-	  fprintf(stderr, "warning: hard link target is a read-only file, not linking:\n-//-> ");
+        {
+          fprintf(stderr, "warning: hard link target is a read-only file, not linking:\n-//-> ");
           fwprint(stderr, dupelist[x]->d_name, 1);
-	  continue;
-	}
-	/* Check file pairs for modification before linking */
+          continue;
+        }
+        /* Check file pairs for modification before linking */
         /* Safe hard linking: don't actually delete until the link succeeds */
-	i = file_has_changed(srcfile);
-	if (i) {
-	  fprintf(stderr, "warning: source file modified since scanned; changing source file:\n[SRC] ");
+        i = file_has_changed(srcfile);
+        if (i) {
+          fprintf(stderr, "warning: source file modified since scanned; changing source file:\n[SRC] ");
           fwprint(stderr, dupelist[x]->d_name, 1);
           LOUD(fprintf(stderr, "file_has_changed: %d\n", i);)
-	  srcfile = dupelist[x];
-	  continue;
-	}
-	if (file_has_changed(dupelist[x])) {
-	  fprintf(stderr, "warning: target file modified since scanned, not linking:\n-//-> ");
+          srcfile = dupelist[x];
+          continue;
+        }
+        if (file_has_changed(dupelist[x])) {
+          fprintf(stderr, "warning: target file modified since scanned, not linking:\n-//-> ");
           fwprint(stderr, dupelist[x]->d_name, 1);
-	  continue;
-	}
+          continue;
+        }
 #ifdef ON_WINDOWS
-	/* For Windows, the hard link count maximum is 1023 (+1); work around
-	 * by skipping linking or changing the link source file as needed */
-	if (win_stat(srcfile->d_name, &ws) != 0) {
-	  fprintf(stderr, "warning: win_stat() on source file failed, changing source file:\n[SRC] ");
+        /* For Windows, the hard link count maximum is 1023 (+1); work around
+         * by skipping linking or changing the link source file as needed */
+        if (win_stat(srcfile->d_name, &ws) != 0) {
+          fprintf(stderr, "warning: win_stat() on source file failed, changing source file:\n[SRC] ");
           fwprint(stderr, dupelist[x]->d_name, 1);
-	  srcfile = dupelist[x];
-	  continue;
-	}
-	if (ws.nlink >= 1024) {
-	  fprintf(stderr, "warning: maximum source link count reached, changing source file:\n[SRC] ");
-	  srcfile = dupelist[x];
-	  continue;
-	}
-	if (win_stat(dupelist[x]->d_name, &ws) != 0) continue;
-	if (ws.nlink >= 1024) {
-	  fprintf(stderr, "warning: maximum destination link count reached, skipping:\n-//-> ");
+          srcfile = dupelist[x];
+          continue;
+        }
+        if (ws.nlink >= 1024) {
+          fprintf(stderr, "warning: maximum source link count reached, changing source file:\n[SRC] ");
+          srcfile = dupelist[x];
+          continue;
+        }
+        if (win_stat(dupelist[x]->d_name, &ws) != 0) continue;
+        if (ws.nlink >= 1024) {
+          fprintf(stderr, "warning: maximum destination link count reached, skipping:\n-//-> ");
           fwprint(stderr, dupelist[x]->d_name, 1);
-	  continue;
-	}
+          continue;
+        }
 #endif
 
         strcpy(temp_path, dupelist[x]->d_name);
@@ -1793,70 +1797,70 @@ static inline void hardlinkfiles(file_t *files)
         if (!M2W(temp_path, wname2)) {
           fprintf(stderr, "error: MultiByteToWideChar failed: "); fwprint(stderr, srcfile->d_name, 1);
           continue;
-	}
-	i = MoveFile(wname, wname2) ? 0 : 1;
+        }
+        i = MoveFile(wname, wname2) ? 0 : 1;
 #else
         i = rename(dupelist[x]->d_name, temp_path);
 #endif
         if (i != 0) {
-	  fprintf(stderr, "warning: cannot move hard link target to a temporary name, not linking:\n-//-> ");
+          fprintf(stderr, "warning: cannot move hard link target to a temporary name, not linking:\n-//-> ");
           fwprint(stderr, dupelist[x]->d_name, 1);
-	  /* Just in case the rename succeeded yet still returned an error */
+          /* Just in case the rename succeeded yet still returned an error */
 #ifdef UNICODE
-	  MoveFile(wname2, wname);
+          MoveFile(wname2, wname);
 #else
           rename(temp_path, dupelist[x]->d_name);
 #endif
           continue;
         }
 
-	errno = 0;
+        errno = 0;
 #ifdef ON_WINDOWS
  #ifdef UNICODE
-	if (!M2W(srcfile->d_name, wname2)) {
-		fprintf(stderr, "error: MultiByteToWideChar failed: "); fwprint(stderr, srcfile->d_name, 1);
-		continue;
-	}
-	if (CreateHardLinkW((LPCWSTR)wname, (LPCWSTR)wname2, NULL) == TRUE)
+        if (!M2W(srcfile->d_name, wname2)) {
+        	fprintf(stderr, "error: MultiByteToWideChar failed: "); fwprint(stderr, srcfile->d_name, 1);
+        	continue;
+        }
+        if (CreateHardLinkW((LPCWSTR)wname, (LPCWSTR)wname2, NULL) == TRUE)
  #else
         if (CreateHardLink(dupelist[x]->d_name, srcfile->d_name, NULL) == TRUE)
  #endif
 #else
         if (link(srcfile->d_name, dupelist[x]->d_name) == 0)
 #endif /* ON_WINDOWS */
-	{
+        {
           if (!ISFLAG(flags, F_HIDEPROGRESS)) printf("----> %s\n", dupelist[x]->d_name);
         } else {
           /* The hard link failed. Warn the user and put the link target back */
           if (!ISFLAG(flags, F_HIDEPROGRESS)) {
             printf("-//-> "); fwprint(stderr, dupelist[x]->d_name, 1);
-	  }
-	  fprintf(stderr, "warning: unable to hard link '"); fwprint(stderr, dupelist[x]->d_name, 0);
-	  fprintf(stderr, "' -> '"); fwprint(stderr, srcfile->d_name, 0);
-	  fprintf(stderr, "': %s\n", strerror(errno));
+          }
+          fprintf(stderr, "warning: unable to hard link '"); fwprint(stderr, dupelist[x]->d_name, 0);
+          fprintf(stderr, "' -> '"); fwprint(stderr, srcfile->d_name, 0);
+          fprintf(stderr, "': %s\n", strerror(errno));
 #ifdef UNICODE
-	  if (!M2W(temp_path, wname2)) {
+          if (!M2W(temp_path, wname2)) {
             fprintf(stderr, "error: MultiByteToWideChar failed: "); fwprint(stderr, temp_path, 1);
             continue;
-	  }
-	  i = MoveFile(wname2, wname) ? 0 : 1;
+          }
+          i = MoveFile(wname2, wname) ? 0 : 1;
 #else
           i = rename(temp_path, dupelist[x]->d_name);
 #endif
-	  if (i != 0) {
-		  fprintf(stderr, "error: cannot rename temp file back to original\n");
-		  fprintf(stderr, "original: "); fwprint(stderr, dupelist[x]->d_name, 1);
-		  fprintf(stderr, "current:  "); fwprint(stderr, temp_path, 1);
-	  }
-	  continue;
+          if (i != 0) {
+        	  fprintf(stderr, "error: cannot rename temp file back to original\n");
+        	  fprintf(stderr, "original: "); fwprint(stderr, dupelist[x]->d_name, 1);
+        	  fprintf(stderr, "current:  "); fwprint(stderr, temp_path, 1);
+          }
+          continue;
         }
 
         /* Remove temporary file to clean up; if we can't, reverse the linking */
 #ifdef UNICODE
-	  if (!M2W(temp_path, wname2)) {
+          if (!M2W(temp_path, wname2)) {
             fprintf(stderr, "error: MultiByteToWideChar failed: "); fwprint(stderr, temp_path, 1);
             continue;
-	  }
+          }
         i = DeleteFile(wname2) ? 0 : 1;
 #else
         i = remove(temp_path);
@@ -1872,19 +1876,19 @@ static inline void hardlinkfiles(file_t *files)
           i = remove(dupelist[x]->d_name);
 #endif
           if (i != 0) fprintf(stderr, "\nwarning: couldn't remove hard link to restore original file\n");
-	  else {
+          else {
 #ifdef UNICODE
             i = MoveFile(wname2, wname) ? 0 : 1;
 #else
             i = rename(temp_path, dupelist[x]->d_name);
 #endif
-	    if (i != 0) {
-	        fprintf(stderr, "\nwarning: couldn't revert the file to its original name\n");
-		fprintf(stderr, "original: "); fwprint(stderr, dupelist[x]->d_name, 1);
-		fprintf(stderr, "current:  "); fwprint(stderr, temp_path, 1);
-	    }
-	  }
-	}
+            if (i != 0) {
+                fprintf(stderr, "\nwarning: couldn't revert the file to its original name\n");
+        	fprintf(stderr, "original: "); fwprint(stderr, dupelist[x]->d_name, 1);
+        	fprintf(stderr, "current:  "); fwprint(stderr, temp_path, 1);
+            }
+          }
+        }
       }
       if (!ISFLAG(flags, F_HIDEPROGRESS)) printf("\n");
     }
@@ -1919,9 +1923,11 @@ static inline void help_text(void)
 #endif
   printf(" -i --reverse     \treverse (invert) the match sort order\n");
   printf(" -I --isolate     \tfiles in the same specified directory won't match\n");
+#ifndef NO_SYMLINKS
+  printf(" -l --linksoft    \tsymbolically link all duplicate files without prompting\n");
+#endif
 #ifndef NO_HARDLINKS
-  printf(" -L --linkhard    \thard link duplicate files to the first file in\n");
-  printf("                  \teach set of duplicates without prompting the user\n");
+  printf(" -L --linkhard    \thard link all duplicate files without prompting\n");
  #ifdef ON_WINDOWS
   printf("                  \tWindows allows a maximum of 1023 hard links per file\n");
  #endif /* ON_WINDOWS */
@@ -2012,6 +2018,7 @@ int main(int argc, char **argv)
     { "recurse:", 0, 0, 'R' },
     { "recursive:", 0, 0, 'R' },
 #ifndef NO_SYMLINKS
+    { "linksoft", 0, 0, 'l' },
     { "symlinks", 0, 0, 's' },
 #endif
     { "size", 0, 0, 'S' },
@@ -2106,6 +2113,9 @@ int main(int argc, char **argv)
       SETFLAG(flags, F_RECURSEAFTER);
       break;
 #ifndef NO_SYMLINKS
+    case 'l':
+      SETFLAG(flags, F_MAKESYMLINKS);
+      break;
     case 's':
       SETFLAG(flags, F_FOLLOWLINKS);
       break;
@@ -2119,13 +2129,13 @@ int main(int argc, char **argv)
     case 'x':
       SETFLAG(flags, F_EXCLUDESIZE);
       if (*optarg == '+') {
-	      excludetype = LARGERTHAN;
-	      optarg++;
+        excludetype = LARGERTHAN;
+        optarg++;
       }
       excludesize = strtoull(optarg, &endptr, 0);
       switch (*endptr) {
         case 'k':
-	case 'K':
+        case 'K':
           excludesize = excludesize * 1024;
           endptr++;
           break;
@@ -2156,11 +2166,11 @@ int main(int argc, char **argv)
       printf("jdupes %s (%s)\n", VER, VERDATE);
       printf("Compile-time extensions:");
       if (*extensions != NULL) {
-	      int c = 0;
-	      while (extensions[c] != NULL) {
-		      printf(" %s", extensions[c]);
-		      c++;
-	      }
+        int c = 0;
+        while (extensions[c] != NULL) {
+          printf(" %s", extensions[c]);
+          c++;
+        }
       } else printf(" none");
       printf("\nCopyright (C) 2015-2016 by Jody Bruchon\n");
       printf("Derived from 'fdupes' (C) 1999-2016 by Adrian Lopez\n");
@@ -2302,10 +2312,10 @@ int main(int argc, char **argv)
 #ifdef USE_TREE_REBALANCE
     /* Rebalance the match tree after a certain number of files processed */
     if (max_depth > depth_threshold) {
-	    rebalance_tree(checktree);
-	    max_depth = 0;
-	    if (depth_threshold < 512) depth_threshold <<= 1;
-	    else depth_threshold += 64;
+      rebalance_tree(checktree);
+      max_depth = 0;
+      if (depth_threshold < 512) depth_threshold <<= 1;
+      else depth_threshold += 64;
     }
 #endif /* USE_TREE_REBALANCE */
 
@@ -2315,15 +2325,15 @@ int main(int argc, char **argv)
        * Also skip match confirmation for hard-linked files
        * (This set of comparisons is ugly, but quite efficient) */
       if (ISFLAG(flags, F_QUICKCOMPARE) ||
-		(ISFLAG(flags, F_CONSIDERHARDLINKS) &&
-		 (curfile->inode == (*match)->inode) &&
-		 (curfile->device == (*match)->device))
-		) {
+           (ISFLAG(flags, F_CONSIDERHARDLINKS) &&
+           (curfile->inode == (*match)->inode) &&
+           (curfile->device == (*match)->device))
+         ) {
         LOUD(fprintf(stderr, "MAIN: notice: quick compare match (-Q)\n"));
         registerpair(match, curfile,
             (ordertype == ORDER_TIME) ? sort_pairs_by_mtime : sort_pairs_by_filename);
-	dupecount++;
-	goto skip_full_check;
+        dupecount++;
+        goto skip_full_check;
       }
 
 #ifdef UNICODE
@@ -2333,8 +2343,8 @@ int main(int argc, char **argv)
       file1 = fopen(curfile->d_name, FILE_MODE_RO);
 #endif
       if (!file1) {
-	curfile = curfile->next;
-	continue;
+        curfile = curfile->next;
+        continue;
       }
 
 #ifdef UNICODE
@@ -2344,16 +2354,16 @@ int main(int argc, char **argv)
       file2 = fopen((*match)->d_name, FILE_MODE_RO);
 #endif
       if (!file2) {
-	fclose(file1);
-	curfile = curfile->next;
-	continue;
+        fclose(file1);
+        curfile = curfile->next;
+        continue;
       }
 
       if (confirmmatch(file1, file2)) {
         LOUD(fprintf(stderr, "MAIN: registering matched file pair\n"));
         registerpair(match, curfile,
             (ordertype == ORDER_TIME) ? sort_pairs_by_mtime : sort_pairs_by_filename);
-	dupecount++;
+        dupecount++;
       } DBG(else hash_fail++;)
 
       fclose(file1);
@@ -2367,8 +2377,8 @@ skip_full_check:
       /* If file size is larger than 1 MiB, make progress update faster
        * If confirmmatch() is run on a file, speed up progress even further */
       if (curfile != NULL && did_long_work) {
-	      delay += (curfile->size >> 20);
-	      did_long_work = 0;
+        delay += (curfile->size >> 20);
+        did_long_work = 0;
       }
       if (match != NULL) delay++;
       if ((delay >= DELAY_COUNT)) {
@@ -2392,7 +2402,7 @@ skip_file_scan:
 #ifndef NO_HARDLINKS
     if (ISFLAG(flags, F_HARDLINKFILES)) {
       if (ISFLAG(flags, F_SUMMARIZEMATCHES)) summarizematches(files);
-      hardlinkfiles(files);
+      linkfiles(files, 1);
     }
 #else
     if (0) {}
@@ -2412,22 +2422,21 @@ skip_file_scan:
 #ifdef DEBUG
   if (ISFLAG(flags, F_DEBUG)) {
     fprintf(stderr, "\n%d partial (+%d small) -> %d full hash -> %d full (%d partial elim) (%d hash%u fail)\n",
-		partial_hash, small_file, full_hash, partial_to_full,
-		partial_elim, hash_fail, (unsigned int)sizeof(hash_t)*8);
+        partial_hash, small_file, full_hash, partial_to_full,
+        partial_elim, hash_fail, (unsigned int)sizeof(hash_t)*8);
     fprintf(stderr, "%ju total files, %ju comparisons, branch L %u, R %u, both %u\n",
-		    filecount, comparisons, left_branch, right_branch,
-		    left_branch + right_branch);
+        filecount, comparisons, left_branch, right_branch,
+        left_branch + right_branch);
     fprintf(stderr, "Max tree depth: %u; SMA alloc: %ju, free ign: %ju, free good: %ju\n",
-		    max_depth, sma_allocs, sma_free_ignored, sma_free_good);
+        max_depth, sma_allocs, sma_free_ignored, sma_free_good);
 #ifdef ON_WINDOWS
  #ifndef NO_HARDLINKS
     if (ISFLAG(flags, F_HARDLINKFILES))
-	    fprintf(stderr, "Exclusions based on Windows hard link limit: %u\n", hll_exclude);
+      fprintf(stderr, "Exclusions based on Windows hard link limit: %u\n", hll_exclude);
  #endif
 #endif
   }
 #endif /* DEBUG */
 
   exit(EXIT_SUCCESS);
-
 }
