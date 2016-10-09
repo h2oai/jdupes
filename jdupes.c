@@ -138,6 +138,7 @@ static uint_fast32_t flags = 0;
 #define F_REVERSESORT		0x00080000
 #define F_ISOLATE		0x00100000
 #define F_MAKESYMLINKS		0x00200000
+#define F_PRINTMATCHES		0x00400000
 #define F_LOUD			0x40000000
 #define F_DEBUG			0x80000000
 
@@ -1680,6 +1681,9 @@ static inline void linkfiles(file_t *files, int hard)
   static int max = 0;
   static int x = 0;
   static int i;
+#ifndef NO_SYMLINKS
+  static int symsrc;
+#endif
   static char temp_path[4096];
 
   LOUD(fprintf(stderr, "Running linkfiles(%d)\n", hard);)
@@ -1721,11 +1725,30 @@ static inline void linkfiles(file_t *files, int hard)
 
       /* Link every file to the first file */
 
-      srcfile = dupelist[1];
+      if (hard) {
+        x = 2;
+        srcfile = dupelist[1];
+      } else {
+#ifndef NO_SYMLINKS
+        x = 1;
+        /* Symlinks should target a normal file if one exists */
+        srcfile = NULL;
+        for (symsrc = 1; symsrc <= counter; symsrc++)
+          if (dupelist[symsrc]->is_symlink == 0) srcfile = dupelist[symsrc];
+        /* If no normal file exists, just symlink to the first file */
+        if (srcfile == NULL) {
+          symsrc = 1;
+          srcfile = dupelist[1];
+	}
+#else
+        fprintf(stderr, "internal error: linkfiles(soft) called without symlink support\nPlease report this to the author as a program bug\n");
+        exit(EXIT_FAILURE);
+#endif
+      }
       if (!ISFLAG(flags, F_HIDEPROGRESS)) {
         printf("[SRC] "); fwprint(stdout, srcfile->d_name, 1);
       }
-      for (x = 2; x <= counter; x++) {
+      for (; x <= counter; x++) {
         if (hard == 1) {
           /* Can't hard link files on different devices */
           if (srcfile->device != dupelist[x]->device) {
@@ -1995,6 +2018,7 @@ int main(int argc, char **argv)
 #endif
   static int firstrecurse;
   static int opt;
+  static int pm = 1;
   static ordertype_t ordertype = ORDER_NAME;
 
 #ifndef OMIT_GETOPT_LONG
@@ -2059,7 +2083,7 @@ int main(int argc, char **argv)
   oldargv = cloneargs(argc, argv);
 
   while ((opt = GETOPT(argc, argv,
-  "@ABdDfhHiILmnNOpqQrRsSvZo:x:"
+  "@ABdDfhHiIlLmnNOpqQrRsSvZo:x:"
 #ifndef OMIT_GETOPT_LONG
           , long_options, NULL
 #endif
@@ -2249,14 +2273,18 @@ int main(int argc, char **argv)
     exit(EXIT_FAILURE);
   }
 
-  if (!!ISFLAG(flags, F_SUMMARIZEMATCHES) +
+  /* If pm == 0, call printmatches() */
+  pm = !!ISFLAG(flags, F_SUMMARIZEMATCHES) +
       !!ISFLAG(flags, F_DELETEFILES) +
       !!ISFLAG(flags, F_HARDLINKFILES) +
       !!ISFLAG(flags, F_MAKESYMLINKS) +
-      !!ISFLAG(flags, F_DEDUPEFILES) > 1) {
+      !!ISFLAG(flags, F_DEDUPEFILES);
+
+  if (pm > 1) {
       fprintf(stderr, "Only one of --summarize, --delete, --linkhard, --linksoft, or --dedupe\nmay be used\n");
       exit(EXIT_FAILURE);
   }
+  if (pm == 0) SETFLAG(flags, F_PRINTMATCHES);
 
   if (ISFLAG(flags, F_RECURSEAFTER)) {
     firstrecurse = nonoptafter("--recurse:", argc, oldargv, argv, optind);
@@ -2410,23 +2438,18 @@ skip_file_scan:
   if (ISFLAG(flags, F_DELETEFILES)) {
     if (ISFLAG(flags, F_NOPROMPT)) deletefiles(files, 0, 0);
     else deletefiles(files, 1, stdin);
-  } else {
+  }
+  if (ISFLAG(flags, F_SUMMARIZEMATCHES)) summarizematches(files);
+#ifndef NO_SYMLINKS
+  if (ISFLAG(flags, F_MAKESYMLINKS)) linkfiles(files, 0);
+#endif
 #ifndef NO_HARDLINKS
-    if (ISFLAG(flags, F_HARDLINKFILES)) {
-      if (ISFLAG(flags, F_SUMMARIZEMATCHES)) summarizematches(files);
-      linkfiles(files, 1);
-    }
-#else
-    if (0) {}
+  if (ISFLAG(flags, F_HARDLINKFILES)) linkfiles(files, 1);
 #endif /* NO_HARDLINKS */
 #ifdef HAVE_BTRFS_IOCTL_H
-    else if (ISFLAG(flags, F_DEDUPEFILES)) dedupefiles(files);
+  if (ISFLAG(flags, F_DEDUPEFILES)) dedupefiles(files);
 #endif /* HAVE_BTRFS_IOCTL_H */
-    else {
-      if (ISFLAG(flags, F_SUMMARIZEMATCHES)) summarizematches(files);
-      else printmatches(files);
-    }
-  }
+  if (ISFLAG(flags, F_PRINTMATCHES)) printmatches(files);
 
   purgetree(checktree);
   string_malloc_destroy();
