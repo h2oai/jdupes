@@ -236,6 +236,9 @@ typedef struct _file {
   uid_t uid;
   gid_t gid;
 #endif
+#ifndef NO_SYMLINKS
+  uint_fast8_t is_symlink;
+#endif
   time_t mtime;
   unsigned int user_order; /* Order of the originating command-line parameter */
   hash_t filehash_partial;
@@ -453,6 +456,10 @@ static int file_has_changed(file_t * const restrict file)
   if (file->uid != s.st_uid) return 1;
   if (file->gid != s.st_gid) return 1;
  #endif
+ #ifndef NO_SYMLINKS
+  if (lstat(file->d_name, &s) != 0) return -3;
+  if (S_ISLNK(s.st_mode) != file->is_symlink) return 1;
+ #endif
 #endif /* ON_WINDOWS */
 
   return 0;
@@ -485,6 +492,10 @@ static inline int getfilestats(file_t * const restrict file)
  #ifndef NO_PERMS
   file->uid = s.st_uid;
   file->gid = s.st_gid;
+ #endif
+ #ifndef NO_SYMLINKS
+  if (lstat(file->d_name, &s) != 0) return -1;
+  file->is_symlink = S_ISLNK(s.st_mode);
  #endif
 #endif /* ON_WINDOWS */
   return 0;
@@ -2241,8 +2252,9 @@ int main(int argc, char **argv)
   if (!!ISFLAG(flags, F_SUMMARIZEMATCHES) +
       !!ISFLAG(flags, F_DELETEFILES) +
       !!ISFLAG(flags, F_HARDLINKFILES) +
+      !!ISFLAG(flags, F_MAKESYMLINKS) +
       !!ISFLAG(flags, F_DEDUPEFILES) > 1) {
-      fprintf(stderr, "Only one of --summarize, --delete, --linkhard or --dedupe may be used\n");
+      fprintf(stderr, "Only one of --summarize, --delete, --linkhard, --linksoft, or --dedupe\nmay be used\n");
       exit(EXIT_FAILURE);
   }
 
