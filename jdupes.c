@@ -304,10 +304,10 @@ static int interrupt = 0;
 /* Catch CTRL-C and either notify or terminate */
 void sighandler(const int signum)
 {
-	(void)signum;
-	if (interrupt || !ISFLAG(flags, F_SOFTABORT)) exit(EXIT_FAILURE);
-	interrupt = 1;
-	return;
+  (void)signum;
+  if (interrupt || !ISFLAG(flags, F_SOFTABORT)) exit(EXIT_FAILURE);
+  interrupt = 1;
+  return;
 }
 
 
@@ -315,49 +315,49 @@ void sighandler(const int signum)
 /* Copy Windows wide character arguments to UTF-8 */
 static void widearg_to_argv(int argc, wchar_t **wargv, char **argv)
 {
-	char temp[PATH_MAX];
-	int len;
+  char temp[PATH_MAX];
+  int len;
 
-	if (!argv) goto error_bad_argv;
-	for (int counter = 0; counter < argc; counter++) {
-		len = W2M(wargv[counter], &temp);
-		if (len < 1) goto error_wc2mb;
+  if (!argv) goto error_bad_argv;
+  for (int counter = 0; counter < argc; counter++) {
+    len = W2M(wargv[counter], &temp);
+    if (len < 1) goto error_wc2mb;
 
-		argv[counter] = (char *)malloc(len + 1);
-		if (!argv[counter]) goto error_oom;
-		strncpy(argv[counter], temp, len + 1);
-	}
-	return;
+    argv[counter] = (char *)malloc(len + 1);
+    if (!argv[counter]) goto error_oom;
+    strncpy(argv[counter], temp, len + 1);
+  }
+  return;
 
 error_bad_argv:
-	fprintf(stderr, "fatal: bad argv pointer\n");
-	exit(EXIT_FAILURE);
+  fprintf(stderr, "fatal: bad argv pointer\n");
+  exit(EXIT_FAILURE);
 error_wc2mb:
-	fprintf(stderr, "fatal: WideCharToMultiByte failed\n");
-	exit(EXIT_FAILURE);
+  fprintf(stderr, "fatal: WideCharToMultiByte failed\n");
+  exit(EXIT_FAILURE);
 error_oom:
-	fprintf(stderr, "out of memory\n");
-	exit(EXIT_FAILURE);
+  fprintf(stderr, "out of memory\n");
+  exit(EXIT_FAILURE);
 }
 
 
 /* Print a string that is wide on Windows but normal on POSIX */
 static int fwprint(FILE * const restrict stream, const char * const restrict str, const int cr)
 {
-	int retval;
+  int retval;
 
-	if (out_mode != _O_TEXT) {
-		/* Convert to wide string and send to wide console output */
-		if (!MultiByteToWideChar(CP_UTF8, 0, str, -1, (LPWSTR)wstr, PATH_MAX)) return -1;
-		fflush(stdout); fflush(stderr);
-		_setmode(_fileno(stream), out_mode);
-		retval = fwprintf(stream, L"%S%S", wstr, cr ? L"\n" : L"");
-		fflush(stdout); fflush(stderr);
-		_setmode(_fileno(stream), _O_TEXT);
-		return retval;
-	} else {
-		return fprintf(stream, "%s%s", str, cr ? "\n" : "");
-	}
+  if (out_mode != _O_TEXT) {
+    /* Convert to wide string and send to wide console output */
+    if (!MultiByteToWideChar(CP_UTF8, 0, str, -1, (LPWSTR)wstr, PATH_MAX)) return -1;
+    fflush(stdout); fflush(stderr);
+    _setmode(_fileno(stream), out_mode);
+    retval = fwprintf(stream, L"%S%S", wstr, cr ? L"\n" : L"");
+    fflush(stdout); fflush(stderr);
+    _setmode(_fileno(stream), _O_TEXT);
+    return retval;
+  } else {
+    return fprintf(stream, "%s%s", str, cr ? "\n" : "");
+  }
 }
 #else
  #define fwprint(a,b,c) fprintf(a, "%s%s", b, c ? "\n" : "")
@@ -372,8 +372,8 @@ static int fwprint(FILE * const restrict stream, const char * const restrict str
 /* Out of memory */
 static void oom(void)
 {
-	fprintf(stderr, "\nout of memory\n");
-	exit(EXIT_FAILURE);
+  fprintf(stderr, "\nout of memory\n");
+  exit(EXIT_FAILURE);
 }
 
 
@@ -553,7 +553,7 @@ static void grokdir(const char * const restrict dir,
         if (delay >= DELAY_COUNT) {
           delay = 0;
           fprintf(stderr, "\rScanning: %ju files, %ju dirs (in %u specified)",
-        		  progress, dir_progress, user_dir_count);
+              progress, dir_progress, user_dir_count);
         } else delay++;
       }
 
@@ -720,7 +720,7 @@ error_cd:
 
 /* Use Jody Bruchon's hash function on part or all of a file */
 static hash_t *get_filehash(const file_t * const restrict checkfile,
-        	const size_t max_read)
+		const size_t max_read)
 {
   static off_t fsize;
   /* This is an array because we return a pointer to it */
@@ -752,8 +752,8 @@ static hash_t *get_filehash(const file_t * const restrict checkfile,
     *hash = checkfile->filehash_partial;
     /* Don't bother going further if max_read is already fulfilled */
     if (max_read != 0 && max_read <= PARTIAL_HASH_SIZE) {
-	    LOUD(fprintf(stderr, "Partial hash size (%d) >= max_read (%lu), not hashing anymore\n", PARTIAL_HASH_SIZE, max_read);)
-	    return hash;
+      LOUD(fprintf(stderr, "Partial hash size (%d) >= max_read (%lu), not hashing anymore\n", PARTIAL_HASH_SIZE, max_read);)
+      return hash;
     }
   }
 #ifdef UNICODE
@@ -811,68 +811,68 @@ static inline void purgetree(filetree_t * const restrict tree)
 static inline void registerfile(filetree_t * restrict * const restrict nodeptr,
 		const enum tree_direction d, file_t * const restrict file)
 {
-	filetree_t * restrict branch;
+  filetree_t * restrict branch;
 
-	/* Allocate and initialize a new node for the file */
-	branch = (filetree_t *)string_malloc(sizeof(filetree_t));
-	if (branch == NULL) oom();
-	branch->file = file;
-	branch->left = NULL;
-	branch->right = NULL;
+  /* Allocate and initialize a new node for the file */
+  branch = (filetree_t *)string_malloc(sizeof(filetree_t));
+  if (branch == NULL) oom();
+  branch->file = file;
+  branch->left = NULL;
+  branch->right = NULL;
 #ifdef USE_TREE_REBALANCE
-	branch->left_weight = 0;
-	branch->right_weight = 0;
+  branch->left_weight = 0;
+  branch->right_weight = 0;
 
-	/* Attach the new node to the requested branch and the parent */
-	switch (d) {
-		case LEFT:
-			branch->parent = *nodeptr;
-			(*nodeptr)->left = branch;
-			(*nodeptr)->left_weight++;
-			break;
-		case RIGHT:
-			branch->parent = *nodeptr;
-			(*nodeptr)->right = branch;
-			(*nodeptr)->right_weight++;
-			break;
-		case NONE:
-			/* For the root of the tree only */
-			branch->parent = NULL;
-			*nodeptr = branch;
-			break;
-	}
+  /* Attach the new node to the requested branch and the parent */
+  switch (d) {
+    case LEFT:
+      branch->parent = *nodeptr;
+      (*nodeptr)->left = branch;
+      (*nodeptr)->left_weight++;
+      break;
+    case RIGHT:
+      branch->parent = *nodeptr;
+      (*nodeptr)->right = branch;
+      (*nodeptr)->right_weight++;
+      break;
+    case NONE:
+      /* For the root of the tree only */
+      branch->parent = NULL;
+      *nodeptr = branch;
+      break;
+  }
 
-	/* Propagate weights up the tree */
-	while (branch->parent != NULL) {
-		filetree_t * restrict up;
+  /* Propagate weights up the tree */
+  while (branch->parent != NULL) {
+    filetree_t * restrict up;
 
-		up = branch->parent;
-		if (up->left == branch) up->left_weight++;
-		else if (up->right == branch) up->right_weight++;
-		else {
-			fprintf(stderr, "Internal error: file tree linkage is broken\n");
-			exit(EXIT_FAILURE);
-		}
-		branch = up;
-	}
+    up = branch->parent;
+    if (up->left == branch) up->left_weight++;
+    else if (up->right == branch) up->right_weight++;
+    else {
+      fprintf(stderr, "Internal error: file tree linkage is broken\n");
+      exit(EXIT_FAILURE);
+    }
+    branch = up;
+  }
 #else /* USE_TREE_REBALANCE */
-	/* Attach the new node to the requested branch and the parent */
-	switch (d) {
-		case LEFT:
-			(*nodeptr)->left = branch;
-			break;
-		case RIGHT:
-			(*nodeptr)->right = branch;
-			break;
-		case NONE:
-			/* For the root of the tree only */
-			*nodeptr = branch;
-			break;
-	}
+  /* Attach the new node to the requested branch and the parent */
+  switch (d) {
+    case LEFT:
+      (*nodeptr)->left = branch;
+      break;
+    case RIGHT:
+      (*nodeptr)->right = branch;
+      break;
+    case NONE:
+      /* For the root of the tree only */
+      *nodeptr = branch;
+      break;
+  }
 
 #endif /* USE_TREE_REBALANCE */
 
-	return;
+  return;
 }
 
 
@@ -889,85 +889,85 @@ static inline void registerfile(filetree_t * restrict * const restrict nodeptr,
 /* Rebalance the file tree to reduce search depth */
 static inline void rebalance_tree(filetree_t * const tree)
 {
-	filetree_t * restrict promote;
-	filetree_t * restrict demote;
-	int difference, direction;
+  filetree_t * restrict promote;
+  filetree_t * restrict demote;
+  int difference, direction;
 #ifdef CONSIDER_IMBALANCE
-	int l, r, imbalance;
+  int l, r, imbalance;
 #endif
 
-	if (!tree) return;
+  if (!tree) return;
 
-	/* Rebalance all children first */
-	if (tree->left_weight > BALANCE_THRESHOLD) rebalance_tree(tree->left);
-	if (tree->right_weight > BALANCE_THRESHOLD) rebalance_tree(tree->right);
+  /* Rebalance all children first */
+  if (tree->left_weight > BALANCE_THRESHOLD) rebalance_tree(tree->left);
+  if (tree->right_weight > BALANCE_THRESHOLD) rebalance_tree(tree->right);
 
-	/* If weights are within a certain threshold, do nothing */
-	direction = tree->right_weight - tree->left_weight;
-	difference = direction;
-	if (difference < 0) difference = -difference;
-	if (difference <= BALANCE_THRESHOLD) return;
+  /* If weights are within a certain threshold, do nothing */
+  direction = tree->right_weight - tree->left_weight;
+  difference = direction;
+  if (difference < 0) difference = -difference;
+  if (difference <= BALANCE_THRESHOLD) return;
 
-	/* Determine if a tree rotation will help, and do it if so */
-	if (direction > 0) {
+  /* Determine if a tree rotation will help, and do it if so */
+  if (direction > 0) {
 #ifdef CONSIDER_IMBALANCE
-		l = tree->right->left_weight + tree->right_weight;
-		r = tree->right->right_weight;
-		imbalance = l - r;
-		if (imbalance < 0) imbalance = -imbalance;
-		/* Don't rotate if imbalance will increase */
-		if (imbalance >= difference) return;
+    l = tree->right->left_weight + tree->right_weight;
+    r = tree->right->right_weight;
+    imbalance = l - r;
+    if (imbalance < 0) imbalance = -imbalance;
+    /* Don't rotate if imbalance will increase */
+    if (imbalance >= difference) return;
 #endif /* CONSIDER_IMBALANCE */
 
-		/* Rotate the right node up one level */
-		promote = tree->right;
-		demote = tree;
-		/* Attach new parent's left tree to old parent */
-		demote->right = promote->left;
-		demote->right_weight = promote->left_weight;
-		/* Attach old parent to new parent */
-		promote->left = demote;
-		promote->left_weight = demote->left_weight + demote->right_weight + 1;
-		/* Reconnect parent linkages */
-		promote->parent = demote->parent;
-		if (demote->right) demote->right->parent = demote;
-		demote->parent = promote;
-		if (promote->parent == NULL) checktree = promote;
-		else if (promote->parent->left == demote) promote->parent->left = promote;
-		else promote->parent->right = promote;
-		return;
-	} else if (direction < 0) {
+    /* Rotate the right node up one level */
+    promote = tree->right;
+    demote = tree;
+    /* Attach new parent's left tree to old parent */
+    demote->right = promote->left;
+    demote->right_weight = promote->left_weight;
+    /* Attach old parent to new parent */
+    promote->left = demote;
+    promote->left_weight = demote->left_weight + demote->right_weight + 1;
+    /* Reconnect parent linkages */
+    promote->parent = demote->parent;
+    if (demote->right) demote->right->parent = demote;
+    demote->parent = promote;
+    if (promote->parent == NULL) checktree = promote;
+    else if (promote->parent->left == demote) promote->parent->left = promote;
+    else promote->parent->right = promote;
+    return;
+  } else if (direction < 0) {
 #ifdef CONSIDER_IMBALANCE
-		r = tree->left->right_weight + tree->left_weight;
-		l = tree->left->left_weight;
-		imbalance = r - l;
-		if (imbalance < 0) imbalance = -imbalance;
-		/* Don't rotate if imbalance will increase */
-		if (imbalance >= difference) return;
+    r = tree->left->right_weight + tree->left_weight;
+    l = tree->left->left_weight;
+    imbalance = r - l;
+    if (imbalance < 0) imbalance = -imbalance;
+    /* Don't rotate if imbalance will increase */
+    if (imbalance >= difference) return;
 #endif /* CONSIDER_IMBALANCE */
 
-		/* Rotate the left node up one level */
-		promote = tree->left;
-		demote = tree;
-		/* Attach new parent's right tree to old parent */
-		demote->left = promote->right;
-		demote->left_weight = promote->right_weight;
-		/* Attach old parent to new parent */
-		promote->right = demote;
-		promote->right_weight = demote->right_weight + demote->left_weight + 1;
-		/* Reconnect parent linkages */
-		promote->parent = demote->parent;
-		if (demote->left) demote->left->parent = demote;
-		demote->parent = promote;
-		if (promote->parent == NULL) checktree = promote;
-		else if (promote->parent->left == demote) promote->parent->left = promote;
-		else promote->parent->right = promote;
-		return;
+    /* Rotate the left node up one level */
+    promote = tree->left;
+    demote = tree;
+    /* Attach new parent's right tree to old parent */
+    demote->left = promote->right;
+    demote->left_weight = promote->right_weight;
+    /* Attach old parent to new parent */
+    promote->right = demote;
+    promote->right_weight = demote->right_weight + demote->left_weight + 1;
+    /* Reconnect parent linkages */
+    promote->parent = demote->parent;
+    if (demote->left) demote->left->parent = demote;
+    demote->parent = promote;
+    if (promote->parent == NULL) checktree = promote;
+    else if (promote->parent->left == demote) promote->parent->left = promote;
+    else promote->parent->right = promote;
+    return;
 
-	}
+  }
 
-	/* Fall through */
-	return;
+  /* Fall through */
+  return;
 }
 
 #endif /* USE_TREE_REBALANCE */
@@ -1014,8 +1014,8 @@ static file_t **checkmatch(filetree_t * restrict tree,
 #endif
 
   if (ISFLAG(flags, F_ISOLATE) && (file->user_order == tree->file->user_order)) {
-	  LOUD(fprintf(stderr, "checkmatch: files ignored: parameter isolation\n"));
-	  cmpresult = -1;
+    LOUD(fprintf(stderr, "checkmatch: files ignored: parameter isolation\n"));
+    cmpresult = -1;
   /* Exclude files that are not the same size */
   } else if (file->size < tree->file->size) {
     LOUD(fprintf(stderr, "checkmatch: no match: file1 < file2 (%jd < %jd)\n", (intmax_t)tree->file->size, (intmax_t)file->size));
@@ -1030,7 +1030,7 @@ static file_t **checkmatch(filetree_t * restrict tree,
             || file->uid != tree->file->uid
             || file->gid != tree->file->gid
 #endif
-	    )) {
+            )) {
     cmpresult = -1;
     LOUD(fprintf(stderr, "checkmatch: no match: permissions/ownership differ (-p on)\n"));
   } else {
@@ -1079,27 +1079,27 @@ static file_t **checkmatch(filetree_t * restrict tree,
     } else if (cmpresult == 0) {
       /* If partial match was correct, perform a full file hash match */
       if (tree->file->filehash_set == 0) {
-	did_long_work = 1;
-	filehash = get_filehash(tree->file, 0);
+        did_long_work = 1;
+        filehash = get_filehash(tree->file, 0);
         if (filehash == NULL) {
           if (!interrupt) fprintf(stderr, "cannot read file "); fwprint(stderr, tree->file->d_name, 1);
           return NULL;
         }
 
-	tree->file->filehash = *filehash;
+        tree->file->filehash = *filehash;
         tree->file->filehash_set = 1;
       }
 
       if (file->filehash_set == 0) {
-	did_long_work = 1;
-	filehash = get_filehash(file, 0);
+        did_long_work = 1;
+        filehash = get_filehash(file, 0);
         if (filehash == NULL) {
           if (!interrupt) fprintf(stderr, "cannot read file "); fwprint(stderr, file->d_name, 1);
           return NULL;
         }
 
-	file->filehash = *filehash;
-	file->filehash_set = 1;
+        file->filehash = *filehash;
+        file->filehash_set = 1;
       }
 
       /* Full file hash comparison */
@@ -1186,9 +1186,9 @@ static void summarizematches(const file_t * restrict files)
       numsets++;
       tmpfile = files->duplicates;
       while (tmpfile != NULL) {
-	numfiles++;
-	numbytes += files->size;
-	tmpfile = tmpfile->duplicates;
+        numfiles++;
+        numbytes += files->size;
+        tmpfile = tmpfile->duplicates;
       }
     }
     files = files->next;
@@ -1214,14 +1214,14 @@ static void printmatches(file_t * restrict files)
   while (files != NULL) {
     if (files->hasdupes) {
       if (!ISFLAG(flags, F_OMITFIRST)) {
-	if (ISFLAG(flags, F_SHOWSIZE)) printf("%jd byte%c each:\n", (intmax_t)files->size,
-	 (files->size != 1) ? 's' : ' ');
-	fwprint(stdout, files->d_name, 1);
+        if (ISFLAG(flags, F_SHOWSIZE)) printf("%jd byte%c each:\n", (intmax_t)files->size,
+         (files->size != 1) ? 's' : ' ');
+        fwprint(stdout, files->d_name, 1);
       }
       tmpfile = files->duplicates;
       while (tmpfile != NULL) {
-	fwprint(stdout, tmpfile->d_name, 1);
-	tmpfile = tmpfile->duplicates;
+        fwprint(stdout, tmpfile->d_name, 1);
+        tmpfile = tmpfile->duplicates;
       }
       if (files->next != NULL) printf("\n");
 
@@ -1399,17 +1399,17 @@ static void deletefiles(file_t *files, int prompt, FILE *tty)
       dupelist[counter] = files;
 
       if (prompt) {
-	      printf("[%u] ", counter); fwprint(stdout, files->d_name, 1);
+        printf("[%u] ", counter); fwprint(stdout, files->d_name, 1);
       }
 
       tmpfile = files->duplicates;
 
       while (tmpfile) {
-	dupelist[++counter] = tmpfile;
-	if (prompt) {
-		printf("[%u] ", counter); fwprint(stdout, tmpfile->d_name, 1);
-	}
-	tmpfile = tmpfile->duplicates;
+        dupelist[++counter] = tmpfile;
+        if (prompt) {
+          printf("[%u] ", counter); fwprint(stdout, tmpfile->d_name, 1);
+        }
+        tmpfile = tmpfile->duplicates;
       }
 
       if (prompt) printf("\n");
@@ -1420,79 +1420,79 @@ static void deletefiles(file_t *files, int prompt, FILE *tty)
         for (x = 2; x <= counter; x++) preserve[x] = 0;
       } else do {
         /* prompt for files to preserve */
-	printf("Set %u of %u: keep which files? (1 - %u, [a]ll, [n]one)",
+        printf("Set %u of %u: keep which files? (1 - %u, [a]ll, [n]one)",
           curgroup, groups, counter);
-	if (ISFLAG(flags, F_SHOWSIZE)) printf(" (%ju byte%c each)", (uintmax_t)files->size,
-	  (files->size != 1) ? 's' : ' ');
-	printf(": ");
-	fflush(stdout);
+        if (ISFLAG(flags, F_SHOWSIZE)) printf(" (%ju byte%c each)", (uintmax_t)files->size,
+          (files->size != 1) ? 's' : ' ');
+        printf(": ");
+        fflush(stdout);
 
-	/* treat fgets() failure as if nothing was entered */
-	if (!fgets(preservestr, INPUT_SIZE, tty)) preservestr[0] = '\n';
+        /* treat fgets() failure as if nothing was entered */
+        if (!fgets(preservestr, INPUT_SIZE, tty)) preservestr[0] = '\n';
 
-	i = strlen(preservestr) - 1;
+        i = strlen(preservestr) - 1;
 
         /* tail of buffer must be a newline */
-	while (preservestr[i] != '\n') {
-	  tstr = (char *)realloc(preservestr, strlen(preservestr) + 1 + INPUT_SIZE);
-	  if (!tstr) oom();
+        while (preservestr[i] != '\n') {
+          tstr = (char *)realloc(preservestr, strlen(preservestr) + 1 + INPUT_SIZE);
+          if (!tstr) oom();
 
-	  preservestr = tstr;
-	  if (!fgets(preservestr + i + 1, INPUT_SIZE, tty))
-	  {
-	    preservestr[0] = '\n'; /* treat fgets() failure as if nothing was entered */
-	    break;
-	  }
-	  i = strlen(preservestr) - 1;
-	}
+          preservestr = tstr;
+          if (!fgets(preservestr + i + 1, INPUT_SIZE, tty))
+          {
+            preservestr[0] = '\n'; /* treat fgets() failure as if nothing was entered */
+            break;
+          }
+          i = strlen(preservestr) - 1;
+        }
 
-	for (x = 1; x <= counter; x++) preserve[x] = 0;
+        for (x = 1; x <= counter; x++) preserve[x] = 0;
 
-	token = strtok(preservestr, " ,\n");
-	if (token != NULL && (*token == 'n' || *token == 'N')) goto preserve_none;
+        token = strtok(preservestr, " ,\n");
+        if (token != NULL && (*token == 'n' || *token == 'N')) goto preserve_none;
 
-	while (token != NULL) {
-	  if (*token == 'a' || *token == 'A')
-	    for (x = 0; x <= counter; x++) preserve[x] = 1;
+        while (token != NULL) {
+          if (*token == 'a' || *token == 'A')
+            for (x = 0; x <= counter; x++) preserve[x] = 1;
 
-	  number = 0;
-	  sscanf(token, "%u", &number);
-	  if (number > 0 && number <= counter) preserve[number] = 1;
+          number = 0;
+          sscanf(token, "%u", &number);
+          if (number > 0 && number <= counter) preserve[number] = 1;
 
-	  token = strtok(NULL, " ,\n");
-	}
+          token = strtok(NULL, " ,\n");
+        }
 
-	for (sum = 0, x = 1; x <= counter; x++) sum += preserve[x];
+        for (sum = 0, x = 1; x <= counter; x++) sum += preserve[x];
       } while (sum < 1); /* save at least one file */
 preserve_none:
 
       printf("\n");
 
       for (x = 1; x <= counter; x++) {
-	if (preserve[x]) {
-	  printf("   [+] "); fwprint(stdout, dupelist[x]->d_name, 1);
-	} else {
+        if (preserve[x]) {
+          printf("   [+] "); fwprint(stdout, dupelist[x]->d_name, 1);
+        } else {
 #ifdef UNICODE
-	  if (!M2W(dupelist[x]->d_name, wstr)) {
-	    printf("   [!] "); fwprint(stdout, dupelist[x]->d_name, 0);
-	    printf("-- MultiByteToWideChar failed\n");
+          if (!M2W(dupelist[x]->d_name, wstr)) {
+            printf("   [!] "); fwprint(stdout, dupelist[x]->d_name, 0);
+            printf("-- MultiByteToWideChar failed\n");
             continue;
-	  }
+          }
 #endif
-	  if (file_has_changed(dupelist[x])) {
-	    printf("   [!] "); fwprint(stdout, dupelist[x]->d_name, 0);
-	    printf("-- file changed since being scanned\n");
+          if (file_has_changed(dupelist[x])) {
+            printf("   [!] "); fwprint(stdout, dupelist[x]->d_name, 0);
+            printf("-- file changed since being scanned\n");
 #ifdef UNICODE
-	  } else if (DeleteFile(wstr) != 0) {
+          } else if (DeleteFile(wstr) != 0) {
 #else
-	  } else if (remove(dupelist[x]->d_name) == 0) {
+          } else if (remove(dupelist[x]->d_name) == 0) {
 #endif
-	    printf("   [-] "); fwprint(stdout, dupelist[x]->d_name, 1);
-	  } else {
-	    printf("   [!] "); fwprint(stdout, dupelist[x]->d_name, 0);
-	    printf("-- unable to delete file\n");
-	  }
-	}
+            printf("   [-] "); fwprint(stdout, dupelist[x]->d_name, 1);
+          } else {
+            printf("   [!] "); fwprint(stdout, dupelist[x]->d_name, 0);
+            printf("-- unable to delete file\n");
+          }
+        }
       }
       printf("\n");
     }
@@ -1530,80 +1530,80 @@ static int sort_pairs_by_mtime(file_t *f1, file_t *f2)
 static inline int numeric_sort(const char * restrict c1,
 		const char * restrict c2)
 {
-	int len1 = 0, len2 = 0;
-	int precompare = 0;
+  int len1 = 0, len2 = 0;
+  int precompare = 0;
 
-	/* Numerically correct sort */
-	while (*c1 != '\0' && *c2 != '\0') {
-		/* Reset string length counters */
-		len1 = 0; len2 = 0;
+  /* Numerically correct sort */
+  while (*c1 != '\0' && *c2 != '\0') {
+    /* Reset string length counters */
+    len1 = 0; len2 = 0;
 
-		/* Skip all sequences of zeroes */
-		while (*c1 == '0') {
-			len1++;
-			c1++;
-		}
-		while (*c2 == '0') {
-			len2++;
-			c2++;
-		}
+    /* Skip all sequences of zeroes */
+    while (*c1 == '0') {
+      len1++;
+      c1++;
+    }
+    while (*c2 == '0') {
+      len2++;
+      c2++;
+    }
 
-		/* If both chars are numeric, do a numeric comparison */
-		if (IS_NUM(*c1) && IS_NUM(*c2)) {
-			precompare = 0;
+    /* If both chars are numeric, do a numeric comparison */
+    if (IS_NUM(*c1) && IS_NUM(*c2)) {
+      precompare = 0;
 
-			/* Scan numbers and get preliminary results */
-			while (IS_NUM(*c1) && IS_NUM(*c2)) {
-				if (*c1 < *c2) precompare = -sort_direction;
-				if (*c1 > *c2) precompare = sort_direction;
-				len1++; len2++;
-				c1++; c2++;
+      /* Scan numbers and get preliminary results */
+      while (IS_NUM(*c1) && IS_NUM(*c2)) {
+        if (*c1 < *c2) precompare = -sort_direction;
+        if (*c1 > *c2) precompare = sort_direction;
+        len1++; len2++;
+        c1++; c2++;
 
-				/* Skip remaining digit pairs after any
-				 * difference is found */
-				if (precompare != 0) {
-					while (IS_NUM(*c1) && IS_NUM(*c2)) {
-						len1++; len2++;
-						c1++; c2++;
-					}
-					break;
-				}
-			}
+        /* Skip remaining digit pairs after any
+         * difference is found */
+        if (precompare != 0) {
+          while (IS_NUM(*c1) && IS_NUM(*c2)) {
+            len1++; len2++;
+            c1++; c2++;
+          }
+          break;
+        }
+      }
 
-			/* One numeric and one non-numeric means the
-			 * numeric one is larger and sorts later */
-			if (IS_NUM(*c1) ^ IS_NUM(*c2)) {
-				if (IS_NUM(*c1)) return sort_direction;
-				else return -sort_direction;
-			}
+      /* One numeric and one non-numeric means the
+       * numeric one is larger and sorts later */
+      if (IS_NUM(*c1) ^ IS_NUM(*c2)) {
+        if (IS_NUM(*c1)) return sort_direction;
+        else return -sort_direction;
+      }
 
-			/* If the last test fell through, numbers are
-			 * of equal length. Use the precompare result
-			 * as the result for this number comparison. */
-			if (precompare != 0) return precompare;
-		}
+      /* If the last test fell through, numbers are
+       * of equal length. Use the precompare result
+       * as the result for this number comparison. */
+      if (precompare != 0) return precompare;
+    }
 
-		/* Do normal comparison */
-		if (*c1 == *c2) {
-			c1++; c2++;
-			len1++; len2++;
-		/* Put symbols and spaces after everything else */
-		} else if (*c2 < '.' && *c1 >= '.') return -sort_direction;
-		else if (*c1 < '.' && *c2 >= '.') return sort_direction;
-		/* Normal strcmp() style compare */
-		else if (*c1 > *c2) return sort_direction;
-		else return -sort_direction;
-	}
+    /* Do normal comparison */
+    if (*c1 == *c2) {
+      c1++; c2++;
+      len1++; len2++;
+    /* Put symbols and spaces after everything else */
+    } else if (*c2 < '.' && *c1 >= '.') return -sort_direction;
+    else if (*c1 < '.' && *c2 >= '.') return sort_direction;
+    /* Normal strcmp() style compare */
+    else if (*c1 > *c2) return sort_direction;
+    else return -sort_direction;
+  }
 
-	/* Longer strings generally sort later */
-	if (len1 < len2) return -sort_direction;
-	if (len1 > len2) return sort_direction;
-	/* Normal strcmp() style comparison */
-	if (*c1 == '\0' && *c2 != '\0') return -sort_direction;
-	if (*c1 != '\0' && *c2 == '\0') return sort_direction;
+  /* Longer strings generally sort later */
+  if (len1 < len2) return -sort_direction;
+  if (len1 > len2) return sort_direction;
+  /* Normal strcmp() style comparison */
+  if (*c1 == '\0' && *c2 != '\0') return -sort_direction;
+  if (*c1 != '\0' && *c2 == '\0') return sort_direction;
 
-	/* Fall through: the strings are equal */
-	return 0;
+  /* Fall through: the strings are equal */
+  return 0;
 }
 
 
@@ -1618,7 +1618,7 @@ static int sort_pairs_by_filename(file_t *f1, file_t *f2)
 
 
 static void registerpair(file_t **matchlist, file_t *newmatch,
-		  int (*comparef)(file_t *f1, file_t *f2))
+		int (*comparef)(file_t *f1, file_t *f2))
 {
   file_t *traverse;
   file_t *back;
@@ -1636,18 +1636,18 @@ static void registerpair(file_t **matchlist, file_t *newmatch,
       newmatch->duplicates = traverse;
 
       if (!back) {
-	*matchlist = newmatch; /* update pointer to head of list */
-	newmatch->hasdupes = 1;
-	traverse->hasdupes = 0; /* flag is only for first file in dupe chain */
+        *matchlist = newmatch; /* update pointer to head of list */
+        newmatch->hasdupes = 1;
+        traverse->hasdupes = 0; /* flag is only for first file in dupe chain */
       } else back->duplicates = newmatch;
 
       break;
     } else {
       if (traverse->duplicates == 0) {
-	traverse->duplicates = newmatch;
-	if(!back) traverse->hasdupes = 1;
+        traverse->duplicates = newmatch;
+        if(!back) traverse->hasdupes = 1;
 
-	break;
+        break;
       }
     }
 
@@ -1818,8 +1818,8 @@ static inline void linkfiles(file_t *files, int hard)
 #ifdef ON_WINDOWS
  #ifdef UNICODE
         if (!M2W(srcfile->d_name, wname2)) {
-        	fprintf(stderr, "error: MultiByteToWideChar failed: "); fwprint(stderr, srcfile->d_name, 1);
-        	continue;
+          fprintf(stderr, "error: MultiByteToWideChar failed: "); fwprint(stderr, srcfile->d_name, 1);
+          continue;
         }
         if (CreateHardLinkW((LPCWSTR)wname, (LPCWSTR)wname2, NULL) == TRUE)
  #else
@@ -1848,9 +1848,9 @@ static inline void linkfiles(file_t *files, int hard)
           i = rename(temp_path, dupelist[x]->d_name);
 #endif
           if (i != 0) {
-        	  fprintf(stderr, "error: cannot rename temp file back to original\n");
-        	  fprintf(stderr, "original: "); fwprint(stderr, dupelist[x]->d_name, 1);
-        	  fprintf(stderr, "current:  "); fwprint(stderr, temp_path, 1);
+            fprintf(stderr, "error: cannot rename temp file back to original\n");
+            fprintf(stderr, "original: "); fwprint(stderr, dupelist[x]->d_name, 1);
+            fprintf(stderr, "current:  "); fwprint(stderr, temp_path, 1);
           }
           continue;
         }
@@ -1883,9 +1883,9 @@ static inline void linkfiles(file_t *files, int hard)
             i = rename(temp_path, dupelist[x]->d_name);
 #endif
             if (i != 0) {
-                fprintf(stderr, "\nwarning: couldn't revert the file to its original name\n");
-        	fprintf(stderr, "original: "); fwprint(stderr, dupelist[x]->d_name, 1);
-        	fprintf(stderr, "current:  "); fwprint(stderr, temp_path, 1);
+              fprintf(stderr, "\nwarning: couldn't revert the file to its original name\n");
+              fprintf(stderr, "original: "); fwprint(stderr, dupelist[x]->d_name, 1);
+              fprintf(stderr, "current:  "); fwprint(stderr, temp_path, 1);
             }
           }
         }
@@ -2052,7 +2052,7 @@ int main(int argc, char **argv)
 #ifndef OMIT_GETOPT_LONG
           , long_options, NULL
 #endif
-	  )) != EOF) {
+         )) != EOF) {
     switch (opt) {
     case 'A':
       SETFLAG(flags, F_EXCLUDEHIDDEN);
