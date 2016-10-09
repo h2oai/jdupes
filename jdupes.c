@@ -1680,7 +1680,7 @@ static inline void linkfiles(file_t *files, int hard)
   static int counter;
   static int max = 0;
   static int x = 0;
-  static int i;
+  static int i, success;
 #ifndef NO_SYMLINKS
   static int symsrc;
 #endif
@@ -1769,6 +1769,8 @@ static inline void linkfiles(file_t *files, int hard)
           }
         } else {
           /* Symlink prerequisite check code can go here */
+          /* Do not attempt to symlink a file to itself */
+          if (x == symsrc) continue;
         }
 #ifdef UNICODE
         if (!M2W(dupelist[x]->d_name, wname)) {
@@ -1784,12 +1786,12 @@ static inline void linkfiles(file_t *files, int hard)
         if (access(dupelist[x]->d_name, W_OK) != 0)
 #endif
         {
-          fprintf(stderr, "warning: hard link target is a read-only file, not linking:\n-//-> ");
+          fprintf(stderr, "warning: link target is a read-only file, not linking:\n-//-> ");
           fwprint(stderr, dupelist[x]->d_name, 1);
           continue;
         }
         /* Check file pairs for modification before linking */
-        /* Safe hard linking: don't actually delete until the link succeeds */
+        /* Safe linking: don't actually delete until the link succeeds */
         i = file_has_changed(srcfile);
         if (i) {
           fprintf(stderr, "warning: source file modified since scanned; changing source file:\n[SRC] ");
@@ -1826,7 +1828,7 @@ static inline void linkfiles(file_t *files, int hard)
 #endif
 
         strcpy(temp_path, dupelist[x]->d_name);
-        strcat(temp_path, "._fd_tmp");
+        strcat(temp_path, "._jdupes_tmp");
 #ifdef UNICODE
         if (!M2W(temp_path, wname2)) {
           fprintf(stderr, "error: MultiByteToWideChar failed: "); fwprint(stderr, srcfile->d_name, 1);
@@ -1837,7 +1839,7 @@ static inline void linkfiles(file_t *files, int hard)
         i = rename(dupelist[x]->d_name, temp_path);
 #endif
         if (i != 0) {
-          fprintf(stderr, "warning: cannot move hard link target to a temporary name, not linking:\n-//-> ");
+          fprintf(stderr, "warning: cannot move link target to a temporary name, not linking:\n-//-> ");
           fwprint(stderr, dupelist[x]->d_name, 1);
           /* Just in case the rename succeeded yet still returned an error */
 #ifdef UNICODE
@@ -1855,17 +1857,21 @@ static inline void linkfiles(file_t *files, int hard)
           fprintf(stderr, "error: MultiByteToWideChar failed: "); fwprint(stderr, srcfile->d_name, 1);
           continue;
         }
-        if (CreateHardLinkW((LPCWSTR)wname, (LPCWSTR)wname2, NULL) == TRUE)
+        if (CreateHardLinkW((LPCWSTR)wname, (LPCWSTR)wname2, NULL) == TRUE) success = 1;
  #else
-        if (CreateHardLink(dupelist[x]->d_name, srcfile->d_name, NULL) == TRUE)
+        if (CreateHardLink(dupelist[x]->d_name, srcfile->d_name, NULL) == TRUE) success = 1;
  #endif
 #else
-        if (link(srcfile->d_name, dupelist[x]->d_name) == 0)
+        success = 0;
+        if (hard) {
+          if (link(srcfile->d_name, dupelist[x]->d_name) == 0) success = 1;
+        } else
+          //if (symlink(srcfile->d_name, dupelist[x]->d_name) == 0) success = 1;
 #endif /* ON_WINDOWS */
-        {
-          if (!ISFLAG(flags, F_HIDEPROGRESS)) printf("----> %s\n", dupelist[x]->d_name);
+        if (success) {
+          if (!ISFLAG(flags, F_HIDEPROGRESS)) printf("%s %s\n", (hard ? "---->" : "-@@->"), dupelist[x]->d_name);
         } else {
-          /* The hard link failed. Warn the user and put the link target back */
+          /* The link failed. Warn the user and put the link target back */
           if (!ISFLAG(flags, F_HIDEPROGRESS)) {
             printf("-//-> "); fwprint(stderr, dupelist[x]->d_name, 1);
           }
