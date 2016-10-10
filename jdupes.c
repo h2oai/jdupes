@@ -315,6 +315,41 @@ void sighandler(const int signum)
 }
 
 
+/* Out of memory */
+static void oom(void)
+{
+  fprintf(stderr, "\nout of memory\n");
+  exit(EXIT_FAILURE);
+}
+
+
+/* Create a relative symbolic link path for a destination file
+ * depth: 0 = shallowest depth possible, 1 = deepest depth possible
+ * Expects a pointer to a char array as third argument */
+static inline void get_relative_name(const char * const src,
+		const char * const dest, char *rel, int depth)
+{
+  const char *a, *b;
+  int depthcnt;
+
+  if (!src || !dest || !rel) {
+    fprintf(stderr, "Internal error: get_relative_name has NULL parameter\n");
+    fprintf(stderr, "Report this as a serious bug to the author\n");
+    exit(EXIT_FAILURE);
+  }
+  if (depth != 0) {
+    a = src; b = dest;
+    while(*a != '\0' && *b != '\0') {
+      /* insert deepest depth code */
+      a++; b++;
+    }
+  } else {
+    /* insert shallowest depth code */
+  }
+  return;
+}
+
+
 #ifdef UNICODE
 /* Copy Windows wide character arguments to UTF-8 */
 static void widearg_to_argv(int argc, wchar_t **wargv, char **argv)
@@ -328,7 +363,7 @@ static void widearg_to_argv(int argc, wchar_t **wargv, char **argv)
     if (len < 1) goto error_wc2mb;
 
     argv[counter] = (char *)malloc(len + 1);
-    if (!argv[counter]) goto error_oom;
+    if (!argv[counter]) oom();
     strncpy(argv[counter], temp, len + 1);
   }
   return;
@@ -338,9 +373,6 @@ error_bad_argv:
   exit(EXIT_FAILURE);
 error_wc2mb:
   fprintf(stderr, "fatal: WideCharToMultiByte failed\n");
-  exit(EXIT_FAILURE);
-error_oom:
-  fprintf(stderr, "out of memory\n");
   exit(EXIT_FAILURE);
 }
 
@@ -371,14 +403,6 @@ static int fwprint(FILE * const restrict stream, const char * const restrict str
 
 /* Compare two jody_hashes like memcmp() */
 #define HASH_COMPARE(a,b) ((a > b) ? 1:((a == b) ? 0:-1))
-
-
-/* Out of memory */
-static void oom(void)
-{
-  fprintf(stderr, "\nout of memory\n");
-  exit(EXIT_FAILURE);
-}
 
 
 static inline char **cloneargs(const int argc, char **argv)
@@ -1683,6 +1707,7 @@ static inline void linkfiles(file_t *files, int hard)
   static int i, success;
 #ifndef NO_SYMLINKS
   static int symsrc;
+  static char rel_path[4096];
 #endif
   static char temp_path[4096];
 
@@ -1867,8 +1892,10 @@ static inline void linkfiles(file_t *files, int hard)
         success = 0;
         if (hard) {
           if (link(srcfile->d_name, dupelist[x]->d_name) == 0) success = 1;
-        } else
-          {};//if (symlink(srcfile->d_name, dupelist[x]->d_name) == 0) success = 1;
+        } else {
+          get_relative_name(srcfile->d_name, dupelist[x]->d_name, rel_path, 1);
+          //if (symlink(rel_path, dupelist[x]->d_name) == 0) success = 1;
+        }
 #endif /* ON_WINDOWS */
         if (success) {
           if (!ISFLAG(flags, F_HIDEPROGRESS)) printf("%s %s\n", (hard ? "---->" : "-@@->"), dupelist[x]->d_name);
