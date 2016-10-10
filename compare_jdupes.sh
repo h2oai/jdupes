@@ -20,10 +20,10 @@ test ! -e ./jdupes && echo "Build jdupes first, silly" && exit 1
 
 echo -n "Installed $ORIG_DUPE:"
 sync
-time $ORIG_DUPE -nrq "$@" > foo || ERR=1
+time $ORIG_DUPE -nrq "$@" > installed_output.txt || ERR=1
 echo -en "\nBuilt jdupes:"
 sync
-time ./jdupes -nrq "$@" > bar || ERR=1
-diff -Nau foo bar
-rm foo bar
+time ./jdupes -nrq "$@" > built_output.txt || ERR=1
+diff -Nau installed_output.txt built_output.txt
+rm -f installed_output.txt built_output.txt
 test "$ERR" != "0" && echo "Errors were returned during execution"
