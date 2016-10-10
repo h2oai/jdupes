@@ -1770,7 +1770,9 @@ static inline void linkfiles(file_t *files, int hard)
         } else {
           /* Symlink prerequisite check code can go here */
           /* Do not attempt to symlink a file to itself */
+#ifndef NO_SYMLINKS
           if (x == symsrc) continue;
+#endif
         }
 #ifdef UNICODE
         if (!M2W(dupelist[x]->d_name, wname)) {
@@ -1866,7 +1868,7 @@ static inline void linkfiles(file_t *files, int hard)
         if (hard) {
           if (link(srcfile->d_name, dupelist[x]->d_name) == 0) success = 1;
         } else
-          //if (symlink(srcfile->d_name, dupelist[x]->d_name) == 0) success = 1;
+          {};//if (symlink(srcfile->d_name, dupelist[x]->d_name) == 0) success = 1;
 #endif /* ON_WINDOWS */
         if (success) {
           if (!ISFLAG(flags, F_HIDEPROGRESS)) printf("%s %s\n", (hard ? "---->" : "-@@->"), dupelist[x]->d_name);
