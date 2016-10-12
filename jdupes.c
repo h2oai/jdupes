@@ -309,7 +309,10 @@ static int interrupt = 0;
 void sighandler(const int signum)
 {
   (void)signum;
-  if (interrupt || !ISFLAG(flags, F_SOFTABORT)) exit(EXIT_FAILURE);
+  if (interrupt || !ISFLAG(flags, F_SOFTABORT)) {
+    fprintf(stderr, "\n");
+    exit(EXIT_FAILURE);
+  }
   interrupt = 1;
   return;
 }
