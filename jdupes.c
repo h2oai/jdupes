@@ -326,23 +326,21 @@ static void oom(void)
 }
 
 
-/* Create a relative symbolic link path for a destination file
- * depth: 0 = shallowest depth possible, 1 = deepest depth possible
- * Expects a pointer to a char array as third argument */
-static inline int get_relative_name(const char * const src,
-		const char * const dest, char *rel)
+/* Create a relative symbolic link path for a destination file */
+static inline char * get_relative_name(const char * const src,
+		const char * const dest)
 {
-  static char p1[4096], p2[4096];
+  static char p1[4096], p2[4096], rel_path[4096];
   static int depthcnt = 0;
   static const char *p;
 
-  if (!src || !dest || !rel) {
+  if (!src || !dest) {
     fprintf(stderr, "Internal error: get_relative_name has NULL parameter\n");
     fprintf(stderr, "Report this as a serious bug to the author\n");
     exit(EXIT_FAILURE);
   }
   /* XXX */
-  return 0;
+  return &rel_path;
 }
 
 
@@ -1703,7 +1701,7 @@ static inline void linkfiles(file_t *files, int hard)
   static int i, success;
 #ifndef NO_SYMLINKS
   static int symsrc;
-  static char rel_path[4096];
+  char *rel_path;
 #endif
   static char temp_path[4096];
 
@@ -1889,7 +1887,8 @@ static inline void linkfiles(file_t *files, int hard)
         if (hard) {
           if (link(srcfile->d_name, dupelist[x]->d_name) == 0) success = 1;
         } else {
-          if (!get_relative_name(srcfile->d_name, dupelist[x]->d_name, rel_path)) {
+          rel_path = get_relative_name(srcfile->d_name, dupelist[x]->d_name);
+          if (!rel_path) {
             fprintf(stderr, "warning: get_relative_name() failed");
 	    continue;
           }
