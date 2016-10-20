@@ -1781,7 +1781,7 @@ static inline void linkfiles(file_t *files, int hard)
               /* Don't show == arrows when not matching against other hard links */
               if (ISFLAG(flags, F_CONSIDERHARDLINKS))
                 if (!ISFLAG(flags, F_HIDEPROGRESS)) {
-                  printf("-==-> "); fwprint(stderr, dupelist[x]->d_name, 1);
+                  printf("-==-> "); fwprint(stdout, dupelist[x]->d_name, 1);
                 }
             continue;
             }
