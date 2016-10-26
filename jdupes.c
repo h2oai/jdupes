@@ -328,7 +328,7 @@ static void oom(void)
 
 /* Create a relative symbolic link path for a destination file */
 static inline char * get_relative_name(const char * const src,
-		const char * const dest)
+                const char * const dest)
 {
   static char p1[4096], p2[4096], rel_path[4096];
   static int depthcnt = 0;
@@ -418,7 +418,7 @@ static inline char **cloneargs(const int argc, char **argv)
 
 
 static int findarg(const char * const arg, const int start,
-		const int argc, char **argv)
+                const int argc, char **argv)
 {
   static int x;
 
@@ -431,7 +431,7 @@ static int findarg(const char * const arg, const int start,
 
 /* Find the first non-option argument after specified option. */
 static int nonoptafter(const char *option, const int argc,
-		char **oldargv, char **newargv, int optind)
+                char **oldargv, char **newargv, int optind)
 {
   static int x;
   static int targetind;
@@ -522,8 +522,8 @@ static inline int getfilestats(file_t * const restrict file)
 
 
 static void grokdir(const char * const restrict dir,
-		file_t * restrict * const restrict filelistp,
-		int recurse)
+                file_t * restrict * const restrict filelistp,
+                int recurse)
 {
   file_t * restrict newfile;
 #ifndef NO_SYMLINKS
@@ -750,7 +750,7 @@ error_cd:
 
 /* Use Jody Bruchon's hash function on part or all of a file */
 static hash_t *get_filehash(const file_t * const restrict checkfile,
-		const size_t max_read)
+                const size_t max_read)
 {
   static off_t fsize;
   /* This is an array because we return a pointer to it */
@@ -839,7 +839,7 @@ static inline void purgetree(filetree_t * const restrict tree)
 
 
 static inline void registerfile(filetree_t * restrict * const restrict nodeptr,
-		const enum tree_direction d, file_t * const restrict file)
+                const enum tree_direction d, file_t * const restrict file)
 {
   filetree_t * restrict branch;
 
@@ -1009,8 +1009,7 @@ static inline void rebalance_tree(filetree_t * const tree)
 #define TREE_DEPTH_UPDATE_MAX()
 #endif
 
-static file_t **checkmatch(filetree_t * restrict tree,
-		file_t * const restrict file)
+static file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict file)
 {
   int cmpresult = 0;
   const hash_t * restrict filehash;
@@ -1268,7 +1267,7 @@ static void printmatches(file_t * restrict files)
    - Number of non-zero-length files that have duplicates (if n_files != NULL)
    - Total number of duplicate file sets (groups) */
 static unsigned int get_max_dupes(const file_t *files, unsigned int * const restrict max,
-		unsigned int * const restrict n_files) {
+                unsigned int * const restrict n_files) {
   unsigned int groups = 0;
 
   *max = 0;
@@ -1558,7 +1557,7 @@ static int sort_pairs_by_mtime(file_t *f1, file_t *f2)
 
 #define IS_NUM(a) (((a >= '0') && (a <= '9')) ? 1 : 0)
 static inline int numeric_sort(const char * restrict c1,
-		const char * restrict c2)
+                const char * restrict c2)
 {
   int len1 = 0, len2 = 0;
   int precompare = 0;
@@ -1648,7 +1647,7 @@ static int sort_pairs_by_filename(file_t *f1, file_t *f2)
 
 
 static void registerpair(file_t **matchlist, file_t *newmatch,
-		int (*comparef)(file_t *f1, file_t *f2))
+                int (*comparef)(file_t *f1, file_t *f2))
 {
   file_t *traverse;
   file_t *back;
@@ -1758,7 +1757,7 @@ static inline void linkfiles(file_t *files, int hard)
         if (srcfile == NULL) {
           symsrc = 1;
           srcfile = dupelist[1];
-	}
+        }
 #else
         fprintf(stderr, "internal error: linkfiles(soft) called without symlink support\nPlease report this to the author as a program bug\n");
         exit(EXIT_FAILURE);
@@ -1848,8 +1847,10 @@ static inline void linkfiles(file_t *files, int hard)
         }
 #endif
 
+        /* Assemble a temporary file name */
         strcpy(temp_path, dupelist[x]->d_name);
-        strcat(temp_path, "._jdupes_tmp");
+        strcat(temp_path, ".__jdupes__.tmp");
+        /* Rename the source file to the temporary name */
 #ifdef UNICODE
         if (!M2W(temp_path, wname2)) {
           fprintf(stderr, "error: MultiByteToWideChar failed: "); fwprint(stderr, srcfile->d_name, 1);
@@ -1862,7 +1863,7 @@ static inline void linkfiles(file_t *files, int hard)
         if (i != 0) {
           fprintf(stderr, "warning: cannot move link target to a temporary name, not linking:\n-//-> ");
           fwprint(stderr, dupelist[x]->d_name, 1);
-          /* Just in case the rename succeeded yet still returned an error */
+          /* Just in case the rename succeeded yet still returned an error, roll back the rename */
 #ifdef UNICODE
           MoveFile(wname2, wname);
 #else
@@ -1871,6 +1872,7 @@ static inline void linkfiles(file_t *files, int hard)
           continue;
         }
 
+        /* Create the desired hard link with the original file's name */
         errno = 0;
 #ifdef ON_WINDOWS
  #ifdef UNICODE
@@ -1890,7 +1892,7 @@ static inline void linkfiles(file_t *files, int hard)
           rel_path = get_relative_name(srcfile->d_name, dupelist[x]->d_name);
           if (!rel_path) {
             fprintf(stderr, "warning: get_relative_name() failed");
-	    continue;
+            continue;
           }
           //if (symlink(rel_path, dupelist[x]->d_name) == 0) success = 1;
         }
@@ -1902,7 +1904,7 @@ static inline void linkfiles(file_t *files, int hard)
           if (!ISFLAG(flags, F_HIDEPROGRESS)) {
             printf("-//-> "); fwprint(stderr, dupelist[x]->d_name, 1);
           }
-          fprintf(stderr, "warning: unable to hard link '"); fwprint(stderr, dupelist[x]->d_name, 0);
+          fprintf(stderr, "warning: unable to link '"); fwprint(stderr, dupelist[x]->d_name, 0);
           fprintf(stderr, "' -> '"); fwprint(stderr, srcfile->d_name, 0);
           fprintf(stderr, "': %s\n", strerror(errno));
 #ifdef UNICODE
@@ -1942,7 +1944,8 @@ static inline void linkfiles(file_t *files, int hard)
 #else
           i = remove(dupelist[x]->d_name);
 #endif
-          if (i != 0) fprintf(stderr, "\nwarning: couldn't remove hard link to restore original file\n");
+          /* This last error really should not happen, but we can't assume it won't */
+          if (i != 0) fprintf(stderr, "\nwarning: couldn't remove link to restore original file\n");
           else {
 #ifdef UNICODE
             i = MoveFile(wname2, wname) ? 0 : 1;
