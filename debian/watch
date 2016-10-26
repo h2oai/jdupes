@@ -1,4 +1,0 @@
-version=3
-#https://github.com/jbruchon/jdupes/tags v(.*)\.tar\.gz
-opts=filenamemangle=s/.+\/v?(\d\S*)\.tar\.gz/jdupes-$1\.tar\.gz/ \
-  https://github.com/jbruchon/jdupes/tags .*/v?(\d\S*)\.tar\.gz
