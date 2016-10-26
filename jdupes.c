@@ -47,7 +47,7 @@
 #endif
 #ifdef HAVE_BTRFS_IOCTL_H
 #include <sys/ioctl.h>
-#include <btrfs/ioctl.h>
+#include <linux/btrfs.h>
 #endif
 
 /* Detect Windows and modify as needed */
