@@ -334,13 +334,19 @@ static inline char * get_relative_name(const char * const src,
   static int depthcnt = 0;
   static const char *p;
 
-  if (!src || !dest) {
+  if (!src || !dest) goto error_null_param;
+  /* XXX: code goes here, comments are for the weak */
+  /* Get working directory path */
+  /* Concatenate working directory to relative paths */
+  /* Collapse dot-dot path components */
+  /* Find where paths differ, counting each directory along the way */
+  /* Replace common parts of destination path with dot-dot */
+  return &rel_path;
+
+error_null_param:
     fprintf(stderr, "Internal error: get_relative_name has NULL parameter\n");
     fprintf(stderr, "Report this as a serious bug to the author\n");
     exit(EXIT_FAILURE);
-  }
-  /* XXX */
-  return &rel_path;
 }
 
 
