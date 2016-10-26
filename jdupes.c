@@ -1326,10 +1326,7 @@ void dedupefiles(file_t * restrict files)
   same = calloc(sizeof(struct btrfs_ioctl_same_args) +
                 sizeof(struct btrfs_ioctl_same_extent_info) * max_dupes, 1);
   dupe_filenames = string_malloc(max_dupes * sizeof(char *));
-  if (!same || !dupe_filenames) {
-    oom();
-    exit(EXIT_FAILURE);
-  }
+  if (!same || !dupe_filenames) oom();
 
   while (files) {
     if (files->hasdupes && files->size) {
@@ -1370,7 +1367,7 @@ void dedupefiles(file_t * restrict files)
       if (close(fd) == -1)
         fprintf(stderr, "Unable to close(\"%s\"): %s\n", files->d_name, strerror(errno));
 
-      if (ret == -1) {
+      if (ret < 0) {
         fprintf(stderr, "ioctl(\"%s\", BTRFS_IOC_FILE_EXTENT_SAME, [%u files]): %s\n",
           files->d_name, n_dupes, strerror(errno));
         goto cleanup;
