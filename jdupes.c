@@ -330,9 +330,7 @@ static void oom(void)
 static inline char * get_relative_name(const char * const src,
                 const char * const dest)
 {
-  static char p1[4096], p2[4096], rel_path[4096];
-  static int depthcnt = 0;
-  static const char *p;
+  //static char p1[4096], p2[4096], rel_path[4096];
 
   if (!src || !dest) goto error_null_param;
   /* XXX: code goes here, comments are for the weak */
@@ -341,7 +339,8 @@ static inline char * get_relative_name(const char * const src,
   /* Collapse dot-dot path components */
   /* Find where paths differ, counting each directory along the way */
   /* Replace common parts of destination path with dot-dot */
-  return &rel_path;
+  //return rel_path;
+  return NULL;
 
 error_null_param:
     fprintf(stderr, "Internal error: get_relative_name has NULL parameter\n");
