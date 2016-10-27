@@ -1333,7 +1333,7 @@ void dedupefiles(file_t * restrict files)
   get_max_dupes(files, &max_dupes, &max_files);
   same = calloc(sizeof(struct btrfs_ioctl_same_args) +
                 sizeof(struct btrfs_ioctl_same_extent_info) * max_dupes, 1);
-  dupe_filenames = string_malloc(max_dupes * sizeof(char *));
+  dupe_filenames = malloc(max_dupes * sizeof(char *));
   LOUD(fprintf(stderr, "dedupefiles structs: alloc1 size %lu => %p, alloc2 size %lu => %p\n",
         sizeof(struct btrfs_ioctl_same_args) + sizeof(struct btrfs_ioctl_same_extent_info) * max_dupes,
 	(void *)same, max_dupes * sizeof(char *), (void *)dupe_filenames);)
@@ -1423,7 +1423,7 @@ cleanup:
 
   if (!ISFLAG(flags, F_HIDEPROGRESS)) fprintf(stderr, "Deduplication done (%d files processed)\n", total_files);
   free(same);
-  string_free(dupe_filenames);
+  free(dupe_filenames);
   return;
 }
 #endif /* ENABLE_BTRFS */
