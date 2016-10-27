@@ -2307,6 +2307,8 @@ int main(int argc, char **argv)
     SETFLAG(flags, F_DEDUPEFILES);
     /* btrfs will do the byte-for-byte check itself */
     SETFLAG(flags, F_QUICKCOMPARE);
+    /* It is completely useless to dedupe zero-length extents */
+    SETFLAG(flags, F_EXCLUDEEMPTY);
 #else
     fprintf(stderr, "This program was built without btrfs support\n");
     exit(EXIT_FAILURE);
