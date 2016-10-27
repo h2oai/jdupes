@@ -1374,9 +1374,10 @@ void dedupefiles(file_t * restrict files)
       }
 
       for (cur_info = 0; cur_info < n_dupes; cur_info++) {
-        if ((status = same->info[cur_info].status) != 0) {
-          fprintf(stderr, "Couldn't dedupe %s => %s: %s\n", files->d_name,
-            dupe_filenames[cur_info], dedupeerrstr(status));
+        status = same->info[cur_info].status;
+        if (status != 0) {
+          fprintf(stderr, "Couldn't dedupe %s => %s: %s [%d]\n", files->d_name,
+            dupe_filenames[cur_info], dedupeerrstr(status), status);
         }
       }
 
