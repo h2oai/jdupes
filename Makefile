@@ -60,7 +60,7 @@ ifeq ($(OS), Windows_NT)
 	OBJECT_FILES += win_stat.o
 endif
 
-CFLAGS= $(COMPILER_OPTIONS) -I. $(CFLAGS_CONFIG) $(CFLAGS_EXTRA) $(HAVE_BTRFS_IOCTL_H)
+CFLAGS += $(COMPILER_OPTIONS) -I. $(CFLAGS_CONFIG) $(CFLAGS_EXTRA) $(HAVE_BTRFS_IOCTL_H)
 
 INSTALL_PROGRAM = $(INSTALL) -c -m 0755
 INSTALL_DATA    = $(INSTALL) -c -m 0644
@@ -78,7 +78,7 @@ OBJECT_FILES += jdupes.o jody_hash.o string_malloc.o $(ADDITIONAL_OBJECTS)
 all: jdupes
 
 jdupes: $(OBJECT_FILES)
-	$(CC) $(CFLAGS) -o jdupes $(OBJECT_FILES)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o jdupes $(OBJECT_FILES)
 
 installdirs:
 	test -d $(DESTDIR)$(BIN_DIR) || $(MKDIR) $(DESTDIR)$(BIN_DIR)
