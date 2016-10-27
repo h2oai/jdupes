@@ -316,9 +316,9 @@ void sighandler(const int signum)
 
 
 /* Out of memory */
-static void oom(void)
+static void oom(const char * const restrict msg)
 {
-  fprintf(stderr, "\nout of memory\n");
+  fprintf(stderr, "\nout of memory: %s\n", msg);
   exit(EXIT_FAILURE);
 }
 
@@ -359,7 +359,7 @@ static void widearg_to_argv(int argc, wchar_t **wargv, char **argv)
     if (len < 1) goto error_wc2mb;
 
     argv[counter] = (char *)malloc(len + 1);
-    if (!argv[counter]) oom();
+    if (!argv[counter]) oom("widearg_to_argv()");
     strncpy(argv[counter], temp, len + 1);
   }
   return;
@@ -407,11 +407,11 @@ static inline char **cloneargs(const int argc, char **argv)
   static char **args;
 
   args = (char **)string_malloc(sizeof(char*) * argc);
-  if (args == NULL) oom();
+  if (args == NULL) oom("cloneargs() start");
 
   for (x = 0; x < argc; x++) {
     args[x] = (char *)string_malloc(strlen(argv[x]) + 1);
-    if (args[x] == NULL) oom();
+    if (args[x] == NULL) oom("cloneargs() loop");
     strcpy(args[x], argv[x]);
   }
 
@@ -606,7 +606,7 @@ static void grokdir(const char * const restrict dir,
       /* Allocate the file_t and the d_name entries in one shot
        * Reusing lastchar (with a +1) saves us a strlen(dir) here */
       newfile = (file_t *)string_malloc(sizeof(file_t) + dirlen + d_name_len + 2);
-      if (!newfile) oom();
+      if (!newfile) oom("grokdir() filename");
       else newfile->next = *filelistp;
 
       newfile->d_name = (char *)newfile + sizeof(file_t);
@@ -847,7 +847,7 @@ static inline void registerfile(filetree_t * restrict * const restrict nodeptr,
 
   /* Allocate and initialize a new node for the file */
   branch = (filetree_t *)string_malloc(sizeof(filetree_t));
-  if (branch == NULL) oom();
+  if (branch == NULL) oom("registerfile() branch");
   branch->file = file;
   branch->left = NULL;
   branch->right = NULL;
@@ -1325,7 +1325,7 @@ void dedupefiles(file_t * restrict files)
   same = calloc(sizeof(struct btrfs_ioctl_same_args) +
                 sizeof(struct btrfs_ioctl_same_extent_info) * max_dupes, 1);
   dupe_filenames = string_malloc(max_dupes * sizeof(char *));
-  if (!same || !dupe_filenames) oom();
+  if (!same || !dupe_filenames) oom("dedupefiles() structures");
 
   /* Main dedupe loop */
   while (files) {
@@ -1428,7 +1428,7 @@ static void deletefiles(file_t *files, int prompt, FILE *tty)
   preserve = (int *) malloc(sizeof(int) * max);
   preservestr = (char *) malloc(INPUT_SIZE);
 
-  if (!dupelist || !preserve || !preservestr) oom();
+  if (!dupelist || !preserve || !preservestr) oom("deletefiles() structures");
 
   for (; files; files = files->next) {
     if (files->hasdupes) {
@@ -1473,7 +1473,7 @@ static void deletefiles(file_t *files, int prompt, FILE *tty)
         /* tail of buffer must be a newline */
         while (preservestr[i] != '\n') {
           tstr = (char *)realloc(preservestr, strlen(preservestr) + 1 + INPUT_SIZE);
-          if (!tstr) oom();
+          if (!tstr) oom("deletefiles() prompt string");
 
           preservestr = tstr;
           if (!fgets(preservestr + i + 1, INPUT_SIZE, tty))
@@ -1735,7 +1735,7 @@ static inline void linkfiles(file_t *files, int hard)
 
   dupelist = (file_t**) malloc(sizeof(file_t*) * max);
 
-  if (!dupelist) oom();
+  if (!dupelist) oom("linkfiles() dupelist");
 
   while (files) {
     if (files->hasdupes) {
@@ -2116,7 +2116,7 @@ int main(int argc, char **argv)
   /* Create a UTF-8 **argv from the wide version */
   static char **argv;
   argv = (char **)malloc(sizeof(char *) * argc);
-  if (!argv) oom();
+  if (!argv) oom("main() unicode argv");
   widearg_to_argv(argc, wargv, argv);
   /* Only use UTF-16 for terminal output, else use UTF-8 */
   if (!_isatty(_fileno(stdout))) out_mode = _O_U8TEXT;
