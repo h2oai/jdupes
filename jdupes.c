@@ -43,9 +43,6 @@
 
 /* Optional btrfs support */
 #ifdef ENABLE_BTRFS
-#define HAVE_BTRFS_IOCTL_H
-#endif
-#ifdef HAVE_BTRFS_IOCTL_H
 #include <sys/ioctl.h>
 #include <linux/btrfs.h>
 #endif
@@ -1293,7 +1290,7 @@ static unsigned int get_max_dupes(const file_t *files, unsigned int * const rest
 }
 
 
-#ifdef HAVE_BTRFS_IOCTL_H
+#ifdef ENABLE_BTRFS
 static char *dedupeerrstr(int err) {
   static char buf[1024];
 
@@ -1316,31 +1313,38 @@ void dedupefiles(file_t * restrict files)
 
   file_t *curfile;
   unsigned int n_dupes, max_dupes, cur_info;
-  unsigned int cur_file = 0, max_files;
+  unsigned int cur_file = 0, max_files, total_files = 0;
 
   int fd;
   int ret, status;
 
+  LOUD(fprintf(stderr, "Running dedupefiles()\n");)
+
+  /* Find the largest dupe set, alloc space to hold structs for it */
   get_max_dupes(files, &max_dupes, &max_files);
   same = calloc(sizeof(struct btrfs_ioctl_same_args) +
                 sizeof(struct btrfs_ioctl_same_extent_info) * max_dupes, 1);
   dupe_filenames = string_malloc(max_dupes * sizeof(char *));
   if (!same || !dupe_filenames) oom();
 
+  /* Main dedupe loop */
   while (files) {
+    LOUD(fprintf(stderr, "progress: file %d: hasdupes %d, size %jd\n", cur_file, files->hasdupes, (intmax_t)files->size);)
     if (files->hasdupes && files->size) {
       cur_file++;
       if (!ISFLAG(flags, F_HIDEPROGRESS)) {
-        fprintf(stderr, "\rDedupe [%u/%u] %u%% ", cur_file, max_files,
-            cur_file*100 / max_files);
+        fprintf(stderr, "Dedupe [%u/%u] %u%% \r", cur_file, max_files,
+            cur_file * 100 / max_files);
       }
 
+      /* Open each file to be deduplicated */
       cur_info = 0;
       for (curfile = files->duplicates; curfile; curfile = curfile->duplicates) {
           dupe_filenames[cur_info] = curfile->d_name;
-          fd = open(curfile->d_name, O_RDONLY);
+          fd = open(curfile->d_name, O_RDWR);
+          LOUD(fprintf(stderr, "opening loop: open('%s', O_RDWR) [%d]\n", curfile->d_name, fd);)
           if (fd == -1) {
-            fprintf(stderr, "Unable to open(\"%s\", O_RDONLY): %s\n",
+            fprintf(stderr, "Unable to open(\"%s\", O_RDWR): %s\n",
               curfile->d_name, strerror(errno));
             continue;
           }
@@ -1348,6 +1352,7 @@ void dedupefiles(file_t * restrict files)
           same->info[cur_info].fd = fd;
           same->info[cur_info].logical_offset = 0;
           cur_info++;
+	  total_files++;
       }
       n_dupes = cur_info;
 
@@ -1356,18 +1361,20 @@ void dedupefiles(file_t * restrict files)
       same->dest_count = n_dupes;
 
       fd = open(files->d_name, O_RDONLY);
+      LOUD(fprintf(stderr, "source: open('%s', O_RDONLY) [%d]\n", files->d_name, fd);)
       if (fd == -1) {
         fprintf(stderr, "Unable to open(\"%s\", O_RDONLY): %s\n", files->d_name,
           strerror(errno));
         goto cleanup;
       }
 
+      /* Call dedupe ioctl to pass the files to the kernel */
       ret = ioctl(fd, BTRFS_IOC_FILE_EXTENT_SAME, same);
-      if (close(fd) == -1)
-        fprintf(stderr, "Unable to close(\"%s\"): %s\n", files->d_name, strerror(errno));
+      LOUD(fprintf(stderr, "dedupe: ioctl('%s' [%d], BTRFS_IOC_FILE_EXTENT_SAME, same) => %d\n", files->d_name, fd, ret);)
+      if (close(fd) == -1) fprintf(stderr, "Unable to close(\"%s\"): %s\n", files->d_name, strerror(errno));
 
       if (ret < 0) {
-        fprintf(stderr, "ioctl(\"%s\", BTRFS_IOC_FILE_EXTENT_SAME, [%u files]): %s\n",
+        fprintf(stderr, "error: ioctl(\"%s\", BTRFS_IOC_FILE_EXTENT_SAME, [%u files]): %s\n",
           files->d_name, n_dupes, strerror(errno));
         goto cleanup;
       }
@@ -1393,13 +1400,12 @@ cleanup:
     files = files->next;
   }
 
-  if (!ISFLAG(flags, F_HIDEPROGRESS))
-    fprintf(stderr, "\r%40s\r", " ");
+  if (!ISFLAG(flags, F_HIDEPROGRESS)) fprintf(stderr, "Deduplication done (%d files processed)\n", total_files);
   free(same);
   string_free(dupe_filenames);
   return;
 }
-#endif /* HAVE_BTRFS_IOCTL_H */
+#endif /* ENABLE_BTRFS */
 
 static void deletefiles(file_t *files, int prompt, FILE *tty)
 {
@@ -1979,7 +1985,7 @@ static inline void help_text(void)
   printf("Usage: jdupes [options] DIRECTORY...\n\n");
 
   printf(" -A --nohidden    \texclude hidden files from consideration\n");
-#ifdef HAVE_BTRFS_IOCTL_H
+#ifdef ENABLE_BTRFS
   printf(" -B --dedupe      \tSend matches to btrfs for block-level deduplication\n");
 #endif
   printf(" -d --delete      \tprompt user for files to preserve and delete all\n");
@@ -2276,7 +2282,7 @@ int main(int argc, char **argv)
       }
       break;
     case 'B':
-#ifdef HAVE_BTRFS_IOCTL_H
+#ifdef ENABLE_BTRFS
     SETFLAG(flags, F_DEDUPEFILES);
     /* btrfs will do the byte-for-byte check itself */
     SETFLAG(flags, F_QUICKCOMPARE);
@@ -2485,9 +2491,9 @@ skip_file_scan:
 #ifndef NO_HARDLINKS
   if (ISFLAG(flags, F_HARDLINKFILES)) linkfiles(files, 1);
 #endif /* NO_HARDLINKS */
-#ifdef HAVE_BTRFS_IOCTL_H
+#ifdef ENABLE_BTRFS
   if (ISFLAG(flags, F_DEDUPEFILES)) dedupefiles(files);
-#endif /* HAVE_BTRFS_IOCTL_H */
+#endif /* ENABLE_BTRFS */
   if (ISFLAG(flags, F_PRINTMATCHES)) printmatches(files);
 
   purgetree(checktree);

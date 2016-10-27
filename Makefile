@@ -12,8 +12,9 @@ PREFIX = /usr
 # To disable long options, uncomment the following line.
 #CFLAGS_CONFIG += -DOMIT_GETOPT_LONG
 
-# Uncomment if you have btrfs/ioctl.h. Needed for --dedupe.
-#HAVE_BTRFS_IOCTL_H = -DHAVE_BTRFS_IOCTL_H
+# Uncomment for Linux with BTRFS support. Needed for -B/--dedupe.
+# This can also be enabled at build time: 'make ENABLE_BTRFS=1'
+#CFLAGS += -DENABLE_BTRFS
 
 #####################################################################
 # Developer Configuration Section                                   #
@@ -45,6 +46,10 @@ CC ?= gcc
 COMPILER_OPTIONS = -Wall -Wextra -Wwrite-strings -Wcast-align -Wstrict-aliasing -pedantic -Wstrict-overflow
 COMPILER_OPTIONS += -std=gnu99 -O2 -g -D_FILE_OFFSET_BITS=64 -fstrict-aliasing -pipe
 
+#####################################################################
+# no need to modify anything beyond this point                      #
+#####################################################################
+
 # Debugging code inclusion
 ifdef LOUD
 DEBUG=1
@@ -60,7 +65,16 @@ ifeq ($(OS), Windows_NT)
 	OBJECT_FILES += win_stat.o
 endif
 
-CFLAGS += $(COMPILER_OPTIONS) -I. $(CFLAGS_CONFIG) $(CFLAGS_EXTRA) $(HAVE_BTRFS_IOCTL_H)
+# Remap old BTRFS support option to new name
+ifdef HAVE_BTRFS_IOCTL_H
+ENABLE_BTRFS=1
+endif
+# New BTRFS support option
+ifdef ENABLE_BTRFS
+CFLAGS += -DENABLE_BTRFS
+endif
+
+CFLAGS += $(COMPILER_OPTIONS) -I. $(CFLAGS_CONFIG) $(CFLAGS_EXTRA)
 
 INSTALL_PROGRAM = $(INSTALL) -c -m 0755
 INSTALL_DATA    = $(INSTALL) -c -m 0644
@@ -70,10 +84,6 @@ INSTALL_DATA    = $(INSTALL) -c -m 0644
 #ADDITIONAL_OBJECTS += getopt.o
 
 OBJECT_FILES += jdupes.o jody_hash.o string_malloc.o $(ADDITIONAL_OBJECTS)
-
-#####################################################################
-# no need to modify anything beyond this point                      #
-#####################################################################
 
 all: jdupes
 
