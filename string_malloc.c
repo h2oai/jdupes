@@ -84,6 +84,9 @@ void *string_malloc(size_t len)
 	/* Calling with no actual length is invalid */
 	if (len < 1) return NULL;
 
+	/* Pass-through allocations larger than page size to malloc() */
+	if (len > (SMA_PAGE_SIZE - sizeof(size_t))) return malloc(len);
+
 	/* Align objects where possible */
 	if (len & (sizeof(uintptr_t) - 1)) {
 		len &= ~(sizeof(uintptr_t) - 1);
