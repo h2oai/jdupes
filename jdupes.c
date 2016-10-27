@@ -1318,13 +1318,16 @@ void dedupefiles(file_t * restrict files)
   int fd;
   int ret, status;
 
-  LOUD(fprintf(stderr, "Running dedupefiles()\n");)
+  LOUD(fprintf(stderr, "\nRunning dedupefiles()\n");)
 
   /* Find the largest dupe set, alloc space to hold structs for it */
   get_max_dupes(files, &max_dupes, &max_files);
   same = calloc(sizeof(struct btrfs_ioctl_same_args) +
                 sizeof(struct btrfs_ioctl_same_extent_info) * max_dupes, 1);
   dupe_filenames = string_malloc(max_dupes * sizeof(char *));
+  LOUD(fprintf(stderr, "dedupefiles structs: alloc1 size %lu => %p, alloc2 size %lu => %p\n",
+        sizeof(struct btrfs_ioctl_same_args) + sizeof(struct btrfs_ioctl_same_extent_info) * max_dupes,
+	(void *)same, max_dupes * sizeof(char *), (void *)dupe_filenames);)
   if (!same || !dupe_filenames) oom("dedupefiles() structures");
 
   /* Main dedupe loop */
@@ -2068,7 +2071,7 @@ int main(int argc, char **argv)
   static char **oldargv;
   static char *endptr;
 #ifndef USE_TREE_REBALANCE
-    filetree_t *checktree = NULL;
+  filetree_t *checktree = NULL;
 #endif
   static int firstrecurse;
   static int opt;
