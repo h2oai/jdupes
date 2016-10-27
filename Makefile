@@ -10,11 +10,15 @@ PREFIX = /usr
 
 # Certain platforms do not support long options (command line options).
 # To disable long options, uncomment the following line.
-#CFLAGS_CONFIG += -DOMIT_GETOPT_LONG
+#CFLAGS += -DOMIT_GETOPT_LONG
 
 # Uncomment for Linux with BTRFS support. Needed for -B/--dedupe.
 # This can also be enabled at build time: 'make ENABLE_BTRFS=1'
 #CFLAGS += -DENABLE_BTRFS
+
+# Uncomment for low memory usage at the expense of speed and features
+# This can be enabled at build time: 'make LOW_MEMORY=1'
+#LOW_MEMORY=1
 
 #####################################################################
 # Developer Configuration Section                                   #
@@ -73,8 +77,12 @@ endif
 ifdef ENABLE_BTRFS
 CFLAGS += -DENABLE_BTRFS
 endif
+# Low memory mode
+ifdef LOW_MEMORY
+CFLAGS += -DLOW_MEMORY -DJODY_HASH_WIDTH=32 -DSMA_PAGE_SIZE=32768 -DNO_PERMS
+endif
 
-CFLAGS += $(COMPILER_OPTIONS) -I. $(CFLAGS_CONFIG) $(CFLAGS_EXTRA)
+CFLAGS += $(COMPILER_OPTIONS) -I. $(CFLAGS_EXTRA)
 
 INSTALL_PROGRAM = $(INSTALL) -c -m 0755
 INSTALL_DATA    = $(INSTALL) -c -m 0644

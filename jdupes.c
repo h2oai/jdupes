@@ -192,8 +192,17 @@ static const char *extensions[] = {
     #ifdef ENABLE_BTRFS
     "btrfs",
     #endif
+    #ifdef LOW_MEMORY
+    "lowmem",
+    #endif
     #ifdef SMA_PAGE_SIZE
     "smapage",
+    #endif
+    #if JODY_HASH_WIDTH == 32
+    "hash32",
+    #endif
+    #if JODY_HASH_WIDTH == 16
+    "hash16",
     #endif
     #ifdef NO_PERMS
     "noperm",
@@ -219,33 +228,33 @@ static const char *extensions[] = {
  * Also look into compacting the true/false flags into one integer and see
  * if that improves performance (it'll certainly lower memory usage) */
 typedef struct _file {
+  struct _file *duplicates;
+  struct _file *next;
   char *d_name;
-  uint_fast8_t valid_stat; /* Only call stat() once per file (1 = stat'ed) */
-  off_t size;
   dev_t device;
-  jdupes_ino_t inode;
   mode_t mode;
+  off_t size;
+  jdupes_ino_t inode;
+  hash_t filehash_partial;
+  hash_t filehash;
+  time_t mtime;
+  unsigned int user_order; /* Order of the originating command-line parameter */
+#ifndef NO_PERMS
+  uid_t uid;
+  gid_t gid;
+#endif
 #ifdef ON_WINDOWS
  #ifndef NO_HARDLINKS
   DWORD nlink;
  #endif
 #endif
-#ifndef NO_PERMS
-  uid_t uid;
-  gid_t gid;
-#endif
 #ifndef NO_SYMLINKS
   uint_fast8_t is_symlink;
 #endif
-  time_t mtime;
-  unsigned int user_order; /* Order of the originating command-line parameter */
-  hash_t filehash_partial;
-  hash_t filehash;
+  uint_fast8_t valid_stat; /* Only call stat() once per file (1 = stat'ed) */
   uint_fast8_t filehash_partial_set;  /* 1 = filehash_partial is valid */
   uint_fast8_t filehash_set;  /* 1 = filehash is valid */
   uint_fast8_t hasdupes; /* 1 only if file is first on duplicate chain */
-  struct _file *duplicates;
-  struct _file *next;
 } file_t;
 
 typedef struct _filetree {
