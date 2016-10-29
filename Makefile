@@ -67,6 +67,8 @@ endif
 ifeq ($(OS), Windows_NT)
 	COMPILER_OPTIONS += -D__USE_MINGW_ANSI_STDIO=1 -municode
 	OBJECT_FILES += win_stat.o
+	override undefine ENABLE_BTRFS
+	override undefine HAVE_BTRFS_IOCTL_H
 endif
 
 # Remap old BTRFS support option to new name
