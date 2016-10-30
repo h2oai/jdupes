@@ -2530,8 +2530,9 @@ skip_file_scan:
     fprintf(stderr, "%ju total files, %ju comparisons, branch L %u, R %u, both %u\n",
         filecount, comparisons, left_branch, right_branch,
         left_branch + right_branch);
-    fprintf(stderr, "Max tree depth: %u; SMA alloc: %ju, free ign: %ju, free good: %ju\n",
-        max_depth, sma_allocs, sma_free_ignored, sma_free_good);
+    fprintf(stderr, "Max tree depth: %u; SMA: allocs %ju, free %ju, fail %ju, reuse %ju, scan %ju, tails %ju\n",
+        max_depth, sma_allocs, sma_free_good, sma_free_ignored,
+	sma_free_reclaimed, sma_free_scanned, sma_free_tails);
 #ifdef ON_WINDOWS
  #ifndef NO_HARDLINKS
     if (ISFLAG(flags, F_HARDLINKFILES))

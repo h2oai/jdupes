@@ -8,27 +8,50 @@
 
 #include <stdlib.h>
 #include <stdint.h>
+#include "string_malloc.h"
 
-/* Must be divisible by uintptr_t */
+/* Size of pages to allocate at once. Must be divisible by uintptr_t.
+ * The maximum object size is this page size minus about 16 bytes! */
 #ifndef SMA_PAGE_SIZE
 #define SMA_PAGE_SIZE 262144
+#endif
+
+/* Max freed pointers to remember. Increasing this number allows storing
+ * more free objects but can slow down allocations. Don't increase it if
+ * the program's total reused freed alloc counter doesn't increase as a
+ * result or you're slowing allocs down to no benefit. */
+#ifndef SMA_MAX_FREE
+#define SMA_MAX_FREE 32
+#endif
+
+/* Minimum empty object at end of page to consider adding to free list */
+#ifndef SMA_MIN_SLACK
+#define SMA_MIN_SLACK 8
 #endif
 
 static void *sma_head = NULL;
 static uintptr_t *sma_lastpage = NULL;
 static unsigned int sma_pages = 0;
-static size_t sma_lastfree = 0;
+static void *sma_freelist[SMA_MAX_FREE];
+static int sma_freelist_cnt = 0;
 static size_t sma_nextfree = sizeof(uintptr_t);
 
 #ifdef DEBUG
 uintmax_t sma_allocs = 0;
 uintmax_t sma_free_ignored = 0;
 uintmax_t sma_free_good = 0;
+uintmax_t sma_free_reclaimed = 0;
+uintmax_t sma_free_scanned = 0;
+uintmax_t sma_free_tails = 0;
+ #define DBG(a) a
+#else
+ #define DBG(a)
 #endif
 
 
 /* This function is for debugging the string table only! */
 #if 0
+#include <stdio.h>
 static void dump_string_table(void)
 {
 	char *p = sma_head;
@@ -54,6 +77,54 @@ static void dump_string_table(void)
 #endif
 
 
+/* Scan the freed chunk list for a suitably sized object */
+static inline void *scan_freelist(const size_t size)
+{
+	char *min_p, *object;
+	size_t sz, min = 0;
+	int i, used = 0;
+
+	/* Don't bother scanning if the list is empty */
+	if (sma_freelist_cnt == 0) return NULL;
+
+	for (i = 0; i < SMA_MAX_FREE; i++) {
+		/* Stop scanning once we run out of valid entries */
+		if (used == sma_freelist_cnt) return NULL;
+
+		DBG(sma_free_scanned++;)
+		object = sma_freelist[i];
+		/* Skip empty entries */
+		if (object == NULL) continue;
+
+		sz = *(size_t *)object;
+		used++;
+
+		/* Skip smaller objects */
+		if (sz < size) continue;
+		/* Object is big enough; record if it's the new minimum */
+		if (min == 0 || sz < min) {
+			min = sz;
+			min_p = object;
+			/* Always stop scanning if exact sized object found */
+			if (sz == size) break;
+		}
+	}
+
+	/* Enhancement TODO: split the free item if it's big enough */
+
+	/* Return smallest object found and delete from free list */
+	if (min != 0) {
+		sma_freelist[i] = NULL;
+		sma_freelist_cnt--;
+		min_p += sizeof(size_t);
+		return min_p;
+	}
+	/* Fall through - free list search failed */
+	return NULL;
+}
+
+
+/* malloc() a new page for string_malloc to use */
 static inline void *string_malloc_page(void)
 {
 	uintptr_t * restrict pageptr;
@@ -84,9 +155,6 @@ void *string_malloc(size_t len)
 	/* Calling with no actual length is invalid */
 	if (len < 1) return NULL;
 
-	/* Pass-through allocations larger than page size to malloc() */
-	if (len > (SMA_PAGE_SIZE - sizeof(size_t))) return malloc(len);
-
 	/* Align objects where possible */
 	if (len & (sizeof(uintptr_t) - 1)) {
 		len &= ~(sizeof(uintptr_t) - 1);
@@ -95,19 +163,51 @@ void *string_malloc(size_t len)
 	/* Make room for size prefix */
 	len += sizeof(size_t);
 
-	/* Refuse to allocate a space larger than we can store */
-	if (len > (unsigned int)(SMA_PAGE_SIZE - sizeof(uintptr_t))) return NULL;
+	/* Pass-through allocations larger than maximum object size to malloc() */
+	if (len > (SMA_PAGE_SIZE - sizeof(uintptr_t) - sizeof(size_t))) {
+		/* Allocate the space */
+		address = (char *)malloc(len + sizeof(size_t));
+		if (!address) return NULL;
+		/* Prefix object with its size */
+		*(size_t *)address = (size_t)len;
+		address += sizeof(size_t);
+		DBG(sma_allocs++;)
+		return (void *)address;
+	}
 
 	/* Initialize on first use */
 	if (sma_pages == 0) {
+		/* Initialize the freed object list */
+		for (int i = 0; i < SMA_MAX_FREE; i++) sma_freelist[i] = NULL;
+		/* Allocate first page and set up for first allocation */
 		sma_head = string_malloc_page();
 		if (!sma_head) return NULL;
 		sma_nextfree = (2 * sizeof(uintptr_t));
 		page = sma_head;
 	}
 
-	/* Allocate new pages when objects don't fit anymore */
+	/* Allocate objects from the free list first */
+	address = (char *)scan_freelist(len);
+	if (address != NULL) {
+		DBG(sma_free_reclaimed++;)
+		return address;
+	}
+
+	/* Allocate new page if this object won't fit */
 	if ((sma_nextfree + len) > SMA_PAGE_SIZE) {
+		size_t sz;
+		char *tailaddr;
+		/* See if remaining space is usable */
+		if (sma_freelist_cnt < SMA_MAX_FREE && sma_nextfree < SMA_PAGE_SIZE) {
+			/* Get total remaining space size */
+			sz = SMA_PAGE_SIZE - sma_nextfree;
+			if (sz >= (SMA_MIN_SLACK + sizeof(size_t))) {
+				tailaddr = (char *)page + sma_nextfree;
+				*(size_t *)tailaddr = (size_t)sz;
+				string_free(tailaddr + sizeof(size_t));
+				DBG(sma_free_tails++;)
+			}
+		}
 		page = string_malloc_page();
 		if (!page) return NULL;
 		sma_nextfree = (2 * sizeof(uintptr_t));
@@ -118,45 +218,36 @@ void *string_malloc(size_t len)
 	/* Prefix object with its size */
 	*(size_t *)address = (size_t)len;
 	address += sizeof(size_t);
-	sma_lastfree = sma_nextfree;
 	sma_nextfree += len;
 
-#ifdef DEBUG
-	sma_allocs++;
-#endif
-	return address;
+	DBG(sma_allocs++;)
+	return (void *)address;
 }
 
 
-/* Roll back the last allocation */
-void string_free(const void * restrict addr)
+/* Free an object, adding to free list if possible */
+void string_free(void * const restrict addr)
 {
-	static const char * restrict p;
+	int i = 0;
 
-	/* Do nothing on NULL address or no last length */
-	if ((addr == NULL) || (sma_lastfree < sizeof(uintptr_t))) {
-#ifdef DEBUG
-		sma_free_ignored++;
-#endif
-		return;
+	/* Do nothing on NULL address or full free list */
+	if ((addr == NULL) || sma_freelist_cnt == SMA_MAX_FREE)
+		goto sf_failed;
+
+	/* Add object to free list */
+	while (i < SMA_MAX_FREE) {
+		if (sma_freelist[i] == NULL) {
+			sma_freelist[i] = (char *)addr - sizeof(size_t);
+			sma_freelist_cnt++;
+			DBG(sma_free_good++;)
+			return;
+		}
+		i++;
 	}
 
-	p = (char *)sma_lastpage + sma_lastfree;
-
-	/* Only take action on the last pointer in the page */
-	addr = (void *)((uintptr_t)addr - sizeof(size_t));
-	if ((uintptr_t)addr != (uintptr_t)p) {
-#ifdef DEBUG
-		sma_free_ignored++;
-#endif
-		return;
-	}
-
-	sma_nextfree = sma_lastfree;
-	sma_lastfree = 0;
-#ifdef DEBUG
-	sma_free_good++;
-#endif
+	/* Fall through */
+sf_failed:
+	DBG(sma_free_ignored++;)
 	return;
 }
 

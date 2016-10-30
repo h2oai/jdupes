@@ -17,10 +17,13 @@ extern "C" {
 extern uintmax_t sma_allocs;
 extern uintmax_t sma_free_ignored;
 extern uintmax_t sma_free_good;
+extern uintmax_t sma_free_scanned;
+extern uintmax_t sma_free_reclaimed;
+extern uintmax_t sma_free_tails;
 #endif
 
 extern void *string_malloc(size_t len);
-extern void string_free(const void * restrict addr);
+extern void string_free(void * const restrict addr);
 extern void string_malloc_destroy(void);
 
 #ifdef __cplusplus
