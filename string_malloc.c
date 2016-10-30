@@ -26,7 +26,7 @@
 
 /* Minimum free object size to consider adding to free list */
 #ifndef SMA_MIN_SLACK
-#define SMA_MIN_SLACK 128
+#define SMA_MIN_SLACK 64
 #endif
 
 static void *sma_head = NULL;

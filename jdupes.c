@@ -367,7 +367,7 @@ static void widearg_to_argv(int argc, wchar_t **wargv, char **argv)
     len = W2M(wargv[counter], &temp);
     if (len < 1) goto error_wc2mb;
 
-    argv[counter] = (char *)malloc(len + 1);
+    argv[counter] = (char *)string_malloc(len + 1);
     if (!argv[counter]) oom("widearg_to_argv()");
     strncpy(argv[counter], temp, len + 1);
   }
@@ -612,13 +612,13 @@ static void grokdir(const char * const restrict dir,
       *tp = '\0';
       d_name_len++;
 
-      /* Allocate the file_t and the d_name entries in one shot
-       * Reusing dirlen (with a +1) saves us a strlen(dir) here */
-      newfile = (file_t *)string_malloc(sizeof(file_t) + dirlen + d_name_len + 2);
-      if (!newfile) oom("grokdir() filename");
-      else newfile->next = *filelistp;
+      /* Allocate the file_t and the d_name entries */
+      newfile = (file_t *)string_malloc(sizeof(file_t));
+      if (!newfile) oom("grokdir() file structure");
+      newfile->d_name = (char *)string_malloc(dirlen + d_name_len + 2);
+      if (!newfile->d_name) oom("grokdir() filename");
 
-      newfile->d_name = (char *)newfile + sizeof(file_t);
+      newfile->next = *filelistp;
       newfile->user_order = user_dir_count;
       newfile->size = -1;
       newfile->device = 0;
@@ -651,7 +651,8 @@ static void grokdir(const char * const restrict dir,
         tp = basename(tp);
         if (tp[0] == '.' && strcmp(tp, ".") && strcmp(tp, "..")) {
           LOUD(fprintf(stderr, "grokdir: excluding hidden file (-A on)\n"));
-          string_free((char *)newfile);
+          string_free(newfile->d_name);
+          string_free(newfile);
           continue;
         }
       }
@@ -661,14 +662,16 @@ static void grokdir(const char * const restrict dir,
       i = getfilestats(newfile);
       if (i || newfile->size == -1) {
         LOUD(fprintf(stderr, "grokdir: excluding due to bad stat()\n"));
-        string_free((char *)newfile);
+        string_free(newfile->d_name);
+        string_free(newfile);
         continue;
       }
 
       /* Exclude zero-length files if requested */
       if (!S_ISDIR(newfile->mode) && newfile->size == 0 && ISFLAG(flags, F_EXCLUDEEMPTY)) {
         LOUD(fprintf(stderr, "grokdir: excluding zero-length empty file (-n on)\n"));
-        string_free((char *)newfile);
+        string_free(newfile->d_name);
+        string_free(newfile);
         continue;
       }
 
@@ -679,7 +682,8 @@ static void grokdir(const char * const restrict dir,
             ((excludetype == LARGERTHAN) && (newfile->size > excludesize))
         ) {
           LOUD(fprintf(stderr, "grokdir: excluding based on xsize limit (-x set)\n"));
-          string_free((char *)newfile);
+          string_free(newfile->d_name);
+          string_free(newfile);
           continue;
         }
       }
@@ -688,7 +692,8 @@ static void grokdir(const char * const restrict dir,
       /* Get lstat() information */
       if (lstat(newfile->d_name, &linfo) == -1) {
         LOUD(fprintf(stderr, "grokdir: excluding due to bad lstat()\n"));
-        string_free((char *)newfile);
+        string_free(newfile->d_name);
+        string_free(newfile);
         continue;
       }
 #endif
@@ -702,7 +707,8 @@ static void grokdir(const char * const restrict dir,
         hll_exclude++;
   #endif
         LOUD(fprintf(stderr, "grokdir: excluding due to Windows 1024 hard link limit\n"));
-        string_free((char *)newfile);
+        string_free(newfile->d_name);
+        string_free(newfile);
         continue;
       }
  #endif
@@ -721,7 +727,8 @@ static void grokdir(const char * const restrict dir,
         }
 #endif
         LOUD(fprintf(stderr, "grokdir: directory: not recursing\n"));
-        string_free((char *)newfile);
+        string_free(newfile->d_name);
+        string_free(newfile);
       } else {
         /* Add regular files to list, including symlink targets if requested */
 #ifndef NO_SYMLINKS
@@ -734,7 +741,8 @@ static void grokdir(const char * const restrict dir,
           progress++;
         } else {
           LOUD(fprintf(stderr, "grokdir: not a regular file: %s\n", newfile->d_name);)
-          string_free((char *)newfile);
+          string_free(newfile->d_name);
+          string_free(newfile);
         }
       }
     }
@@ -838,14 +846,6 @@ static hash_t *get_filehash(const file_t * const restrict checkfile,
 
   LOUD(fprintf(stderr, "get_filehash: returning hash: 0x%016jx\n", (uintmax_t)*hash));
   return hash;
-}
-
-
-static inline void purgetree(filetree_t * const restrict tree)
-{
-  if (tree->left != NULL) purgetree(tree->left);
-  if (tree->right != NULL) purgetree(tree->right);
-  string_free(tree);
 }
 
 
@@ -2136,7 +2136,7 @@ int main(int argc, char **argv)
 #ifdef UNICODE
   /* Create a UTF-8 **argv from the wide version */
   static char **argv;
-  argv = (char **)malloc(sizeof(char *) * argc);
+  argv = (char **)string_malloc(sizeof(char *) * argc);
   if (!argv) oom("main() unicode argv");
   widearg_to_argv(argc, wargv, argv);
   /* Only use UTF-16 for terminal output, else use UTF-8 */
@@ -2519,7 +2519,6 @@ skip_file_scan:
 #endif /* ENABLE_BTRFS */
   if (ISFLAG(flags, F_PRINTMATCHES)) printmatches(files);
 
-  purgetree(checktree);
   string_malloc_destroy();
 
 #ifdef DEBUG
