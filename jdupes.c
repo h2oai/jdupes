@@ -613,7 +613,7 @@ static void grokdir(const char * const restrict dir,
       d_name_len++;
 
       /* Allocate the file_t and the d_name entries in one shot
-       * Reusing lastchar (with a +1) saves us a strlen(dir) here */
+       * Reusing dirlen (with a +1) saves us a strlen(dir) here */
       newfile = (file_t *)string_malloc(sizeof(file_t) + dirlen + d_name_len + 2);
       if (!newfile) oom("grokdir() filename");
       else newfile->next = *filelistp;

@@ -24,9 +24,9 @@
 #define SMA_MAX_FREE 32
 #endif
 
-/* Minimum empty object at end of page to consider adding to free list */
+/* Minimum free object size to consider adding to free list */
 #ifndef SMA_MIN_SLACK
-#define SMA_MIN_SLACK 8
+#define SMA_MIN_SLACK 128
 #endif
 
 static void *sma_head = NULL;
@@ -232,6 +232,10 @@ void string_free(void * const restrict addr)
 
 	/* Do nothing on NULL address or full free list */
 	if ((addr == NULL) || sma_freelist_cnt == SMA_MAX_FREE)
+		goto sf_failed;
+
+	/* Tiny objects keep big ones from being freed; ignore them */
+	if (*(size_t *)((char *)addr - sizeof(size_t)) < (SMA_MIN_SLACK + sizeof(size_t)))
 		goto sf_failed;
 
 	/* Add object to free list */
