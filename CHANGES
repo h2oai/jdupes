@@ -1,3 +1,11 @@
+jdupes 1.5.1
+
+- Significant reduction in memory usage (with a bonus tiny speed boost)
+- Improvements in string_malloc memory allocator code
+- Bug fixes for output formatting inconsistencies
+- Major BTRFS dedupe compilation and functionality fixes
+- LOW_MEMORY compile option added for more size/speed tradeoff control
+
 jdupes 1.5
 
 - Invert -Z option: only "soft abort" if asked explicitly to do so

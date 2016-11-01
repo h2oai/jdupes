@@ -159,14 +159,14 @@ file. If more than 1023 links are created for a file, an error results."
 Contact Information
 --------------------------------------------------------------------------
 For all jdupes inquiries, contact Jody Bruchon <jody@jodybruchon.com>
-Please do NOT contact Adrian Lopez about issues with jdupes!
+Please DO NOT contact Adrian Lopez about issues with jdupes.
 
 
 Legal Information
 --------------------------------------------------------------------------
-jdupes is Copyright (C) 2015-2016 by Jody Bruchon
+jdupes is Copyright (C) 2015-2016 by Jody Bruchon <jody@jodybruchon.com>
 Derived from the original 'fdupes' (C) 1999-2016 by Adrian Lopez
-Includes jody_hash (C) 2015-2016 Jody Bruchon <jody@jodybruchon.com>
+Includes jody_hash and string_malloc, (C) 2015-2016 Jody Bruchon
 
 Permission is hereby granted, free of charge, to any person
 obtaining a copy of this software and associated documentation files
