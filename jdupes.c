@@ -2024,7 +2024,7 @@ static inline void help_text(void)
   printf(" -i --reverse     \treverse (invert) the match sort order\n");
   printf(" -I --isolate     \tfiles in the same specified directory won't match\n");
 #ifndef NO_SYMLINKS
-  printf(" -l --linksoft    \tsymbolically link all duplicate files without prompting\n");
+//  printf(" -l --linksoft    \tsymbolically link all duplicate files without prompting\n");
 #endif
 #ifndef NO_HARDLINKS
   printf(" -L --linkhard    \thard link all duplicate files without prompting\n");
@@ -2119,7 +2119,7 @@ int main(int argc, char **argv)
     { "recurse:", 0, 0, 'R' },
     { "recursive:", 0, 0, 'R' },
 #ifndef NO_SYMLINKS
-    { "linksoft", 0, 0, 'l' },
+//    { "linksoft", 0, 0, 'l' },
     { "symlinks", 0, 0, 's' },
 #endif
     { "size", 0, 0, 'S' },
@@ -2149,7 +2149,8 @@ int main(int argc, char **argv)
   oldargv = cloneargs(argc, argv);
 
   while ((opt = GETOPT(argc, argv,
-  "@ABdDfhHiIlLmnNOpqQrRsSvZo:x:"
+  "@ABdDfhHiILmnNOpqQrRsSvZo:x:"
+//  "@ABdDfhHiIlLmnNOpqQrRsSvZo:x:"
 #ifndef OMIT_GETOPT_LONG
           , long_options, NULL
 #endif
