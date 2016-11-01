@@ -658,8 +658,7 @@ static void grokdir(const char * const restrict dir,
       }
 
       /* Get file information and check for validity */
-      int i;
-      i = getfilestats(newfile);
+      const int i = getfilestats(newfile);
       if (i || newfile->size == -1) {
         LOUD(fprintf(stderr, "grokdir: excluding due to bad stat()\n"));
         string_free(newfile->d_name);
