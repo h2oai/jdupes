@@ -49,34 +49,6 @@ uintmax_t sma_free_tails = 0;
 #endif
 
 
-/* This function is for debugging the string table only! */
-#if 0
-#include <stdio.h>
-static void dump_string_table(void)
-{
-	char *p = sma_head;
-	unsigned int i = sizeof(uintptr_t);
-	int pg = sma_pages;
-
-	while (pg > 0) {
-		while (i < SMA_PAGE_SIZE && *(p+i) == '\0') i++;
-		printf("[%16p] (%jd) '%s'\n", p+i, strlen(p+i), p+i);
-		i += strlen(p+i);
-		if (pg <= 1 && i >= sma_nextfree) return;
-		if (i < SMA_PAGE_SIZE) i++;
-		else {
-			p = (char *)*(uintptr_t *)p;
-			pg--;
-			i = sizeof(uintptr_t);
-		}
-		if (p == NULL) return;
-	}
-
-	return;
-}
-#endif
-
-
 /* Scan the freed chunk list for a suitably sized object */
 static inline void *scan_freelist(const size_t size)
 {
@@ -258,8 +230,8 @@ sf_failed:
 /* Destroy all allocated pages */
 void string_malloc_destroy(void)
 {
-	static void *cur;
-	static uintptr_t *next;
+	void *cur;
+	uintptr_t *next;
 
 	cur = (void *)sma_head;
 	while (sma_pages > 0) {
