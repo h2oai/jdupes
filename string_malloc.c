@@ -174,7 +174,7 @@ void *string_malloc(size_t len)
 			/* Get total remaining space size */
 			sz = SMA_PAGE_SIZE - sma_nextfree;
 			if (sz >= (SMA_MIN_SLACK + sizeof(size_t))) {
-				tailaddr = (size_t *)((char *)page + sma_nextfree);
+				tailaddr = (size_t *)((uintptr_t)page + sma_nextfree);
 				*tailaddr = sz;
 				string_free(tailaddr + 1);
 				DBG(sma_free_tails++;)
@@ -186,7 +186,7 @@ void *string_malloc(size_t len)
 	}
 
 	/* Allocate the space */
-	address = (size_t *)((char *)page + sma_nextfree);
+	address = (size_t *)((uintptr_t)page + sma_nextfree);
 	/* Prefix object with its size */
 	*address = len;
 	address++;
@@ -201,19 +201,20 @@ void *string_malloc(size_t len)
 void string_free(void * const restrict addr)
 {
 	int i = 0;
+	size_t * const restrict a = (size_t *)addr - 1;
 
 	/* Do nothing on NULL address or full free list */
 	if ((addr == NULL) || sma_freelist_cnt == SMA_MAX_FREE)
 		goto sf_failed;
 
 	/* Tiny objects keep big ones from being freed; ignore them */
-	if (*(size_t *)((char *)addr - sizeof(size_t)) < (SMA_MIN_SLACK + sizeof(size_t)))
+	if (*(size_t *)((uintptr_t)addr - sizeof(size_t)) < (SMA_MIN_SLACK + sizeof(size_t)))
 		goto sf_failed;
 
 	/* Add object to free list */
 	while (i < SMA_MAX_FREE) {
 		if (sma_freelist[i] == NULL) {
-			sma_freelist[i] = (char *)addr - sizeof(size_t);
+			sma_freelist[i] = a;
 			sma_freelist_cnt++;
 			DBG(sma_free_good++;)
 			return;
