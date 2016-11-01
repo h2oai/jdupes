@@ -87,6 +87,16 @@ static int out_mode = _O_TEXT;
 #define ISFLAG(a,b) ((a & b) == b)
 #define SETFLAG(a,b) (a |= b)
 
+/* Low memory option overrides */
+#ifdef LOW_MEMORY
+ #undef DEBUG
+ #undef LOUD_DEBUG
+ #undef USE_TREE_REBALANCE
+ #ifndef NO_PERMS
+  #define NO_PERMS 1
+ #endif
+#endif
+
 /* Aggressive verbosity for deep debugging */
 #ifdef LOUD_DEBUG
  #ifndef DEBUG
@@ -2274,7 +2284,6 @@ int main(int argc, char **argv)
         }
       } else printf(" none");
       printf("\nCopyright (C) 2015-2016 by Jody Bruchon\n");
-      printf("Derived from 'fdupes' (C) 1999-2016 by Adrian Lopez\n");
       printf("\nPermission is hereby granted, free of charge, to any person\n");
       printf("obtaining a copy of this software and associated documentation files\n");
       printf("(the \"Software\"), to deal in the Software without restriction,\n");
