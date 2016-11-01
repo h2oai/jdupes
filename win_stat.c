@@ -13,7 +13,7 @@
 #include <windows.h>
 
 /* Convert NT epoch to UNIX epoch */
-static time_t nttime_to_unixtime(uint64_t *timestamp)
+static time_t nttime_to_unixtime(const uint64_t * const restrict timestamp)
 {
 	uint64_t newstamp;
 
