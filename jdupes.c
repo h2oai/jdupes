@@ -63,15 +63,15 @@
  #define S_ISDIR WS_ISDIR
  typedef uint64_t jdupes_ino_t;
  #ifdef UNICODE
-  const wchar_t *FILE_MODE_RO = L"rbS";
+  static const wchar_t *FILE_MODE_RO = L"rbS";
  #else
-  const char *FILE_MODE_RO = "rbS";
+  static const char *FILE_MODE_RO = "rbS";
  #endif /* UNICODE */
 
 #else /* Not Windows */
  #include <sys/stat.h>
  typedef ino_t jdupes_ino_t;
- const char *FILE_MODE_RO = "rb";
+ static const char *FILE_MODE_RO = "rb";
 #endif /* _WIN32 || __CYGWIN__ */
 
 /* Windows + Unicode compilation */
@@ -431,7 +431,7 @@ static inline char **cloneargs(const int argc, char **argv)
 static int findarg(const char * const arg, const int start,
                 const int argc, char **argv)
 {
-  static int x;
+  int x;
 
   for (x = start; x < argc; x++)
     if (strcmp(argv[x], arg) == 0)
@@ -444,10 +444,10 @@ static int findarg(const char * const arg, const int start,
 static int nonoptafter(const char *option, const int argc,
                 char **oldargv, char **newargv, int optind)
 {
-  static int x;
-  static int targetind;
-  static int testind;
-  static int startat = 1;
+  int x;
+  int targetind;
+  int testind;
+  int startat = 1;
 
   targetind = findarg(option, 1, argc, oldargv);
 
@@ -468,7 +468,7 @@ static int file_has_changed(file_t * const restrict file)
   if (file->valid_stat == 0) return -66;
 
 #ifdef ON_WINDOWS
-  static int i;
+  int i;
   if ((i = win_stat(file->d_name, &ws)) != 0) return i;
   if (file->inode != ws.inode) return 1;
   if (file->size != ws.size) return 1;
@@ -771,7 +771,7 @@ error_cd:
 static hash_t *get_filehash(const file_t * const restrict checkfile,
                 const size_t max_read)
 {
-  static off_t fsize;
+  off_t fsize;
   /* This is an array because we return a pointer to it */
   static hash_t hash[1];
   static hash_t chunk[(CHUNK_SIZE / sizeof(hash_t))];
@@ -1192,8 +1192,8 @@ static inline int confirmmatch(FILE * const restrict file1, FILE * const restric
 {
   static char c1[CHUNK_SIZE];
   static char c2[CHUNK_SIZE];
-  static size_t r1;
-  static size_t r2;
+  size_t r1;
+  size_t r2;
 
   LOUD(fprintf(stderr, "confirmmatch starting\n"));
 
@@ -1730,7 +1730,7 @@ static inline void linkfiles(file_t *files, int hard)
   static int i, success;
 #ifndef NO_SYMLINKS
   static int symsrc;
-  char *rel_path;
+  static char *rel_path;
 #endif
   static char temp_path[4096];
 
