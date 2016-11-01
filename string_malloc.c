@@ -52,7 +52,7 @@ uintmax_t sma_free_tails = 0;
 /* Scan the freed chunk list for a suitably sized object */
 static inline void *scan_freelist(const size_t size)
 {
-	char *min_p, *object;
+	size_t *min_p, *object;
 	size_t sz, min = 0;
 	int i, used = 0;
 
@@ -68,7 +68,7 @@ static inline void *scan_freelist(const size_t size)
 		/* Skip empty entries */
 		if (object == NULL) continue;
 
-		sz = *(size_t *)object;
+		sz = *object;
 		used++;
 
 		/* Skip smaller objects */
@@ -88,7 +88,7 @@ static inline void *scan_freelist(const size_t size)
 	if (min != 0) {
 		sma_freelist[i] = NULL;
 		sma_freelist_cnt--;
-		min_p += sizeof(size_t);
+		min_p++;
 		return min_p;
 	}
 	/* Fall through - free list search failed */
@@ -168,15 +168,15 @@ void *string_malloc(size_t len)
 	/* Allocate new page if this object won't fit */
 	if ((sma_nextfree + len) > SMA_PAGE_SIZE) {
 		size_t sz;
-		char *tailaddr;
+		size_t *tailaddr;
 		/* See if remaining space is usable */
 		if (sma_freelist_cnt < SMA_MAX_FREE && sma_nextfree < SMA_PAGE_SIZE) {
 			/* Get total remaining space size */
 			sz = SMA_PAGE_SIZE - sma_nextfree;
 			if (sz >= (SMA_MIN_SLACK + sizeof(size_t))) {
-				tailaddr = (char *)page + sma_nextfree;
-				*(size_t *)tailaddr = (size_t)sz;
-				string_free(tailaddr + sizeof(size_t));
+				tailaddr = (size_t *)((char *)page + sma_nextfree);
+				*tailaddr = sz;
+				string_free(tailaddr + 1);
 				DBG(sma_free_tails++;)
 			}
 		}
