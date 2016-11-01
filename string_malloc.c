@@ -121,8 +121,8 @@ static inline void *string_malloc_page(void)
 
 void *string_malloc(size_t len)
 {
-	const char * restrict page = (char *)sma_lastpage;
-	static char *address;
+	const void * restrict page = (char *)sma_lastpage;
+	static size_t *address;
 
 	/* Calling with no actual length is invalid */
 	if (len < 1) return NULL;
@@ -138,11 +138,11 @@ void *string_malloc(size_t len)
 	/* Pass-through allocations larger than maximum object size to malloc() */
 	if (len > (SMA_PAGE_SIZE - sizeof(uintptr_t) - sizeof(size_t))) {
 		/* Allocate the space */
-		address = (char *)malloc(len + sizeof(size_t));
+		address = (size_t *)malloc(len + sizeof(size_t));
 		if (!address) return NULL;
 		/* Prefix object with its size */
-		*(size_t *)address = (size_t)len;
-		address += sizeof(size_t);
+		*address = len;
+		address++;
 		DBG(sma_allocs++;)
 		return (void *)address;
 	}
@@ -159,10 +159,10 @@ void *string_malloc(size_t len)
 	}
 
 	/* Allocate objects from the free list first */
-	address = (char *)scan_freelist(len);
+	address = (size_t *)scan_freelist(len);
 	if (address != NULL) {
 		DBG(sma_free_reclaimed++;)
-		return address;
+		return (void *)address;
 	}
 
 	/* Allocate new page if this object won't fit */
@@ -186,10 +186,10 @@ void *string_malloc(size_t len)
 	}
 
 	/* Allocate the space */
-	address = (char *)page + sma_nextfree;
+	address = (size_t *)((char *)page + sma_nextfree);
 	/* Prefix object with its size */
-	*(size_t *)address = (size_t)len;
-	address += sizeof(size_t);
+	*address = len;
+	address++;
 	sma_nextfree += len;
 
 	DBG(sma_allocs++;)
