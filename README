@@ -105,6 +105,7 @@ Usage: jdupes [options] DIRECTORY...
     --xsize=+SIZE 	'+' specified before SIZE, exclude size > SIZE
                   	K/M/G size suffixes can be used (case-insensitive)
  -Z --softabort   	If the user aborts (i.e. CTRL-C) act on matches so far
+
 Duplicate files are listed together in groups with each file displayed on a
 Separate line. The groups are then separated from each other by blank lines.
 
@@ -146,6 +147,7 @@ consider them as duplicates, you may still see hard linked files appear
 together in match sets. This is caused by a separate file that matches
 the hard linked files and is the correct behavior.
 
+
 Microsoft Windows platform-specific notes
 --------------------------------------------------------------------------
 The Windows port does not support Unicode, only ANSI file names. This is
@@ -158,6 +160,45 @@ change this. The documentation for CreateHardLink() states: "The maximum
 number of hard links that can be created with this function is 1023 per
 file. If more than 1023 links are created for a file, an error results."
 (The number is actually 1024, but they're ignoring the first file.)
+
+
+The Current jdupes Algorithm's "Triangle Problem"
+--------------------------------------------------------------------------
+Pairs of files are excluded individually based on how the two files compare.
+For example, if --hardlinks is not specified then two files which are hard
+linked will not match one another for duplicate scanning purposes. The
+problem with only examining files in pairs is that certain circumstances
+will lead to the exclusion being overridden.
+
+Let's say we have three files with identical contents:
+
+a/file1
+a/file2
+a/file3
+
+and 'a/file1' is linked to 'a/file3'. Here's how 'jdupes a/' sees them:
+
+---
+Are 'a/file1' and 'a/file2' matches? Yes
+[point a/file1->duplicates to a/file2]
+
+Are 'a/file1' and 'a/file3' matches? No (hard linked already, -H off)
+
+Are 'a/file2' and 'a/file3' matches? Yes
+[point a/file2->duplicates to a/file3]
+---
+
+Now you have the following duplicate list:
+
+a/file1->duplicates ==> a/file2->duplicates ==> a/file3
+
+The solution is to split match sets into multiple sets, but doing this
+will also remove the guarantee that files will only ever appear in one
+match set and could result in data loss if handled improperly. In the
+future, options for "greedy" and "sparse" may be introduced to switch
+between allowing triangle matches to be in the same set vs. splitting
+sets after matching finishes without the "only ever appears once"
+guarantee.
 
 
 Contact Information
