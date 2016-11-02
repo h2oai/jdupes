@@ -86,6 +86,7 @@ static int out_mode = _O_TEXT;
 
 #define ISFLAG(a,b) ((a & b) == b)
 #define SETFLAG(a,b) (a |= b)
+#define CLEARFLAG(a,b) (a &= (~b))
 
 /* Low memory option overrides */
 #ifdef LOW_MEMORY
@@ -2398,6 +2399,11 @@ int main(int argc, char **argv)
     fprintf(stderr, "options --summarize and --delete are not compatible\n");
     exit(EXIT_FAILURE);
   }
+
+#ifdef ENABLE_BTRFS
+  if (ISFLAG(flags, F_CONSIDERHARDLINKS) && ISFLAG(flags, F_DEDUPEFILES))
+    fprintf(stderr, "warning: option --dedupe overrides the behavior of --hardlinks\n");
+#endif
 
   /* If pm == 0, call printmatches() */
   pm = !!ISFLAG(flags, F_SUMMARIZEMATCHES) +
