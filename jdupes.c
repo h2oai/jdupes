@@ -584,6 +584,68 @@ static inline int getfilestats(file_t * const restrict file)
 }
 
 
+/* Check a pair of files for match exclusion conditions
+ * Returns:
+ *  0 if all condition checks pass
+ * -1 or 1 on compare result less/more
+ * -2 on an absolute exclusion condition met
+ *  2 on an absolute match condition met */
+static int check_conditions(const file_t * const restrict file1, const file_t * const restrict file2)
+{
+  /* Null pointer sanity check */
+  if (!file1 || !file2) {
+    LOUD(fprintf(stderr, "internal error: null pointer passed to check_conditions()\n");)
+    exit(EXIT_FAILURE);
+  }
+
+  /* Hard link and symlink + '-s' check */
+#ifndef NO_HARDLINKS
+  if ((file1->inode == file2->inode) && (file1->device == file2->device)) {
+    if (ISFLAG(flags, F_CONSIDERHARDLINKS)) {
+      LOUD(fprintf(stderr, "check_conditions: files match: hard/soft linked (-H on)\n"));
+      return 2;
+    } else {
+      LOUD(fprintf(stderr, "check_conditions: files ignored: hard/soft linked (-H off)\n"));
+      return -2;
+    }
+  }
+#endif
+
+  /* Exclude based on -I/--isolate */
+  if (ISFLAG(flags, F_ISOLATE) && (file1->user_order == file2->user_order)) {
+    LOUD(fprintf(stderr, "check_conditions: files ignored: parameter isolation\n"));
+    return -1;
+  }
+
+  /* Exclude files that are not the same size */
+  if (file1->size > file2->size) {
+    LOUD(fprintf(stderr, "check_conditions: no match: file1 > file2 (%jd < %jd)\n", (intmax_t)file1->size, (intmax_t)file2->size));
+    return -1;
+  }
+  if (file1->size < file2->size) {
+    LOUD(fprintf(stderr, "check_conditions: no match: file1 < file2 (%jd > %jd)\n", (intmax_t)file1->size, (intmax_t)file2->size));
+    return 1;
+  }
+
+  /* Exclude files by permissions if requested */
+  if (ISFLAG(flags, F_PERMISSIONS) &&
+          (file1->mode != file2->mode
+#ifndef NO_PERMS
+          || file1->uid != file2->uid
+          || file1->gid != file2->gid
+#endif
+          )) {
+    return -1;
+    LOUD(fprintf(stderr, "check_conditions: no match: permissions/ownership differ (-p on)\n"));
+  }
+
+  /* Fall through: all checks passed */
+  LOUD(fprintf(stderr, "check_conditions: all condition checks passed\n"));
+  return 0;
+}
+
+
+/* Load a directory's contents into the file tree, recursing as needed */
 static void grokdir(const char * const restrict dir,
                 file_t * restrict * const restrict filelistp,
                 int recurse)
@@ -1068,6 +1130,8 @@ static inline void rebalance_tree(filetree_t * const tree)
 #define TREE_DEPTH_UPDATE_MAX()
 #endif
 
+
+/* Check two files for a match */
 static file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict file)
 {
   int cmpresult = 0;
@@ -1087,41 +1151,15 @@ static file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict f
  * automatically duplicates without being read further since
  * they point to the exact same inode. If we aren't considering
  * hard links as duplicates, we just return NULL. */
-#ifndef NO_HARDLINKS
-  if ((file->inode ==
-      tree->file->inode) && (file->device ==
-      tree->file->device)) {
-    if (ISFLAG(flags, F_CONSIDERHARDLINKS)) {
-      LOUD(fprintf(stderr, "checkmatch: files match: hard/soft linked (-H on)\n"));
-      return &tree->file;
-    } else {
-      LOUD(fprintf(stderr, "checkmatch: files ignored: hard/soft linked (-H off)\n"));
-      return NULL;
-    }
-  }
-#endif
 
-  if (ISFLAG(flags, F_ISOLATE) && (file->user_order == tree->file->user_order)) {
-    LOUD(fprintf(stderr, "checkmatch: files ignored: parameter isolation\n"));
-    cmpresult = -1;
-  /* Exclude files that are not the same size */
-  } else if (file->size < tree->file->size) {
-    LOUD(fprintf(stderr, "checkmatch: no match: file1 < file2 (%jd < %jd)\n", (intmax_t)tree->file->size, (intmax_t)file->size));
-    cmpresult = -1;
-  } else if (file->size > tree->file->size) {
-    LOUD(fprintf(stderr, "checkmatch: no match: file1 > file2 (%jd > %jd)\n", (intmax_t)tree->file->size, (intmax_t)file->size));
-    cmpresult = 1;
-  /* Exclude files by permissions if requested */
-  } else if (ISFLAG(flags, F_PERMISSIONS) &&
-            (file->mode != tree->file->mode
-#ifndef NO_PERMS
-            || file->uid != tree->file->uid
-            || file->gid != tree->file->gid
-#endif
-            )) {
-    cmpresult = -1;
-    LOUD(fprintf(stderr, "checkmatch: no match: permissions/ownership differ (-p on)\n"));
-  } else {
+  cmpresult = check_conditions(tree->file, file);
+  switch (cmpresult) {
+    case 2: return &tree->file;  /* linked files + -H switch */
+    case -2: return NULL;  /* linked files, no -H switch */
+  }
+
+  /* If preliminary matching succeeded, move to full file checks */
+  if (cmpresult == 0) {
     LOUD(fprintf(stderr, "checkmatch: starting file data comparisons\n"));
     /* Attempt to exclude files quickly with partial file hashing */
     if (!ISFLAG(tree->file->flags, F_HASH_PARTIAL)) {
@@ -1243,7 +1281,7 @@ static inline int confirmmatch(FILE * const restrict file1, FILE * const restric
   size_t r1;
   size_t r2;
 
-  LOUD(fprintf(stderr, "confirmmatch starting\n"));
+  LOUD(fprintf(stderr, "confirmmatch running\n"));
 
   did_long_work = 1;
   fseek(file1, 0, SEEK_SET);
