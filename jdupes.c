@@ -342,17 +342,56 @@ static void oom(const char * const restrict msg)
 }
 
 
+/* Collapse dot-dot path components */
+static int collapse_dotdot(char * const path)
+{
+  char *prev, *p, *out;
+  int i = 0;
+
+  p = path; out = path;
+  while (*p != '\0') {
+    if (*p == '/') {
+      if (i < 4093 &&
+          *(p + 1) == '.' &&
+          *(p + 2) == '.' &&
+          (*(p + 3) == '/' ||
+           *(p + 3) == '\0')) {
+        /* Found a dot-dot */
+      } else if (i < 4094 &&
+          *(p + 1) == '.' &&
+          (*(p + 2) == '/' ||
+           *(p + 2) == '\0')) {
+        /* Found a single dot */
+      }
+      prev = p;
+    }
+    *out = *p;
+    p++; out++; i++;
+  }
+  return 0;
+}
+
+
 /* Create a relative symbolic link path for a destination file */
 static inline char * get_relative_name(const char * const src,
                 const char * const dest)
 {
-  //static char p1[4096], p2[4096], rel_path[4096];
+  static char p1[4096], p2[4096], rel_path[4096];
+  static char *sp, *dp, *ss, *ds;
 
   if (!src || !dest) goto error_null_param;
   /* XXX: code goes here, comments are for the weak */
   /* Get working directory path */
+  if (!getcwd(p1, 4096)) goto error_getcwd;
+  *(p1 + 4096 - 1) = '\0';
+  strcat(p1, "/");
+  strcpy(p2, p1);
   /* Concatenate working directory to relative paths */
+  strcat(p1, src);
+  strcat(p2, dest);
   /* Collapse dot-dot path components */
+  collapse_dotdot(p1);
+  collapse_dotdot(p2);
   /* Find where paths differ, counting each directory along the way */
   /* Replace common parts of destination path with dot-dot */
   //return rel_path;
@@ -362,6 +401,9 @@ error_null_param:
     fprintf(stderr, "Internal error: get_relative_name has NULL parameter\n");
     fprintf(stderr, "Report this as a serious bug to the author\n");
     exit(EXIT_FAILURE);
+error_getcwd:
+    fprintf(stderr, "error: couldn't get the current directory\n");
+    return NULL;
 }
 
 
