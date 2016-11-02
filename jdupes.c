@@ -150,6 +150,13 @@ static uint_fast32_t flags = 0;
 #define F_LOUD			0x40000000
 #define F_DEBUG			0x80000000
 
+/* Per-file true/false flags */
+#define F_VALID_STAT		0x00000001
+#define F_HASH_PARTIAL		0x00000002
+#define F_HASH_FULL		0x00000004
+#define F_HAS_DUPES		0x00000008
+#define F_IS_SYMLINK		0x00000010
+
 typedef enum {
   ORDER_NAME = 0,
   ORDER_TIME
@@ -235,9 +242,7 @@ static const char *extensions[] = {
 
 /* TODO: Cachegrind indicates that size, inode, and device get hammered hard
  * in the checkmatch() code and trigger lots of cache line evictions.
- * Maybe we can compact these into a separate structure to improve speed.
- * Also look into compacting the true/false flags into one integer and see
- * if that improves performance (it'll certainly lower memory usage) */
+ * Maybe we can compact these into a separate structure to improve speed. */
 typedef struct _file {
   struct _file *duplicates;
   struct _file *next;
@@ -249,6 +254,7 @@ typedef struct _file {
   hash_t filehash_partial;
   hash_t filehash;
   time_t mtime;
+  uint32_t flags;  /* Status flags */
   unsigned int user_order; /* Order of the originating command-line parameter */
 #ifndef NO_PERMS
   uid_t uid;
@@ -259,13 +265,6 @@ typedef struct _file {
   DWORD nlink;
  #endif
 #endif
-#ifndef NO_SYMLINKS
-  uint_fast8_t is_symlink;
-#endif
-  uint_fast8_t valid_stat; /* Only call stat() once per file (1 = stat'ed) */
-  uint_fast8_t filehash_partial_set;  /* 1 = filehash_partial is valid */
-  uint_fast8_t filehash_set;  /* 1 = filehash is valid */
-  uint_fast8_t hasdupes; /* 1 only if file is first on duplicate chain */
 } file_t;
 
 typedef struct _filetree {
@@ -518,7 +517,7 @@ static int nonoptafter(const char *option, const int argc,
  * Returns 1 if changed, 0 if not changed, negative if error */
 static int file_has_changed(file_t * const restrict file)
 {
-  if (file->valid_stat == 0) return -66;
+  if (!ISFLAG(file->flags, F_VALID_STAT)) return -66;
 
 #ifdef ON_WINDOWS
   int i;
@@ -541,7 +540,7 @@ static int file_has_changed(file_t * const restrict file)
  #endif
  #ifndef NO_SYMLINKS
   if (lstat(file->d_name, &s) != 0) return -3;
-  if (S_ISLNK(s.st_mode) != file->is_symlink) return 1;
+  if ((S_ISLNK(s.st_mode) > 0) ^ ISFLAG(file->flags, F_IS_SYMLINK)) return 1;
  #endif
 #endif /* ON_WINDOWS */
 
@@ -552,8 +551,8 @@ static int file_has_changed(file_t * const restrict file)
 static inline int getfilestats(file_t * const restrict file)
 {
   /* Don't stat the same file more than once */
-  if (file->valid_stat == 1) return 0;
-  file->valid_stat = 1;
+  if (ISFLAG(file->flags, F_VALID_STAT)) return 0;
+  SETFLAG(file->flags, F_VALID_STAT);
 
 #ifdef ON_WINDOWS
   if (win_stat(file->d_name, &ws) != 0) return -1;
@@ -578,7 +577,7 @@ static inline int getfilestats(file_t * const restrict file)
  #endif
  #ifndef NO_SYMLINKS
   if (lstat(file->d_name, &s) != 0) return -1;
-  file->is_symlink = S_ISLNK(s.st_mode);
+  if (S_ISLNK(s.st_mode) > 0) SETFLAG(file->flags, F_IS_SYMLINK);
  #endif
 #endif /* ON_WINDOWS */
   return 0;
@@ -687,13 +686,10 @@ static void grokdir(const char * const restrict dir,
       newfile->uid = 0;
       newfile->gid = 0;
 #endif
-      newfile->valid_stat = 0;
-      newfile->filehash_set = 0;
       newfile->filehash = 0;
-      newfile->filehash_partial_set = 0;
       newfile->filehash_partial = 0;
       newfile->duplicates = NULL;
-      newfile->hasdupes = 0;
+      newfile->flags = 0;
 
       tp = tempname;
       memcpy(newfile->d_name, tp, dirlen + d_name_len);
@@ -849,7 +845,7 @@ static hash_t *get_filehash(const file_t * const restrict checkfile,
    * WARNING: We assume max_read is NEVER less than CHUNK_SIZE here! */
 
   *hash = 0;
-  if (checkfile->filehash_partial_set) {
+  if (ISFLAG(checkfile->flags, F_HASH_PARTIAL)) {
     *hash = checkfile->filehash_partial;
     /* Don't bother going further if max_read is already fulfilled */
     if (max_read != 0 && max_read <= PARTIAL_HASH_SIZE) {
@@ -869,7 +865,7 @@ static hash_t *get_filehash(const file_t * const restrict checkfile,
   }
   /* Actually seek past the first chunk if applicable
    * This is part of the filehash_partial skip optimization */
-  if (checkfile->filehash_partial_set) {
+  if (ISFLAG(checkfile->flags, F_HASH_PARTIAL)) {
     if (fseeko(file, PARTIAL_HASH_SIZE, SEEK_SET) == -1) {
       fclose(file);
       fprintf(stderr, "error seeking in file "); fwprint(stderr, checkfile->d_name, 1);
@@ -1096,10 +1092,10 @@ static file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict f
       tree->file->inode) && (file->device ==
       tree->file->device)) {
     if (ISFLAG(flags, F_CONSIDERHARDLINKS)) {
-      LOUD(fprintf(stderr, "checkmatch: files match: hard linked (-H on)\n"));
+      LOUD(fprintf(stderr, "checkmatch: files match: hard/soft linked (-H on)\n"));
       return &tree->file;
     } else {
-      LOUD(fprintf(stderr, "checkmatch: files ignored: hard linked (-H off)\n"));
+      LOUD(fprintf(stderr, "checkmatch: files ignored: hard/soft linked (-H off)\n"));
       return NULL;
     }
   }
@@ -1128,7 +1124,7 @@ static file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict f
   } else {
     LOUD(fprintf(stderr, "checkmatch: starting file data comparisons\n"));
     /* Attempt to exclude files quickly with partial file hashing */
-    if (tree->file->filehash_partial_set == 0) {
+    if (!ISFLAG(tree->file->flags, F_HASH_PARTIAL)) {
       filehash = get_filehash(tree->file, PARTIAL_HASH_SIZE);
       if (filehash == NULL) {
         if (!interrupt) fprintf(stderr, "cannot read file "); fwprint(stderr, tree->file->d_name, 1);
@@ -1136,10 +1132,10 @@ static file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict f
       }
 
       tree->file->filehash_partial = *filehash;
-      tree->file->filehash_partial_set = 1;
+      SETFLAG(tree->file->flags, F_HASH_PARTIAL);
     }
 
-    if (file->filehash_partial_set == 0) {
+    if (!ISFLAG(file->flags, F_HASH_PARTIAL)) {
       filehash = get_filehash(file, PARTIAL_HASH_SIZE);
       if (filehash == NULL) {
         if (!interrupt) fprintf(stderr, "cannot read file "); fwprint(stderr, file->d_name, 1);
@@ -1147,7 +1143,7 @@ static file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict f
       }
 
       file->filehash_partial = *filehash;
-      file->filehash_partial_set = 1;
+      SETFLAG(file->flags, F_HASH_PARTIAL);
     }
 
     cmpresult = HASH_COMPARE(file->filehash_partial, tree->file->filehash_partial);
@@ -1158,19 +1154,19 @@ static file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict f
     if (file->size <= PARTIAL_HASH_SIZE) {
       LOUD(fprintf(stderr, "checkmatch: small file: copying partial hash to full hash\n"));
       /* filehash_partial = filehash if file is small enough */
-      if (file->filehash_set == 0) {
+      if (!ISFLAG(file->flags, F_HASH_FULL)) {
         file->filehash = file->filehash_partial;
-        file->filehash_set = 1;
+        SETFLAG(file->flags, F_HASH_FULL);
         DBG(small_file++;)
       }
-      if (tree->file->filehash_set == 0) {
+      if (!ISFLAG(tree->file->flags, F_HASH_FULL)) {
         tree->file->filehash = tree->file->filehash_partial;
-        tree->file->filehash_set = 1;
+        SETFLAG(tree->file->flags, F_HASH_FULL);
         DBG(small_file++;)
       }
     } else if (cmpresult == 0) {
       /* If partial match was correct, perform a full file hash match */
-      if (tree->file->filehash_set == 0) {
+      if (!ISFLAG(tree->file->flags, F_HASH_FULL)) {
         did_long_work = 1;
         filehash = get_filehash(tree->file, 0);
         if (filehash == NULL) {
@@ -1179,10 +1175,10 @@ static file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict f
         }
 
         tree->file->filehash = *filehash;
-        tree->file->filehash_set = 1;
+        SETFLAG(tree->file->flags, F_HASH_FULL);
       }
 
-      if (file->filehash_set == 0) {
+      if (!ISFLAG(file->flags, F_HASH_FULL)) {
         did_long_work = 1;
         filehash = get_filehash(file, 0);
         if (filehash == NULL) {
@@ -1191,7 +1187,7 @@ static file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict f
         }
 
         file->filehash = *filehash;
-        file->filehash_set = 1;
+        SETFLAG(file->flags, F_HASH_FULL);
       }
 
       /* Full file hash comparison */
@@ -1274,7 +1270,7 @@ static void summarizematches(const file_t * restrict files)
   while (files != NULL) {
     file_t *tmpfile;
 
-    if (files->hasdupes) {
+    if (ISFLAG(files->flags, F_HAS_DUPES)) {
       numsets++;
       tmpfile = files->duplicates;
       while (tmpfile != NULL) {
@@ -1304,7 +1300,7 @@ static void printmatches(file_t * restrict files)
   file_t * restrict tmpfile;
 
   while (files != NULL) {
-    if (files->hasdupes) {
+    if (ISFLAG(files->flags, F_HAS_DUPES)) {
       if (!ISFLAG(flags, F_OMITFIRST)) {
         if (ISFLAG(flags, F_SHOWSIZE)) printf("%jd byte%c each:\n", (intmax_t)files->size,
          (files->size != 1) ? 's' : ' ');
@@ -1338,7 +1334,7 @@ static unsigned int get_max_dupes(const file_t *files, unsigned int * const rest
 
   while (files) {
     unsigned int n_dupes;
-    if (files->hasdupes) {
+    if (ISFLAG(files->flags, F_HAS_DUPES)) {
       groups++;
       if (n_files && files->size) (*n_files)++;
       n_dupes = 1;
@@ -1393,7 +1389,7 @@ void dedupefiles(file_t * restrict files)
 
   /* Main dedupe loop */
   while (files) {
-    if (files->hasdupes && files->size) {
+    if (ISFLAG(files->flags, F_HAS_DUPES) && files->size) {
       cur_file++;
       if (!ISFLAG(flags, F_HIDEPROGRESS)) {
         fprintf(stderr, "Dedupe [%u/%u] %u%% \r", cur_file, max_files,
@@ -1511,7 +1507,7 @@ static void deletefiles(file_t *files, int prompt, FILE *tty)
   if (!dupelist || !preserve || !preservestr) oom("deletefiles() structures");
 
   for (; files; files = files->next) {
-    if (files->hasdupes) {
+    if (ISFLAG(files->flags, F_HAS_DUPES)) {
       curgroup++;
       counter = 1;
       dupelist[counter] = files;
@@ -1741,7 +1737,11 @@ static void registerpair(file_t **matchlist, file_t *newmatch,
   file_t *traverse;
   file_t *back;
 
-  (*matchlist)->hasdupes = 1;
+  /* NULL pointer sanity checks */
+  if (!matchlist || !newmatch || !comparef) return;
+
+  LOUD(fprintf(stderr, "registerpair: '%s', '%s'\n", (*matchlist)->d_name, newmatch->d_name);)
+  SETFLAG((*matchlist)->flags, F_HAS_DUPES);
   back = NULL;
   traverse = *matchlist;
 
@@ -1755,15 +1755,15 @@ static void registerpair(file_t **matchlist, file_t *newmatch,
 
       if (!back) {
         *matchlist = newmatch; /* update pointer to head of list */
-        newmatch->hasdupes = 1;
-        traverse->hasdupes = 0; /* flag is only for first file in dupe chain */
+        SETFLAG(newmatch->flags, F_HAS_DUPES);
+        CLEARFLAG(traverse->flags, F_HAS_DUPES); /* flag is only for first file in dupe chain */
       } else back->duplicates = newmatch;
 
       break;
     } else {
       if (traverse->duplicates == 0) {
         traverse->duplicates = newmatch;
-        if(!back) traverse->hasdupes = 1;
+        if (!back) SETFLAG(traverse->flags, F_HAS_DUPES);
 
         break;
       }
@@ -1797,7 +1797,7 @@ static inline void linkfiles(file_t *files, int hard)
   curfile = files;
 
   while (curfile) {
-    if (curfile->hasdupes) {
+    if (ISFLAG(curfile->flags, F_HAS_DUPES)) {
       counter = 1;
       tmpfile = curfile->duplicates;
       while (tmpfile) {
@@ -1818,7 +1818,7 @@ static inline void linkfiles(file_t *files, int hard)
   if (!dupelist) oom("linkfiles() dupelist");
 
   while (files) {
-    if (files->hasdupes) {
+    if (ISFLAG(files->flags, F_HAS_DUPES)) {
       counter = 1;
       dupelist[counter] = files;
 
@@ -1841,7 +1841,7 @@ static inline void linkfiles(file_t *files, int hard)
         /* Symlinks should target a normal file if one exists */
         srcfile = NULL;
         for (symsrc = 1; symsrc <= counter; symsrc++)
-          if (dupelist[symsrc]->is_symlink == 0) srcfile = dupelist[symsrc];
+          if (!ISFLAG(dupelist[symsrc]->flags, F_IS_SYMLINK)) srcfile = dupelist[symsrc];
         /* If no normal file exists, just symlink to the first file */
         if (srcfile == NULL) {
           symsrc = 1;
@@ -2077,8 +2077,8 @@ static inline void help_text(void)
   printf(" -f --omitfirst   \tomit the first file in each set of matches\n");
   printf(" -h --help        \tdisplay this help message\n");
 #ifndef NO_HARDLINKS
-  printf(" -H --hardlinks   \ttreat hard-linked files as duplicate files. Normally\n");
-  printf("                  \thard links are treated as non-duplicates for safety\n");
+  printf(" -H --hardlinks   \ttreat any linked files as duplicate files. Normally\n");
+  printf("                  \tlinked files are treated as non-duplicates for safety\n");
 #endif
   printf(" -i --reverse     \treverse (invert) the match sort order\n");
   printf(" -I --isolate     \tfiles in the same specified directory won't match\n");
