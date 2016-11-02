@@ -911,7 +911,7 @@ static hash_t *get_filehash(const file_t * const restrict checkfile,
     *hash = checkfile->filehash_partial;
     /* Don't bother going further if max_read is already fulfilled */
     if (max_read != 0 && max_read <= PARTIAL_HASH_SIZE) {
-      LOUD(fprintf(stderr, "Partial hash size (%d) >= max_read (%lu), not hashing anymore\n", PARTIAL_HASH_SIZE, max_read);)
+      LOUD(fprintf(stderr, "Partial hash size (%d) >= max_read (%ju), not hashing anymore\n", PARTIAL_HASH_SIZE, (uintmax_t)max_read);)
       return hash;
     }
   }
