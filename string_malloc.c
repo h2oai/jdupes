@@ -89,7 +89,7 @@ static inline void *scan_freelist(const size_t size)
 		sma_freelist[i] = NULL;
 		sma_freelist_cnt--;
 		min_p++;
-		return min_p;
+		return (void *)min_p;
 	}
 	/* Fall through - free list search failed */
 	return NULL;
@@ -105,8 +105,6 @@ static inline void *string_malloc_page(void)
 	pageptr = (uintptr_t *)malloc(SMA_PAGE_SIZE);
 	if (pageptr == NULL) return NULL;
 	*pageptr = (uintptr_t)NULL;
-	/* Link this page to the previous page */
-	*(pageptr + sizeof(uintptr_t)) = (uintptr_t)sma_lastpage;
 
 	/* Link previous page to this page, if applicable */
 	if (sma_lastpage != NULL) *sma_lastpage = (uintptr_t)pageptr;
@@ -115,7 +113,7 @@ static inline void *string_malloc_page(void)
 	sma_lastpage = pageptr;
 	sma_pages++;
 
-	return (char *)pageptr;
+	return (void *)pageptr;
 }
 
 
@@ -154,7 +152,7 @@ void *string_malloc(size_t len)
 		/* Allocate first page and set up for first allocation */
 		sma_head = string_malloc_page();
 		if (!sma_head) return NULL;
-		sma_nextfree = (2 * sizeof(uintptr_t));
+		sma_nextfree = sizeof(uintptr_t);
 		page = sma_head;
 	}
 
@@ -182,7 +180,7 @@ void *string_malloc(size_t len)
 		}
 		page = string_malloc_page();
 		if (!page) return NULL;
-		sma_nextfree = (2 * sizeof(uintptr_t));
+		sma_nextfree = sizeof(uintptr_t);
 	}
 
 	/* Allocate the space */
