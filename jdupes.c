@@ -124,38 +124,39 @@ static int out_mode = _O_TEXT;
 
 /* Behavior modification flags */
 static uint_fast32_t flags = 0;
-#define F_RECURSE		0x00000001
-#define F_HIDEPROGRESS		0x00000002
-#define F_SOFTABORT		0x00000004
-#define F_FOLLOWLINKS		0x00000008
-#define F_DELETEFILES		0x00000010
-#define F_EXCLUDEEMPTY		0x00000020
-#define F_CONSIDERHARDLINKS	0x00000040
-#define F_SHOWSIZE		0x00000080
-#define F_OMITFIRST		0x00000100
-#define F_RECURSEAFTER		0x00000200
-#define F_NOPROMPT		0x00000400
-#define F_SUMMARIZEMATCHES	0x00000800
-#define F_EXCLUDEHIDDEN		0x00001000
-#define F_PERMISSIONS		0x00002000
-#define F_HARDLINKFILES		0x00004000
-#define F_EXCLUDESIZE		0x00008000
-#define F_QUICKCOMPARE		0x00010000
-#define F_USEPARAMORDER		0x00020000
-#define F_DEDUPEFILES		0x00040000
-#define F_REVERSESORT		0x00080000
-#define F_ISOLATE		0x00100000
-#define F_MAKESYMLINKS		0x00200000
-#define F_PRINTMATCHES		0x00400000
-#define F_LOUD			0x40000000
-#define F_DEBUG			0x80000000
+#define F_RECURSE		0x00000001U
+#define F_HIDEPROGRESS		0x00000002U
+#define F_SOFTABORT		0x00000004U
+#define F_FOLLOWLINKS		0x00000008U
+#define F_DELETEFILES		0x00000010U
+#define F_EXCLUDEEMPTY		0x00000020U
+#define F_CONSIDERHARDLINKS	0x00000040U
+#define F_SHOWSIZE		0x00000080U
+#define F_OMITFIRST		0x00000100U
+#define F_RECURSEAFTER		0x00000200U
+#define F_NOPROMPT		0x00000400U
+#define F_SUMMARIZEMATCHES	0x00000800U
+#define F_EXCLUDEHIDDEN		0x00001000U
+#define F_PERMISSIONS		0x00002000U
+#define F_HARDLINKFILES		0x00004000U
+#define F_EXCLUDESIZE		0x00008000U
+#define F_QUICKCOMPARE		0x00010000U
+#define F_USEPARAMORDER		0x00020000U
+#define F_DEDUPEFILES		0x00040000U
+#define F_REVERSESORT		0x00080000U
+#define F_ISOLATE		0x00100000U
+#define F_MAKESYMLINKS		0x00200000U
+#define F_PRINTMATCHES		0x00400000U
+
+#define F_LOUD			0x40000000U
+#define F_DEBUG			0x80000000U
 
 /* Per-file true/false flags */
-#define F_VALID_STAT		0x00000001
-#define F_HASH_PARTIAL		0x00000002
-#define F_HASH_FULL		0x00000004
-#define F_HAS_DUPES		0x00000008
-#define F_IS_SYMLINK		0x00000010
+#define F_VALID_STAT		0x00000001U
+#define F_HASH_PARTIAL		0x00000002U
+#define F_HASH_FULL		0x00000004U
+#define F_HAS_DUPES		0x00000008U
+#define F_IS_SYMLINK		0x00000010U
 
 typedef enum {
   ORDER_NAME = 0,
@@ -171,7 +172,7 @@ static struct winstat ws;
 static struct stat s;
 #endif
 
-static off_t excludesize = 0;
+static uintmax_t excludesize = 0;
 static enum {
   SMALLERTHAN,
   LARGERTHAN
@@ -467,7 +468,7 @@ static inline char **cloneargs(const int argc, char **argv)
   static int x;
   static char **args;
 
-  args = (char **)string_malloc(sizeof(char*) * argc);
+  args = (char **)string_malloc(sizeof(char *) * (unsigned int)argc);
   if (args == NULL) oom("cloneargs() start");
 
   for (x = 0; x < argc; x++) {
@@ -788,8 +789,8 @@ static void grokdir(const char * const restrict dir,
       /* Exclude files below --xsize parameter */
       if (!S_ISDIR(newfile->mode) && ISFLAG(flags, F_EXCLUDESIZE)) {
         if (
-            ((excludetype == SMALLERTHAN) && (newfile->size < excludesize)) ||
-            ((excludetype == LARGERTHAN) && (newfile->size > excludesize))
+            ((excludetype == SMALLERTHAN) && (newfile->size < (off_t)excludesize)) ||
+            ((excludetype == LARGERTHAN) && (newfile->size > (off_t)excludesize))
         ) {
           LOUD(fprintf(stderr, "grokdir: excluding based on xsize limit (-x set)\n"));
           string_free(newfile->d_name);
@@ -940,7 +941,7 @@ static hash_t *get_filehash(const file_t * const restrict checkfile,
     size_t bytes_to_read;
 
     if (interrupt) return 0;
-    bytes_to_read = (fsize >= CHUNK_SIZE) ? CHUNK_SIZE : fsize;
+    bytes_to_read = (fsize >= CHUNK_SIZE) ? CHUNK_SIZE : (size_t)fsize;
     if (fread((void *)chunk, bytes_to_read, 1, file) != 1) {
       fprintf(stderr, "error reading from file "); fwprint(stderr, checkfile->d_name, 1);
       fclose(file);
@@ -1016,6 +1017,7 @@ static inline void registerfile(filetree_t * restrict * const restrict nodeptr,
       (*nodeptr)->right = branch;
       break;
     case NONE:
+    default:
       /* For the root of the tree only */
       *nodeptr = branch;
       break;
@@ -1156,6 +1158,7 @@ static file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict f
   switch (cmpresult) {
     case 2: return &tree->file;  /* linked files + -H switch */
     case -2: return NULL;  /* linked files, no -H switch */
+    default: break;
   }
 
   /* If preliminary matching succeeded, move to full file checks */
@@ -1527,7 +1530,7 @@ static void deletefiles(file_t *files, int prompt, FILE *tty)
   unsigned int curgroup = 0;
   file_t *tmpfile;
   file_t **dupelist;
-  int *preserve;
+  unsigned int *preserve;
   char *preservestr;
   char *token;
   char *tstr;
@@ -1539,7 +1542,7 @@ static void deletefiles(file_t *files, int prompt, FILE *tty)
   max++;
 
   dupelist = (file_t **) malloc(sizeof(file_t*) * max);
-  preserve = (int *) malloc(sizeof(int) * max);
+  preserve = (unsigned int *) malloc(sizeof(int) * max);
   preservestr = (char *) malloc(INPUT_SIZE);
 
   if (!dupelist || !preserve || !preservestr) oom("deletefiles() structures");
@@ -1821,12 +1824,12 @@ static inline void linkfiles(file_t *files, int hard)
   static file_t *srcfile;
   static file_t *curfile;
   static file_t ** restrict dupelist;
-  static int counter;
-  static int max = 0;
-  static int x = 0;
+  static unsigned int counter;
+  static unsigned int max = 0;
+  static unsigned int x = 0;
   static int i, success;
 #ifndef NO_SYMLINKS
-  static int symsrc;
+  static unsigned int symsrc;
   static char *rel_path;
 #endif
   static char temp_path[4096];
@@ -2331,7 +2334,7 @@ int main(int argc, char **argv)
         excludetype = LARGERTHAN;
         optarg++;
       }
-      excludesize = strtoull(optarg, &endptr, 0);
+      excludesize = (uintmax_t)strtoull(optarg, &endptr, 0);
       switch (*endptr) {
         case 'k':
         case 'K':
