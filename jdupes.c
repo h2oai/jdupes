@@ -185,6 +185,19 @@ static enum {
 #ifndef PARTIAL_HASH_SIZE
  #define PARTIAL_HASH_SIZE 4096
 #endif
+
+/* Maximum path buffer size to use; must be large enough for a path plus
+ * any work that might be done to the array it's stored in. PATH_MAX is
+ * not always true. Read this article on the false promises of PATH_MAX:
+ * http://insanecoding.blogspot.com/2007/11/pathmax-simply-isnt.html
+ * Windows + Unicode needs a lot more space than UTF-8 in Linux/Mac OS X
+ */
+#ifdef UNICODE
+ #define PATHBUF_SIZE 4096
+#else
+ #define PATHBUF_SIZE 1024
+#endif
+
 /* For interactive deletion input */
 #define INPUT_SIZE 512
 
@@ -343,29 +356,45 @@ static void oom(const char * const restrict msg)
 }
 
 
-/* Collapse dot-dot path components */
-static int collapse_dotdot(char * const path)
+/* Collapse dot-dot and single dot path components
+ * This code MUST be passed a full file pathname (starting with '/') */
+int collapse_dotdot(char * const path)
 {
-  char *prev, *p, *out;
+  char *prev;  /* last path component */
+  char *p, *out;
   int i = 0;
 
-  p = path; out = path;
+  /* Fail if not passed an absolute path */
+  if (*path != '/') return -1;
+
+  p = path; out = path; prev = path;
+
   while (*p != '\0') {
+    /* Find the next directory component separator */
     if (*p == '/') {
-      if (i < 4093 &&
+      /* Check for '../' or terminal '..' */
+      if (i < (PATHBUF_SIZE - 3) &&
           *(p + 1) == '.' &&
           *(p + 2) == '.' &&
           (*(p + 3) == '/' ||
            *(p + 3) == '\0')) {
         /* Found a dot-dot */
-      } else if (i < 4094 &&
+        if ((uintptr_t)prev == (uintptr_t)path) {
+          /* Skip a dot-dot in the root directory */
+          p += 3; i += 3; prev = p;
+          continue;
+	}
+      } else if (i < (PATHBUF_SIZE - 2) &&
           *(p + 1) == '.' &&
           (*(p + 2) == '/' ||
            *(p + 2) == '\0')) {
-        /* Found a single dot */
+        /* Found a single dot; just skip it */
+        p += 2; i += 2; prev = p;
+	continue;
       }
       prev = p;
     }
+    /* Copy all remaining text */
     *out = *p;
     p++; out++; i++;
   }
@@ -377,22 +406,22 @@ static int collapse_dotdot(char * const path)
 static inline char * get_relative_name(const char * const src,
                 const char * const dest)
 {
-  static char p1[4096], p2[4096], rel_path[4096];
+  static char p1[PATHBUF_SIZE * 2], p2[PATHBUF_SIZE * 2], rel_path[PATHBUF_SIZE];
   static char *sp, *dp, *ss, *ds;
 
   if (!src || !dest) goto error_null_param;
   /* XXX: code goes here, comments are for the weak */
-  /* Get working directory path */
-  if (!getcwd(p1, 4096)) goto error_getcwd;
-  *(p1 + 4096 - 1) = '\0';
+  /* Get working directory path and prefix to both pathnames */
+  if (!getcwd(p1, PATHBUF_SIZE * 2)) goto error_getcwd;
+  *(p1 + (PATHBUF_SIZE * 2) - 1) = '\0';
   strcat(p1, "/");
   strcpy(p2, p1);
   /* Concatenate working directory to relative paths */
   strcat(p1, src);
   strcat(p2, dest);
   /* Collapse dot-dot path components */
-  collapse_dotdot(p1);
-  collapse_dotdot(p2);
+  if (collapse_dotdot(p1) != 0) return NULL;
+  if (collapse_dotdot(p2) != 0) return NULL;
   /* Find where paths differ, counting each directory along the way */
   /* Replace common parts of destination path with dot-dot */
   //return rel_path;
@@ -659,7 +688,7 @@ static void grokdir(const char * const restrict dir,
   static uintmax_t progress = 0, dir_progress = 0;
   static int grokdir_level = 0;
   static int delay = DELAY_COUNT;
-  static char tempname[8192];
+  static char tempname[PATHBUF_SIZE * 2];
   size_t dirlen;
 #ifdef UNICODE
   WIN32_FIND_DATA ffd;
@@ -675,7 +704,7 @@ static void grokdir(const char * const restrict dir,
 
 #ifdef UNICODE
   /* Windows requires \* at the end of directory names */
-  strcpy(tempname, dir);
+  strncpy(tempname, dir, PATHBUF_SIZE);
   dirlen = strlen(tempname) - 1;
   p = tempname + dirlen;
   if (*p == '/' || *p == '\\') *p = '\0';
@@ -1390,7 +1419,7 @@ static unsigned int get_max_dupes(const file_t *files, unsigned int * const rest
 
 #ifdef ENABLE_BTRFS
 static char *dedupeerrstr(int err) {
-  static char buf[1024];
+  static char buf[256];
 
   buf[sizeof(buf)-1] = '\0';
   if (err == BTRFS_SAME_DATA_DIFFERS) {
@@ -1827,12 +1856,13 @@ static inline void linkfiles(file_t *files, int hard)
   static unsigned int counter;
   static unsigned int max = 0;
   static unsigned int x = 0;
+  static size_t name_len = 0;
   static int i, success;
 #ifndef NO_SYMLINKS
   static unsigned int symsrc;
   static char *rel_path;
 #endif
-  static char temp_path[4096];
+  static char temp_path[PATHBUF_SIZE];
 
   LOUD(fprintf(stderr, "Running linkfiles(%d)\n", hard);)
   curfile = files;
@@ -1977,6 +2007,9 @@ static inline void linkfiles(file_t *files, int hard)
         }
 #endif
 
+	/* Make sure the name will fit in the buffer before trying */
+	name_len = strlen(dupelist[x]->d_name) + 14;
+	if (name_len > PATHBUF_SIZE) continue;
         /* Assemble a temporary file name */
         strcpy(temp_path, dupelist[x]->d_name);
         strcat(temp_path, ".__jdupes__.tmp");
