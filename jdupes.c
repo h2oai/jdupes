@@ -362,7 +362,7 @@ static int collapse_dotdot(char * const path)
 {
   char *p;   /* string copy input */
   char *out; /* string copy output */
-  int i = 0;
+  unsigned int i = 0;
 
   /* Fail if not passed an absolute path */
   if (*path != '/') return -1;
@@ -372,6 +372,11 @@ static int collapse_dotdot(char * const path)
   while (*p != '\0') {
     /* Abort if we're too close to the end of the buffer */
     if (i >= (PATHBUF_SIZE - 3)) return -2;
+
+    /* Skip repeated slashes */
+    while (*p == '/' && *(p + 1) == '/') {
+      p++; i++;
+    }
 
     /* Scan for '/./', '/..', '/.\0' combinations */
     if (*p == '/' && *(p + 1) == '.'
@@ -383,17 +388,18 @@ static int collapse_dotdot(char * const path)
         /* If already at root, skip over the dot-dot */
         if (i == 0) continue;
         /* Don't seek back past the first character */
-        if ((uintptr_t)out == (uintptr_t)path) continue;
-        out--;
-       while (*out != '/') out--;
-        if (*p == '\0') break;
+	if ((uintptr_t)out == (uintptr_t)path) continue;
+	out--;
+        while (*out != '/') out--;
+	if (*p == '\0') break;
+        continue;
       } else if (*(p + 2) == '/' || *(p + 2) == '\0') {
         /* Found a single dot; seek input ptr past it */
         p += 2; i += 2;
-        if (*p == '\0') break;
+	if (*p == '\0') break;
         continue;
       }
-      /* Fall through: not a dot or dot-dot */
+      /* Fall through: not a dot or dot-dot, just a slash */
     }
 
     /* Copy all remaining text */
@@ -419,37 +425,60 @@ static inline int get_relative_name(const char * const src,
                 const char * const dest, char * rel_path)
 {
   static char p1[PATHBUF_SIZE * 2], p2[PATHBUF_SIZE * 2];
-  static char *sp, *dp, *ss, *ds;
+  static char *sp, *dp, *ss;
 
   if (!src || !dest) goto error_null_param;
 
-  /* Get working directory path and prefix to both pathnames */
-  if (!getcwd(p1, PATHBUF_SIZE * 2)) goto error_getcwd;
-  *(p1 + (PATHBUF_SIZE * 2) - 1) = '\0';
-  strcat(p1, "/");
-  strcpy(p2, p1);
+  /* Get working directory path and prefix to pathnames if needed */
+  if (*src != '/' || *dest != '/') {
+    if (!getcwd(p1, PATHBUF_SIZE * 2)) goto error_getcwd;
+    *(p1 + (PATHBUF_SIZE * 2) - 1) = '\0';
+    strcat(p1, "/");
+    strcpy(p2, p1);
+  }
+
+  /* If an absolute path is provided, use it as-is */
+  if (*src == '/') *p1 = '\0';
+  if (*dest == '/') *p2 = '\0';
 
   /* Concatenate working directory to relative paths */
   strcat(p1, src);
   strcat(p2, dest);
 
   /* Collapse . and .. path components */
-  if (collapse_dotdot(p1) != 0) return -2;
-  if (collapse_dotdot(p2) != 0) return -3;
+  if (collapse_dotdot(p1) != 0) goto error_cdd;
+  if (collapse_dotdot(p2) != 0) goto error_cdd;
 
   /* Find where paths differ, remembering each slash along the way */
-  sp = p1; dp = p2; ss = p1; ds = p2;
+  sp = p1; dp = p2; ss = p1;
   while (*sp == *dp && *sp != '\0' && *dp != '\0') {
     if (*sp == '/') ss = sp;
-    if (*dp == '/') ds = dp;
     sp++; dp++;
   }
-  /* If paths are 100% identical then the files are the same */
-  if (*sp == *dp) return 1;
+  /* If paths are 100% identical then the files are the same file */
+  if (*sp == '\0' && *dp == '\0') return 1;
 
-  /* Replace common parts of destination path with dot-dot */
-  //return 0;
-  return -127;
+  /* Replace dirs in destination path with dot-dot */
+  while (*dp != '\0') {
+    if (*dp == '/') {
+      *rel_path++ = '.'; *rel_path++ = '.'; *rel_path++ = '/';
+    }
+    dp++;
+  }
+
+  /* Copy the file name into rel_path and return */
+  ss++;
+  while (*ss != '\0') *rel_path++ = *ss++;
+
+  /* . and .. dirs at end are invalid */
+  if (*(rel_path - 1) == '.')
+    if (*(rel_path - 2) == '/' ||
+        (*(rel_path - 2) == '.' && *(rel_path - 3) == '/'))
+      goto error_dir_end;
+  if (*(rel_path - 1) == '/') goto error_dir_end;
+
+  *rel_path = '\0';
+  return 0;
 
 error_null_param:
     fprintf(stderr, "Internal error: get_relative_name has NULL parameter\n");
@@ -458,6 +487,12 @@ error_null_param:
 error_getcwd:
     fprintf(stderr, "error: couldn't get the current directory\n");
     return -1;
+error_cdd:
+    fprintf(stderr, "internal error: collapse_dotdot() call failed\n");
+    return -2;
+error_dir_end:
+    fprintf(stderr, "internal error: get_relative_name() result has directory at end\n");
+    return -3;
 }
 
 
@@ -880,7 +915,7 @@ static void grokdir(const char * const restrict dir,
       /* Optionally recurse directories, including symlinked ones if requested */
       if (S_ISDIR(newfile->mode)) {
 #ifndef NO_SYMLINKS
-        if (recurse && (ISFLAG(flags, F_FOLLOWLINKS) || !S_ISLNK(linfo.st_mode))) {
+        if (recurse && (/*ISFLAG(flags, F_FOLLOWLINKS) ||*/ !S_ISLNK(linfo.st_mode))) {
           LOUD(fprintf(stderr, "grokdir: directory: recursing (-r/-R)\n"));
           grokdir(newfile->d_name, filelistp, recurse);
         }
@@ -1935,13 +1970,14 @@ static inline void linkfiles(file_t *files, int hard)
         x = 1;
         /* Symlinks should target a normal file if one exists */
         srcfile = NULL;
-        for (symsrc = 1; symsrc <= counter; symsrc++)
-          if (!ISFLAG(dupelist[symsrc]->flags, F_IS_SYMLINK)) srcfile = dupelist[symsrc];
-        /* If no normal file exists, just symlink to the first file */
-        if (srcfile == NULL) {
-          symsrc = 1;
-          srcfile = dupelist[1];
+        for (symsrc = 1; symsrc <= counter; symsrc++) {
+          if (!ISFLAG(dupelist[symsrc]->flags, F_IS_SYMLINK)) {
+            srcfile = dupelist[symsrc];
+            break;
+          }
         }
+        /* If no normal file exists, abort */
+        if (srcfile == NULL) continue;
 #else
         fprintf(stderr, "internal error: linkfiles(soft) called without symlink support\nPlease report this to the author as a program bug\n");
         exit(EXIT_FAILURE);
@@ -1971,8 +2007,10 @@ static inline void linkfiles(file_t *files, int hard)
           }
         } else {
           /* Symlink prerequisite check code can go here */
-          /* Do not attempt to symlink a file to itself */
+          /* Do not attempt to symlink a file to itself or to another symlink */
 #ifndef NO_SYMLINKS
+          if (ISFLAG(dupelist[x]->flags, F_IS_SYMLINK) && 
+              ISFLAG(dupelist[symsrc]->flags, F_IS_SYMLINK)) continue;
           if (x == symsrc) continue;
 #endif
         }
@@ -2077,11 +2115,13 @@ static inline void linkfiles(file_t *files, int hard)
           if (link(srcfile->d_name, dupelist[x]->d_name) == 0) success = 1;
         } else {
           i = get_relative_name(srcfile->d_name, dupelist[x]->d_name, rel_path);
+          LOUD(fprintf(stderr, "symlink GRN: %s to %s = %s\n", srcfile->d_name, dupelist[x]->d_name, rel_path));
           if (i < 0) {
             fprintf(stderr, "warning: get_relative_name() failed (%d)\n", i);
           } else if (i == 1) {
             fprintf(stderr, "warning: files to be linked have the same canonical path; not linking\n");
-          } //else if (symlink(rel_path, dupelist[x]->d_name) == 0) success = 1;
+            fprintf(stderr, "%s %s %s\n", srcfile->d_name, dupelist[x]->d_name, rel_path);
+          } else if (symlink(rel_path, dupelist[x]->d_name) == 0) success = 1;
         }
 #endif /* ON_WINDOWS */
         if (success) {
@@ -2181,7 +2221,7 @@ static inline void help_text(void)
   printf(" -i --reverse     \treverse (invert) the match sort order\n");
   printf(" -I --isolate     \tfiles in the same specified directory won't match\n");
 #ifndef NO_SYMLINKS
-//  printf(" -l --linksoft    \tsymbolically link all duplicate files without prompting\n");
+  printf(" -l --linksoft    \tsymbolically link all duplicate files without prompting\n");
 #endif
 #ifndef NO_HARDLINKS
   printf(" -L --linkhard    \thard link all duplicate files without prompting\n");
@@ -2276,7 +2316,7 @@ int main(int argc, char **argv)
     { "recurse:", 0, 0, 'R' },
     { "recursive:", 0, 0, 'R' },
 #ifndef NO_SYMLINKS
-//    { "linksoft", 0, 0, 'l' },
+    { "linksoft", 0, 0, 'l' },
     { "symlinks", 0, 0, 's' },
 #endif
     { "size", 0, 0, 'S' },
@@ -2306,8 +2346,7 @@ int main(int argc, char **argv)
   oldargv = cloneargs(argc, argv);
 
   while ((opt = GETOPT(argc, argv,
-  "@ABdDfhHiILmnNOpqQrRsSvZo:x:"
-//  "@ABdDfhHiIlLmnNOpqQrRsSvZo:x:"
+  "@ABdDfhHiIlLmnNOpqQrRsSvZo:x:"
 #ifndef OMIT_GETOPT_LONG
           , long_options, NULL
 #endif
