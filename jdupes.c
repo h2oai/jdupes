@@ -358,74 +358,98 @@ static void oom(const char * const restrict msg)
 
 /* Collapse dot-dot and single dot path components
  * This code MUST be passed a full file pathname (starting with '/') */
-int collapse_dotdot(char * const path)
+static int collapse_dotdot(char * const path)
 {
-  char *prev;  /* last path component */
-  char *p, *out;
+  char *p;   /* string copy input */
+  char *out; /* string copy output */
   int i = 0;
 
   /* Fail if not passed an absolute path */
   if (*path != '/') return -1;
 
-  p = path; out = path; prev = path;
+  p = path; out = path;
 
   while (*p != '\0') {
-    /* Find the next directory component separator */
-    if (*p == '/') {
+    /* Abort if we're too close to the end of the buffer */
+    if (i >= (PATHBUF_SIZE - 3)) return -2;
+
+    /* Scan for '/./', '/..', '/.\0' combinations */
+    if (*p == '/' && *(p + 1) == '.'
+        && (*(p + 2) == '.' || *(p + 2) == '/' || *(p + 2) == '\0')) {
       /* Check for '../' or terminal '..' */
-      if (i < (PATHBUF_SIZE - 3) &&
-          *(p + 1) == '.' &&
-          *(p + 2) == '.' &&
-          (*(p + 3) == '/' ||
-           *(p + 3) == '\0')) {
-        /* Found a dot-dot */
-        if ((uintptr_t)prev == (uintptr_t)path) {
-          /* Skip a dot-dot in the root directory */
-          p += 3; i += 3; prev = p;
-          continue;
-	}
-      } else if (i < (PATHBUF_SIZE - 2) &&
-          *(p + 1) == '.' &&
-          (*(p + 2) == '/' ||
-           *(p + 2) == '\0')) {
-        /* Found a single dot; just skip it */
-        p += 2; i += 2; prev = p;
-	continue;
+      if (*(p + 2) == '.' && (*(p + 3) == '/' || *(p + 3) == '\0')) {
+        /* Found a dot-dot; pull everything back to the previous directory */
+        p += 3; i += 3;
+        /* If already at root, skip over the dot-dot */
+        if (i == 0) continue;
+        /* Don't seek back past the first character */
+        if ((uintptr_t)out == (uintptr_t)path) continue;
+        out--;
+       while (*out != '/') out--;
+        if (*p == '\0') break;
+      } else if (*(p + 2) == '/' || *(p + 2) == '\0') {
+        /* Found a single dot; seek input ptr past it */
+        p += 2; i += 2;
+        if (*p == '\0') break;
+        continue;
       }
-      prev = p;
+      /* Fall through: not a dot or dot-dot */
     }
+
     /* Copy all remaining text */
     *out = *p;
     p++; out++; i++;
   }
+
+  /* If only a root slash remains, be sure to keep it */
+  if ((uintptr_t)out == (uintptr_t)path) {
+    *out = '/';
+    out++;
+  }
+
+  /* Output must always be terminated properly */
+  *out = '\0';
+
   return 0;
 }
 
 
 /* Create a relative symbolic link path for a destination file */
-static inline char * get_relative_name(const char * const src,
-                const char * const dest)
+static inline int get_relative_name(const char * const src,
+                const char * const dest, char * rel_path)
 {
-  static char p1[PATHBUF_SIZE * 2], p2[PATHBUF_SIZE * 2], rel_path[PATHBUF_SIZE];
+  static char p1[PATHBUF_SIZE * 2], p2[PATHBUF_SIZE * 2];
   static char *sp, *dp, *ss, *ds;
 
   if (!src || !dest) goto error_null_param;
-  /* XXX: code goes here, comments are for the weak */
+
   /* Get working directory path and prefix to both pathnames */
   if (!getcwd(p1, PATHBUF_SIZE * 2)) goto error_getcwd;
   *(p1 + (PATHBUF_SIZE * 2) - 1) = '\0';
   strcat(p1, "/");
   strcpy(p2, p1);
+
   /* Concatenate working directory to relative paths */
   strcat(p1, src);
   strcat(p2, dest);
-  /* Collapse dot-dot path components */
-  if (collapse_dotdot(p1) != 0) return NULL;
-  if (collapse_dotdot(p2) != 0) return NULL;
-  /* Find where paths differ, counting each directory along the way */
+
+  /* Collapse . and .. path components */
+  if (collapse_dotdot(p1) != 0) return -2;
+  if (collapse_dotdot(p2) != 0) return -3;
+
+  /* Find where paths differ, remembering each slash along the way */
+  sp = p1; dp = p2; ss = p1; ds = p2;
+  while (*sp == *dp && *sp != '\0' && *dp != '\0') {
+    if (*sp == '/') ss = sp;
+    if (*dp == '/') ds = dp;
+    sp++; dp++;
+  }
+  /* If paths are 100% identical then the files are the same */
+  if (*sp == *dp) return 1;
+
   /* Replace common parts of destination path with dot-dot */
-  //return rel_path;
-  return NULL;
+  //return 0;
+  return -127;
 
 error_null_param:
     fprintf(stderr, "Internal error: get_relative_name has NULL parameter\n");
@@ -433,7 +457,7 @@ error_null_param:
     exit(EXIT_FAILURE);
 error_getcwd:
     fprintf(stderr, "error: couldn't get the current directory\n");
-    return NULL;
+    return -1;
 }
 
 
@@ -1454,7 +1478,7 @@ void dedupefiles(file_t * restrict files)
   dupe_filenames = malloc(max_dupes * sizeof(char *));
   LOUD(fprintf(stderr, "dedupefiles structs: alloc1 size %lu => %p, alloc2 size %lu => %p\n",
         sizeof(struct btrfs_ioctl_same_args) + sizeof(struct btrfs_ioctl_same_extent_info) * max_dupes,
-	(void *)same, max_dupes * sizeof(char *), (void *)dupe_filenames);)
+        (void *)same, max_dupes * sizeof(char *), (void *)dupe_filenames);)
   if (!same || !dupe_filenames) oom("dedupefiles() structures");
 
   /* Main dedupe loop */
@@ -1475,7 +1499,7 @@ void dedupefiles(file_t * restrict files)
         if (curfile->device == files->device && curfile->inode == files->inode) {
           LOUD(fprintf(stderr, "skipping hard linked file pair: '%s' = '%s'\n", curfile->d_name, files->d_name);)
           continue;
-	}
+        }
 
         dupe_filenames[cur_info] = curfile->d_name;
         fd = open(curfile->d_name, O_RDWR);
@@ -1492,7 +1516,7 @@ void dedupefiles(file_t * restrict files)
             fprintf(stderr, "Unable to open('%s'): %s\n",
                 curfile->d_name, strerror(errno2));
             continue;
-	  }
+          }
           LOUD(fprintf(stderr, "opening loop: fallback open('%s', O_RDONLY) succeeded\n", curfile->d_name);)
         }
 
@@ -1860,7 +1884,7 @@ static inline void linkfiles(file_t *files, int hard)
   static int i, success;
 #ifndef NO_SYMLINKS
   static unsigned int symsrc;
-  static char *rel_path;
+  static char rel_path[PATHBUF_SIZE];
 #endif
   static char temp_path[PATHBUF_SIZE];
 
@@ -2007,9 +2031,9 @@ static inline void linkfiles(file_t *files, int hard)
         }
 #endif
 
-	/* Make sure the name will fit in the buffer before trying */
-	name_len = strlen(dupelist[x]->d_name) + 14;
-	if (name_len > PATHBUF_SIZE) continue;
+        /* Make sure the name will fit in the buffer before trying */
+        name_len = strlen(dupelist[x]->d_name) + 14;
+        if (name_len > PATHBUF_SIZE) continue;
         /* Assemble a temporary file name */
         strcpy(temp_path, dupelist[x]->d_name);
         strcat(temp_path, ".__jdupes__.tmp");
@@ -2052,12 +2076,12 @@ static inline void linkfiles(file_t *files, int hard)
         if (hard) {
           if (link(srcfile->d_name, dupelist[x]->d_name) == 0) success = 1;
         } else {
-          rel_path = get_relative_name(srcfile->d_name, dupelist[x]->d_name);
-          if (!rel_path) {
-            fprintf(stderr, "warning: get_relative_name() failed");
-            continue;
-          }
-          //if (symlink(rel_path, dupelist[x]->d_name) == 0) success = 1;
+          i = get_relative_name(srcfile->d_name, dupelist[x]->d_name, rel_path);
+          if (i < 0) {
+            fprintf(stderr, "warning: get_relative_name() failed (%d)\n", i);
+          } else if (i == 1) {
+            fprintf(stderr, "warning: files to be linked have the same canonical path; not linking\n");
+          } //else if (symlink(rel_path, dupelist[x]->d_name) == 0) success = 1;
         }
 #endif /* ON_WINDOWS */
         if (success) {
@@ -2669,7 +2693,7 @@ skip_file_scan:
         left_branch + right_branch);
     fprintf(stderr, "Max tree depth: %u; SMA: allocs %ju, free %ju, fail %ju, reuse %ju, scan %ju, tails %ju\n",
         max_depth, sma_allocs, sma_free_good, sma_free_ignored,
-	sma_free_reclaimed, sma_free_scanned, sma_free_tails);
+        sma_free_reclaimed, sma_free_scanned, sma_free_tails);
 #ifdef ON_WINDOWS
  #ifndef NO_HARDLINKS
     if (ISFLAG(flags, F_HARDLINKFILES))
