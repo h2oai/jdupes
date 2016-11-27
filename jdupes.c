@@ -203,9 +203,6 @@ static enum {
   #define PATHBUF_SIZE 1024
  #endif /* UNICODE */
 #endif /* PATHBUF_SIZE */
-#if PATHBUF_SIZE < PATH_MAX
- #warning The chosen PATHBUF_SIZE is less than PATH_MAX! You have been warned!
-#endif
 
 /* For interactive deletion input */
 #define INPUT_SIZE 512
