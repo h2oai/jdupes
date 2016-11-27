@@ -66,7 +66,11 @@ endif
 
 # MinGW needs this for printf() conversions to work
 ifeq ($(OS), Windows_NT)
-	COMPILER_OPTIONS += -D__USE_MINGW_ANSI_STDIO=1 -municode
+ifndef NO_UNICODE
+	UNICODE=1
+	COMPILER_OPTIONS += -municode
+endif
+	COMPILER_OPTIONS += -D__USE_MINGW_ANSI_STDIO=1
 	OBJECT_FILES += win_stat.o
 	override undefine ENABLE_BTRFS
 	override undefine HAVE_BTRFS_IOCTL_H
@@ -83,10 +87,11 @@ endif
 # Low memory mode
 ifdef LOW_MEMORY
 COMPILER_OPTIONS += -DLOW_MEMORY -DJODY_HASH_WIDTH=32 -DSMA_PAGE_SIZE=32768
+# Unicode buffers must be able to hold 260 * 4 bytes for safety
 ifdef UNICODE
-COMPILER_OPTIONS += -DPATHBUF_SIZE=1024
+COMPILER_OPTIONS += -DPATHBUF_SIZE=1040
 else
-COMPILER_OPTIONS += -DPATHBUF_SIZE=256
+COMPILER_OPTIONS += -DPATHBUF_SIZE=260
 endif
 endif
 
