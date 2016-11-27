@@ -80,6 +80,7 @@ Usage: jdupes [options] DIRECTORY...
                   	hard links are treated as non-duplicates for safety
  -i --reverse     	reverse (invert) the match sort order
  -I --isolate     	files in the same specified directory won't match
+ -l --linksoft          symbolically link all duplicate files without prompting
  -L --linkhard    	hard link all duplicate files without prompting
                   	Windows allows a maximum of 1023 hard links per file
  -m --summarize   	summarize dupe information
@@ -109,10 +110,11 @@ Usage: jdupes [options] DIRECTORY...
 Duplicate files are listed together in groups with each file displayed on a
 Separate line. The groups are then separated from each other by blank lines.
 
-The -s/--symlinks option will treat symlinked files as regular files and
-follow symlinked directories, but direct symlinks will be treated as if
-they are hard linked files and the -H/--hardlinks option will apply to
-them in the same manner.
+The -s/--symlinks option will treat symlinked files as regular files, but
+direct symlinks will be treated as if they are hard linked files and the
+-H/--hardlinks option will apply to them in the same manner. This option
+used to follow symlinked directories but in the current implementation this
+behavior has been disabled due to it being too dangerous.
 
 When using -d or --delete, care should be taken to insure against accidental
 data loss. While no information will be immediately lost, using this option
@@ -131,21 +133,24 @@ blocked by this option that probably should not be. This code could use
 improvement.
 
 
-Hard linking status symbols and behavior
+Hard and soft (symbolic) linking status symbols and behavior
 --------------------------------------------------------------------------
-A set of arrows are used in hard linking to show what action was taken on
+A set of arrows are used in file linking to show what action was taken on
 each link candidate. These arrows are as follows:
 
 ----> File was hard linked to the first file in the duplicate chain
 
+-@@-> File was symlinked to the first file in the chain
+
 -==-> Already a hard link to the first file in the chain
 
--//-> Hard linking failed due to an error during the linking process
+-//-> File linking failed due to an error during the linking process
 
-If your data set has hard linked files and you do not use -L to always
-consider them as duplicates, you may still see hard linked files appear
-together in match sets. This is caused by a separate file that matches
-the hard linked files and is the correct behavior.
+If your data set has linked files and you do not use -L to always consider
+them as duplicates, you may still see linked files appear together in match
+sets. This is caused by a separate file that matches with linked files
+independently and is the correct behavior. See notes below on the "triangle
+problem" in jdupes for technical details.
 
 
 Microsoft Windows platform-specific notes
@@ -207,7 +212,7 @@ For all jdupes inquiries, contact Jody Bruchon <jody@jodybruchon.com>
 Please DO NOT contact Adrian Lopez about issues with jdupes.
 
 
-Legal Information
+Legal Information and Software License
 --------------------------------------------------------------------------
 jdupes is Copyright (C) 2015-2016 by Jody Bruchon <jody@jodybruchon.com>
 Derived from the original 'fdupes' (C) 1999-2016 by Adrian Lopez
