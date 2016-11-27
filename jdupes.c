@@ -72,6 +72,10 @@
  #include <sys/stat.h>
  typedef ino_t jdupes_ino_t;
  static const char *FILE_MODE_RO = "rb";
+ #ifdef UNICODE
+  #error Do not define UNICODE on non-Windows platforms.
+  #undef UNICODE
+ #endif
 #endif /* _WIN32 || __CYGWIN__ */
 
 /* Windows + Unicode compilation */
@@ -192,11 +196,13 @@ static enum {
  * http://insanecoding.blogspot.com/2007/11/pathmax-simply-isnt.html
  * Windows + Unicode needs a lot more space than UTF-8 in Linux/Mac OS X
  */
-#ifdef UNICODE
- #define PATHBUF_SIZE 4096
-#else
- #define PATHBUF_SIZE 1024
-#endif
+#ifndef PATHBUF_SIZE
+ #ifdef UNICODE
+  #define PATHBUF_SIZE 4096
+ #else
+  #define PATHBUF_SIZE 1024
+ #endif /* UNICODE */
+#endif /* PATHBUF_SIZE */
 
 /* For interactive deletion input */
 #define INPUT_SIZE 512
@@ -433,8 +439,8 @@ static inline int get_relative_name(const char * const src,
   if (*src != '/' || *dest != '/') {
     if (!getcwd(p1, PATHBUF_SIZE * 2)) goto error_getcwd;
     *(p1 + (PATHBUF_SIZE * 2) - 1) = '\0';
-    strcat(p1, "/");
-    strcpy(p2, p1);
+    strncat(p1, "/", PATHBUF_SIZE * 2);
+    strncpy(p2, p1, PATHBUF_SIZE * 2);
   }
 
   /* If an absolute path is provided, use it as-is */
@@ -442,8 +448,8 @@ static inline int get_relative_name(const char * const src,
   if (*dest == '/') *p2 = '\0';
 
   /* Concatenate working directory to relative paths */
-  strcat(p1, src);
-  strcat(p2, dest);
+  strncat(p1, src, PATHBUF_SIZE);
+  strncat(p2, dest, PATHBUF_SIZE);
 
   /* Collapse . and .. path components */
   if (collapse_dotdot(p1) != 0) goto error_cdd;
@@ -500,7 +506,7 @@ error_dir_end:
 /* Copy Windows wide character arguments to UTF-8 */
 static void widearg_to_argv(int argc, wchar_t **wargv, char **argv)
 {
-  char temp[PATH_MAX];
+  static char temp[PATH_MAX];
   int len;
 
   if (!argv) goto error_bad_argv;
@@ -767,7 +773,7 @@ static void grokdir(const char * const restrict dir,
   dirlen = strlen(tempname) - 1;
   p = tempname + dirlen;
   if (*p == '/' || *p == '\\') *p = '\0';
-  strcat(tempname, "\\*");
+  strncat(tempname, "\\*", PATHBUF_SIZE * 2);
 
   if (!M2W(tempname, wname)) goto error_cd;
 
@@ -809,6 +815,7 @@ static void grokdir(const char * const restrict dir,
         tp[dirlen] = '/';
         dirlen++;
       }
+      if (dirlen + d_name_len + 1 >= (PATHBUF_SIZE * 2)) goto error_overflow;
       tp += dirlen;
       memcpy(tp, dirinfo->d_name, d_name_len);
       tp += d_name_len;
@@ -847,7 +854,7 @@ static void grokdir(const char * const restrict dir,
 
       if (ISFLAG(flags, F_EXCLUDEHIDDEN)) {
         /* WARNING: Re-used tp here to eliminate a strdup() */
-        strcpy(tp, newfile->d_name);
+        strncpy(tp, newfile->d_name, dirlen + d_name_len);
         tp = basename(tp);
         if (tp[0] == '.' && strcmp(tp, ".") && strcmp(tp, "..")) {
           LOUD(fprintf(stderr, "grokdir: excluding hidden file (-A on)\n"));
@@ -962,8 +969,11 @@ static void grokdir(const char * const restrict dir,
   return;
 
 error_cd:
-  fprintf(stderr, "could not chdir to "); fwprint(stderr, dir, 1);
+  fprintf(stderr, "error: could not chdir to "); fwprint(stderr, dir, 1);
   return;
+error_overflow:
+  fprintf(stderr, "\nerror: a path buffer overflowed\n");
+  exit(EXIT_FAILURE);
 }
 
 /* Use Jody Bruchon's hash function on part or all of a file */
@@ -2120,7 +2130,6 @@ static inline void linkfiles(file_t *files, int hard)
             fprintf(stderr, "warning: get_relative_name() failed (%d)\n", i);
           } else if (i == 1) {
             fprintf(stderr, "warning: files to be linked have the same canonical path; not linking\n");
-            fprintf(stderr, "%s %s %s\n", srcfile->d_name, dupelist[x]->d_name, rel_path);
           } else if (symlink(rel_path, dupelist[x]->d_name) == 0) success = 1;
         }
 #endif /* ON_WINDOWS */
