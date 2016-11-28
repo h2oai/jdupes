@@ -197,12 +197,8 @@ static enum {
  * Windows + Unicode needs a lot more space than UTF-8 in Linux/Mac OS X
  */
 #ifndef PATHBUF_SIZE
- #ifdef UNICODE
-  #define PATHBUF_SIZE 4096
- #else
-  #define PATHBUF_SIZE 1024
- #endif /* UNICODE */
-#endif /* PATHBUF_SIZE */
+#define PATHBUF_SIZE 4096
+#endif
 
 /* For interactive deletion input */
 #define INPUT_SIZE 512
@@ -2343,6 +2339,7 @@ int main(int argc, char **argv)
   fprintf(stderr, "\n----------\n");
   fprintf(stderr, "WARNING: This program's PATHBUF_SIZE is too small and it may destroy data!\n");
   fprintf(stderr, "Don't trust it with anything important. THIS IS YOUR ONLY WARNING.\n");
+  fprintf(stderr, "Current settings:  PATHBUF_SIZE = %d   PATH_MAX = %d\n", PATHBUF_SIZE, PATH_MAX);
   fprintf(stderr, "----------\n");
 #endif
 

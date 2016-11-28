@@ -87,12 +87,6 @@ endif
 # Low memory mode
 ifdef LOW_MEMORY
 COMPILER_OPTIONS += -DLOW_MEMORY -DJODY_HASH_WIDTH=32 -DSMA_PAGE_SIZE=32768
-# Unicode buffers must be able to hold 260 * 4 bytes for safety
-ifdef UNICODE
-COMPILER_OPTIONS += -DPATHBUF_SIZE=1040
-else
-COMPILER_OPTIONS += -DPATHBUF_SIZE=260
-endif
 endif
 
 CFLAGS += $(COMPILER_OPTIONS) $(CFLAGS_EXTRA)
