@@ -39,7 +39,7 @@
 #include <libgen.h>
 #include "string_malloc.h"
 #include "jody_hash.h"
-#include "jody_paths.h"
+#include "jody_sort.h"
 #include "version.h"
 
 /* Optional btrfs support */
@@ -90,6 +90,10 @@ static int out_mode = _O_TEXT;
  #define M2W(a,b) MultiByteToWideChar(CP_UTF8, 0, a, -1, (LPWSTR)b, PATH_MAX)
  #define W2M(a,b) WideCharToMultiByte(CP_UTF8, 0, a, -1, (LPSTR)b, PATH_MAX, NULL, NULL)
 #endif /* UNICODE */
+
+#ifndef NO_SYMLINKS
+#include "jody_paths.h"
+#endif
 
 #define ISFLAG(a,b) ((a & b) == b)
 #define SETFLAG(a,b) (a |= b)
@@ -1638,94 +1642,13 @@ static int sort_pairs_by_mtime(file_t *f1, file_t *f2)
 }
 
 
-#define IS_NUM(a) (((a >= '0') && (a <= '9')) ? 1 : 0)
-static inline int numeric_sort(const char * restrict c1,
-                const char * restrict c2)
-{
-  int len1 = 0, len2 = 0;
-  int precompare = 0;
-
-  /* Numerically correct sort */
-  while (*c1 != '\0' && *c2 != '\0') {
-    /* Reset string length counters */
-    len1 = 0; len2 = 0;
-
-    /* Skip all sequences of zeroes */
-    while (*c1 == '0') {
-      len1++;
-      c1++;
-    }
-    while (*c2 == '0') {
-      len2++;
-      c2++;
-    }
-
-    /* If both chars are numeric, do a numeric comparison */
-    if (IS_NUM(*c1) && IS_NUM(*c2)) {
-      precompare = 0;
-
-      /* Scan numbers and get preliminary results */
-      while (IS_NUM(*c1) && IS_NUM(*c2)) {
-        if (*c1 < *c2) precompare = -sort_direction;
-        if (*c1 > *c2) precompare = sort_direction;
-        len1++; len2++;
-        c1++; c2++;
-
-        /* Skip remaining digit pairs after any
-         * difference is found */
-        if (precompare != 0) {
-          while (IS_NUM(*c1) && IS_NUM(*c2)) {
-            len1++; len2++;
-            c1++; c2++;
-          }
-          break;
-        }
-      }
-
-      /* One numeric and one non-numeric means the
-       * numeric one is larger and sorts later */
-      if (IS_NUM(*c1) ^ IS_NUM(*c2)) {
-        if (IS_NUM(*c1)) return sort_direction;
-        else return -sort_direction;
-      }
-
-      /* If the last test fell through, numbers are
-       * of equal length. Use the precompare result
-       * as the result for this number comparison. */
-      if (precompare != 0) return precompare;
-    }
-
-    /* Do normal comparison */
-    if (*c1 == *c2) {
-      c1++; c2++;
-      len1++; len2++;
-    /* Put symbols and spaces after everything else */
-    } else if (*c2 < '.' && *c1 >= '.') return -sort_direction;
-    else if (*c1 < '.' && *c2 >= '.') return sort_direction;
-    /* Normal strcmp() style compare */
-    else if (*c1 > *c2) return sort_direction;
-    else return -sort_direction;
-  }
-
-  /* Longer strings generally sort later */
-  if (len1 < len2) return -sort_direction;
-  if (len1 > len2) return sort_direction;
-  /* Normal strcmp() style comparison */
-  if (*c1 == '\0' && *c2 != '\0') return -sort_direction;
-  if (*c1 != '\0' && *c2 == '\0') return sort_direction;
-
-  /* Fall through: the strings are equal */
-  return 0;
-}
-
-
 static int sort_pairs_by_filename(file_t *f1, file_t *f2)
 {
   int po = sort_pairs_by_param_order(f1, f2);
 
   if (po != 0) return po;
 
-  return numeric_sort(f1->d_name, f2->d_name);
+  return numeric_sort(f1->d_name, f2->d_name, sort_direction);
 }
 
 
@@ -1982,6 +1905,9 @@ static inline void linkfiles(file_t *files, int hard)
         success = 0;
         if (hard) {
           if (link(srcfile->d_name, dupelist[x]->d_name) == 0) success = 1;
+ #ifdef NO_SYMLINKS
+        }
+ #else
         } else {
           i = make_relative_link_name(srcfile->d_name, dupelist[x]->d_name, rel_path);
           LOUD(fprintf(stderr, "symlink GRN: %s to %s = %s\n", srcfile->d_name, dupelist[x]->d_name, rel_path));
@@ -1991,6 +1917,7 @@ static inline void linkfiles(file_t *files, int hard)
             fprintf(stderr, "warning: files to be linked have the same canonical path; not linking\n");
           } else if (symlink(rel_path, dupelist[x]->d_name) == 0) success = 1;
         }
+ #endif /* NO_SYMLINKS */
 #endif /* ON_WINDOWS */
         if (success) {
           if (!ISFLAG(flags, F_HIDEPROGRESS)) printf("%s %s\n", (hard ? "---->" : "-@@->"), dupelist[x]->d_name);
