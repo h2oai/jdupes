@@ -1,3 +1,11 @@
+jdupes 1.6
+
+- Add the -l/--linksoft option to create symbolic links from duplicates
+- Disable following symlinks to directories when -s/--symlinks is used
+- Reduce overall memory usage by approximately 5%
+- Add configurable path buffer sizes and path buffer overflow checks
+- Fixes for some build warnings seen on ARM and MIPS
+
 jdupes 1.5.1
 
 - Significant reduction in memory usage (with a bonus tiny speed boost)
