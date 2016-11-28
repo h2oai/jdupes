@@ -62,6 +62,7 @@
  #define S_ISREG WS_ISREG
  #define S_ISDIR WS_ISDIR
  typedef uint64_t jdupes_ino_t;
+ typedef uint32_t jdupes_mode_t;
  #ifdef UNICODE
   static const wchar_t *FILE_MODE_RO = L"rbS";
  #else
@@ -71,6 +72,7 @@
 #else /* Not Windows */
  #include <sys/stat.h>
  typedef ino_t jdupes_ino_t;
+ typedef mode_t jdupes_mode_t;
  static const char *FILE_MODE_RO = "rb";
  #ifdef UNICODE
   #error Do not define UNICODE on non-Windows platforms.
@@ -264,7 +266,7 @@ typedef struct _file {
   struct _file *next;
   char *d_name;
   dev_t device;
-  mode_t mode;
+  jdupes_mode_t mode;
   off_t size;
   jdupes_ino_t inode;
   hash_t filehash_partial;
@@ -510,9 +512,9 @@ static void widearg_to_argv(int argc, wchar_t **wargv, char **argv)
     len = W2M(wargv[counter], &temp);
     if (len < 1) goto error_wc2mb;
 
-    argv[counter] = (char *)string_malloc(len + 1);
+    argv[counter] = (char *)string_malloc((size_t)len + 1);
     if (!argv[counter]) oom("widearg_to_argv()");
-    strncpy(argv[counter], temp, len + 1);
+    strncpy(argv[counter], temp, (size_t)len + 1);
   }
   return;
 
