@@ -80,7 +80,7 @@ Usage: jdupes [options] DIRECTORY...
                   	hard links are treated as non-duplicates for safety
  -i --reverse     	reverse (invert) the match sort order
  -I --isolate     	files in the same specified directory won't match
- -l --linksoft          symbolically link all duplicate files without prompting
+ -l --linksoft          make relative symlinks for duplicates w/o prompting
  -L --linkhard    	hard link all duplicate files without prompting
                   	Windows allows a maximum of 1023 hard links per file
  -m --summarize   	summarize dupe information

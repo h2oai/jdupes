@@ -2228,7 +2228,7 @@ static inline void help_text(void)
   printf(" -i --reverse     \treverse (invert) the match sort order\n");
   printf(" -I --isolate     \tfiles in the same specified directory won't match\n");
 #ifndef NO_SYMLINKS
-  printf(" -l --linksoft    \tsymbolically link all duplicate files without prompting\n");
+  printf(" -l --linksoft    \tmake relative symlinks for duplicates w/o prompting\n");
 #endif
 #ifndef NO_HARDLINKS
   printf(" -L --linkhard    \thard link all duplicate files without prompting\n");
