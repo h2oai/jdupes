@@ -64,6 +64,7 @@
  #define S_ISDIR WS_ISDIR
  typedef uint64_t jdupes_ino_t;
  typedef uint32_t jdupes_mode_t;
+ static const char dir_sep = '\\';
  #ifdef UNICODE
   static const wchar_t *FILE_MODE_RO = L"rbS";
  #else
@@ -75,6 +76,7 @@
  typedef ino_t jdupes_ino_t;
  typedef mode_t jdupes_mode_t;
  static const char *FILE_MODE_RO = "rb";
+ static const char dir_sep = '/';
  #ifdef UNICODE
   #error Do not define UNICODE on non-Windows platforms.
   #undef UNICODE
@@ -366,6 +368,17 @@ static void oom(const char * const restrict msg)
 
 
 #ifdef UNICODE
+/* Convert slashes to backslashes in a file path */
+static void slash_convert(char *path)
+{
+  while (*path != '\0') {
+    if (*path == '/') *path = '\\';
+    path++;
+  }
+  return;
+}
+
+
 /* Copy Windows wide character arguments to UTF-8 */
 static void widearg_to_argv(int argc, wchar_t **wargv, char **argv)
 {
@@ -412,6 +425,7 @@ static int fwprint(FILE * const restrict stream, const char * const restrict str
 }
 #else
  #define fwprint(a,b,c) fprintf(a, "%s%s", b, c ? "\n" : "")
+ #define slash_convert(a)
 #endif /* UNICODE */
 
 
@@ -627,12 +641,13 @@ static void grokdir(const char * const restrict dir,
 #endif
 
   LOUD(fprintf(stderr, "grokdir: scanning '%s' (order %d)\n", dir, user_dir_count));
+
   dir_progress++;
   grokdir_level++;
 
 #ifdef UNICODE
   /* Windows requires \* at the end of directory names */
-  strncpy(tempname, dir, PATHBUF_SIZE);
+  strncpy(tempname, dir, PATHBUF_SIZE * 2);
   dirlen = strlen(tempname) - 1;
   p = tempname + dirlen;
   if (*p == '/' || *p == '\\') *p = '\0';
@@ -674,8 +689,8 @@ static void grokdir(const char * const restrict dir,
       dirlen = strlen(dir);
       d_name_len = strlen(dirinfo->d_name);
       memcpy(tp, dir, dirlen+1);
-      if (dirlen != 0 && tp[dirlen-1] != '/') {
-        tp[dirlen] = '/';
+      if (dirlen != 0 && tp[dirlen-1] != dir_sep) {
+        tp[dirlen] = dir_sep;
         dirlen++;
       }
       if (dirlen + d_name_len + 1 >= (PATHBUF_SIZE * 2)) goto error_overflow;
@@ -2371,6 +2386,7 @@ int main(int argc, char **argv)
 
     /* F_RECURSE is not set for directories before --recurse: */
     for (int x = optind; x < firstrecurse; x++) {
+      slash_convert(argv[x]);
       grokdir(argv[x], &files, 0);
       user_dir_count++;
     }
@@ -2379,11 +2395,13 @@ int main(int argc, char **argv)
     SETFLAG(flags, F_RECURSE);
 
     for (int x = firstrecurse; x < argc; x++) {
+      slash_convert(argv[x]);
       grokdir(argv[x], &files, 1);
       user_dir_count++;
     }
   } else {
     for (int x = optind; x < argc; x++) {
+      slash_convert(argv[x]);
       grokdir(argv[x], &files, ISFLAG(flags, F_RECURSE));
       user_dir_count++;
     }
