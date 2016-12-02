@@ -1489,7 +1489,7 @@ void dedupefiles(file_t * restrict files)
               files->d_name, dupe_filenames[cur_info], dedupeerrstr(status),
               status, readonly_msg[readonly]);
           } else {
-            fprintf(stderr, "warning: dedupe only did %jd byes: %s => %s: %s [%d]%s\n",
+            fprintf(stderr, "warning: dedupe only did %jd bytes: %s => %s: %s [%d]%s\n",
               (intmax_t)same->info[cur_info].bytes_deduped, files->d_name,
               dupe_filenames[cur_info], dedupeerrstr(status), status, readonly_msg[readonly]);
           }
