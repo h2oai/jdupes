@@ -343,6 +343,14 @@ static int sort_direction = 1;
 /* Signal handler */
 static int interrupt = 0;
 
+/* Message to append to BTRFS warnings based on write permissions */
+#ifdef ENABLE_BTRFS
+static const char *readonly_msg[] = {
+        "", " (no write permission)"
+};
+#endif
+
+
 /***** End definitions, begin code *****/
 
 
@@ -1390,7 +1398,7 @@ void dedupefiles(file_t * restrict files)
   unsigned int cur_file = 0, max_files, total_files = 0;
 
   int fd;
-  int ret, status;
+  int ret, status, readonly;
 
   LOUD(fprintf(stderr, "\nRunning dedupefiles()\n");)
 
@@ -1425,6 +1433,8 @@ void dedupefiles(file_t * restrict files)
         }
 
         dupe_filenames[cur_info] = curfile->d_name;
+        readonly = 0;
+        if (access(curfile->d_name, W_OK) != 0) readonly = 1;
         fd = open(curfile->d_name, O_RDWR);
         LOUD(fprintf(stderr, "opening loop: open('%s', O_RDWR) [%d]\n", curfile->d_name, fd);)
 
@@ -1436,8 +1446,8 @@ void dedupefiles(file_t * restrict files)
           fd = open(curfile->d_name, O_RDONLY);
           if (fd == -1) {
             LOUD(fprintf(stderr, "opening loop: fallback open('%s', O_RDONLY) failed: %s\n", curfile->d_name, strerror(errno));)
-            fprintf(stderr, "Unable to open('%s'): %s\n",
-                curfile->d_name, strerror(errno2));
+            fprintf(stderr, "Unable to open '%s': %s%s\n", curfile->d_name,
+                strerror(errno2), readonly_msg[readonly]);
             continue;
           }
           LOUD(fprintf(stderr, "opening loop: fallback open('%s', O_RDONLY) succeeded\n", curfile->d_name);)
@@ -1474,9 +1484,15 @@ void dedupefiles(file_t * restrict files)
       for (cur_info = 0; cur_info < n_dupes; cur_info++) {
         status = same->info[cur_info].status;
         if (status != 0) {
-          fprintf(stderr, "warning: dedupe only did %jd byes: %s => %s: %s [%d]\n",
-            (intmax_t)same->info[cur_info].bytes_deduped, files->d_name,
-            dupe_filenames[cur_info], dedupeerrstr(status), status);
+          if (same->info[cur_info].bytes_deduped == 0) {
+            fprintf(stderr, "warning: dedupe failed: %s => %s: %s [%d]%s\n",
+              files->d_name, dupe_filenames[cur_info], dedupeerrstr(status),
+              status, readonly_msg[readonly]);
+          } else {
+            fprintf(stderr, "warning: dedupe only did %jd byes: %s => %s: %s [%d]%s\n",
+              (intmax_t)same->info[cur_info].bytes_deduped, files->d_name,
+              dupe_filenames[cur_info], dedupeerrstr(status), status, readonly_msg[readonly]);
+          }
         }
       }
 
