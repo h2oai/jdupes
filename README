@@ -23,7 +23,7 @@ and even if they do, they don't support Unicode and other Windows-specific
 quirks and features.
 
 jdupes is generally stable. All releases of jdupes are compared against a
-known working reference version of fdupes or jdupes to be certain that
+known working reference versions of fdupes or jdupes to be certain that
 output does not change. You get the benefits of an aggressive development
 process without putting your data at increased risk.
 
@@ -31,7 +31,7 @@ Code in jdupes is written with data loss avoidance as the highest priority.
 If a choice must be made between being aggressive or careful, the careful
 way is always chosen.
 
-jdupes includes features that are not found in fdupes. Examples of
+jdupes includes features that are not always found elsewhere. Examples of
 such features include btrfs block-level deduplication and control over
 which file is kept when a match set is automatically deleted. jdupes is
 not afraid of dropping features of low value; a prime example is the -1
@@ -44,7 +44,10 @@ be held responsible. If you notice a bug, please report it.
 
 While jdupes maintains some degree of compatibility with fdupes from which
 it was originally derived, there is no guarantee that it will continue to
-maintain such compatibility in the future.
+maintain such compatibility in the future. However, compatibility will be
+retained between minor versions, i.e. jdupes-1.6 and jdupes-1.6.1 should
+not have any significant differences in results with identical command
+lines.
 
 
 What jdupes is not: a similar (but not identical) file finding tool
@@ -167,7 +170,7 @@ file. If more than 1023 links are created for a file, an error results."
 (The number is actually 1024, but they're ignoring the first file.)
 
 
-The Current jdupes Algorithm's "Triangle Problem"
+The current jdupes algorithm's "triangle problem"
 --------------------------------------------------------------------------
 Pairs of files are excluded individually based on how the two files compare.
 For example, if --hardlinks is not specified then two files which are hard
@@ -216,7 +219,10 @@ Legal Information and Software License
 --------------------------------------------------------------------------
 jdupes is Copyright (C) 2015-2016 by Jody Bruchon <jody@jodybruchon.com>
 Derived from the original 'fdupes' (C) 1999-2016 by Adrian Lopez
-Includes jody_hash and string_malloc, (C) 2015-2016 Jody Bruchon
+Includes jody_hash, jody_paths, jody_sort, and string_malloc, all of
+which are (C) 2015-2016 Jody Bruchon
+
+The MIT License
 
 Permission is hereby granted, free of charge, to any person
 obtaining a copy of this software and associated documentation files

@@ -1,3 +1,10 @@
+jdupes 1.6.1
+
+- Show backslash instead of forward slash as path separator on Windows
+- Make BTRFS dedupe error messages more informative and less confusing
+- Minor code tweaks, typo and help text fixes
+- Split some functions into separate files (jdupes.c was getting large)
+
 jdupes 1.6
 
 - Add the -l/--linksoft option to create symbolic links from duplicates
