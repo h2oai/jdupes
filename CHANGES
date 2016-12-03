@@ -1,3 +1,9 @@
+jdupes 1.6.2
+
+- Fix: version number shown in jdupes -v wasn't updated in 1.6.1
+- Prevent BTRFS dedupe of more files than the kernel can handle
+- Track directories to avoid scanning the same directory twice
+
 jdupes 1.6.1
 
 - Show backslash instead of forward slash as path separator on Windows
