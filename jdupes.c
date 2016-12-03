@@ -53,8 +53,6 @@
 
 /* Detect Windows and modify as needed */
 #if defined _WIN32 || defined __CYGWIN__
- typedef uint64_t jdupes_ino_t;
- typedef uint32_t jdupes_mode_t;
  const char dir_sep = '\\';
  #ifdef UNICODE
   const wchar_t *FILE_MODE_RO = L"rbS";
@@ -73,10 +71,10 @@
 
 /* Windows + Unicode compilation */
 #ifdef UNICODE
-static wchar_t wname[PATH_MAX];
-static wchar_t wname2[PATH_MAX];
-static wchar_t wstr[PATH_MAX];
-static int out_mode = _O_TEXT;
+wchar_t wname[PATH_MAX];
+wchar_t wname2[PATH_MAX];
+wchar_t wstr[PATH_MAX];
+int out_mode = _O_TEXT;
  #define M2W(a,b) MultiByteToWideChar(CP_UTF8, 0, a, -1, (LPWSTR)b, PATH_MAX)
  #define W2M(a,b) WideCharToMultiByte(CP_UTF8, 0, a, -1, (LPSTR)b, PATH_MAX, NULL, NULL)
 #endif /* UNICODE */
@@ -130,9 +128,9 @@ static const char *program_name;
 
 /* This gets used in many functions */
 #ifdef ON_WINDOWS
-static struct winstat ws;
+struct winstat ws;
 #else
-static struct stat s;
+struct stat s;
 #endif
 
 static uintmax_t excludesize = 0;

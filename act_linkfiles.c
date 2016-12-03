@@ -9,6 +9,9 @@
 #include <errno.h>
 #include "act_linkfiles.h"
 #include "jody_win_unicode.h"
+#if defined _WIN32 || defined __CYGWIN__
+ #include "win_stat.h"
+#endif
 
 extern void linkfiles(file_t *files, const int hard)
 {

@@ -37,7 +37,7 @@ extern "C" {
  #define S_ISDIR WS_ISDIR
  typedef uint64_t jdupes_ino_t;
  typedef uint32_t jdupes_mode_t;
- extern const char dir_sep = '\\';
+ extern const char dir_sep;
  #ifdef UNICODE
   extern const wchar_t *FILE_MODE_RO;
  #else
@@ -61,7 +61,7 @@ extern "C" {
 extern wchar_t wname[PATH_MAX];
 extern wchar_t wname2[PATH_MAX];
 extern wchar_t wstr[PATH_MAX];
-extern int out_mode = _O_TEXT;
+extern int out_mode;
  #define M2W(a,b) MultiByteToWideChar(CP_UTF8, 0, a, -1, (LPWSTR)b, PATH_MAX)
  #define W2M(a,b) WideCharToMultiByte(CP_UTF8, 0, a, -1, (LPSTR)b, PATH_MAX, NULL, NULL)
 #endif /* UNICODE */
@@ -205,6 +205,13 @@ typedef struct _filetree {
   unsigned int right_weight;
 #endif /* USE_TREE_REBALANCE */
 } filetree_t;
+
+/* This gets used in many functions */
+#ifdef ON_WINDOWS
+extern struct winstat ws;
+#else
+extern struct stat s;
+#endif
 
 extern void oom(const char * const restrict msg);
 extern int file_has_changed(file_t * const restrict file);

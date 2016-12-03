@@ -1,6 +1,8 @@
 #include "jdupes.h"
 
 #ifdef UNICODE
+#include <stdio.h>
+#include <fcntl.h>
 /* Convert slashes to backslashes in a file path */
 extern void slash_convert(char *path)
 {
