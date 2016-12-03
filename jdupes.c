@@ -1467,8 +1467,8 @@ void dedupefiles(file_t * restrict files)
       n_dupes = cur_info;
 
       same->logical_offset = 0;
-      same->length = files->size;
-      same->dest_count = n_dupes;
+      same->length = (unsigned long)files->size;
+      same->dest_count = (uint16_t)n_dupes;  /* kernel type is __u16 */
 
       fd = open(files->d_name, O_RDONLY);
       LOUD(fprintf(stderr, "source: open('%s', O_RDONLY) [%d]\n", files->d_name, fd);)
@@ -1504,7 +1504,7 @@ void dedupefiles(file_t * restrict files)
 
 cleanup:
       for (cur_info = 0; cur_info < n_dupes; cur_info++) {
-        if (close(same->info[cur_info].fd) == -1) {
+        if (close((int)same->info[cur_info].fd) == -1) {
           fprintf(stderr, "unable to close(\"%s\"): %s", dupe_filenames[cur_info],
             strerror(errno));
         }
