@@ -156,6 +156,11 @@ static enum {
 #ifndef PATHBUF_SIZE
 #define PATHBUF_SIZE 4096
 #endif
+/* Refuse to build if PATHBUF_SIZE is too small */
+#if PATHBUF_SIZE < PATH_MAX
+#error "PATHBUF_SIZE can't be less than PATH_MAX"
+#endif
+
 
 /* For interactive deletion input */
 #define INPUT_SIZE 512
@@ -1432,14 +1437,6 @@ int main(int argc, char **argv)
 #define GETOPT getopt_long
 #else
 #define GETOPT getopt
-#endif
-
-#if PATHBUF_SIZE < PATH_MAX
-  fprintf(stderr, "\n----------\n");
-  fprintf(stderr, "WARNING: This program's PATHBUF_SIZE is too small and it may destroy data!\n");
-  fprintf(stderr, "Don't trust it with anything important. THIS IS YOUR ONLY WARNING.\n");
-  fprintf(stderr, "Current settings:  PATHBUF_SIZE = %d   PATH_MAX = %d\n", PATHBUF_SIZE, PATH_MAX);
-  fprintf(stderr, "----------\n");
 #endif
 
 #ifdef UNICODE
