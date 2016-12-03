@@ -311,6 +311,15 @@ typedef struct _filetree {
 static filetree_t *checktree = NULL;
 #endif
 
+/* Tree to track each directory traversed */
+struct travdone {
+  struct travdone *left;
+  struct travdone *right;
+  jdupes_ino_t inode;
+  dev_t device;
+};
+static struct travdone *travdone_head = NULL;
+
 static uintmax_t filecount = 0; // Required for progress indicator code
 static int did_long_work = 0; // To tell progress indicator to go faster
 
@@ -564,6 +573,22 @@ static inline int getfilestats(file_t * const restrict file)
 }
 
 
+static inline int getdirstats(const char * const restrict name,
+        jdupes_ino_t * const restrict inode, dev_t * const restrict dev)
+{
+#ifdef ON_WINDOWS
+  if (win_stat(name, &ws) != 0) return -1;
+  *inode = ws.inode;
+  *dev = ws.device;
+#else
+  if (stat(name, &s) != 0) return -1;
+  *inode = s.st_ino;
+  *dev = s.st_dev;
+#endif /* ON_WINDOWS */
+  return 0;
+}
+
+
 /* Check a pair of files for match exclusion conditions
  * Returns:
  *  0 if all condition checks pass
@@ -625,6 +650,21 @@ static int check_conditions(const file_t * const restrict file1, const file_t * 
 }
 
 
+/* Create a new traversal check object */
+static int travdone_alloc(struct travdone **trav, const char * const restrict dir)
+{
+  *trav = string_malloc(sizeof(struct travdone));
+  if (*trav == NULL) {
+    LOUD(fprintf(stderr, "travdone_alloc: malloc returned NULL\n");)
+    return -1;
+  }
+  (*trav)->left = NULL;
+  (*trav)->right = NULL;
+  if (getdirstats(dir, &((*trav)->inode), &((*trav)->device)) != 0) return -1;
+  return 0;
+}
+
+
 /* Load a directory's contents into the file tree, recursing as needed */
 static void grokdir(const char * const restrict dir,
                 file_t * restrict * const restrict filelistp,
@@ -640,6 +680,9 @@ static void grokdir(const char * const restrict dir,
   static int delay = DELAY_COUNT;
   static char tempname[PATHBUF_SIZE * 2];
   size_t dirlen;
+  struct travdone *traverse;
+  jdupes_ino_t inode;
+  dev_t device;
 #ifdef UNICODE
   WIN32_FIND_DATA ffd;
   HANDLE hFind = INVALID_HANDLE_VALUE;
@@ -649,6 +692,40 @@ static void grokdir(const char * const restrict dir,
 #endif
 
   LOUD(fprintf(stderr, "grokdir: scanning '%s' (order %d)\n", dir, user_dir_count));
+
+  /* Double traversal prevention tree */
+  if (travdone_head == NULL) {
+    if (travdone_alloc(&travdone_head, dir) != 0) goto error_travdone;
+  } else {
+    if (getdirstats(dir, &inode, &device) != 0) goto error_travdone;
+    traverse = travdone_head;
+    while (1) {
+      /* Don't re-traverse directories we've already seen */
+      if (inode == traverse->inode && device == traverse->device) {
+        LOUD(fprintf(stderr, "already seen dir '%s', skipping\n", dir);)
+        return;
+      }
+      if (inode >= traverse->inode) {
+        /* Traverse right */
+        if (traverse->right == NULL) {
+          LOUD(fprintf(stderr, "traverse dir right '%s'\n", dir);)
+          if (travdone_alloc(&(traverse->right), dir) != 0) goto error_travdone;
+          break;
+        }
+        traverse = traverse->right;
+        continue;
+      } else {
+        /* Traverse left */
+        if (traverse->left == NULL) {
+          LOUD(fprintf(stderr, "traverse dir left '%s'\n", dir);)
+          if (travdone_alloc(&(traverse->left), dir) != 0) goto error_travdone;
+          break;
+        }
+        traverse = traverse->left;
+        continue;
+      }
+    }
+  }
 
   dir_progress++;
   grokdir_level++;
@@ -854,6 +931,9 @@ static void grokdir(const char * const restrict dir,
   }
   return;
 
+error_travdone:
+  fprintf(stderr, "error: could not stat dir "); fwprint(stderr, dir, 1);
+  return;
 error_cd:
   fprintf(stderr, "error: could not chdir to "); fwprint(stderr, dir, 1);
   return;
