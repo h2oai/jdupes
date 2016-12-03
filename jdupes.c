@@ -1404,6 +1404,12 @@ void dedupefiles(file_t * restrict files)
 
   /* Find the largest dupe set, alloc space to hold structs for it */
   get_max_dupes(files, &max_dupes, &max_files);
+  /* Kernel dupe count is a uint16_t so exit if the type's limit is exceeded */
+  if (max_dupes > 65535) {
+    fprintf(stderr, "Largest duplicate set (%d) exceeds the 65535-file dedupe limit.\n", max_dupes);
+    fprintf(stderr, "Ask the program author to add this feature if you really need it. Exiting!\n");
+    exit(EXIT_FAILURE);
+  }
   same = calloc(sizeof(struct btrfs_ioctl_same_args) +
                 sizeof(struct btrfs_ioctl_same_extent_info) * max_dupes, 1);
   dupe_filenames = malloc(max_dupes * sizeof(char *));
@@ -1832,7 +1838,7 @@ static inline void linkfiles(file_t *files, int hard)
           /* Symlink prerequisite check code can go here */
           /* Do not attempt to symlink a file to itself or to another symlink */
 #ifndef NO_SYMLINKS
-          if (ISFLAG(dupelist[x]->flags, F_IS_SYMLINK) && 
+          if (ISFLAG(dupelist[x]->flags, F_IS_SYMLINK) &&
               ISFLAG(dupelist[symsrc]->flags, F_IS_SYMLINK)) continue;
           if (x == symsrc) continue;
 #endif
