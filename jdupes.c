@@ -161,6 +161,9 @@ static enum {
 #error "PATHBUF_SIZE can't be less than PATH_MAX"
 #endif
 
+#ifndef INITIAL_DEPTH_THRESHOLD
+#define INITIAL_DEPTH_THRESHOLD 8
+#endif
 
 /* For interactive deletion input */
 #define INPUT_SIZE 512
@@ -244,8 +247,14 @@ static unsigned int hll_exclude = 0;
 #endif /* DEBUG */
 
 #ifdef TREE_DEPTH_STATS
-static unsigned int tree_depth = 0, max_depth = 0;
+static unsigned int tree_depth = 0;
 #endif
+#ifdef USE_TREE_REBALANCE
+static unsigned int max_depth = 0;
+#endif
+
+/* File tree head */
+static filetree_t *checktree = NULL;
 
 /* Directory parameter position counter */
 static unsigned int user_dir_count = 1;
@@ -893,6 +902,8 @@ static inline void registerfile(filetree_t * restrict * const restrict nodeptr,
       branch->parent = NULL;
       *nodeptr = branch;
       break;
+    default:
+      break;
   }
 
   /* Propagate weights up the tree */
@@ -1385,9 +1396,6 @@ int main(int argc, char **argv)
   static file_t *curfile;
   static char **oldargv;
   static char *endptr;
-#ifndef USE_TREE_REBALANCE
-  filetree_t *checktree = NULL;
-#endif
   static int firstrecurse;
   static int opt;
   static int pm = 1;
