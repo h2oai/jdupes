@@ -18,6 +18,10 @@ byte-by-byte comparison.
 
 .SH OPTIONS
 .TP
+.B -0 --zeromatch
+consider zero-length files to be duplicates; this replaces the old
+default behavior when \fB\-n\fP was not specified
+.TP
 .B -A --nohidden
 exclude hidden files from consideration
 .TP
@@ -64,7 +68,8 @@ when used together with \-\-delete, preserve the first file in each set of
 duplicates and delete the others without prompting the user
 .TP
 .B -n --noempty
-exclude zero-length files from consideration
+exclude zero-length files from consideration; this option is the default
+behavior and does nothing (also see \fB\-0/--zeromatch\fP)
 .TP
 .B -O --paramorder
 parameter order preservation is more important than the chosen sort; this
@@ -94,6 +99,10 @@ Examples section below for further explanation)
 .TP
 .B -r --recurse
 for every directory given follow subdirectories encountered within
+.TP
+.B -s --linksoft
+replace all duplicate files with symlinks to the first file in each set
+of duplicates
 .TP
 .B -S --size
 show size of duplicate files
@@ -134,11 +143,14 @@ each link candidate. These arrows are as follows:
 This file was successfully hard linked to the first file in the duplicate 
 chain
 .TP
+.B -@@->
+This file was successfully symlinked to the first file in the chain
+.TP
 .B -==->
 This file was already a hard link to the first file in the chain
 .TP
 .B -//->
-Hard linking this file failed due to an error during the linking process
+Linking this file failed due to an error during the linking process
 
 .PP
 Duplicate files are listed together in groups with each file displayed on a

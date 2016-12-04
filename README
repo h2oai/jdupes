@@ -69,6 +69,7 @@ Usage
 --------------------------------------------------------------------------
 Usage: jdupes [options] DIRECTORY...
 
+ -0 --zeromatch         consider zero-length files to be duplicates
  -A --nohidden    	exclude hidden files from consideration
  -B --dedupe      	Send matches to btrfs for block-level deduplication
  -d --delete      	prompt user for files to preserve and delete all
@@ -87,7 +88,6 @@ Usage: jdupes [options] DIRECTORY...
  -L --linkhard    	hard link all duplicate files without prompting
                   	Windows allows a maximum of 1023 hard links per file
  -m --summarize   	summarize dupe information
- -n --noempty     	exclude zero-length files from consideration
  -N --noprompt    	together with --delete, preserve the first file in
                   	each set of duplicates and delete the rest without
                   	prompting the user
@@ -109,6 +109,9 @@ Usage: jdupes [options] DIRECTORY...
     --xsize=+SIZE 	'+' specified before SIZE, exclude size > SIZE
                   	K/M/G size suffixes can be used (case-insensitive)
  -Z --softabort   	If the user aborts (i.e. CTRL-C) act on matches so far
+
+The -n/--noempty option was removed for safety. Matching zero-length files as
+duplicates now requires explicit use of the -0/--zeromatch option instead.
 
 Duplicate files are listed together in groups with each file displayed on a
 Separate line. The groups are then separated from each other by blank lines.

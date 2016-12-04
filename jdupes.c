@@ -683,8 +683,8 @@ static void grokdir(const char * const restrict dir,
       }
 
       /* Exclude zero-length files if requested */
-      if (!S_ISDIR(newfile->mode) && newfile->size == 0 && ISFLAG(flags, F_EXCLUDEEMPTY)) {
-        LOUD(fprintf(stderr, "grokdir: excluding zero-length empty file (-n on)\n"));
+      if (!S_ISDIR(newfile->mode) && newfile->size == 0 && !ISFLAG(flags, F_INCLUDEEMPTY)) {
+        LOUD(fprintf(stderr, "grokdir: excluding zero-length empty file (-0 not set)\n"));
         string_free(newfile->d_name);
         string_free(newfile);
         continue;
@@ -1322,6 +1322,7 @@ static inline void help_text(void)
 {
   printf("Usage: jdupes [options] DIRECTORY...\n\n");
 
+  printf(" -0 --zeromatch   \tconsider zero-length files to be duplicates\n");
   printf(" -A --nohidden    \texclude hidden files from consideration\n");
 #ifdef ENABLE_BTRFS
   printf(" -B --dedupe      \tSend matches to btrfs for block-level deduplication\n");
@@ -1350,7 +1351,7 @@ static inline void help_text(void)
  #endif /* ON_WINDOWS */
 #endif /* NO_HARDLINKS */
   printf(" -m --summarize   \tsummarize dupe information\n");
-  printf(" -n --noempty     \texclude zero-length files from consideration\n");
+  //printf(" -n --noempty     \texclude zero-length files from consideration\n");
   printf(" -N --noprompt    \ttogether with --delete, preserve the first file in\n");
   printf("                  \teach set of duplicates and delete the rest without\n");
   printf("                  \tprompting the user\n");
@@ -1405,6 +1406,7 @@ int main(int argc, char **argv)
   static const struct option long_options[] =
   {
     { "loud", 0, 0, '@' },
+    { "zeromatch", 0, 0, '0' },
     { "nohidden", 0, 0, 'A' },
     { "dedupe", 0, 0, 'B' },
     { "delete", 0, 0, 'd' },
@@ -1463,12 +1465,15 @@ int main(int argc, char **argv)
   oldargv = cloneargs(argc, argv);
 
   while ((opt = GETOPT(argc, argv,
-  "@ABdDfhHiIlLmnNOpqQrRsSvZo:x:"
+  "@0ABdDfhHiIlLmnNOpqQrRsSvZo:x:"
 #ifndef OMIT_GETOPT_LONG
           , long_options, NULL
 #endif
          )) != EOF) {
     switch (opt) {
+    case '0':
+      SETFLAG(flags, F_INCLUDEEMPTY);
+      break;
     case 'A':
       SETFLAG(flags, F_EXCLUDEHIDDEN);
       break;
@@ -1504,7 +1509,7 @@ int main(int argc, char **argv)
       SETFLAG(flags, F_SUMMARIZEMATCHES);
       break;
     case 'n':
-      SETFLAG(flags, F_EXCLUDEEMPTY);
+      //fprintf(stderr, "note: -n/--noempty is the default behavior now and is deprecated.\n");
       break;
     case 'N':
       SETFLAG(flags, F_NOPROMPT);
@@ -1621,7 +1626,7 @@ int main(int argc, char **argv)
     /* btrfs will do the byte-for-byte check itself */
     SETFLAG(flags, F_QUICKCOMPARE);
     /* It is completely useless to dedupe zero-length extents */
-    SETFLAG(flags, F_EXCLUDEEMPTY);
+    CLEARFLAG(flags, F_INCLUDEEMPTY);
 #else
     fprintf(stderr, "This program was built without btrfs support\n");
     exit(EXIT_FAILURE);
