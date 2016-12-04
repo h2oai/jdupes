@@ -7,6 +7,7 @@
 extern "C" {
 #endif
 
+#include <limits.h>
 #include <stdint.h>
 #include <sys/types.h>
 #include <unistd.h>
