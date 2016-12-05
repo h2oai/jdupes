@@ -18,10 +18,6 @@ byte-by-byte comparison.
 
 .SH OPTIONS
 .TP
-.B -0 --zeromatch
-consider zero-length files to be duplicates; this replaces the old
-default behavior when \fB\-n\fP was not specified
-.TP
 .B -A --nohidden
 exclude hidden files from consideration
 .TP
@@ -69,7 +65,7 @@ duplicates and delete the others without prompting the user
 .TP
 .B -n --noempty
 exclude zero-length files from consideration; this option is the default
-behavior and does nothing (also see \fB\-0/--zeromatch\fP)
+behavior and does nothing (also see \fB\-z/--zeromatch\fP)
 .TP
 .B -O --paramorder
 parameter order preservation is more important than the chosen sort; this
@@ -127,6 +123,10 @@ for megabytes (units of 1024 x 1024 bytes)
 .IP `G'
 for gigabytes (units of 1024 x 1024 x 1024 bytes)
 .RE
+.TP
+.B -z --zeromatch
+consider zero-length files to be duplicates; this replaces the old
+default behavior when \fB\-n\fP was not specified
 .TP
 .B -Z --softabort
 if the user aborts the program (as with CTRL-C) act on the matches that

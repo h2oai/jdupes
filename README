@@ -69,7 +69,6 @@ Usage
 --------------------------------------------------------------------------
 Usage: jdupes [options] DIRECTORY...
 
- -0 --zeromatch         consider zero-length files to be duplicates
  -A --nohidden    	exclude hidden files from consideration
  -B --dedupe      	Send matches to btrfs for block-level deduplication
  -d --delete      	prompt user for files to preserve and delete all
@@ -108,10 +107,11 @@ Usage: jdupes [options] DIRECTORY...
  -x --xsize=SIZE  	exclude files of size < SIZE bytes from consideration
     --xsize=+SIZE 	'+' specified before SIZE, exclude size > SIZE
                   	K/M/G size suffixes can be used (case-insensitive)
+ -z --zeromatch         consider zero-length files to be duplicates
  -Z --softabort   	If the user aborts (i.e. CTRL-C) act on matches so far
 
 The -n/--noempty option was removed for safety. Matching zero-length files as
-duplicates now requires explicit use of the -0/--zeromatch option instead.
+duplicates now requires explicit use of the -z/--zeromatch option instead.
 
 Duplicate files are listed together in groups with each file displayed on a
 Separate line. The groups are then separated from each other by blank lines.
@@ -210,6 +210,85 @@ future, options for "greedy" and "sparse" may be introduced to switch
 between allowing triangle matches to be in the same set vs. splitting
 sets after matching finishes without the "only ever appears once"
 guarantee.
+
+
+Does jdupes meet the "Good Practice when Deleting Duplicates" by rmlint?
+--------------------------------------------------------------------------
+Yes. If you've not read this list of cautions, it is available at
+http://rmlint.readthedocs.io/en/latest/cautions.html
+
+Here's a breakdown of how jdupes addresses each of the items listed.
+
+"Backup your data"
+"Measure twice, cut once"
+These guidelines are for the user of duplicate scanning software, not the
+software itself. Back up your files regularly. Use jdupes to print a list
+of what is found as duplicated and check that list very carefully before
+automatically deleting the files.
+
+"Beware of unusual filename characters"
+The only character that poses a concern in jdupes is a newline '\n' and
+that is only a problem because the duplicate set printer uses them to
+separate file names. Actions taken by jdupes are not parsed like a
+command line, so spaces and other weird characters in names aren't a
+problem. Escaping the names properly if acting on the printed output is a
+problem for the user's shell script or other external program.
+
+"Consider safe removal options"
+This is also an exercise for the user.
+
+"Traversal Robustness"
+jdupes tracks each directory traversed by dev:inode pair to avoid adding
+the contents of the same directory twice. This prevents the user from
+being able to register all of their files twice by duplicating an entry
+on the command line. Symlinked directories are not followed. Files are
+renamed to a temporary name before any linking is done and if the link
+operation fails they are renamed back to the original name.
+
+"Collision Robustness"
+jdupes uses jodyhash for file data hashing. This hash is extremely fast
+with a low collision rate, but it still encounters collisions as any hash
+function will ("secure" or otherwise) due to the "birthday problem." This
+is why jdupes performs a full-file verification before declaring a match.
+It is slower than matching on hashes alone, but the birthday problem puts
+all data sets larger than the hash at risk of collision, meaning a false
+duplicate detection and data loss. The slower completion time is not as
+important as data integrity. Checking for a match based on hashes alone
+is irresponsible, and using secure hashes like MD5 or the SHA families
+is orders of magnitude slower than jodyhash while still suffering from
+the risk brought about by the birthday problem. In short, the birthday
+problem means that if you have 365 days in a year and 366 people, the
+having at least two birthdays on the same day is guaranteed; likewise,
+even though SHA512 is a 512-bit (64-byte) wide hash, there are guaranteed
+to be at least 256 pairs of data streams that causes a collision once any
+of the data streams being hashed for comparison is 65 bytes (520 bits) or
+larger.
+
+"Unusual Characters Robustness"
+jdupes does not protect the user from putting ASCII control characters in
+their file names; they will mangle the output if printed, but they can
+still be operated upon by the actions (delete, link, etc.) in jdupes.
+
+"Seek Thrash Robustness"
+jdupes uses an I/O chunk size that is optimized for reading as much as
+possible from disk at once to take advantage of high sequential read
+speeds in traditional rotating media drives while balancing against the
+significantly higher rate of CPU cache misses triggered by an excessively
+large I/O buffer size. Enlarging the I/O buffer further may allow for
+lots of large files to be read with less head seeking, but the CPU cache
+misses slow the algorithm down and memory usage increases to hold these
+large buffers. jdupes is benchmarked periodically to make sure that the
+chosen I/O chunk size is the best compromise for a wide variety of data
+sets.
+
+"Memory Usage Robustness"
+This is a very subjective concern considering that even a cell phone in
+someone's pocket has at least 1GB of RAM, however it still applies in the
+embedded device world where 32MB of RAM might be all that you can have.
+Even when processing a data set with over a million files, jdupes memory
+usage (tested on Linux x86_64 with -O3 optimization) doesn't exceed 2GB.
+A low memory mode can be chosen at compile time to reduce overall memory
+usage with a small performance penalty.
 
 
 Contact Information

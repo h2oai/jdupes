@@ -97,6 +97,13 @@ int out_mode = _O_TEXT;
  #endif
 #endif
 
+/* Tree rebalance requires tree stats */
+#ifdef USE_TREE_REBALANCE
+ #ifndef TREE_DEPTH_STATS
+  #define TREE_DEPTH_STATS
+ #endif
+#endif
+
 /* Aggressive verbosity for deep debugging */
 #ifdef LOUD_DEBUG
  #ifndef DEBUG
@@ -248,8 +255,6 @@ static unsigned int hll_exclude = 0;
 
 #ifdef TREE_DEPTH_STATS
 static unsigned int tree_depth = 0;
-#endif
-#ifdef USE_TREE_REBALANCE
 static unsigned int max_depth = 0;
 #endif
 
@@ -684,7 +689,7 @@ static void grokdir(const char * const restrict dir,
 
       /* Exclude zero-length files if requested */
       if (!S_ISDIR(newfile->mode) && newfile->size == 0 && !ISFLAG(flags, F_INCLUDEEMPTY)) {
-        LOUD(fprintf(stderr, "grokdir: excluding zero-length empty file (-0 not set)\n"));
+        LOUD(fprintf(stderr, "grokdir: excluding zero-length empty file (-z not set)\n"));
         string_free(newfile->d_name);
         string_free(newfile);
         continue;
@@ -1322,7 +1327,6 @@ static inline void help_text(void)
 {
   printf("Usage: jdupes [options] DIRECTORY...\n\n");
 
-  printf(" -0 --zeromatch   \tconsider zero-length files to be duplicates\n");
   printf(" -A --nohidden    \texclude hidden files from consideration\n");
 #ifdef ENABLE_BTRFS
   printf(" -B --dedupe      \tSend matches to btrfs for block-level deduplication\n");
@@ -1380,6 +1384,7 @@ static inline void help_text(void)
   printf(" -x --xsize=SIZE  \texclude files of size < SIZE bytes from consideration\n");
   printf("    --xsize=+SIZE \t'+' specified before SIZE, exclude size > SIZE\n");
   printf("                  \tK/M/G size suffixes can be used (case-insensitive)\n");
+  printf(" -z --zeromatch   \tconsider zero-length files to be duplicates\n");
   printf(" -Z --softabort   \tIf the user aborts (i.e. CTRL-C) act on matches so far\n");
 #ifdef OMIT_GETOPT_LONG
   printf("Note: Long options are not supported in this build.\n\n");
@@ -1406,7 +1411,6 @@ int main(int argc, char **argv)
   static const struct option long_options[] =
   {
     { "loud", 0, 0, '@' },
-    { "zeromatch", 0, 0, '0' },
     { "nohidden", 0, 0, 'A' },
     { "dedupe", 0, 0, 'B' },
     { "delete", 0, 0, 'd' },
@@ -1441,6 +1445,7 @@ int main(int argc, char **argv)
     { "size", 0, 0, 'S' },
     { "version", 0, 0, 'v' },
     { "xsize", 1, 0, 'x' },
+    { "zeromatch", 0, 0, 'z' },
     { "softabort", 0, 0, 'Z' },
     { 0, 0, 0, 0 }
   };
@@ -1465,15 +1470,12 @@ int main(int argc, char **argv)
   oldargv = cloneargs(argc, argv);
 
   while ((opt = GETOPT(argc, argv,
-  "@0ABdDfhHiIlLmnNOpqQrRsSvZo:x:"
+  "@ABdDfhHiIlLmnNOpqQrRsSvzZo:x:"
 #ifndef OMIT_GETOPT_LONG
           , long_options, NULL
 #endif
          )) != EOF) {
     switch (opt) {
-    case '0':
-      SETFLAG(flags, F_INCLUDEEMPTY);
-      break;
     case 'A':
       SETFLAG(flags, F_EXCLUDEHIDDEN);
       break;
@@ -1542,6 +1544,9 @@ int main(int argc, char **argv)
 #endif
     case 'S':
       SETFLAG(flags, F_SHOWSIZE);
+      break;
+    case 'z':
+      SETFLAG(flags, F_INCLUDEEMPTY);
       break;
     case 'Z':
       SETFLAG(flags, F_SOFTABORT);
