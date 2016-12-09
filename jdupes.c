@@ -454,6 +454,24 @@ extern int check_conditions(const file_t * const restrict file1, const file_t * 
     exit(EXIT_FAILURE);
   }
 
+  /* Exclude based on -I/--isolate */
+  if (ISFLAG(flags, F_ISOLATE) && (file1->user_order == file2->user_order)) {
+    LOUD(fprintf(stderr, "check_conditions: files ignored: parameter isolation\n"));
+    return -1;
+  }
+
+ /* Exclude files by permissions if requested */
+  if (ISFLAG(flags, F_PERMISSIONS) &&
+          (file1->mode != file2->mode
+#ifndef NO_PERMS
+          || file1->uid != file2->uid
+          || file1->gid != file2->gid
+#endif
+          )) {
+    return -1;
+    LOUD(fprintf(stderr, "check_conditions: no match: permissions/ownership differ (-p on)\n"));
+  }
+
   /* Hard link and symlink + '-s' check */
 #ifndef NO_HARDLINKS
   if ((file1->inode == file2->inode) && (file1->device == file2->device)) {
@@ -467,12 +485,6 @@ extern int check_conditions(const file_t * const restrict file1, const file_t * 
   }
 #endif
 
-  /* Exclude based on -I/--isolate */
-  if (ISFLAG(flags, F_ISOLATE) && (file1->user_order == file2->user_order)) {
-    LOUD(fprintf(stderr, "check_conditions: files ignored: parameter isolation\n"));
-    return -1;
-  }
-
   /* Exclude files that are not the same size */
   if (file1->size > file2->size) {
     LOUD(fprintf(stderr, "check_conditions: no match: file1 > file2 (%jd < %jd)\n", (intmax_t)file1->size, (intmax_t)file2->size));
@@ -481,18 +493,6 @@ extern int check_conditions(const file_t * const restrict file1, const file_t * 
   if (file1->size < file2->size) {
     LOUD(fprintf(stderr, "check_conditions: no match: file1 < file2 (%jd > %jd)\n", (intmax_t)file1->size, (intmax_t)file2->size));
     return 1;
-  }
-
-  /* Exclude files by permissions if requested */
-  if (ISFLAG(flags, F_PERMISSIONS) &&
-          (file1->mode != file2->mode
-#ifndef NO_PERMS
-          || file1->uid != file2->uid
-          || file1->gid != file2->gid
-#endif
-          )) {
-    return -1;
-    LOUD(fprintf(stderr, "check_conditions: no match: permissions/ownership differ (-p on)\n"));
   }
 
   /* Fall through: all checks passed */
