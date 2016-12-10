@@ -1,8 +1,8 @@
 /* Jody Bruchon's path manipulation code library
- *  *
- *   * Copyright (C) 2014-2016 by Jody Bruchon <jody@jodybruchon.com>
- *    * Released under The MIT License or GNU GPL v2 (your choice)
- *     */
+ *
+ * Copyright (C) 2014-2016 by Jody Bruchon <jody@jodybruchon.com>
+ * Released under The MIT License or GNU GPL v2 (your choice)
+ */
 
 #include <stdio.h>
 #include <stdint.h>
