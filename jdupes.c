@@ -148,7 +148,7 @@ static enum {
 
 /* Larger chunk size makes large files process faster but uses more RAM */
 #ifndef CHUNK_SIZE
- #define CHUNK_SIZE 65536
+ #define CHUNK_SIZE 32768
 #endif
 #ifndef PARTIAL_HASH_SIZE
  #define PARTIAL_HASH_SIZE 4096
