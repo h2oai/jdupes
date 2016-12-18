@@ -25,7 +25,7 @@ PREFIX = /usr
 #####################################################################
 
 # PROGRAM_NAME determines the installation name and manual page name
-PROGRAM_NAME=jdupes
+PROGRAM_NAME = jdupes
 
 # BIN_DIR indicates directory where program is to be installed.
 # Suggested value is "$(PREFIX)/bin"
@@ -105,15 +105,15 @@ OBJECT_FILES += $(ADDITIONAL_OBJECTS)
 all: jdupes
 
 jdupes: $(OBJECT_FILES)
-	$(CC) $(CFLAGS) $(LDFLAGS) -o jdupes $(OBJECT_FILES)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $(PROGRAM_NAME) $(OBJECT_FILES)
 
 installdirs:
 	test -d $(DESTDIR)$(BIN_DIR) || $(MKDIR) $(DESTDIR)$(BIN_DIR)
 	test -d $(DESTDIR)$(MAN_DIR) || $(MKDIR) $(DESTDIR)$(MAN_DIR)
 
 install: jdupes installdirs
-	$(INSTALL_PROGRAM)	jdupes   $(DESTDIR)$(BIN_DIR)/$(PROGRAM_NAME)
-	$(INSTALL_DATA)		jdupes.1 $(DESTDIR)$(MAN_DIR)/$(PROGRAM_NAME).$(MAN_EXT)
+	$(INSTALL_PROGRAM)	$(PROGRAM_NAME)   $(DESTDIR)$(BIN_DIR)/$(PROGRAM_NAME)
+	$(INSTALL_DATA)		$(PROGRAM_NAME).1 $(DESTDIR)$(MAN_DIR)/$(PROGRAM_NAME).$(MAN_EXT)
 
 clean:
-	$(RM) $(OBJECT_FILES) jdupes jdupes.exe *~ *.gcno *.gcda *.gcov
+	$(RM) $(OBJECT_FILES) $(PROGRAM_NAME) jdupes.exe *~ *.gcno *.gcda *.gcov
