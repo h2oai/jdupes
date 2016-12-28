@@ -1,3 +1,11 @@
+jdupes 1.7
+
+- Incompatible change: zero-length files no longer duplicates by default
+- New -z/--zeromatch option to consider zero-length files as duplicates
+- I/O chunk size changed for better performance
+- The PROGRAM_NAME variable is now used properly during make
+- Program was re-organized into several split C files
+
 jdupes 1.6.2
 
 - Fix: version number shown in jdupes -v wasn't updated in 1.6.1
