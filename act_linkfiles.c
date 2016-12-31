@@ -1,4 +1,5 @@
-/* Hard link or symlink files */
+/* Hard link or symlink files
+ * This file is part of jdupes; see jdupes.c for license information */
 
 #include "jdupes.h"
 

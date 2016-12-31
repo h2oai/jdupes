@@ -1,8 +1,8 @@
 /*
  * Windows-native code for getting stat()-like information
  *
- * Copyright (C) 2016 by Jody Bruchon <jody@jodybruchon.com>
- * Released under The MIT License or GNU GPL v2/v3 (your choice)
+ * Copyright (C) 2017 by Jody Bruchon <jody@jodybruchon.com>
+ * Released under The MIT License
  */
 
 #include "win_stat.h"

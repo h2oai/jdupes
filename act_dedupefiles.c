@@ -1,4 +1,5 @@
-/* BTRFS deduplication of file blocks */
+/* BTRFS deduplication of file blocks
+ * This file is part of jdupes; see jdupes.c for license information */
 
 #include "jdupes.h"
 

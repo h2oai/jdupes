@@ -1,10 +1,6 @@
-/*
- * String table allocator
+/* String table allocator
  * A replacement for malloc() for tables of fixed strings
- *
- * Copyright (C) 2015-2016 by Jody Bruchon <jody@jodybruchon.com>
- * Released under The MIT License or GNU GPL v2 (your choice)
- */
+ * See string_malloc.c for license information */
 
 #ifndef STRING_MALLOC_H
 #define STRING_MALLOC_H

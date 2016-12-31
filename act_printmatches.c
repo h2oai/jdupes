@@ -1,3 +1,6 @@
+/* Print matched file sets
+ * This file is part of jdupes; see jdupes.c for license information */
+
 #include <stdio.h>
 #include "jdupes.h"
 #include "jody_win_unicode.h"

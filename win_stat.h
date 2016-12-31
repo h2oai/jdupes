@@ -1,9 +1,5 @@
-/*
- * Windows-native routines for getting stat()-like information
- *
- * Copyright (C) 2016 by Jody Bruchon <jody@jodybruchon.com>
- * Released under The MIT License or GNU GPL v2/v3 (your choice)
- */
+/* Windows-native routines for getting stat()-like information
+ * See win_stat.c for license information */
 
 #ifndef WIN_STAT_H
 #define WIN_STAT_H

@@ -1,8 +1,5 @@
 /* Jody Bruchon's fast hashing function (headers)
- *
- * Copyright (C) 2014-2016 by Jody Bruchon <jody@jodybruchon.com>
- * See jody_hash.c for more information.
- */
+ * See jody_hash.c for license information */
 
 #ifndef JODY_HASH_H
 #define JODY_HASH_H

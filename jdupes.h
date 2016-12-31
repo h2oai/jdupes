@@ -1,4 +1,5 @@
-/* jdupes module header */
+/* jdupes main program header
+ * See jdupes.c for license information */
 
 #ifndef JDUPES_H
 #define JDUPES_H

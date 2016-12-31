@@ -1,3 +1,8 @@
+/* Jody Bruchon's Windows Unicode helper routines
+ *
+ * Copyright (C) 2014-2017 by Jody Bruchon <jody@jodybruchon.com>
+ * Released under The MIT License
+ */
 #include "jdupes.h"
 
 #ifdef UNICODE

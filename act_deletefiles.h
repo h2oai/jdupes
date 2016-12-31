@@ -1,4 +1,5 @@
-/* jdupes action for deleting duplicate files */
+/* jdupes action for deleting duplicate files
+ * This file is part of jdupes; see jdupes.c for license information */
 
 #ifndef ACT_DELETEFILES_H
 #define ACT_DELETEFILES_H

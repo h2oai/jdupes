@@ -5,8 +5,8 @@
  * a secure hash algorithm, but the calculation is drastically simpler
  * and faster.
  *
- * Copyright (C) 2014-2016 by Jody Bruchon <jody@jodybruchon.com>
- * Released under The MIT License or GNU GPL v2 (your choice)
+ * Copyright (C) 2014-2017 by Jody Bruchon <jody@jodybruchon.com>
+ * Released under The MIT License
  */
 
 #include <stdio.h>

@@ -1,4 +1,5 @@
-/* jdupes action for printing matched file sets to stdout */
+/* jdupes action for printing matched file sets to stdout
+ * This file is part of jdupes; see jdupes.c for license information */
 
 #ifndef ACT_PRINTMATCHES_H
 #define ACT_PRINTMATCHES_H

@@ -1,8 +1,5 @@
 /* Jody Bruchon's path manipulation code library
- *
- * Copyright (C) 2014-2016 by Jody Bruchon <jody@jodybruchon.com>
- * Released under The MIT License or GNU GPL v2 (your choice)
- */
+ * See jody_paths.c for license information */
 
 #ifndef JODY_PATHS_H
 #define JODY_PATHS_H

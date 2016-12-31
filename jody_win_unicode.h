@@ -1,8 +1,5 @@
 /* Jody Bruchon's Windows Unicode helper routines
- *
- * Copyright (C) 2014-2016 by Jody Bruchon <jody@jodybruchon.com>
- * Released under The MIT License or GNU GPL v2 (your choice)
- */
+ * See jody_win_unicode.c for license information */
 
 #ifndef JODY_WIN_UNICODE_H
 #define JODY_WIN_UNICODE_H

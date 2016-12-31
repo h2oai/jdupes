@@ -1,52 +1,3 @@
-- A bug with -S shows wrong results.
-
-- A bug causes the following behavior:
-
-  $ jdupes --symlinks testdir
-  testdir/with spaces b
-  testdir/with spaces a
-
-  testdir/zero_b
-  testdir/zero_a
-
-  testdir/symlink_two
-  testdir/twice_one
-
-  $ cp testdir/two testdir/two_again
-  $ jdupes --symlinks testdir
-  testdir/two_again
-  testdir/two
-  testdir/twice_one
-  testdir/symlink_two
-
-  testdir/with spaces b
-  testdir/with spaces a
-
-  testdir/zero_b
-  testdir/zero_a
-
-  ** This is not the desired behavior. Likewise:
-
-  $ jdupes testdir
-  testdir/with spaces b
-  testdir/with spaces a
-
-  testdir/zero_b
-  testdir/zero_a
-
-  testdir/twice_one
-  testdir/two
-
-  $ jdupes --symlinks testdir
-  testdir/with spaces b
-  testdir/with spaces a
-
-  testdir/zero_b
-  testdir/zero_a
-
-  testdir/symlink_two
-  testdir/twice_one
-
 - Option -R should not have to be separated from the rest,
   such that "jdupes -dR testdir", "jdupes -d -R testdir",
   "jdupes -Rd testdir", etc., all yield the same results.
@@ -60,19 +11,6 @@
 - Add a way to store stat() info + inital and full hashes for
   explicit loading in future runs to speed up repeated calls to
   the program.
-
-- Add an option to exclude files in the same directory from being
-  matched. This should be extensible so that various exclusion
-  criteria can be added later.
-  - Also add code to make directory ordering of pair matching more
-    stable; for instance, if dirs 'foo' and 'bar' are specified,
-    always put 'foo' at the start of the dupe set (which makes it
-    take precedence over 'bar' in this example.)
-
-- The way that duplicates are sorted does not seem to work properly. The
-  sorting needs to be separated into its own function that sorts fully.
-  As it stands, sorting is only correct on specific match pairs and is
-  sometimes overridden by other match pairs to mess up the sort.
 
 - The --xsize option can be improved. Instead of simply specifying an
   exclusion size min/max, the option should offer multiple ways to
