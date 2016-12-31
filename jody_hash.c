@@ -32,7 +32,7 @@
 
 /* Set hash parameters based on requested hash width */
 #if JODY_HASH_WIDTH == 64
-#define JODY_HASH_CONSTANT 0x1f3d5b79
+#define JODY_HASH_CONSTANT 0x1f3d5b79U
 static const hash_t tail_mask[] = {
 	0x0000000000000000,
 	0x00000000000000ff,
@@ -46,7 +46,7 @@ static const hash_t tail_mask[] = {
 };
 #endif /* JODY_HASH_WIDTH == 64 */
 #if JODY_HASH_WIDTH == 32
-#define JODY_HASH_CONSTANT 0x1f3d5b79
+#define JODY_HASH_CONSTANT 0x1f3d5b79U
 static const hash_t tail_mask[] = {
 	0x00000000,
 	0x000000ff,
@@ -56,7 +56,7 @@ static const hash_t tail_mask[] = {
 };
 #endif /* JODY_HASH_WIDTH == 32 */
 #if JODY_HASH_WIDTH == 16
-#define JODY_HASH_CONSTANT 0x1f5b
+#define JODY_HASH_CONSTANT 0x1f5bU
 static const hash_t tail_mask[] = {
 	0x0000,
 	0x00ff,
@@ -75,8 +75,8 @@ static const hash_t tail_mask[] = {
 extern hash_t jody_block_hash(const hash_t * restrict data,
 		const hash_t start_hash, const size_t count)
 {
-	register hash_t hash = start_hash;
-	register hash_t element;
+	hash_t hash = start_hash;
+	hash_t element;
 	hash_t partial_salt;
 	size_t len;
 
