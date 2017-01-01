@@ -99,6 +99,7 @@ INSTALL_DATA    = $(INSTALL) -c -m 0644
 #ADDITIONAL_OBJECTS += getopt.o
 
 OBJECT_FILES += jdupes.o jody_hash.o jody_paths.o jody_sort.o jody_win_unicode.o string_malloc.o
+OBJECT_FILES += jody_cacheinfo.o
 OBJECT_FILES += act_deletefiles.o act_dedupefiles.o act_linkfiles.o act_printmatches.o act_summarize.o
 OBJECT_FILES += $(ADDITIONAL_OBJECTS)
 

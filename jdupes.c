@@ -42,6 +42,7 @@
 #include "jody_hash.h"
 #include "jody_sort.h"
 #include "jody_win_unicode.h"
+#include "jody_cacheinfo.h"
 #include "version.h"
 
 /* Headers for post-scanning actions */
@@ -153,6 +154,8 @@ static enum {
 #ifndef PARTIAL_HASH_SIZE
  #define PARTIAL_HASH_SIZE 4096
 #endif
+
+static size_t auto_chunk_size;
 
 /* Maximum path buffer size to use; must be large enough for a path plus
  * any work that might be done to the array it's stored in. PATH_MAX is
@@ -856,7 +859,7 @@ static hash_t *get_filehash(const file_t * const restrict checkfile,
     size_t bytes_to_read;
 
     if (interrupt) return 0;
-    bytes_to_read = (fsize >= CHUNK_SIZE) ? CHUNK_SIZE : (size_t)fsize;
+    bytes_to_read = (fsize >= (off_t)auto_chunk_size) ? auto_chunk_size : (size_t)fsize;
     if (fread((void *)chunk, bytes_to_read, 1, file) != 1) {
       fprintf(stderr, "error reading from file "); fwprint(stderr, checkfile->d_name, 1);
       fclose(file);
@@ -1209,8 +1212,8 @@ static inline int confirmmatch(FILE * const restrict file1, FILE * const restric
 
   do {
     if (interrupt) return 0;
-    r1 = fread(c1, sizeof(char), CHUNK_SIZE, file1);
-    r2 = fread(c2, sizeof(char), CHUNK_SIZE, file2);
+    r1 = fread(c1, sizeof(char), auto_chunk_size, file1);
+    r2 = fread(c2, sizeof(char), auto_chunk_size, file2);
 
     if (r1 != r2) return 0; /* file lengths are different */
     if (memcmp (c1, c2, r1)) return 0; /* file contents are different */
@@ -1398,6 +1401,7 @@ int wmain(int argc, wchar_t **wargv)
 int main(int argc, char **argv)
 #endif
 {
+  static struct proc_cacheinfo pci;
   static file_t *files = NULL;
   static file_t *curfile;
   static char **oldargv;
@@ -1464,6 +1468,12 @@ int main(int argc, char **argv)
   if (!_isatty(_fileno(stdout))) out_mode = _O_U8TEXT;
   else out_mode = _O_U16TEXT;
 #endif /* UNICODE */
+
+  /* Auto-tune chunk size to be half of L1 data cache */
+  get_proc_cacheinfo(&pci);
+  if (pci.l1 != 0) auto_chunk_size = (pci.l1 / 2);
+  else if (pci.l1d != 0) auto_chunk_size = (pci.l1d / 2);
+  if (auto_chunk_size < 4096 || auto_chunk_size > CHUNK_SIZE) auto_chunk_size = CHUNK_SIZE;
 
   program_name = argv[0];
 
