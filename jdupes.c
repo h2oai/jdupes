@@ -1474,6 +1474,9 @@ int main(int argc, char **argv)
   if (pci.l1 != 0) auto_chunk_size = (pci.l1 / 2);
   else if (pci.l1d != 0) auto_chunk_size = (pci.l1d / 2);
   if (auto_chunk_size < 4096 || auto_chunk_size > CHUNK_SIZE) auto_chunk_size = CHUNK_SIZE;
+  /* Force to a multiple of 4096 if it isn't already */
+  if ((auto_chunk_size & 0x00000fffUL) != 0)
+	  auto_chunk_size = (auto_chunk_size + 0x00000fffUL) & 0x000ff000;
 
   program_name = argv[0];
 
@@ -1873,6 +1876,8 @@ skip_file_scan:
     fprintf(stderr, "Max tree depth: %u; SMA: allocs %ju, free %ju, fail %ju, reuse %ju, scan %ju, tails %ju\n",
         max_depth, sma_allocs, sma_free_good, sma_free_ignored,
         sma_free_reclaimed, sma_free_scanned, sma_free_tails);
+    fprintf(stderr, "I/O chunk size: %ju KiB (%s)\n", (uintmax_t)(auto_chunk_size >> 10),
+		    (pci.l1 + pci.l1d) != 0 ? "dynamically sized" : "default size");
 #ifdef ON_WINDOWS
  #ifndef NO_HARDLINKS
     if (ISFLAG(flags, F_HARDLINKFILES))
