@@ -37,6 +37,7 @@
 #include <string.h>
 #include <errno.h>
 #include <libgen.h>
+#include <sys/time.h>
 #include "jdupes.h"
 #include "string_malloc.h"
 #include "jody_hash.h"
@@ -125,9 +126,6 @@ int out_mode = _O_TEXT;
  #define DBG(a)
 #endif
 
-
-/* How many operations to wait before updating progress counters */
-#define DELAY_COUNT 256
 
 /* Behavior modification flags */
 uint_fast32_t flags = 0;
@@ -241,7 +239,6 @@ struct travdone {
 static struct travdone *travdone_head = NULL;
 
 static uintmax_t filecount = 0; // Required for progress indicator code
-static int did_long_work = 0; // To tell progress indicator to go faster
 
 /* Hash/compare performance statistics (debug mode) */
 #ifdef DEBUG
@@ -275,6 +272,9 @@ static int sort_direction = 1;
 
 /* Signal handler */
 static int interrupt = 0;
+
+/* Progress indicator time */
+struct timeval time1, time2;
 
 
 /***** End definitions, begin code *****/
@@ -531,7 +531,6 @@ static void grokdir(const char * const restrict dir,
   struct dirent *dirinfo;
   static uintmax_t progress = 0, dir_progress = 0;
   static int grokdir_level = 0;
-  static int delay = DELAY_COUNT;
   static char tempname[PATHBUF_SIZE * 2];
   size_t dirlen;
   struct travdone *traverse;
@@ -617,11 +616,12 @@ static void grokdir(const char * const restrict dir,
     LOUD(fprintf(stderr, "grokdir: readdir: '%s'\n", dirinfo->d_name));
     if (strcmp(dirinfo->d_name, ".") && strcmp(dirinfo->d_name, "..")) {
       if (!ISFLAG(flags, F_HIDEPROGRESS)) {
-        if (delay >= DELAY_COUNT) {
-          delay = 0;
+        gettimeofday(&time2, NULL);
+        if (time2.tv_sec > time1.tv_sec) {
           fprintf(stderr, "\rScanning: %ju files, %ju dirs (in %u specified)",
               progress, dir_progress, user_dir_count);
-        } else delay++;
+        }
+	time1.tv_sec = time2.tv_sec;
       }
 
       /* Assemble the file's full path name, optimized to avoid strcat() */
@@ -1128,7 +1128,6 @@ static file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict f
     } else if (cmpresult == 0) {
       /* If partial match was correct, perform a full file hash match */
       if (!ISFLAG(tree->file->flags, F_HASH_FULL)) {
-        did_long_work = 1;
         filehash = get_filehash(tree->file, 0);
         if (filehash == NULL) {
           if (!interrupt) fprintf(stderr, "cannot read file "); fwprint(stderr, tree->file->d_name, 1);
@@ -1140,7 +1139,6 @@ static file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict f
       }
 
       if (!ISFLAG(file->flags, F_HASH_FULL)) {
-        did_long_work = 1;
         filehash = get_filehash(file, 0);
         if (filehash == NULL) {
           if (!interrupt) fprintf(stderr, "cannot read file "); fwprint(stderr, file->d_name, 1);
@@ -1206,7 +1204,6 @@ static inline int confirmmatch(FILE * const restrict file1, FILE * const restric
 
   LOUD(fprintf(stderr, "confirmmatch running\n"));
 
-  did_long_work = 1;
   fseek(file1, 0, SEEK_SET);
   fseek(file2, 0, SEEK_SET);
 
@@ -1469,10 +1466,11 @@ int main(int argc, char **argv)
   else out_mode = _O_U16TEXT;
 #endif /* UNICODE */
 
-  /* Auto-tune chunk size to be half of L1 data cache */
+  /* Auto-tune chunk size to be half of L1 data cache if possible */
   get_proc_cacheinfo(&pci);
   if (pci.l1 != 0) auto_chunk_size = (pci.l1 / 2);
   else if (pci.l1d != 0) auto_chunk_size = (pci.l1d / 2);
+  /* Must be at least 4096 (4 KiB) and cannot exceed CHUNK_SIZE */
   if (auto_chunk_size < 4096 || auto_chunk_size > CHUNK_SIZE) auto_chunk_size = CHUNK_SIZE;
   /* Force to a multiple of 4096 if it isn't already */
   if ((auto_chunk_size & 0x00000fffUL) != 0)
@@ -1744,7 +1742,6 @@ int main(int argc, char **argv)
     static file_t **match = NULL;
     static FILE *file1;
     static FILE *file2;
-    static off_t delay = DELAY_COUNT;
 #ifdef USE_TREE_REBALANCE
     static unsigned int depth_threshold = INITIAL_DEPTH_THRESHOLD;
 #endif
@@ -1826,18 +1823,12 @@ skip_full_check:
     curfile = curfile->next;
 
     if (!ISFLAG(flags, F_HIDEPROGRESS)) {
-      /* If file size is larger than 1 MiB, make progress update faster
-       * If confirmmatch() is run on a file, speed up progress even further */
-      if (curfile != NULL && did_long_work) {
-        delay += (curfile->size >> 20);
-        did_long_work = 0;
-      }
-      if (match != NULL) delay++;
-      if ((delay >= DELAY_COUNT)) {
-        delay = 0;
+      gettimeofday(&time2, NULL);
+      if (time2.tv_sec > time1.tv_sec) {
         fprintf(stderr, "\rProgress [%ju/%ju, %ju pairs matched] %ju%%", progress, filecount,
           dupecount, (progress * 100) / filecount);
-      } else delay++;
+      }
+      time1.tv_sec = time2.tv_sec;
     }
     progress++;
   }
