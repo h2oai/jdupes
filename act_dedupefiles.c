@@ -10,9 +10,11 @@
 #include <errno.h>
 #include <fcntl.h>
 
-#include <sys/ioctl.h>
-#include <linux/btrfs.h>
+/* Turned off in favor of btrfs_same.h below to minimize compile failures */
+/* #include <linux/btrfs.h> */
 
+#include "btrfs_same.h"
+#include <sys/ioctl.h>
 #include "act_dedupefiles.h"
 
 /* Message to append to BTRFS warnings based on write permissions */

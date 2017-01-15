@@ -63,6 +63,10 @@ endif
 ifdef DEBUG
 COMPILER_OPTIONS += -DDEBUG
 endif
+ifdef HARDEN
+COMPILER_OPTIONS += -Wformat -Wformat-security -D_FORTIFY_SOURCE=2 -fstack-protector-strong -fPIE -fpie -Wl,-z,relro -Wl,-z,now
+endif
+
 
 # MinGW needs this for printf() conversions to work
 ifeq ($(OS), Windows_NT)
@@ -83,6 +87,7 @@ endif
 # New BTRFS support option
 ifdef ENABLE_BTRFS
 COMPILER_OPTIONS += -DENABLE_BTRFS
+OBJECT_FILES += act_dedupefiles.o
 endif
 # Low memory mode
 ifdef LOW_MEMORY
@@ -100,7 +105,7 @@ INSTALL_DATA    = $(INSTALL) -c -m 0644
 
 OBJECT_FILES += jdupes.o jody_hash.o jody_paths.o jody_sort.o jody_win_unicode.o string_malloc.o
 OBJECT_FILES += jody_cacheinfo.o
-OBJECT_FILES += act_deletefiles.o act_dedupefiles.o act_linkfiles.o act_printmatches.o act_summarize.o
+OBJECT_FILES += act_deletefiles.o act_linkfiles.o act_printmatches.o act_summarize.o
 OBJECT_FILES += $(ADDITIONAL_OBJECTS)
 
 all: jdupes
