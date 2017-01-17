@@ -20,6 +20,10 @@ PREFIX = /usr
 # This can be enabled at build time: 'make LOW_MEMORY=1'
 #LOW_MEMORY=1
 
+# Uncomment this to build in hardened mode.
+# This can be enabled at build time: 'make HARDEN=1'
+#HARDEN=1
+
 #####################################################################
 # Developer Configuration Section                                   #
 #####################################################################
