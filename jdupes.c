@@ -349,7 +349,7 @@ static int findarg(const char * const arg, const int start,
 
 /* Find the first non-option argument after specified option. */
 static int nonoptafter(const char *option, const int argc,
-                char **oldargv, char **newargv, int optind)
+                char **oldargv, char **newargv)
 {
   int x;
   int targetind;
@@ -1746,10 +1746,10 @@ int main(int argc, char **argv)
   if (pm == 0) SETFLAG(flags, F_PRINTMATCHES);
 
   if (ISFLAG(flags, F_RECURSEAFTER)) {
-    firstrecurse = nonoptafter("--recurse:", argc, oldargv, argv, optind);
+    firstrecurse = nonoptafter("--recurse:", argc, oldargv, argv);
 
     if (firstrecurse == argc)
-      firstrecurse = nonoptafter("-R", argc, oldargv, argv, optind);
+      firstrecurse = nonoptafter("-R", argc, oldargv, argv);
 
     if (firstrecurse == argc) {
       fprintf(stderr, "-R option must be isolated from other options\n");
