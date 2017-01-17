@@ -4,6 +4,7 @@
  * Released under The MIT License
  */
 
+#include <stdlib.h>
 #include "jody_sort.h"
 
 #define IS_NUM(a) (((a >= '0') && (a <= '9')) ? 1 : 0)
@@ -13,6 +14,8 @@ extern int numeric_sort(const char * restrict c1,
 {
   int len1 = 0, len2 = 0;
   int precompare = 0;
+
+  if (c1 == NULL || c2 == NULL) return -99;
 
   /* Numerically correct sort */
   while (*c1 != '\0' && *c2 != '\0') {
