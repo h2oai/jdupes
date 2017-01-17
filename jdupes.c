@@ -909,7 +909,7 @@ static inline void registerfile(filetree_t * restrict * const restrict nodeptr,
 {
   filetree_t * restrict branch;
 
-  if (nodeptr == NULL || file == NULL) nullptr("registerfile");
+  if (nodeptr == NULL || file == NULL || (d != NONE && *nodeptr == NULL)) nullptr("registerfile");
   LOUD(fprintf(stderr, "registerfile(direction %d)\n", d));
 
   /* Allocate and initialize a new node for the file */
@@ -940,6 +940,10 @@ static inline void registerfile(filetree_t * restrict * const restrict nodeptr,
       *nodeptr = branch;
       break;
     default:
+      /* This should never ever happen */
+      fprintf(stderr, "internal error: invalid direction for registerfile(), report this\n");
+      string_malloc_destroy();
+      exit(EXIT_FAILURE);
       break;
   }
 
@@ -971,7 +975,7 @@ static inline void registerfile(filetree_t * restrict * const restrict nodeptr,
       break;
     default:
       /* This should never ever happen */
-      fprintf(stderr, "registerfile: invalid direction, report this as a bug\n");
+      fprintf(stderr, "internal error: invalid direction for registerfile(), report this\n");
       string_malloc_destroy();
       exit(EXIT_FAILURE);
       break;
