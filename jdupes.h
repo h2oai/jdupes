@@ -20,8 +20,7 @@ extern "C" {
 /* Optional btrfs support */
 #ifdef ENABLE_BTRFS
 #include <sys/ioctl.h>
-#include "btrfs_same.h"
-/* #include <linux/btrfs.h> */
+#include <linux/btrfs.h>
 #endif
 
 /* Detect Windows and modify as needed */
