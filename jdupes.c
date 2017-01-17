@@ -286,6 +286,7 @@ void sighandler(const int signum)
   (void)signum;
   if (interrupt || !ISFLAG(flags, F_SOFTABORT)) {
     fprintf(stderr, "\n");
+    string_malloc_destroy();
     exit(EXIT_FAILURE);
   }
   interrupt = 1;
@@ -297,6 +298,7 @@ void sighandler(const int signum)
 extern void oom(const char * const restrict msg)
 {
   fprintf(stderr, "\nout of memory: %s\n", msg);
+  string_malloc_destroy();
   exit(EXIT_FAILURE);
 }
 
@@ -1503,6 +1505,7 @@ int main(int argc, char **argv)
       break;
     case 'h':
       help_text();
+      string_malloc_destroy();
       exit(EXIT_FAILURE);
 #ifndef NO_HARDLINKS
     case 'H':
@@ -1651,27 +1654,32 @@ int main(int argc, char **argv)
 
     default:
       fprintf(stderr, "Try `jdupes --help' for more information.\n");
+      string_malloc_destroy();
       exit(EXIT_FAILURE);
     }
   }
 
   if (optind >= argc) {
     fprintf(stderr, "no directories specified (use -h option for help)\n");
+    string_malloc_destroy();
     exit(EXIT_FAILURE);
   }
 
   if (ISFLAG(flags, F_ISOLATE) && optind == (argc - 1)) {
     fprintf(stderr, "Isolation requires at least two directories on the command line\n");
+    string_malloc_destroy();
     exit(EXIT_FAILURE);
   }
 
   if (ISFLAG(flags, F_RECURSE) && ISFLAG(flags, F_RECURSEAFTER)) {
     fprintf(stderr, "options --recurse and --recurse: are not compatible\n");
+    string_malloc_destroy();
     exit(EXIT_FAILURE);
   }
 
   if (ISFLAG(flags, F_SUMMARIZEMATCHES) && ISFLAG(flags, F_DELETEFILES)) {
     fprintf(stderr, "options --summarize and --delete are not compatible\n");
+    string_malloc_destroy();
     exit(EXIT_FAILURE);
   }
 
@@ -1689,6 +1697,7 @@ int main(int argc, char **argv)
 
   if (pm > 1) {
       fprintf(stderr, "Only one of --summarize, --delete, --linkhard, --linksoft, or --dedupe\nmay be used\n");
+      string_malloc_destroy();
       exit(EXIT_FAILURE);
   }
   if (pm == 0) SETFLAG(flags, F_PRINTMATCHES);
@@ -1701,6 +1710,7 @@ int main(int argc, char **argv)
 
     if (firstrecurse == argc) {
       fprintf(stderr, "-R option must be isolated from other options\n");
+      string_malloc_destroy();
       exit(EXIT_FAILURE);
     }
 
