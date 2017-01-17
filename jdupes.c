@@ -930,7 +930,7 @@ static inline void registerfile(filetree_t * restrict * const restrict nodeptr,
     branch = up;
   }
 #else /* USE_TREE_REBALANCE */
-  /* Attach the new node to the requested branch and the parent */
+  /* Attach the new node to the requested branch */
   switch (d) {
     case LEFT:
       (*nodeptr)->left = branch;
@@ -939,9 +939,14 @@ static inline void registerfile(filetree_t * restrict * const restrict nodeptr,
       (*nodeptr)->right = branch;
       break;
     case NONE:
-    default:
       /* For the root of the tree only */
       *nodeptr = branch;
+      break;
+    default:
+      /* This should never ever happen */
+      fprintf(stderr, "registerfile: invalid direction, report this as a bug\n");
+      string_malloc_destroy();
+      exit(EXIT_FAILURE);
       break;
   }
 
