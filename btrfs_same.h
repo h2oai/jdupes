@@ -24,6 +24,8 @@
  */
 
 #ifndef _LINUX_BTRFS_H
+#ifndef BTRFS_SAME_H
+#define BTRFS_SAME_H
 
 #include <linux/types.h>
 #include <linux/ioctl.h>
@@ -55,4 +57,5 @@ struct btrfs_ioctl_same_args {
 	struct btrfs_ioctl_same_extent_info info[0];
 };
 
+#endif /* BTRFS_SAME_H */
 #endif /* _LINUX_BTRFS_H */
