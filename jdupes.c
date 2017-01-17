@@ -472,10 +472,7 @@ extern int getdirstats(const char * const restrict name,
  *  2 on an absolute match condition met */
 extern int check_conditions(const file_t * const restrict file1, const file_t * const restrict file2)
 {
-  if (file1 == NULL || file2 == NULL || file1->d_name == NULL || file2->d_name == NULL) {
-    LOUD(fprintf(stderr, "internal error: null pointer passed to check_conditions()\n");)
-    exit(EXIT_FAILURE);
-  }
+  if (file1 == NULL || file2 == NULL || file1->d_name == NULL || file2->d_name == NULL) nullptr("check_conditions");
 
   LOUD(fprintf(stderr, "check_conditions('%s', '%s')\n", file1->d_name, file2->d_name);)
 
