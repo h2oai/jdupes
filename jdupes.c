@@ -1126,7 +1126,7 @@ static file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict f
     if (!ISFLAG(tree->file->flags, F_HASH_PARTIAL)) {
       filehash = get_filehash(tree->file, PARTIAL_HASH_SIZE);
       if (filehash == NULL) {
-        if (!interrupt) fprintf(stderr, "cannot read file "); fwprint(stderr, tree->file->d_name, 1);
+        if (!interrupt) { fprintf(stderr, "cannot read file "); fwprint(stderr, tree->file->d_name, 1); }
         return NULL;
       }
 
@@ -1137,7 +1137,7 @@ static file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict f
     if (!ISFLAG(file->flags, F_HASH_PARTIAL)) {
       filehash = get_filehash(file, PARTIAL_HASH_SIZE);
       if (filehash == NULL) {
-        if (!interrupt) fprintf(stderr, "cannot read file "); fwprint(stderr, file->d_name, 1);
+        if (!interrupt) { fprintf(stderr, "cannot read file "); fwprint(stderr, file->d_name, 1); }
         return NULL;
       }
 
@@ -1168,7 +1168,7 @@ static file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict f
       if (!ISFLAG(tree->file->flags, F_HASH_FULL)) {
         filehash = get_filehash(tree->file, 0);
         if (filehash == NULL) {
-          if (!interrupt) fprintf(stderr, "cannot read file "); fwprint(stderr, tree->file->d_name, 1);
+          if (!interrupt) { fprintf(stderr, "cannot read file "); fwprint(stderr, tree->file->d_name, 1); }
           return NULL;
         }
 
@@ -1179,7 +1179,7 @@ static file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict f
       if (!ISFLAG(file->flags, F_HASH_FULL)) {
         filehash = get_filehash(file, 0);
         if (filehash == NULL) {
-          if (!interrupt) fprintf(stderr, "cannot read file "); fwprint(stderr, file->d_name, 1);
+          if (!interrupt) { fprintf(stderr, "cannot read file "); fwprint(stderr, file->d_name, 1); }
           return NULL;
         }
 
