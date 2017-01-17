@@ -65,7 +65,7 @@ extern int numeric_sort(const char * restrict c1,
     }
 
     /* Do normal comparison */
-    if (*c1 == *c2) {
+    if (*c1 == *c2 && *c1 != '\0' && *c2 != '\0') {
       c1++; c2++;
       len1++; len2++;
     /* Put symbols and spaces after everything else */
