@@ -261,12 +261,12 @@ extern void oom(const char * const restrict msg)
 }
 
 
-/* Null pointer passed */
+/* Null pointer failure */
 extern void nullptr(const char * restrict func)
 {
   static const char n[] = "(NULL)";
   if (func == NULL) func = n;
-  fprintf(stderr, "internal error: NULL pointer passed to %s()\n", func);
+  fprintf(stderr, "internal error: NULL pointer passed to %s\n", func);
   string_malloc_destroy();
   exit(EXIT_FAILURE);
 }
@@ -330,7 +330,7 @@ static int nonoptafter(const char *option, const int argc,
  * Returns 1 if changed, 0 if not changed, negative if error */
 extern int file_has_changed(file_t * const restrict file)
 {
-  if (file == NULL || file->d_name == NULL) nullptr("file_has_changed");
+  if (file == NULL || file->d_name == NULL) nullptr("file_has_changed()");
   LOUD(fprintf(stderr, "file_has_changed('%s')\n", file->d_name);)
 
   if (!ISFLAG(file->flags, F_VALID_STAT)) return -66;
@@ -366,7 +366,7 @@ extern int file_has_changed(file_t * const restrict file)
 
 extern inline int getfilestats(file_t * const restrict file)
 {
-  if (file == NULL || file->d_name == NULL) nullptr("getfilestats");
+  if (file == NULL || file->d_name == NULL) nullptr("getfilestats()");
   LOUD(fprintf(stderr, "getfilestats('%s')\n", file->d_name);)
 
   /* Don't stat the same file more than once */
@@ -430,7 +430,7 @@ extern int getdirstats(const char * const restrict name,
  *  2 on an absolute match condition met */
 extern int check_conditions(const file_t * const restrict file1, const file_t * const restrict file2)
 {
-  if (file1 == NULL || file2 == NULL || file1->d_name == NULL || file2->d_name == NULL) nullptr("check_conditions");
+  if (file1 == NULL || file2 == NULL || file1->d_name == NULL || file2->d_name == NULL) nullptr("check_conditions()");
 
   LOUD(fprintf(stderr, "check_conditions('%s', '%s')\n", file1->d_name, file2->d_name);)
 
@@ -484,7 +484,7 @@ extern int check_conditions(const file_t * const restrict file1, const file_t * 
 /* Create a new traversal check object */
 static int travdone_alloc(struct travdone **trav, const char * const restrict dir)
 {
-  if (trav == NULL || dir == NULL) nullptr("travdone_alloc");
+  if (trav == NULL || dir == NULL) nullptr("travdone_alloc()");
   LOUD(fprintf(stderr, "travdone_alloc(%p, '%s')\n", (void *)trav, dir);)
 
   *trav = string_malloc(sizeof(struct travdone));
@@ -524,7 +524,7 @@ static void grokdir(const char * const restrict dir,
   DIR *cd;
 #endif
 
-  if (dir == NULL || filelistp == NULL) nullptr("grokdir");
+  if (dir == NULL || filelistp == NULL) nullptr("grokdir()");
   LOUD(fprintf(stderr, "grokdir: scanning '%s' (order %d)\n", dir, user_dir_count));
 
   /* Double traversal prevention tree */
@@ -534,6 +534,7 @@ static void grokdir(const char * const restrict dir,
     if (getdirstats(dir, &inode, &device) != 0) goto error_travdone;
     traverse = travdone_head;
     while (1) {
+      if (traverse == NULL) nullptr("grokdir() traverse");
       /* Don't re-traverse directories we've already seen */
       if (inode == traverse->inode && device == traverse->device) {
         LOUD(fprintf(stderr, "already seen dir '%s', skipping\n", dir);)
@@ -787,7 +788,7 @@ static hash_t *get_filehash(const file_t * const restrict checkfile,
   static hash_t chunk[(CHUNK_SIZE / sizeof(hash_t))];
   FILE *file;
 
-  if (checkfile == NULL || checkfile->d_name == NULL) nullptr("get_filehash");
+  if (checkfile == NULL || checkfile->d_name == NULL) nullptr("get_filehash()");
   LOUD(fprintf(stderr, "get_filehash('%s', %jd)\n", checkfile->d_name, (intmax_t)max_read);)
 
   /* Get the file size. If we can't read it, bail out early */
@@ -867,7 +868,7 @@ static inline void registerfile(filetree_t * restrict * const restrict nodeptr,
 {
   filetree_t * restrict branch;
 
-  if (nodeptr == NULL || file == NULL || (d != NONE && *nodeptr == NULL)) nullptr("registerfile");
+  if (nodeptr == NULL || file == NULL || (d != NONE && *nodeptr == NULL)) nullptr("registerfile()");
   LOUD(fprintf(stderr, "registerfile(direction %d)\n", d));
 
   /* Allocate and initialize a new node for the file */
@@ -1055,7 +1056,7 @@ static file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict f
   int cmpresult = 0;
   const hash_t * restrict filehash;
 
-  if (tree == NULL || file == NULL || tree->file == NULL || tree->file->d_name == NULL || file->d_name == NULL) nullptr("checkmatch");
+  if (tree == NULL || file == NULL || tree->file == NULL || tree->file->d_name == NULL || file->d_name == NULL) nullptr("checkmatch()");
   LOUD(fprintf(stderr, "checkmatch ('%s', '%s')\n", tree->file->d_name, file->d_name));
 
   /* If device and inode fields are equal one of the files is a
@@ -1199,7 +1200,7 @@ static inline int confirmmatch(FILE * const restrict file1, FILE * const restric
   size_t r1;
   size_t r2;
 
-  if (file1 == NULL || file2 == NULL) nullptr("confirmmatch");
+  if (file1 == NULL || file2 == NULL) nullptr("confirmmatch()");
   LOUD(fprintf(stderr, "confirmmatch running\n"));
 
   fseek(file1, 0, SEEK_SET);
@@ -1226,7 +1227,7 @@ extern unsigned int get_max_dupes(const file_t *files, unsigned int * const rest
                 unsigned int * const restrict n_files) {
   unsigned int groups = 0;
 
-  if (files == NULL || max == NULL) nullptr("get_max_dupes");
+  if (files == NULL || max == NULL) nullptr("get_max_dupes()");
   LOUD(fprintf(stderr, "get_max_dupes(%p, %p, %p)\n", (const void *)files, (void *)max, (void *)n_files));
 
   *max = 0;
@@ -1250,7 +1251,7 @@ extern unsigned int get_max_dupes(const file_t *files, unsigned int * const rest
 static int sort_pairs_by_param_order(file_t *f1, file_t *f2)
 {
   if (!ISFLAG(flags, F_USEPARAMORDER)) return 0;
-  if (f1 == NULL || f2 == NULL) nullptr("sort_pairs_by_param_order");
+  if (f1 == NULL || f2 == NULL) nullptr("sort_pairs_by_param_order()");
   if (f1->user_order < f2->user_order) return -sort_direction;
   if (f1->user_order > f2->user_order) return sort_direction;
   return 0;
@@ -1259,7 +1260,7 @@ static int sort_pairs_by_param_order(file_t *f1, file_t *f2)
 
 static int sort_pairs_by_mtime(file_t *f1, file_t *f2)
 {
-  if (f1 == NULL || f2 == NULL) nullptr("sort_pairs_by_mtime");
+  if (f1 == NULL || f2 == NULL) nullptr("sort_pairs_by_mtime()");
   int po = sort_pairs_by_param_order(f1, f2);
 
   if (po != 0) return po;
@@ -1273,7 +1274,7 @@ static int sort_pairs_by_mtime(file_t *f1, file_t *f2)
 
 static int sort_pairs_by_filename(file_t *f1, file_t *f2)
 {
-  if (f1 == NULL || f2 == NULL) nullptr("sort_pairs_by_filename");
+  if (f1 == NULL || f2 == NULL) nullptr("sort_pairs_by_filename()");
   int po = sort_pairs_by_param_order(f1, f2);
 
   if (po != 0) return po;
@@ -1289,7 +1290,7 @@ static void registerpair(file_t **matchlist, file_t *newmatch,
   file_t *back;
 
   /* NULL pointer sanity checks */
-  if (matchlist == NULL || newmatch == NULL || comparef == NULL) nullptr("registerpair");
+  if (matchlist == NULL || newmatch == NULL || comparef == NULL) nullptr("registerpair()");
   LOUD(fprintf(stderr, "registerpair: '%s', '%s'\n", (*matchlist)->d_name, newmatch->d_name);)
 
   SETFLAG((*matchlist)->flags, F_HAS_DUPES);
