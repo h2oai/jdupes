@@ -78,8 +78,6 @@ extern int out_mode;
 
 /* Low memory option overrides */
 #ifdef LOW_MEMORY
- #undef DEBUG
- #undef LOUD_DEBUG
  #undef USE_TREE_REBALANCE
  #ifndef NO_PERMS
   #define NO_PERMS 1

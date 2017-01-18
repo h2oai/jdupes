@@ -85,48 +85,6 @@ int out_mode = _O_TEXT;
 #include "jody_paths.h"
 #endif
 
-#define ISFLAG(a,b) ((a & b) == b)
-#define SETFLAG(a,b) (a |= b)
-#define CLEARFLAG(a,b) (a &= (~b))
-
-/* Low memory option overrides */
-#ifdef LOW_MEMORY
- #undef DEBUG
- #undef LOUD_DEBUG
- #undef USE_TREE_REBALANCE
- #ifndef NO_PERMS
-  #define NO_PERMS 1
- #endif
-#endif
-
-/* Tree rebalance requires tree stats */
-#ifdef USE_TREE_REBALANCE
- #ifndef TREE_DEPTH_STATS
-  #define TREE_DEPTH_STATS
- #endif
-#endif
-
-/* Aggressive verbosity for deep debugging */
-#ifdef LOUD_DEBUG
- #ifndef DEBUG
-  #define DEBUG
- #endif
- #define LOUD(...) if ISFLAG(flags, F_LOUD) __VA_ARGS__
-#else
- #define LOUD(a)
-#endif
-
-/* Compile out debugging stat counters unless requested */
-#ifdef DEBUG
- #define DBG(a) a
- #ifndef TREE_DEPTH_STATS
-  #define TREE_DEPTH_STATS
- #endif
-#else
- #define DBG(a)
-#endif
-
-
 /* Behavior modification flags */
 uint_fast32_t flags = 0;
 
