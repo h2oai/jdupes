@@ -229,14 +229,14 @@ sf_failed:
 /* Destroy all allocated pages */
 void string_malloc_destroy(void)
 {
-	void *cur;
+	uintptr_t *cur;
 	uintptr_t *next;
 
-	cur = (void *)sma_head;
+	cur = sma_head;
 	while (sma_pages > 0) {
-		next = (uintptr_t *)*(uintptr_t *)cur;
+		next = (uintptr_t *)*cur;
 		free(cur);
-		cur = (void *)next;
+		cur = next;
 		sma_pages--;
 	}
 	sma_head = NULL;
