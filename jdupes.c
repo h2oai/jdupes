@@ -266,7 +266,7 @@ extern void nullptr(const char * restrict func)
 {
   static const char n[] = "(NULL)";
   if (func == NULL) func = n;
-  fprintf(stderr, "internal error: NULL pointer passed to %s\n", func);
+  fprintf(stderr, "\ninternal error: NULL pointer passed to %s\n", func);
   string_malloc_destroy();
   exit(EXIT_FAILURE);
 }
@@ -577,7 +577,7 @@ static void grokdir(const char * const restrict dir,
 
   LOUD(fprintf(stderr, "FindFirstFile: %s\n", dir));
   hFind = FindFirstFile((LPCWSTR)wname, &ffd);
-  if (hFind == INVALID_HANDLE_VALUE) { fprintf(stderr, "handle bad\n"); goto error_cd; }
+  if (hFind == INVALID_HANDLE_VALUE) { fprintf(stderr, "\nfile handle bad\n"); goto error_cd; }
   LOUD(fprintf(stderr, "Loop start\n"));
   do {
     char * restrict tp = tempname;
@@ -762,16 +762,16 @@ static void grokdir(const char * const restrict dir,
 
   grokdir_level--;
   if (grokdir_level == 0 && !ISFLAG(flags, F_HIDEPROGRESS)) {
-    fprintf(stderr, "\rExamining %ju files, %ju dirs (in %u specified)",
+    fprintf(stderr, "\rScanning: %ju files, %ju dirs (in %u specified)",
             progress, dir_progress, user_dir_count);
   }
   return;
 
 error_travdone:
-  fprintf(stderr, "error: could not stat dir "); fwprint(stderr, dir, 1);
+  fprintf(stderr, "\ncould not stat dir "); fwprint(stderr, dir, 1);
   return;
 error_cd:
-  fprintf(stderr, "error: could not chdir to "); fwprint(stderr, dir, 1);
+  fprintf(stderr, "\ncould not chdir to "); fwprint(stderr, dir, 1);
   return;
 error_overflow:
   fprintf(stderr, "\nerror: a path buffer overflowed\n");
@@ -826,7 +826,7 @@ static hash_t *get_filehash(const file_t * const restrict checkfile,
   file = fopen(checkfile->d_name, FILE_MODE_RO);
 #endif
   if (file == NULL) {
-    fprintf(stderr, "error opening file "); fwprint(stderr, checkfile->d_name, 1);
+    fprintf(stderr, "\nerror opening file "); fwprint(stderr, checkfile->d_name, 1);
     return NULL;
   }
   /* Actually seek past the first chunk if applicable
@@ -834,7 +834,7 @@ static hash_t *get_filehash(const file_t * const restrict checkfile,
   if (ISFLAG(checkfile->flags, F_HASH_PARTIAL)) {
     if (fseeko(file, PARTIAL_HASH_SIZE, SEEK_SET) == -1) {
       fclose(file);
-      fprintf(stderr, "error seeking in file "); fwprint(stderr, checkfile->d_name, 1);
+      fprintf(stderr, "\nerror seeking in file "); fwprint(stderr, checkfile->d_name, 1);
       return NULL;
     }
     fsize -= PARTIAL_HASH_SIZE;
@@ -846,7 +846,7 @@ static hash_t *get_filehash(const file_t * const restrict checkfile,
     if (interrupt) return 0;
     bytes_to_read = (fsize >= (off_t)auto_chunk_size) ? auto_chunk_size : (size_t)fsize;
     if (fread((void *)chunk, bytes_to_read, 1, file) != 1) {
-      fprintf(stderr, "error reading from file "); fwprint(stderr, checkfile->d_name, 1);
+      fprintf(stderr, "\nerror reading from file "); fwprint(stderr, checkfile->d_name, 1);
       fclose(file);
       return NULL;
     }
@@ -900,7 +900,7 @@ static inline void registerfile(filetree_t * restrict * const restrict nodeptr,
       break;
     default:
       /* This should never ever happen */
-      fprintf(stderr, "internal error: invalid direction for registerfile(), report this\n");
+      fprintf(stderr, "\ninternal error: invalid direction for registerfile(), report this\n");
       string_malloc_destroy();
       exit(EXIT_FAILURE);
       break;
@@ -914,7 +914,7 @@ static inline void registerfile(filetree_t * restrict * const restrict nodeptr,
     if (up->left == branch) up->left_weight++;
     else if (up->right == branch) up->right_weight++;
     else {
-      fprintf(stderr, "Internal error: file tree linkage is broken\n");
+      fprintf(stderr, "\nInternal error: file tree linkage is broken\n");
       exit(EXIT_FAILURE);
     }
     branch = up;
@@ -934,7 +934,7 @@ static inline void registerfile(filetree_t * restrict * const restrict nodeptr,
       break;
     default:
       /* This should never ever happen */
-      fprintf(stderr, "internal error: invalid direction for registerfile(), report this\n");
+      fprintf(stderr, "\ninternal error: invalid direction for registerfile(), report this\n");
       string_malloc_destroy();
       exit(EXIT_FAILURE);
       break;
@@ -1086,7 +1086,7 @@ static file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict f
     if (!ISFLAG(tree->file->flags, F_HASH_PARTIAL)) {
       filehash = get_filehash(tree->file, PARTIAL_HASH_SIZE);
       if (filehash == NULL) {
-        if (!interrupt) { fprintf(stderr, "cannot read file "); fwprint(stderr, tree->file->d_name, 1); }
+        if (!interrupt) { fprintf(stderr, "\ncannot read file "); fwprint(stderr, tree->file->d_name, 1); }
         return NULL;
       }
 
@@ -1097,7 +1097,7 @@ static file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict f
     if (!ISFLAG(file->flags, F_HASH_PARTIAL)) {
       filehash = get_filehash(file, PARTIAL_HASH_SIZE);
       if (filehash == NULL) {
-        if (!interrupt) { fprintf(stderr, "cannot read file "); fwprint(stderr, file->d_name, 1); }
+        if (!interrupt) { fprintf(stderr, "\ncannot read file "); fwprint(stderr, file->d_name, 1); }
         return NULL;
       }
 
@@ -1128,7 +1128,7 @@ static file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict f
       if (!ISFLAG(tree->file->flags, F_HASH_FULL)) {
         filehash = get_filehash(tree->file, 0);
         if (filehash == NULL) {
-          if (!interrupt) { fprintf(stderr, "cannot read file "); fwprint(stderr, tree->file->d_name, 1); }
+          if (!interrupt) { fprintf(stderr, "\ncannot read file "); fwprint(stderr, tree->file->d_name, 1); }
           return NULL;
         }
 
@@ -1139,7 +1139,7 @@ static file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict f
       if (!ISFLAG(file->flags, F_HASH_FULL)) {
         filehash = get_filehash(file, 0);
         if (filehash == NULL) {
-          if (!interrupt) { fprintf(stderr, "cannot read file "); fwprint(stderr, file->d_name, 1); }
+          if (!interrupt) { fprintf(stderr, "\ncannot read file "); fwprint(stderr, file->d_name, 1); }
           return NULL;
         }
 
