@@ -1268,7 +1268,7 @@ extern unsigned int get_max_dupes(const file_t *files, unsigned int * const rest
                 unsigned int * const restrict n_files) {
   unsigned int groups = 0;
 
-  if (files == NULL || max == NULL || n_files == NULL) nullptr("get_max_dupes");
+  if (files == NULL || max == NULL) nullptr("get_max_dupes");
   LOUD(fprintf(stderr, "get_max_dupes(%p, %p, %p)\n", (const void *)files, (void *)max, (void *)n_files));
 
   *max = 0;
