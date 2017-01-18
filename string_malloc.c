@@ -29,13 +29,6 @@
 #define SMA_MIN_SLACK 48
 #endif
 
-static void *sma_head = NULL;
-static uintptr_t *sma_lastpage = NULL;
-static unsigned int sma_pages = 0;
-static void *sma_freelist[SMA_MAX_FREE];
-static int sma_freelist_cnt = 0;
-static size_t sma_nextfree = sizeof(uintptr_t);
-
 #ifdef DEBUG
 uintmax_t sma_allocs = 0;
 uintmax_t sma_free_ignored = 0;
@@ -47,6 +40,33 @@ uintmax_t sma_free_tails = 0;
 #else
  #define DBG(a)
 #endif
+
+
+/* This is used to bypass string_malloc for debugging */
+#ifdef SMA_PASSTHROUGH
+void *string_malloc(size_t len)
+{
+	return malloc(len);
+}
+
+void string_free(void *ptr)
+{
+	free(ptr);
+	return;
+}
+
+void string_malloc_destroy(void) {
+	return;
+}
+
+#else /* Not SMA_PASSTHROUGH mode */
+
+static void *sma_head = NULL;
+static uintptr_t *sma_lastpage = NULL;
+static unsigned int sma_pages = 0;
+static void *sma_freelist[SMA_MAX_FREE];
+static int sma_freelist_cnt = 0;
+static size_t sma_nextfree = sizeof(uintptr_t);
 
 
 /* Scan the freed chunk list for a suitably sized object */
@@ -242,3 +262,5 @@ void string_malloc_destroy(void)
 	sma_head = NULL;
 	return;
 }
+
+#endif /* SMA_PASSTHROUGH */
