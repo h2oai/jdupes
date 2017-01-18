@@ -1085,10 +1085,7 @@ static file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict f
     /* Attempt to exclude files quickly with partial file hashing */
     if (!ISFLAG(tree->file->flags, F_HASH_PARTIAL)) {
       filehash = get_filehash(tree->file, PARTIAL_HASH_SIZE);
-      if (filehash == NULL) {
-        if (!interrupt) { fprintf(stderr, "\ncannot read file "); fwprint(stderr, tree->file->d_name, 1); }
-        return NULL;
-      }
+      if (filehash == NULL) return NULL;
 
       tree->file->filehash_partial = *filehash;
       SETFLAG(tree->file->flags, F_HASH_PARTIAL);
@@ -1096,10 +1093,7 @@ static file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict f
 
     if (!ISFLAG(file->flags, F_HASH_PARTIAL)) {
       filehash = get_filehash(file, PARTIAL_HASH_SIZE);
-      if (filehash == NULL) {
-        if (!interrupt) { fprintf(stderr, "\ncannot read file "); fwprint(stderr, file->d_name, 1); }
-        return NULL;
-      }
+      if (filehash == NULL) return NULL;
 
       file->filehash_partial = *filehash;
       SETFLAG(file->flags, F_HASH_PARTIAL);
@@ -1127,10 +1121,7 @@ static file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict f
       /* If partial match was correct, perform a full file hash match */
       if (!ISFLAG(tree->file->flags, F_HASH_FULL)) {
         filehash = get_filehash(tree->file, 0);
-        if (filehash == NULL) {
-          if (!interrupt) { fprintf(stderr, "\ncannot read file "); fwprint(stderr, tree->file->d_name, 1); }
-          return NULL;
-        }
+        if (filehash == NULL) return NULL;
 
         tree->file->filehash = *filehash;
         SETFLAG(tree->file->flags, F_HASH_FULL);
@@ -1138,10 +1129,7 @@ static file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict f
 
       if (!ISFLAG(file->flags, F_HASH_FULL)) {
         filehash = get_filehash(file, 0);
-        if (filehash == NULL) {
-          if (!interrupt) { fprintf(stderr, "\ncannot read file "); fwprint(stderr, file->d_name, 1); }
-          return NULL;
-        }
+        if (filehash == NULL) return NULL;
 
         file->filehash = *filehash;
         SETFLAG(file->flags, F_HASH_FULL);
