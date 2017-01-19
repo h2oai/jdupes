@@ -481,13 +481,12 @@ extern int check_conditions(const file_t * const restrict file1, const file_t * 
 }
 
 
-/* Create a new traversal check object */
-static struct travdone *travdone_alloc(const char * const restrict dir)
+/* Create a new traversal check object and initialize its values */
+static struct travdone *travdone_alloc(const jdupes_ino_t inode, const dev_t device)
 {
   struct travdone *trav;
 
-  if (dir == NULL) nullptr("travdone_alloc()");
-  LOUD(fprintf(stderr, "travdone_alloc(%p, '%s')\n", (void *)trav, dir);)
+  LOUD(fprintf(stderr, "travdone_alloc(%jd, %jd)\n", (intmax_t)inode, (intmax_t)device);)
 
   trav = (struct travdone *)string_malloc(sizeof(struct travdone));
   if (trav == NULL) {
@@ -496,7 +495,9 @@ static struct travdone *travdone_alloc(const char * const restrict dir)
   }
   trav->left = NULL;
   trav->right = NULL;
-  if (getdirstats(dir, &(trav->inode), &(trav->device)) != 0) return NULL;
+  trav->inode = inode;
+  trav->device = device;
+  LOUD(fprintf(stderr, "travdone_alloc returned %p\n", (void *)trav);)
   return trav;
 }
 
@@ -530,11 +531,11 @@ static void grokdir(const char * const restrict dir,
   LOUD(fprintf(stderr, "grokdir: scanning '%s' (order %d)\n", dir, user_dir_count));
 
   /* Double traversal prevention tree */
+  if (getdirstats(dir, &inode, &device) != 0) goto error_travdone;
   if (travdone_head == NULL) {
-    travdone_head = travdone_alloc(dir);
+    travdone_head = travdone_alloc(inode, device);
     if (travdone_head == NULL) goto error_travdone;
   } else {
-    if (getdirstats(dir, &inode, &device) != 0) goto error_travdone;
     traverse = travdone_head;
     while (1) {
       if (traverse == NULL) nullptr("grokdir() traverse");
@@ -542,12 +543,11 @@ static void grokdir(const char * const restrict dir,
       if (inode == traverse->inode && device == traverse->device) {
         LOUD(fprintf(stderr, "already seen dir '%s', skipping\n", dir);)
         return;
-      }
-      if (inode >= traverse->inode) {
+      } else if (inode > traverse->inode || (inode == traverse->inode && device > traverse->device)) {
         /* Traverse right */
         if (traverse->right == NULL) {
           LOUD(fprintf(stderr, "traverse dir right '%s'\n", dir);)
-          traverse->right = travdone_alloc(dir);
+          traverse->right = travdone_alloc(inode, device);
           if (traverse->right == NULL) goto error_travdone;
           break;
         }
@@ -557,7 +557,7 @@ static void grokdir(const char * const restrict dir,
         /* Traverse left */
         if (traverse->left == NULL) {
           LOUD(fprintf(stderr, "traverse dir left '%s'\n", dir);)
-          traverse->left = travdone_alloc(dir);
+          traverse->left = travdone_alloc(inode, device);
           if (traverse->left == NULL) goto error_travdone;
           break;
         }
