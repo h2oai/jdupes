@@ -482,20 +482,22 @@ extern int check_conditions(const file_t * const restrict file1, const file_t * 
 
 
 /* Create a new traversal check object */
-static int travdone_alloc(struct travdone **trav, const char * const restrict dir)
+static struct travdone *travdone_alloc(const char * const restrict dir)
 {
-  if (trav == NULL || dir == NULL) nullptr("travdone_alloc()");
+  struct travdone *trav;
+
+  if (dir == NULL) nullptr("travdone_alloc()");
   LOUD(fprintf(stderr, "travdone_alloc(%p, '%s')\n", (void *)trav, dir);)
 
-  *trav = string_malloc(sizeof(struct travdone));
-  if (*trav == NULL) {
+  trav = (struct travdone *)string_malloc(sizeof(struct travdone));
+  if (trav == NULL) {
     LOUD(fprintf(stderr, "travdone_alloc: malloc failed\n");)
-    return -1;
+    return NULL;
   }
-  (*trav)->left = NULL;
-  (*trav)->right = NULL;
-  if (getdirstats(dir, &((*trav)->inode), &((*trav)->device)) != 0) return -1;
-  return 0;
+  trav->left = NULL;
+  trav->right = NULL;
+  if (getdirstats(dir, &(trav->inode), &(trav->device)) != 0) return NULL;
+  return trav;
 }
 
 
@@ -529,7 +531,8 @@ static void grokdir(const char * const restrict dir,
 
   /* Double traversal prevention tree */
   if (travdone_head == NULL) {
-    if (travdone_alloc(&travdone_head, dir) != 0) goto error_travdone;
+    travdone_head = travdone_alloc(dir);
+    if (travdone_head == NULL) goto error_travdone;
   } else {
     if (getdirstats(dir, &inode, &device) != 0) goto error_travdone;
     traverse = travdone_head;
@@ -544,7 +547,8 @@ static void grokdir(const char * const restrict dir,
         /* Traverse right */
         if (traverse->right == NULL) {
           LOUD(fprintf(stderr, "traverse dir right '%s'\n", dir);)
-          if (travdone_alloc(&(traverse->right), dir) != 0) goto error_travdone;
+          traverse->right = travdone_alloc(dir);
+          if (traverse->right == NULL) goto error_travdone;
           break;
         }
         traverse = traverse->right;
@@ -553,7 +557,8 @@ static void grokdir(const char * const restrict dir,
         /* Traverse left */
         if (traverse->left == NULL) {
           LOUD(fprintf(stderr, "traverse dir left '%s'\n", dir);)
-          if (travdone_alloc(&(traverse->left), dir) != 0) goto error_travdone;
+          traverse->left = travdone_alloc(dir);
+          if (traverse->left == NULL) goto error_travdone;
           break;
         }
         traverse = traverse->left;
