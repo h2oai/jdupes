@@ -17,9 +17,9 @@
 #
 # Normal output and testing dirs
 #
-/?dupes
-/?dupes-jody
-/?dupes*.exe
+/jdupes
+/jdupes*.exe
+/*.pkg.tar.xz
 
 #
 # Backups / patches
