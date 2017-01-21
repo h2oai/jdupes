@@ -33,6 +33,7 @@ do_build () {
 		mkdir $WD/$PKG
 		make DESTDIR=$WD/$PKG install && \
 			tar -C pkg -c usr | xz -e > ${NAME}_$VER-$ARCH.pkg.tar.xz
+		echo "Built ${NAME}_$VER-$ARCH.pkg.tar.xz"
 	fi
 }
 
