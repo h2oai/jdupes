@@ -126,4 +126,7 @@ install: jdupes installdirs
 	$(INSTALL_DATA)		$(PROGRAM_NAME).1 $(DESTDIR)$(MAN_DIR)/$(PROGRAM_NAME).$(MAN_EXT)
 
 clean:
-	$(RM) $(OBJECT_FILES) $(PROGRAM_NAME) jdupes.exe *~ *.gcno *.gcda *.gcov
+	$(RM) $(OBJECT_FILES) $(PROGRAM_NAME) jdupes.exe *~ *.gcno *.gcda *.gcov *.pkg.tar.xz
+
+package:
+	+./chroot_build.sh
