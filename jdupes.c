@@ -196,7 +196,9 @@ struct travdone {
 };
 static struct travdone *travdone_head = NULL;
 
-static uintmax_t filecount = 0; // Required for progress indicator code
+/* Required for progress indicator code */
+static uintmax_t filecount = 0;
+static uintmax_t progress = 0, dir_progress = 0, dupecount = 0;
 
 /* Hash/compare performance statistics (debug mode) */
 #ifdef DEBUG
@@ -325,6 +327,18 @@ static int nonoptafter(const char *option, const int argc,
   return x;
 }
 
+
+/* Update progress indicator if requested */
+static void update_progress(void)
+{
+  gettimeofday(&time2, NULL);
+  if (progress == 0 || time2.tv_sec > time1.tv_sec) {
+    fprintf(stderr, "\rProgress [%ju/%ju, %ju pairs matched] %ju%%", progress, filecount,
+      dupecount, (progress * 100) / filecount);
+    fflush(stderr);
+  }
+  time1.tv_sec = time2.tv_sec;
+}
 
 /* Check file's stat() info to make sure nothing has changed
  * Returns 1 if changed, 0 if not changed, negative if error */
@@ -512,7 +526,6 @@ static void grokdir(const char * const restrict dir,
   static struct stat linfo;
 #endif
   struct dirent *dirinfo;
-  static uintmax_t progress = 0, dir_progress = 0;
   static int grokdir_level = 0;
   static char tempname[PATHBUF_SIZE * 2];
   size_t dirlen;
@@ -604,11 +617,11 @@ static void grokdir(const char * const restrict dir,
     if (strcmp(dirinfo->d_name, ".") && strcmp(dirinfo->d_name, "..")) {
       if (!ISFLAG(flags, F_HIDEPROGRESS)) {
         gettimeofday(&time2, NULL);
-        if (time2.tv_sec > time1.tv_sec) {
+        if (progress == 0 || time2.tv_sec > time1.tv_sec) {
           fprintf(stderr, "\rScanning: %ju files, %ju dirs (in %u specified)",
               progress, dir_progress, user_dir_count);
         }
-	time1.tv_sec = time2.tv_sec;
+        time1.tv_sec = time2.tv_sec;
       }
 
       /* Assemble the file's full path name, optimized to avoid strcat() */
@@ -1453,6 +1466,12 @@ int main(int argc, char **argv)
 #define GETOPT getopt
 #endif
 
+/* Windows buffers our stderr output; don't let it do that */
+#ifdef ON_WINDOWS
+  if (setvbuf(stderr, NULL, _IONBF, 0) != 0)
+    fprintf(stderr, "warning: setvbuf() failed\n");
+#endif
+
 #ifdef UNICODE
   /* Create a UTF-8 **argv from the wide version */
   static char **argv;
@@ -1472,7 +1491,7 @@ int main(int argc, char **argv)
   if (auto_chunk_size < 4096 || auto_chunk_size > CHUNK_SIZE) auto_chunk_size = CHUNK_SIZE;
   /* Force to a multiple of 4096 if it isn't already */
   if ((auto_chunk_size & 0x00000fffUL) != 0)
-	  auto_chunk_size = (auto_chunk_size + 0x00000fffUL) & 0x000ff000;
+    auto_chunk_size = (auto_chunk_size + 0x00000fffUL) & 0x000ff000;
 
   program_name = argv[0];
 
@@ -1738,13 +1757,12 @@ int main(int argc, char **argv)
   if (!files) exit(EXIT_SUCCESS);
 
   curfile = files;
+  progress = 0;
 
   /* Catch CTRL-C */
   signal(SIGINT, sighandler);
 
   while (curfile) {
-    static uintmax_t progress = 0;
-    static uintmax_t dupecount = 0;
     static file_t **match = NULL;
     static FILE *file1;
     static FILE *file2;
@@ -1828,14 +1846,7 @@ int main(int argc, char **argv)
 skip_full_check:
     curfile = curfile->next;
 
-    if (!ISFLAG(flags, F_HIDEPROGRESS)) {
-      gettimeofday(&time2, NULL);
-      if (time2.tv_sec > time1.tv_sec) {
-        fprintf(stderr, "\rProgress [%ju/%ju, %ju pairs matched] %ju%%", progress, filecount,
-          dupecount, (progress * 100) / filecount);
-      }
-      time1.tv_sec = time2.tv_sec;
-    }
+    if (!ISFLAG(flags, F_HIDEPROGRESS)) update_progress();
     progress++;
   }
 
@@ -1874,7 +1885,7 @@ skip_file_scan:
         max_depth, sma_allocs, sma_free_good, sma_free_ignored,
         sma_free_reclaimed, sma_free_scanned, sma_free_tails);
     fprintf(stderr, "I/O chunk size: %ju KiB (%s)\n", (uintmax_t)(auto_chunk_size >> 10),
-		    (pci.l1 + pci.l1d) != 0 ? "dynamically sized" : "default size");
+        (pci.l1 + pci.l1d) != 0 ? "dynamically sized" : "default size");
 #ifdef ON_WINDOWS
  #ifndef NO_HARDLINKS
     if (ISFLAG(flags, F_HARDLINKFILES))
