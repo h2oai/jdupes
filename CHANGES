@@ -1,3 +1,14 @@
+jdupes 1.8
+
+- All files are now licensed under The MIT License exclusively
+- Fixed a serious memory alloc bug; upgrading is *strongly* recommended
+- Several huge improvements to progress indicators
+- Fix some error message display problems and add more error checking
+- Fixes for several potential crashes and buffer overflows
+- Indicate no duplicates were found if printing matches and none exist
+- On Linux, jdupes now auto-tunes I/O size based on CPU L1 D-cache size
+- The -v switch now also shows info about bitness in the version string
+
 jdupes 1.7
 
 - Incompatible change: zero-length files no longer duplicates by default
