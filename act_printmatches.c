@@ -9,9 +9,11 @@
 extern void printmatches(file_t * restrict files)
 {
   file_t * restrict tmpfile;
+  int printed = 0;
 
   while (files != NULL) {
     if (ISFLAG(files->flags, F_HAS_DUPES)) {
+      printed = 1;
       if (!ISFLAG(flags, F_OMITFIRST)) {
         if (ISFLAG(flags, F_SHOWSIZE)) printf("%jd byte%c each:\n", (intmax_t)files->size,
          (files->size != 1) ? 's' : ' ');
@@ -28,5 +30,8 @@ extern void printmatches(file_t * restrict files)
 
     files = files->next;
   }
+
+  if (printed == 0) fprintf(stderr, "No duplicates found.\n");
+
   return;
 }
