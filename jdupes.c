@@ -199,6 +199,8 @@ static struct travdone *travdone_head = NULL;
 /* Required for progress indicator code */
 static uintmax_t filecount = 0;
 static uintmax_t progress = 0, dir_progress = 0, dupecount = 0;
+/* Number of read loops before checking progress indicator */
+#define CHECK_MINIMUM 256
 
 /* Hash/compare performance statistics (debug mode) */
 #ifdef DEBUG
@@ -329,12 +331,20 @@ static int nonoptafter(const char *option, const int argc,
 
 
 /* Update progress indicator if requested */
-static void update_progress(void)
+static void update_progress(const char * const restrict msg, const int file_percent)
 {
+  static int did_fpct = 0;
   gettimeofday(&time2, NULL);
   if (progress == 0 || time2.tv_sec > time1.tv_sec) {
     fprintf(stderr, "\rProgress [%ju/%ju, %ju pairs matched] %ju%%", progress, filecount,
       dupecount, (progress * 100) / filecount);
+    if (file_percent > -1 && msg != NULL) {
+      fprintf(stderr, "  (%s: %d%%)         ", msg, file_percent);
+      did_fpct = 1;
+    } else if (did_fpct != 0) {
+      fprintf(stderr, "                     ");
+      did_fpct = 0;
+    }
     fflush(stderr);
   }
   time1.tv_sec = time2.tv_sec;
@@ -805,6 +815,7 @@ static hash_t *get_filehash(const file_t * const restrict checkfile,
   static hash_t hash[1];
   static hash_t chunk[(CHUNK_SIZE / sizeof(hash_t))];
   FILE *file;
+  int check = 0;
 
   if (checkfile == NULL || checkfile->d_name == NULL) nullptr("get_filehash()");
   LOUD(fprintf(stderr, "get_filehash('%s', %jd)\n", checkfile->d_name, (intmax_t)max_read);)
@@ -872,6 +883,12 @@ static hash_t *get_filehash(const file_t * const restrict checkfile,
     *hash = jody_block_hash(chunk, *hash, bytes_to_read);
     if ((off_t)bytes_to_read > fsize) break;
     else fsize -= (off_t)bytes_to_read;
+
+    check++;
+    if (check > CHECK_MINIMUM) {
+      update_progress("hashing", (int)(((checkfile->size - fsize) * 100) / checkfile->size));
+      check = 0;
+    }
   }
 
   fclose(file);
@@ -1199,12 +1216,12 @@ static file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict f
 
 /* Do a byte-by-byte comparison in case two different files produce the
    same signature. Unlikely, but better safe than sorry. */
-static inline int confirmmatch(FILE * const restrict file1, FILE * const restrict file2)
+static inline int confirmmatch(FILE * const restrict file1, FILE * const restrict file2, off_t size)
 {
-  static char c1[CHUNK_SIZE];
-  static char c2[CHUNK_SIZE];
-  size_t r1;
-  size_t r2;
+  static char c1[CHUNK_SIZE], c2[CHUNK_SIZE];
+  size_t r1, r2;
+  off_t bytes = 0;
+  int check = 0;
 
   if (file1 == NULL || file2 == NULL) nullptr("confirmmatch()");
   LOUD(fprintf(stderr, "confirmmatch running\n"));
@@ -1219,6 +1236,13 @@ static inline int confirmmatch(FILE * const restrict file1, FILE * const restric
 
     if (r1 != r2) return 0; /* file lengths are different */
     if (memcmp (c1, c2, r1)) return 0; /* file contents are different */
+
+    check++;
+    bytes += (off_t)r1;
+    if (check > CHECK_MINIMUM) {
+      update_progress("confirm", (int)((bytes * 100) / size));
+      check = 0;
+    }
   } while (r2);
 
   return 1;
@@ -1832,7 +1856,7 @@ int main(int argc, char **argv)
         continue;
       }
 
-      if (confirmmatch(file1, file2)) {
+      if (confirmmatch(file1, file2, curfile->size)) {
         LOUD(fprintf(stderr, "MAIN: registering matched file pair\n"));
         registerpair(match, curfile,
             (ordertype == ORDER_TIME) ? sort_pairs_by_mtime : sort_pairs_by_filename);
@@ -1846,7 +1870,7 @@ int main(int argc, char **argv)
 skip_full_check:
     curfile = curfile->next;
 
-    if (!ISFLAG(flags, F_HIDEPROGRESS)) update_progress();
+    if (!ISFLAG(flags, F_HIDEPROGRESS)) update_progress(NULL, -1);
     progress++;
   }
 
