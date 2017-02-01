@@ -1651,7 +1651,17 @@ int main(int argc, char **argv)
 #endif
       break;
     case 'v':
-      printf("jdupes %s (%s)\n", VER, VERDATE);
+      printf("jdupes %s (%s) ", VER, VERDATE);
+
+      /* Indicate bitness information */
+      if (sizeof(uintptr_t) == 8) {
+        if (sizeof(long) == 4) printf("64-bit i32\n");
+        else if (sizeof(long) == 8) printf("64-bit\n");
+      } else if (sizeof(uintptr_t) == 4) {
+        if (sizeof(long) == 4) printf("32-bit\n");
+        else if (sizeof(long) == 8) printf("32-bit i64\n");
+      } else printf("%ld-bit i%ld\n", sizeof(uintptr_t) * 8, sizeof(long) * 8);
+
       printf("Compile-time extensions:");
       if (*extensions != NULL) {
         int c = 0;
