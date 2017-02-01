@@ -334,7 +334,12 @@ static int nonoptafter(const char *option, const int argc,
 static void update_progress(const char * const restrict msg, const int file_percent)
 {
   static int did_fpct = 0;
+
+  /* The caller should be doing this anyway...but don't trust that they did */
+  if (ISFLAG(flags, F_HIDEPROGRESS)) return;
+
   gettimeofday(&time2, NULL);
+
   if (progress == 0 || time2.tv_sec > time1.tv_sec) {
     fprintf(stderr, "\rProgress [%ju/%ju, %ju pairs matched] %ju%%", progress, filecount,
       dupecount, (progress * 100) / filecount);
@@ -348,6 +353,7 @@ static void update_progress(const char * const restrict msg, const int file_perc
     fflush(stderr);
   }
   time1.tv_sec = time2.tv_sec;
+  return;
 }
 
 /* Check file's stat() info to make sure nothing has changed
@@ -884,10 +890,12 @@ static hash_t *get_filehash(const file_t * const restrict checkfile,
     if ((off_t)bytes_to_read > fsize) break;
     else fsize -= (off_t)bytes_to_read;
 
-    check++;
-    if (check > CHECK_MINIMUM) {
-      update_progress("hashing", (int)(((checkfile->size - fsize) * 100) / checkfile->size));
-      check = 0;
+    if (!ISFLAG(flags, F_HIDEPROGRESS)) {
+      check++;
+      if (check > CHECK_MINIMUM) {
+        update_progress("hashing", (int)(((checkfile->size - fsize) * 100) / checkfile->size));
+        check = 0;
+      }
     }
   }
 
@@ -1237,11 +1245,13 @@ static inline int confirmmatch(FILE * const restrict file1, FILE * const restric
     if (r1 != r2) return 0; /* file lengths are different */
     if (memcmp (c1, c2, r1)) return 0; /* file contents are different */
 
-    check++;
-    bytes += (off_t)r1;
-    if (check > CHECK_MINIMUM) {
-      update_progress("confirm", (int)((bytes * 100) / size));
-      check = 0;
+    if (!ISFLAG(flags, F_HIDEPROGRESS)) {
+      check++;
+      bytes += (off_t)r1;
+      if (check > CHECK_MINIMUM) {
+        update_progress("confirm", (int)((bytes * 100) / size));
+        check = 0;
+      }
     }
   } while (r2);
 
