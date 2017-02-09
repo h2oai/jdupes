@@ -92,6 +92,8 @@ endif
 ifdef ENABLE_BTRFS
 COMPILER_OPTIONS += -DENABLE_BTRFS
 OBJECT_FILES += act_dedupefiles.o
+else
+OBJECT_CLEANS += act_dedupefiles.o
 endif
 # Low memory mode
 ifdef LOW_MEMORY
@@ -126,7 +128,7 @@ install: jdupes installdirs
 	$(INSTALL_DATA)		$(PROGRAM_NAME).1 $(DESTDIR)$(MAN_DIR)/$(PROGRAM_NAME).$(MAN_EXT)
 
 clean:
-	$(RM) $(OBJECT_FILES) $(PROGRAM_NAME) jdupes.exe *~ *.gcno *.gcda *.gcov
+	$(RM) $(OBJECT_FILES) $(OBJECT_CLEANS) $(PROGRAM_NAME) jdupes.exe *~ *.gcno *.gcda *.gcov
 
 distclean: clean
 	$(RM) *.pkg.tar.xz
