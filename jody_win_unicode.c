@@ -50,14 +50,17 @@ error_wc2mb:
 extern int fwprint(FILE * const restrict stream, const char * const restrict str, const int cr)
 {
   int retval;
+  int stream_mode = out_mode;
 
-  if (out_mode != _O_TEXT) {
+  if (stream == stderr) stream_mode = err_mode;
+
+  if (stream_mode == _O_U16TEXT) {
     /* Convert to wide string and send to wide console output */
     if (!MultiByteToWideChar(CP_UTF8, 0, str, -1, (LPWSTR)wstr, PATH_MAX)) return -1;
-    fflush(stdout); fflush(stderr);
-    _setmode(_fileno(stream), out_mode);
+    fflush(stream);
+    _setmode(_fileno(stream), stream_mode);
     retval = fwprintf(stream, L"%S%S", wstr, cr ? L"\n" : L"");
-    fflush(stdout); fflush(stderr);
+    fflush(stream);
     _setmode(_fileno(stream), _O_TEXT);
     return retval;
   } else {

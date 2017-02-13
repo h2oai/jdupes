@@ -31,6 +31,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <inttypes.h>
 #ifndef OMIT_GETOPT_LONG
  #include <getopt.h>
 #endif
@@ -77,6 +78,7 @@ wchar_t wname[PATH_MAX];
 wchar_t wname2[PATH_MAX];
 wchar_t wstr[PATH_MAX];
 int out_mode = _O_TEXT;
+int err_mode = _O_TEXT;
  #define M2W(a,b) MultiByteToWideChar(CP_UTF8, 0, a, -1, (LPWSTR)b, PATH_MAX)
  #define W2M(a,b) WideCharToMultiByte(CP_UTF8, 0, a, -1, (LPSTR)b, PATH_MAX, NULL, NULL)
 #endif /* UNICODE */
@@ -341,8 +343,8 @@ static void update_progress(const char * const restrict msg, const int file_perc
   gettimeofday(&time2, NULL);
 
   if (progress == 0 || time2.tv_sec > time1.tv_sec) {
-    fprintf(stderr, "\rProgress [%ju/%ju, %ju pairs matched] %ju%%", progress, filecount,
-      dupecount, (progress * 100) / filecount);
+    fprintf(stderr, "\rProgress [%" PRIuMAX "/%" PRIuMAX ", %" PRIuMAX " pairs matched] %" PRIuMAX "%%",
+      progress, filecount, dupecount, (progress * 100) / filecount);
     if (file_percent > -1 && msg != NULL) {
       fprintf(stderr, "  (%s: %d%%)         ", msg, file_percent);
       did_fpct = 1;
@@ -497,11 +499,13 @@ extern int check_conditions(const file_t * const restrict file1, const file_t * 
 
   /* Exclude files that are not the same size */
   if (file1->size > file2->size) {
-    LOUD(fprintf(stderr, "check_conditions: no match: size of file1 > file2 (%jd > %jd)\n", (intmax_t)file1->size, (intmax_t)file2->size));
+    LOUD(fprintf(stderr, "check_conditions: no match: size of file1 > file2 (%" PRIdMAX " > %" PRIdMAX ")\n",
+      (intmax_t)file1->size, (intmax_t)file2->size));
     return -1;
   }
   if (file1->size < file2->size) {
-    LOUD(fprintf(stderr, "check_conditions: no match: size of file1 < file2 (%jd < %jd)\n", (intmax_t)file1->size, (intmax_t)file2->size));
+    LOUD(fprintf(stderr, "check_conditions: no match: size of file1 < file2 (%" PRIdMAX " < %"PRIdMAX ")\n",
+      (intmax_t)file1->size, (intmax_t)file2->size));
     return 1;
   }
 
@@ -516,7 +520,7 @@ static struct travdone *travdone_alloc(const jdupes_ino_t inode, const dev_t dev
 {
   struct travdone *trav;
 
-  LOUD(fprintf(stderr, "travdone_alloc(%jd, %jd)\n", (intmax_t)inode, (intmax_t)device);)
+  LOUD(fprintf(stderr, "travdone_alloc(%" PRIdMAX ", %" PRIdMAX ")\n", (intmax_t)inode, (intmax_t)device);)
 
   trav = (struct travdone *)string_malloc(sizeof(struct travdone));
   if (trav == NULL) {
@@ -634,7 +638,7 @@ static void grokdir(const char * const restrict dir,
       if (!ISFLAG(flags, F_HIDEPROGRESS)) {
         gettimeofday(&time2, NULL);
         if (progress == 0 || time2.tv_sec > time1.tv_sec) {
-          fprintf(stderr, "\rScanning: %ju files, %ju dirs (in %u specified)",
+          fprintf(stderr, "\rScanning: %" PRIuMAX " files, %" PRIuMAX " dirs (in %u specified)",
               progress, dir_progress, user_dir_count);
         }
         time1.tv_sec = time2.tv_sec;
@@ -796,7 +800,7 @@ static void grokdir(const char * const restrict dir,
 
   grokdir_level--;
   if (grokdir_level == 0 && !ISFLAG(flags, F_HIDEPROGRESS)) {
-    fprintf(stderr, "\rScanning: %ju files, %ju dirs (in %u specified)",
+    fprintf(stderr, "\rScanning: %" PRIuMAX " files, %" PRIuMAX " dirs (in %u specified)",
             progress, dir_progress, user_dir_count);
   }
   return;
@@ -824,7 +828,7 @@ static hash_t *get_filehash(const file_t * const restrict checkfile,
   int check = 0;
 
   if (checkfile == NULL || checkfile->d_name == NULL) nullptr("get_filehash()");
-  LOUD(fprintf(stderr, "get_filehash('%s', %jd)\n", checkfile->d_name, (intmax_t)max_read);)
+  LOUD(fprintf(stderr, "get_filehash('%s', %" PRIdMAX ")\n", checkfile->d_name, (intmax_t)max_read);)
 
   /* Get the file size. If we can't read it, bail out early */
   if (checkfile->size == -1) {
@@ -850,7 +854,7 @@ static hash_t *get_filehash(const file_t * const restrict checkfile,
     *hash = checkfile->filehash_partial;
     /* Don't bother going further if max_read is already fulfilled */
     if (max_read != 0 && max_read <= PARTIAL_HASH_SIZE) {
-      LOUD(fprintf(stderr, "Partial hash size (%d) >= max_read (%ju), not hashing anymore\n", PARTIAL_HASH_SIZE, (uintmax_t)max_read);)
+      LOUD(fprintf(stderr, "Partial hash size (%d) >= max_read (%" PRIuMAX "), not hashing anymore\n", PARTIAL_HASH_SIZE, (uintmax_t)max_read);)
       return hash;
     }
   }
@@ -1513,8 +1517,10 @@ int main(int argc, char **argv)
   if (!argv) oom("main() unicode argv");
   widearg_to_argv(argc, wargv, argv);
   /* Only use UTF-16 for terminal output, else use UTF-8 */
-  if (!_isatty(_fileno(stdout))) out_mode = _O_U8TEXT;
+  if (!_isatty(_fileno(stdout))) out_mode = _O_BINARY;
   else out_mode = _O_U16TEXT;
+  if (!_isatty(_fileno(stderr))) err_mode = _O_BINARY;
+  else err_mode = _O_U16TEXT;
 #endif /* UNICODE */
 
   /* Auto-tune chunk size to be half of L1 data cache if possible */
@@ -1660,7 +1666,8 @@ int main(int argc, char **argv)
       } else if (sizeof(uintptr_t) == 4) {
         if (sizeof(long) == 4) printf("32-bit\n");
         else if (sizeof(long) == 8) printf("32-bit i64\n");
-      } else printf("%ld-bit i%ld\n", sizeof(uintptr_t) * 8, sizeof(long) * 8);
+      } else printf("%u-bit i%u\n", (unsigned int)(sizeof(uintptr_t) * 8),
+          (unsigned int)(sizeof(long) * 8));
 
       printf("Compile-time extensions:");
       if (*extensions != NULL) {
@@ -1922,13 +1929,13 @@ skip_file_scan:
     fprintf(stderr, "\n%d partial (+%d small) -> %d full hash -> %d full (%d partial elim) (%d hash%u fail)\n",
         partial_hash, small_file, full_hash, partial_to_full,
         partial_elim, hash_fail, (unsigned int)sizeof(hash_t)*8);
-    fprintf(stderr, "%ju total files, %ju comparisons, branch L %u, R %u, both %u\n",
+    fprintf(stderr, "%" PRIuMAX " total files, %" PRIuMAX " comparisons, branch L %u, R %u, both %u\n",
         filecount, comparisons, left_branch, right_branch,
         left_branch + right_branch);
-    fprintf(stderr, "Max tree depth: %u; SMA: allocs %ju, free %ju, fail %ju, reuse %ju, scan %ju, tails %ju\n",
+    fprintf(stderr, "Max tree depth: %u; SMA: allocs %" PRIuMAX ", free %" PRIuMAX ", fail %" PRIuMAX ", reuse %" PRIuMAX ", scan %" PRIuMAX ", tails %" PRIuMAX "\n",
         max_depth, sma_allocs, sma_free_good, sma_free_ignored,
         sma_free_reclaimed, sma_free_scanned, sma_free_tails);
-    fprintf(stderr, "I/O chunk size: %ju KiB (%s)\n", (uintmax_t)(auto_chunk_size >> 10),
+    fprintf(stderr, "I/O chunk size: %" PRIuMAX " KiB (%s)\n", (uintmax_t)(auto_chunk_size >> 10),
         (pci.l1 + pci.l1d) != 0 ? "dynamically sized" : "default size");
 #ifdef ON_WINDOWS
  #ifndef NO_HARDLINKS

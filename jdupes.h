@@ -64,6 +64,7 @@ extern wchar_t wname[PATH_MAX];
 extern wchar_t wname2[PATH_MAX];
 extern wchar_t wstr[PATH_MAX];
 extern int out_mode;
+extern int err_mode;
  #define M2W(a,b) MultiByteToWideChar(CP_UTF8, 0, a, -1, (LPWSTR)b, PATH_MAX)
  #define W2M(a,b) WideCharToMultiByte(CP_UTF8, 0, a, -1, (LPSTR)b, PATH_MAX, NULL, NULL)
 #endif /* UNICODE */

@@ -6,6 +6,8 @@
 #ifdef ENABLE_BTRFS
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
+#include <inttypes.h>
 #include <string.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -142,7 +144,7 @@ extern void dedupefiles(file_t * restrict files)
               files->d_name, dupe_filenames[cur_info], dedupeerrstr(status),
               status, readonly_msg[readonly]);
           } else {
-            fprintf(stderr, "warning: dedupe only did %jd bytes: %s => %s: %s [%d]%s\n",
+            fprintf(stderr, "warning: dedupe only did %" PRIdMAX " bytes: %s => %s: %s [%d]%s\n",
               (intmax_t)same->info[cur_info].bytes_deduped, files->d_name,
               dupe_filenames[cur_info], dedupeerrstr(status), status, readonly_msg[readonly]);
           }
