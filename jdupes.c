@@ -766,11 +766,13 @@ static void grokdir(const char * const restrict dir,
       if (S_ISDIR(newfile->mode)) {
         if (recurse) {
           /* --one-file-system */
-          if (ISFLAG(flags, F_ONEFS) && getdirstats(newfile->d_name, &n_inode, &n_device)
+          if (ISFLAG(flags, F_ONEFS)
+              && (getdirstats(newfile->d_name, &n_inode, &n_device) == 0)
               && (device != n_device)) {
             LOUD(fprintf(stderr, "grokdir: directory: not recursing (--one-file-system)\n"));
             string_free(newfile->d_name);
             string_free(newfile);
+            continue;
           }
 #ifndef NO_SYMLINKS
           else if (/*ISFLAG(flags, F_FOLLOWLINKS) ||*/ !S_ISLNK(linfo.st_mode)) {
@@ -787,6 +789,7 @@ static void grokdir(const char * const restrict dir,
         LOUD(fprintf(stderr, "grokdir: directory: not recursing\n"));
         string_free(newfile->d_name);
         string_free(newfile);
+        continue;
       } else {
         /* Add regular files to list, including symlink targets if requested */
 #ifndef NO_SYMLINKS
@@ -801,6 +804,7 @@ static void grokdir(const char * const restrict dir,
           LOUD(fprintf(stderr, "grokdir: not a regular file: %s\n", newfile->d_name);)
           string_free(newfile->d_name);
           string_free(newfile);
+          continue;
         }
       }
     }
