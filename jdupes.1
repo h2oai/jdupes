@@ -18,6 +18,9 @@ byte-by-byte comparison.
 
 .SH OPTIONS
 .TP
+.B -1 --one-file-system
+do not match files that are on different filesystems or devices
+.TP
 .B -A --nohidden
 exclude hidden files from consideration
 .TP
@@ -168,6 +171,15 @@ will follow subdirectories under both a and b.
 will always place 'dir1' results first in any match set (where relevant)
 
 .SH CAVEATS
+
+Using
+.B \-1
+or
+.BR \-\-one\-file\-system
+prevents matches that cross filesystems, but a more relaxed form of this
+option may be added that allows cross-matching for all filesystems that
+each parameter is present on.
+
 When using
 .B \-d
 or

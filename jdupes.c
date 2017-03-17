@@ -472,6 +472,12 @@ extern int check_conditions(const file_t * const restrict file1, const file_t * 
     return -1;
   }
 
+  /* Exclude based on -1/--one-file-system */
+  if (ISFLAG(flags, F_ONEFS) && (file1->device != file2->device)) {
+    LOUD(fprintf(stderr, "check_conditions: files ignored: not on same filesystem\n"));
+    return -1;
+  }
+
  /* Exclude files by permissions if requested */
   if (ISFLAG(flags, F_PERMISSIONS) &&
           (file1->mode != file2->mode
@@ -550,8 +556,8 @@ static void grokdir(const char * const restrict dir,
   static char tempname[PATHBUF_SIZE * 2];
   size_t dirlen;
   struct travdone *traverse;
-  jdupes_ino_t inode;
-  dev_t device;
+  jdupes_ino_t inode, n_inode;
+  dev_t device, n_device;
 #ifdef UNICODE
   WIN32_FIND_DATA ffd;
   HANDLE hFind = INVALID_HANDLE_VALUE;
@@ -758,17 +764,26 @@ static void grokdir(const char * const restrict dir,
 #endif
       /* Optionally recurse directories, including symlinked ones if requested */
       if (S_ISDIR(newfile->mode)) {
-#ifndef NO_SYMLINKS
-        if (recurse && (/*ISFLAG(flags, F_FOLLOWLINKS) ||*/ !S_ISLNK(linfo.st_mode))) {
-          LOUD(fprintf(stderr, "grokdir: directory: recursing (-r/-R)\n"));
-          grokdir(newfile->d_name, filelistp, recurse);
-        }
-#else
         if (recurse) {
-          LOUD(fprintf(stderr, "grokdir: directory: recursing (-r/-R)\n"));
-          grokdir(newfile->d_name, filelistp, recurse);
-        }
+          /* --one-file-system */
+          if (ISFLAG(flags, F_ONEFS) && getdirstats(newfile->d_name, &n_inode, &n_device)
+              && (device != n_device)) {
+            LOUD(fprintf(stderr, "grokdir: directory: not recursing (--one-file-system)\n"));
+            string_free(newfile->d_name);
+            string_free(newfile);
+          }
+#ifndef NO_SYMLINKS
+          else if (/*ISFLAG(flags, F_FOLLOWLINKS) ||*/ !S_ISLNK(linfo.st_mode)) {
+            LOUD(fprintf(stderr, "grokdir: directory: recursing (-r/-R)\n"));
+            grokdir(newfile->d_name, filelistp, recurse);
+          }
+#else
+          else {
+            LOUD(fprintf(stderr, "grokdir: directory: recursing (-r/-R)\n"));
+            grokdir(newfile->d_name, filelistp, recurse);
+          }
 #endif
+        }
         LOUD(fprintf(stderr, "grokdir: directory: not recursing\n"));
         string_free(newfile->d_name);
         string_free(newfile);
@@ -1376,6 +1391,7 @@ static inline void help_text(void)
 {
   printf("Usage: jdupes [options] DIRECTORY...\n\n");
 
+  printf(" -1 --one-file-system \tdo not match files on different filesystems/devices\n");
   printf(" -A --nohidden    \texclude hidden files from consideration\n");
 #ifdef ENABLE_BTRFS
   printf(" -B --dedupe      \tSend matches to btrfs for block-level deduplication\n");
@@ -1461,6 +1477,7 @@ int main(int argc, char **argv)
   static const struct option long_options[] =
   {
     { "loud", 0, 0, '@' },
+    { "one-file-system", 0, 0, '1' },
     { "nohidden", 0, 0, 'A' },
     { "dedupe", 0, 0, 'B' },
     { "delete", 0, 0, 'd' },
@@ -1538,12 +1555,15 @@ int main(int argc, char **argv)
   oldargv = cloneargs(argc, argv);
 
   while ((opt = GETOPT(argc, argv,
-  "@ABdDfhHiIlLmnNOpqQrRsSvzZo:x:"
+  "@1ABdDfhHiIlLmnNOpqQrRsSvzZo:x:"
 #ifndef OMIT_GETOPT_LONG
           , long_options, NULL
 #endif
          )) != EOF) {
     switch (opt) {
+    case '1':
+      SETFLAG(flags, F_ONEFS);
+      break;
     case 'A':
       SETFLAG(flags, F_EXCLUDEHIDDEN);
       break;
