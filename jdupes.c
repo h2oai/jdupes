@@ -422,6 +422,7 @@ extern inline int getfilestats(file_t * const restrict file)
   file->device = s.st_dev;
   file->mtime = s.st_mtime;
   file->mode = s.st_mode;
+  file->nlink = s.st_nlink;
  #ifndef NO_PERMS
   file->uid = s.st_uid;
   file->gid = s.st_gid;

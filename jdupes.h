@@ -186,9 +186,11 @@ typedef struct _file {
   uid_t uid;
   gid_t gid;
 #endif
-#ifdef ON_WINDOWS
- #ifndef NO_HARDLINKS
-  DWORD nlink;
+#ifndef NO_HARDLINKS
+ #ifndef ON_WINDOWS
+  nlink_t nlink;
+ #else
+  uint32_t nlink;  /* link count on Windows is always a DWORD */
  #endif
 #endif
 } file_t;
