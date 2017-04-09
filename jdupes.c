@@ -1717,16 +1717,16 @@ int main(int argc, char **argv)
       break;
     case 'B':
 #ifdef ENABLE_BTRFS
-    SETFLAG(flags, F_DEDUPEFILES);
-    /* btrfs will do the byte-for-byte check itself */
-    SETFLAG(flags, F_QUICKCOMPARE);
-    /* It is completely useless to dedupe zero-length extents */
-    CLEARFLAG(flags, F_INCLUDEEMPTY);
+      SETFLAG(flags, F_DEDUPEFILES);
+      /* btrfs will do the byte-for-byte check itself */
+      SETFLAG(flags, F_QUICKCOMPARE);
+      /* It is completely useless to dedupe zero-length extents */
+      CLEARFLAG(flags, F_INCLUDEEMPTY);
 #else
-    fprintf(stderr, "This program was built without btrfs support\n");
-    exit(EXIT_FAILURE);
+      fprintf(stderr, "This program was built without btrfs support\n");
+      exit(EXIT_FAILURE);
 #endif
-    break;
+      break;
 
     default:
       fprintf(stderr, "Try `jdupes --help' for more information.\n");
