@@ -669,29 +669,14 @@ static void grokdir(const char * const restrict dir,
       /* Allocate the file_t and the d_name entries */
       newfile = (file_t *)string_malloc(sizeof(file_t));
       if (!newfile) oom("grokdir() file structure");
+      memset(newfile, 0, sizeof(file_t));
       newfile->d_name = (char *)string_malloc(dirlen + d_name_len + 2);
       if (!newfile->d_name) oom("grokdir() filename");
 
       newfile->next = *filelistp;
       newfile->user_order = user_dir_count;
       newfile->size = -1;
-      newfile->device = 0;
-      newfile->inode = 0;
-      newfile->mtime = 0;
-      newfile->mode = 0;
-#ifdef ON_WINDOWS
- #ifndef NO_HARDLINKS
-      newfile->nlink = 0;
- #endif
-#endif
-#ifndef NO_PERMS
-      newfile->uid = 0;
-      newfile->gid = 0;
-#endif
-      newfile->filehash = 0;
-      newfile->filehash_partial = 0;
       newfile->duplicates = NULL;
-      newfile->flags = 0;
 
       tp = tempname;
       memcpy(newfile->d_name, tp, dirlen + d_name_len);
