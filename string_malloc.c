@@ -61,10 +61,15 @@ void string_malloc_destroy(void) {
 
 #else /* Not SMA_PASSTHROUGH mode */
 
+struct freelist {
+	void *addr;
+	size_t size;
+};
+
 static void *sma_head = NULL;
 static uintptr_t *sma_curpage = NULL;
 static unsigned int sma_pages = 0;
-static void *sma_freelist[SMA_MAX_FREE];
+static struct freelist sma_freelist[SMA_MAX_FREE];
 static int sma_freelist_cnt = 0;
 static size_t sma_nextfree = sizeof(uintptr_t);
 
@@ -84,11 +89,11 @@ static inline void *scan_freelist(const size_t size)
 		if (used == sma_freelist_cnt) return NULL;
 
 		DBG(sma_free_scanned++;)
-		object = sma_freelist[i];
+		object = sma_freelist[i].addr;
 		/* Skip empty entries */
 		if (object == NULL) continue;
 
-		sz = *object;
+		sz = sma_freelist[i].size;
 		used++;
 
 		/* Skip smaller objects */
@@ -106,8 +111,8 @@ static inline void *scan_freelist(const size_t size)
 
 	/* Return smallest object found and delete from free list */
 	if (min_i != -1) {
-		min_p = sma_freelist[min_i];
-		sma_freelist[min_i] = NULL;
+		min_p = sma_freelist[min_i].addr;
+		sma_freelist[min_i].addr = NULL;
 		sma_freelist_cnt--;
 		min_p++;
 		return (void *)min_p;
@@ -167,7 +172,7 @@ void *string_malloc(size_t len)
 	/* Initialize on first use */
 	if (sma_pages == 0) {
 		/* Initialize the freed object list */
-		for (int i = 0; i < SMA_MAX_FREE; i++) sma_freelist[i] = NULL;
+		for (int i = 0; i < SMA_MAX_FREE; i++) sma_freelist[i].addr = NULL;
 		/* Allocate first page and set up for first allocation */
 		sma_head = string_malloc_page();
 		if (sma_head == NULL) return NULL;
@@ -221,20 +226,22 @@ void *string_malloc(size_t len)
 void string_free(void * const restrict addr)
 {
 	int i = 0;
-	size_t * const restrict a = (size_t *)addr - 1;
+	size_t * const restrict sizeptr = (size_t *)addr - 1;
+	size_t size = *(size_t *)sizeptr;
 
 	/* Do nothing on NULL address or full free list */
 	if ((addr == NULL) || sma_freelist_cnt == SMA_MAX_FREE)
 		goto sf_failed;
 
 	/* Tiny objects keep big ones from being freed; ignore them */
-	if (*(size_t *)((uintptr_t)addr - sizeof(size_t)) < SMA_MIN_SLACK)
+	if (size < SMA_MIN_SLACK)
 		goto sf_failed;
 
 	/* Add object to free list */
 	while (i < SMA_MAX_FREE) {
-		if (sma_freelist[i] == NULL) {
-			sma_freelist[i] = a;
+		if (sma_freelist[i].addr == NULL) {
+			sma_freelist[i].addr = sizeptr;
+			sma_freelist[i].size = size;
 			sma_freelist_cnt++;
 			DBG(sma_free_good++;)
 			return;
