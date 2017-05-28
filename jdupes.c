@@ -54,6 +54,7 @@
 #include "act_printmatches.h"
 #include "act_summarize.h"
 
+
 /* Detect Windows and modify as needed */
 #if defined _WIN32 || defined __CYGWIN__
  const char dir_sep = '\\';
@@ -197,6 +198,32 @@ struct travdone {
   dev_t device;
 };
 static struct travdone *travdone_head = NULL;
+
+
+/* -X exclusion parameter stack */
+struct exclude {
+  struct exclude *next;
+  unsigned int flags;
+  char param[];
+};
+static struct exclude *exclude_head = NULL;
+
+/* Exclude parameter flags */
+#define F_DIR			0x00000001U
+#define F_SIZELESS		0x00000002U
+#define F_SIZEMORE		0x00000004U
+#define F_SIZEEQUALS		0x00000008U
+
+/* Exclude definition array */
+struct exclude_tags {
+  const char *tag;
+  const uint32_t flags;
+};
+struct exclude_tags exclude_tags[] = {
+  { "dir", F_DIR },
+  { NULL, 0 },
+};
+
 
 /* Required for progress indicator code */
 static uintmax_t filecount = 0;
@@ -433,6 +460,56 @@ extern inline int getfilestats(file_t * const restrict file)
  #endif
 #endif /* ON_WINDOWS */
   return 0;
+}
+
+
+static void add_exclude(char *option)
+{
+  char *p = option;
+  struct exclude *excl = exclude_head;
+  struct exclude_tags *tags = exclude_tags;
+
+  fprintf(stderr, "add_exclude(%s)\n", option);
+
+  while (*p != ':' && *p != '\0') p++;
+
+  if (*p != ':') goto spec_missing;
+  /* Split tag string into *option (tag) and *p (value) */
+  *p = '\0';
+  p++;
+  if (*p == '\0') goto spec_missing;
+
+  if (exclude_head != NULL) {
+    /* Add to end of exclusion stack if head is present */
+    while (excl->next != NULL) excl = excl->next;
+    excl->next = string_malloc(sizeof(struct exclude) + strlen(p));
+    if (excl->next == NULL) oom("add_exclude alloc");
+    excl = excl->next;
+  } else {
+    /* Allocate exclude_head if no exclusions exist yet */
+    exclude_head = string_malloc(sizeof(struct exclude) + strlen(p));
+    if (exclude_head == NULL) oom("add_exclude alloc");
+    excl = exclude_head;
+  }
+
+  /* Initialize the new exclude element */
+  excl->next = NULL;
+  strcpy(excl->param, p);
+
+  /* Set tag value from predefined tag array */
+  while (tags->tag != NULL && strcmp(tags->tag, option)) tags++;
+  if (tags->tag == NULL) goto bad_tag;
+  excl->flags = tags->flags;
+
+  fprintf(stderr, "Added exclude: tag %s, data %s, flags %d\n", option, excl->param, excl->flags);
+  return;
+
+spec_missing:
+  fprintf(stderr, "Exclude spec missing or invalid: -X spec:data\n");
+  exit(EXIT_FAILURE);
+bad_tag:
+  fprintf(stderr, "Invalid exclusion (-X) tag was specified\n");
+  exit(EXIT_FAILURE);
 }
 
 
@@ -1439,6 +1516,9 @@ static inline void help_text(void)
   printf(" -x --xsize=SIZE  \texclude files of size < SIZE bytes from consideration\n");
   printf("    --xsize=+SIZE \t'+' specified before SIZE, exclude size > SIZE\n");
   printf("                  \tK/M/G size suffixes can be used (case-insensitive)\n");
+  printf(" -X --exclude=spec:info\texclude files based on specified criteria\n");
+  printf("                  \tspecs: dir\n");
+  printf("                  \tExclusions are cumulative: -X dir:abc -X dir:efg\n");
   printf(" -z --zeromatch   \tconsider zero-length files to be duplicates\n");
   printf(" -Z --softabort   \tIf the user aborts (i.e. CTRL-C) act on matches so far\n");
 #ifdef OMIT_GETOPT_LONG
@@ -1502,6 +1582,7 @@ int main(int argc, char **argv)
     { "size", 0, 0, 'S' },
     { "version", 0, 0, 'v' },
     { "xsize", 1, 0, 'x' },
+    { "exclude", 1, 0, 'X' },
     { "zeromatch", 0, 0, 'z' },
     { "softabort", 0, 0, 'Z' },
     { 0, 0, 0, 0 }
@@ -1545,7 +1626,7 @@ int main(int argc, char **argv)
   oldargv = cloneargs(argc, argv);
 
   while ((opt = GETOPT(argc, argv,
-  "@1ABdDfhHiIlLmnNOpqQrRsSvzZo:x:"
+  "@1ABdDfhHiIlLmnNOpqQrRsSvzZo:x:X:"
 #ifndef OMIT_GETOPT_LONG
           , long_options, NULL
 #endif
@@ -1660,6 +1741,9 @@ int main(int argc, char **argv)
         fprintf(stderr, "invalid value for --xsize: '%s'\n", optarg);
         exit(EXIT_FAILURE);
       }
+      break;
+    case 'X':
+      add_exclude(optarg);
       break;
     case '@':
 #ifdef LOUD_DEBUG
