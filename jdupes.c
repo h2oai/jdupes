@@ -452,7 +452,7 @@ static void add_exclude(const char *option)
 
   if (option == NULL) nullptr("add_exclude()");
 
-  LOUD(fprintf(stderr, "add_exclude(%s)\n", option);)
+  LOUD(fprintf(stderr, "add_exclude '%s'\n", option);)
 
   opt = string_malloc(strlen(option) + 1);
   if (opt == NULL) oom("add_exclude option");
@@ -511,7 +511,7 @@ static void add_exclude(const char *option)
     strcpy(excl->param, p);
   }
 
-  LOUD(fprintf(stderr, "Added exclude: tag %s, data '%s', size %lu, flags %d\n", opt, excl->param, excl->size, excl->flags);)
+  LOUD(fprintf(stderr, "Added exclude: tag '%s', data '%s', size %lu, flags %d\n", opt, excl->param, excl->size, excl->flags);)
   string_free(opt);
   return;
 
@@ -1738,6 +1738,7 @@ int main(int argc, char **argv)
       SETFLAG(flags, F_SOFTABORT);
       break;
     case 'x':
+      fprintf(stderr, "-x/--xsize is deprecated; use -X size[+-=]:size[suffix] instead\n");
       xs = string_malloc(8 + strlen(optarg));
       if (xs == NULL) oom("xsize temp string");
       strcat(xs, "size");
