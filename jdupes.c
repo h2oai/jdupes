@@ -100,12 +100,6 @@ struct winstat ws;
 struct stat s;
 #endif
 
-static uintmax_t excludesize = 0;
-static enum {
-  SMALLERTHAN,
-  LARGERTHAN
-} excludetype = SMALLERTHAN;
-
 /* Larger chunk size makes large files process faster but uses more RAM */
 #ifndef CHUNK_SIZE
  #define CHUNK_SIZE 32768
@@ -199,31 +193,17 @@ struct travdone {
 };
 static struct travdone *travdone_head = NULL;
 
-
-/* -X exclusion parameter stack */
-struct exclude {
-  struct exclude *next;
-  unsigned int flags;
-  char param[];
-};
-static struct exclude *exclude_head = NULL;
-
-/* Exclude parameter flags */
-#define F_DIR			0x00000001U
-#define F_SIZELESS		0x00000002U
-#define F_SIZEMORE		0x00000004U
-#define F_SIZEEQUALS		0x00000008U
-
-/* Exclude definition array */
-struct exclude_tags {
-  const char *tag;
-  const uint32_t flags;
-};
-struct exclude_tags exclude_tags[] = {
-  { "dir", F_DIR },
+/* Exclusion tree head and static tag list */
+struct exclude *exclude_head = NULL;
+const struct exclude_tags exclude_tags[] = {
+  { "dir",	X_DIR },
+  { "size+",	X_SIZE_GT },
+  { "size+=",	X_SIZE_GTEQ },
+  { "size-=",	X_SIZE_LTEQ },
+  { "size-",	X_SIZE_LT },
+  { "size=",	X_SIZE_EQ },
   { NULL, 0 },
 };
-
 
 /* Required for progress indicator code */
 static uintmax_t filecount = 0;
@@ -463,21 +443,37 @@ extern inline int getfilestats(file_t * const restrict file)
 }
 
 
-static void add_exclude(char *option)
+static void add_exclude(const char *option)
 {
-  char *p = option;
+  char *opt, *p;
   struct exclude *excl = exclude_head;
-  struct exclude_tags *tags = exclude_tags;
+  const struct exclude_tags *tags = exclude_tags;
+  const struct size_suffix *ss = size_suffix;
 
-  fprintf(stderr, "add_exclude(%s)\n", option);
+  if (option == NULL) nullptr("add_exclude()");
+
+  LOUD(fprintf(stderr, "add_exclude(%s)\n", option);)
+
+  opt = string_malloc(strlen(option) + 1);
+  if (opt == NULL) oom("add_exclude option");
+  strcpy(opt, option);
+  p = opt;
 
   while (*p != ':' && *p != '\0') p++;
 
-  if (*p != ':') goto spec_missing;
-  /* Split tag string into *option (tag) and *p (value) */
-  *p = '\0';
-  p++;
-  if (*p == '\0') goto spec_missing;
+  /* Split tag string into *opt (tag) and *p (value) */
+  if (*p == ':') {
+    *p = '\0';
+    p++;
+  }
+
+  while (tags->tag != NULL && strcmp(tags->tag, opt) != 0) tags++;
+  if (tags->tag == NULL) goto bad_tag;
+
+  /* Check for a tag that requires a value */
+  if (tags->flags & XX_EXCL_DATA && *p == '\0') goto spec_missing;
+
+  /* *p is now at the value, NOT the tag string! */
 
   if (exclude_head != NULL) {
     /* Add to end of exclusion stack if head is present */
@@ -492,23 +488,41 @@ static void add_exclude(char *option)
     excl = exclude_head;
   }
 
-  /* Initialize the new exclude element */
-  excl->next = NULL;
-  strcpy(excl->param, p);
-
   /* Set tag value from predefined tag array */
-  while (tags->tag != NULL && strcmp(tags->tag, option)) tags++;
-  if (tags->tag == NULL) goto bad_tag;
   excl->flags = tags->flags;
 
-  fprintf(stderr, "Added exclude: tag %s, data %s, flags %d\n", option, excl->param, excl->flags);
+  /* Initialize the new exclude element */
+  excl->next = NULL;
+  if (excl->flags & XX_EXCL_OFFSET) {
+    /* Exclude uses a number; handle it with possible suffixes */
+    *(excl->param) = '\0';
+    /* Get base size */
+    if (*p < '0' || *p > '9') goto bad_size_suffix;
+    excl->size = strtoll(p, &p, 10);
+    /* Handle suffix, if any */
+    if (*p != '\0') {
+      while (ss->suffix != NULL && strcasecmp(ss->suffix, p) != 0) ss++;
+      if (ss->suffix == NULL) goto bad_size_suffix;
+      excl->size *= ss->multiplier;
+    }
+  } else {
+    /* Exclude uses string data; just copy it */
+    excl->size = 0;
+    strcpy(excl->param, p);
+  }
+
+  LOUD(fprintf(stderr, "Added exclude: tag %s, data '%s', size %lu, flags %d\n", opt, excl->param, excl->size, excl->flags);)
+  string_free(opt);
   return;
 
 spec_missing:
   fprintf(stderr, "Exclude spec missing or invalid: -X spec:data\n");
   exit(EXIT_FAILURE);
 bad_tag:
-  fprintf(stderr, "Invalid exclusion (-X) tag was specified\n");
+  fprintf(stderr, "Invalid exclusion tag was specified\n");
+  exit(EXIT_FAILURE);
+bad_size_suffix:
+  fprintf(stderr, "Invalid -X size suffix specified; use B or KMGTPE[i][B]\n");
   exit(EXIT_FAILURE);
 }
 
@@ -556,7 +570,7 @@ extern int check_conditions(const file_t * const restrict file1, const file_t * 
     return -1;
   }
 
- /* Exclude files by permissions if requested */
+   /* Exclude files by permissions if requested */
   if (ISFLAG(flags, F_PERMISSIONS) &&
           (file1->mode != file2->mode
 #ifndef NO_PERMS
@@ -634,6 +648,8 @@ static void grokdir(const char * const restrict dir,
   static char tempname[PATHBUF_SIZE * 2];
   size_t dirlen;
   struct travdone *traverse;
+  struct exclude *excl;
+  int excluded;
   jdupes_ino_t inode, n_inode;
   dev_t device, n_device;
 #ifdef UNICODE
@@ -779,25 +795,35 @@ static void grokdir(const char * const restrict dir,
         continue;
       }
 
-      /* Exclude zero-length files if requested */
-      if (!S_ISDIR(newfile->mode) && newfile->size == 0 && !ISFLAG(flags, F_INCLUDEEMPTY)) {
-        LOUD(fprintf(stderr, "grokdir: excluding zero-length empty file (-z not set)\n"));
-        string_free(newfile->d_name);
-        string_free(newfile);
-        continue;
-      }
-
-      /* Exclude files below --xsize parameter */
-      if (!S_ISDIR(newfile->mode) && ISFLAG(flags, F_EXCLUDESIZE)) {
-        if (
-            ((excludetype == SMALLERTHAN) && (newfile->size < (off_t)excludesize)) ||
-            ((excludetype == LARGERTHAN) && (newfile->size > (off_t)excludesize))
-        ) {
-          LOUD(fprintf(stderr, "grokdir: excluding based on xsize limit (-x set)\n"));
+      if (!S_ISDIR(newfile->mode)) {
+        /* Exclude zero-length files if requested */
+        if (newfile->size == 0 && !ISFLAG(flags, F_INCLUDEEMPTY)) {
+          LOUD(fprintf(stderr, "grokdir: excluding zero-length empty file (-z not set)\n"));
           string_free(newfile->d_name);
           string_free(newfile);
           continue;
         }
+
+        /* Exclude files based on exclusion stack size specs */
+	excl = exclude_head;
+	excluded = 0;
+	while (excl != NULL) {
+          uint32_t sflag = excl->flags & XX_EXCL_SIZE;
+          if (
+               ((sflag == X_SIZE_EQ) && (newfile->size != excl->size)) ||
+               ((sflag == X_SIZE_LTEQ) && (newfile->size <= excl->size)) ||
+               ((sflag == X_SIZE_GTEQ) && (newfile->size >= excl->size)) ||
+               ((sflag == X_SIZE_GT) && (newfile->size > excl->size)) ||
+               ((sflag == X_SIZE_LT) && (newfile->size < excl->size))
+          ) excluded = 1;
+	  excl = excl->next;
+        }
+	if (excluded) {
+          LOUD(fprintf(stderr, "grokdir: excluding based on xsize limit (-x set)\n"));
+          string_free(newfile->d_name);
+          string_free(newfile);
+          continue;
+	}
       }
 
 #ifndef NO_SYMLINKS
@@ -1537,7 +1563,7 @@ int main(int argc, char **argv)
   static file_t *files = NULL;
   static file_t *curfile;
   static char **oldargv;
-  static char *endptr;
+  static char *xs;
   static int firstrecurse;
   static int opt;
   static int pm = 1;
@@ -1712,35 +1738,18 @@ int main(int argc, char **argv)
       SETFLAG(flags, F_SOFTABORT);
       break;
     case 'x':
-      SETFLAG(flags, F_EXCLUDESIZE);
+      xs = string_malloc(8 + strlen(optarg));
+      if (xs == NULL) oom("xsize temp string");
+      strcat(xs, "size");
       if (*optarg == '+') {
-        excludetype = LARGERTHAN;
+        strcat(xs, "+:");
         optarg++;
+      } else {
+        strcat(xs, "-=:");
       }
-      excludesize = (uintmax_t)strtoull(optarg, &endptr, 0);
-      switch (*endptr) {
-        case 'k':
-        case 'K':
-          excludesize = excludesize * 1024;
-          endptr++;
-          break;
-        case 'm':
-        case 'M':
-          excludesize = excludesize * 1024 * 1024;
-          endptr++;
-          break;
-        case 'g':
-        case 'G':
-          excludesize = excludesize * 1024 * 1024 * 1024;
-          endptr++;
-          break;
-        default:
-          break;
-      }
-      if (*endptr != '\0') {
-        fprintf(stderr, "invalid value for --xsize: '%s'\n", optarg);
-        exit(EXIT_FAILURE);
-      }
+      strcat(xs, optarg);
+      add_exclude(xs);
+      string_free(xs);
       break;
     case 'X':
       add_exclude(optarg);
@@ -1821,12 +1830,6 @@ int main(int argc, char **argv)
 
   if (optind >= argc) {
     fprintf(stderr, "no directories specified (use -h option for help)\n");
-    string_malloc_destroy();
-    exit(EXIT_FAILURE);
-  }
-
-  if (ISFLAG(flags, F_ISOLATE) && optind == (argc - 1)) {
-    fprintf(stderr, "Isolation requires at least two directories on the command line\n");
     string_malloc_destroy();
     exit(EXIT_FAILURE);
   }

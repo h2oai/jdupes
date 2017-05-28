@@ -213,6 +213,73 @@ extern struct winstat ws;
 extern struct stat s;
 #endif
 
+
+/* -X exclusion parameter stack */
+struct exclude {
+  struct exclude *next;
+  unsigned int flags;
+  int64_t size;
+  char param[];
+};
+
+/* Exclude parameter flags */
+#define X_DIR			0x00000001U
+#define X_SIZE_EQ		0x00000002U
+#define X_SIZE_GT		0x00000004U
+#define X_SIZE_LT		0x00000008U
+/* The X-than-or-equal are combination flags */
+#define X_SIZE_GTEQ		0x00000006U
+#define X_SIZE_LTEQ		0x0000000aU
+
+/* Size specifier flags */
+#define XX_EXCL_SIZE		0x0000000eU
+/* Flags that use numeric offset instead of a string */
+#define XX_EXCL_OFFSET		0x0000000eU
+/* Flags that require a data parameter */
+#define XX_EXCL_DATA		0x0000000fU
+
+/* Exclude definition array */
+struct exclude_tags {
+  const char * const tag;
+  const uint32_t flags;
+};
+
+extern const struct exclude_tags exclude_tags[];
+extern struct exclude *exclude_head;
+
+
+/* Suffix definitions (treat as case-insensitive) */
+struct size_suffix {
+  const char * const suffix;
+  const int64_t multiplier;
+};
+
+static const struct size_suffix size_suffix[] = {
+  /* Byte (someone may actually try to use this) */
+  { "b", 1 },
+  { "k", 1024 },
+  { "kib", 1024 },
+  { "m", 1048576 },
+  { "mib", 1048576 },
+  { "g", (uint64_t)1048576 * 1024 },
+  { "gib", (uint64_t)1048576 * 1024 },
+  { "t", (uint64_t)1048576 * 1048576 },
+  { "tib", (uint64_t)1048576 * 1048576 },
+  { "p", (uint64_t)1048576 * 1048576 * 1024},
+  { "pib", (uint64_t)1048576 * 1048576 * 1024},
+  { "e", (uint64_t)1048576 * 1048576 * 1048576},
+  { "eib", (uint64_t)1048576 * 1048576 * 1048576},
+  /* Decimal suffixes */
+  { "kb", 1000 },
+  { "mb", 1000000 },
+  { "gb", 1000000000 },
+  { "tb", 1000000000000 },
+  { "pb", 1000000000000000 },
+  { "eb", 1000000000000000000 },
+  { NULL, 0 },
+};
+
+
 extern void oom(const char * const restrict msg);
 extern void nullptr(const char * restrict func);
 extern int file_has_changed(file_t * const restrict file);
