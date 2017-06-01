@@ -1543,7 +1543,7 @@ static inline void help_text(void)
   printf("    --xsize=+SIZE \t'+' specified before SIZE, exclude size > SIZE\n");
   printf("                  \tK/M/G size suffixes can be used (case-insensitive)\n");
   printf(" -X --exclude=spec:info\texclude files based on specified criteria\n");
-  printf("                  \tspecs: dir\n");
+  printf("                  \tspecs: dir size+-=\n");
   printf("                  \tExclusions are cumulative: -X dir:abc -X dir:efg\n");
   printf(" -z --zeromatch   \tconsider zero-length files to be duplicates\n");
   printf(" -Z --softabort   \tIf the user aborts (i.e. CTRL-C) act on matches so far\n");
