@@ -242,7 +242,7 @@ extern void linkfiles(file_t *files, const int hard)
 #endif /* ON_WINDOWS */
         if (success) {
           if (!ISFLAG(flags, F_HIDEPROGRESS)) {
-            printf("%s \n", hard ? "---->" : "-@@->");
+            printf("%s ", hard ? "---->" : "-@@->");
             fwprint(stdout, dupelist[x]->d_name, 1);
           }
         } else {
