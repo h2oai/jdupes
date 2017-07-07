@@ -241,11 +241,14 @@ extern void linkfiles(file_t *files, const int hard)
  #endif /* NO_SYMLINKS */
 #endif /* ON_WINDOWS */
         if (success) {
-          if (!ISFLAG(flags, F_HIDEPROGRESS)) printf("%s %s\n", (hard ? "---->" : "-@@->"), dupelist[x]->d_name);
+          if (!ISFLAG(flags, F_HIDEPROGRESS)) {
+            printf("%s ", hard ? "---->" : "-@@->");
+            fwprint(stdout, dupelist[x]->d_name, 1);
+          }
         } else {
           /* The link failed. Warn the user and put the link target back */
           if (!ISFLAG(flags, F_HIDEPROGRESS)) {
-            printf("-//-> "); fwprint(stderr, dupelist[x]->d_name, 1);
+            printf("-//-> "); fwprint(stdout, dupelist[x]->d_name, 1);
           }
           fprintf(stderr, "warning: unable to link '"); fwprint(stderr, dupelist[x]->d_name, 0);
           fprintf(stderr, "' -> '"); fwprint(stderr, srcfile->d_name, 0);

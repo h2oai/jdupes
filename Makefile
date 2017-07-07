@@ -71,6 +71,13 @@ ifdef HARDEN
 COMPILER_OPTIONS += -Wformat -Wformat-security -D_FORTIFY_SOURCE=2 -fstack-protector-strong -fPIE -fpie -Wl,-z,relro -Wl,-z,now
 endif
 
+# Catch someone trying to enable BTRFS in flags and turn on ENABLE_BTRFS
+ifneq (,$(findstring DENABLE_BTRFS,$(CFLAGS)))
+	ENABLE_BTRFS=1
+endif
+ifneq (,$(findstring DENABLE_BTRFS,$(CFLAGS_EXTRA)))
+	ENABLE_BTRFS=1
+endif
 
 # MinGW needs this for printf() conversions to work
 ifeq ($(OS), Windows_NT)
