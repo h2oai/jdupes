@@ -28,7 +28,7 @@ typedef uint16_t hash_t;
 #endif
 
 /* Version increments when algorithm changes incompatibly */
-#define JODY_HASH_VERSION 4
+#define JODY_HASH_VERSION 5
 
 extern hash_t jody_block_hash(const hash_t * restrict data,
 		const hash_t start_hash, const size_t count);
