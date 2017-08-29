@@ -2030,8 +2030,9 @@ skip_file_scan:
     fprintf(stderr, "%" PRIuMAX " total files, %" PRIuMAX " comparisons, branch L %u, R %u, both %u, max tree depth %u\n",
         filecount, comparisons, left_branch, right_branch,
         left_branch + right_branch, max_depth);
-    fprintf(stderr, "SMA: allocs %" PRIuMAX ", free %" PRIuMAX " (merge %" PRIuMAX "), fail %" PRIuMAX ", reuse %" PRIuMAX ", scan %" PRIuMAX ", tails %" PRIuMAX "\n",
-        sma_allocs, sma_free_good, sma_free_merged, sma_free_ignored, sma_free_reclaimed,
+    fprintf(stderr, "SMA: allocs %" PRIuMAX ", free %" PRIuMAX " (merge %" PRIuMAX ", repl %" PRIuMAX "), fail %" PRIuMAX ", reuse %" PRIuMAX ", scan %" PRIuMAX ", tails %" PRIuMAX "\n",
+        sma_allocs, sma_free_good, sma_free_merged, sma_free_replaced,
+	sma_free_ignored, sma_free_reclaimed,
         sma_free_scanned, sma_free_tails);
     fprintf(stderr, "I/O chunk size: %" PRIuMAX " KiB (%s)\n", (uintmax_t)(auto_chunk_size >> 10),
         (pci.l1 + pci.l1d) != 0 ? "dynamically sized" : "default size");

@@ -14,6 +14,7 @@ extern uintmax_t sma_allocs;
 extern uintmax_t sma_free_ignored;
 extern uintmax_t sma_free_good;
 extern uintmax_t sma_free_merged;
+extern uintmax_t sma_free_replaced;
 extern uintmax_t sma_free_scanned;
 extern uintmax_t sma_free_reclaimed;
 extern uintmax_t sma_free_tails;

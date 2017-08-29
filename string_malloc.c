@@ -24,16 +24,12 @@
 #define SMA_MAX_FREE 32
 #endif
 
-/* Minimum free object size to consider adding to free list */
-#ifndef SMA_MIN_SLACK
-#define SMA_MIN_SLACK 48
-#endif
-
 #ifdef DEBUG
 uintmax_t sma_allocs = 0;
 uintmax_t sma_free_ignored = 0;
 uintmax_t sma_free_good = 0;
 uintmax_t sma_free_merged = 0;
+uintmax_t sma_free_replaced = 0;
 uintmax_t sma_free_reclaimed = 0;
 uintmax_t sma_free_scanned = 0;
 uintmax_t sma_free_tails = 0;
@@ -181,22 +177,23 @@ void *string_malloc(size_t len)
 	if ((sma_nextfree + len + sizeof(size_t)) > SMA_PAGE_SIZE) {
 		size_t sz;
 		size_t *tailaddr;
-		/* See if remaining space is usable */
-		if (sma_freelist_cnt < SMA_MAX_FREE && (sma_nextfree + sizeof(size_t)) < SMA_PAGE_SIZE) {
-			/* Get remaining space size minus page linkage and obj size prefix */
-			sz = sma_nextfree + sizeof(size_t) + SMA_MIN_SLACK;
 
-			if (sz <= SMA_PAGE_SIZE) {
-				sz = SMA_PAGE_SIZE - sma_nextfree - sizeof(size_t);
-				tailaddr = (size_t *)((uintptr_t)page + sma_nextfree);
-				*tailaddr = (size_t)sz;
-				tailaddr++;
-				string_free(tailaddr);
-				DBG(sma_free_tails++;)
-			}
+		/* See if page tail has usable remaining capacity */
+		sz = sma_nextfree + sizeof(size_t) + sizeof(uintptr_t);
+
+		/* Try to add page tail to free list rather than waste it */
+		if (sz <= SMA_PAGE_SIZE) {
+			sz = SMA_PAGE_SIZE - sma_nextfree - sizeof(size_t);
+			tailaddr = (size_t *)((uintptr_t)page + sma_nextfree);
+			*tailaddr = (size_t)sz;
+			tailaddr++;
+			string_free(tailaddr);
+			DBG(sma_free_tails++;)
 		}
+
 		page = string_malloc_page();
 		if (!page) return NULL;
+
 		sma_nextfree = sizeof(uintptr_t);
 	}
 
@@ -233,25 +230,18 @@ void string_free(void * const restrict addr)
 	/* If free list is full, try to replace a smaller object */
 	if (sma_freelist_cnt == SMA_MAX_FREE) freefull = 1;
 
-	/* Tiny objects keep big ones from being freed; ignore them */
-//	if (size < SMA_MIN_SLACK) goto sf_failed;
-
 	/* Attempt to merge into other free objects */
 	for (int i = 0; i < SMA_MAX_FREE; i++) {
 		/* Record first empty slot */
 		if (emptyslot == NULL && sma_freelist[i].addr == NULL) {
 			emptyslot = &(sma_freelist[i]);
 //			break;
-		}
-
-		/* Replace object if list is full and new one is bigger */
-		if (freefull && sma_freelist[i].size < size) {
+		} else if (freefull != 0 && sma_freelist[i].size < size) {
+			/* Replace object if list is full and new one is bigger */
 			emptyslot = &(sma_freelist[i]);
+			DBG(sma_free_replaced++;)
 			break;
-		}
-
-		/* Attempt to merge objects */
-		if ((uintptr_t)sizeptr == after) {
+		} else if ((uintptr_t)(sma_freelist[i].addr) == after) {
 			/* Merge with a block after this one */
 			sma_freelist[i].addr = sizeptr;
 			sma_freelist[i].size += (size + sizeof(size_t *));
@@ -259,19 +249,21 @@ void string_free(void * const restrict addr)
 			DBG(sma_free_merged++;)
 			return;
 		} else {
-			before = (uintptr_t)sizeptr + size;
+			before = (uintptr_t)addr + size;
 			if (before == (uintptr_t)(sma_freelist[i].addr)) {
 				/* Merge with a block before this one */
-			DBG(sma_free_merged++;)
+				sma_freelist[i].size += (size + sizeof(size_t *));
+				DBG(sma_free_good++;)
+				DBG(sma_free_merged++;)
 			}
 		}
 	}
 
 	/* Merges failed; add to empty slot (if any found) */
 	if (emptyslot != NULL) {
+		if (emptyslot->addr == NULL) sma_freelist_cnt++;
 		emptyslot->addr = sizeptr;
 		emptyslot->size = size;
-		sma_freelist_cnt++;
 		DBG(sma_free_good++;)
 		return;
 	}
