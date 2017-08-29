@@ -214,28 +214,44 @@ void *string_malloc(size_t len)
 /* Free an object, adding to free list if possible */
 void string_free(void * const restrict addr)
 {
-	int i = 0;
-	size_t * const restrict sizeptr = (size_t *)addr - 1;
-	size_t size = *(size_t *)sizeptr;
+	int i = 0, sma_freefull = 0;
+	struct freelist *emptyslot = NULL;
+	static uintptr_t before, after;
+	static size_t * restrict sizeptr;
+	static size_t size;
 
-	/* Do nothing on NULL address or full free list */
-	if ((addr == NULL) || sma_freelist_cnt == SMA_MAX_FREE)
-		goto sf_failed;
+	/* Do nothing on NULL address */
+	if (addr == NULL) goto sf_failed;
+
+	/* Get address to real start of object and the object size */
+	sizeptr = (size_t *)addr - 1;
+	size = *(size_t *)sizeptr;
+	/* Calculate after-block pointer for merge checks */
+	after = (uintptr_t)addr + size;
+
+	/* If free list is full, try to replace a smaller object */
+	if (sma_freelist_cnt == SMA_MAX_FREE) sma_freefull = 1;
 
 	/* Tiny objects keep big ones from being freed; ignore them */
-	if (size < SMA_MIN_SLACK)
-		goto sf_failed;
+//	if (size < SMA_MIN_SLACK) goto sf_failed;
 
-	/* Add object to free list */
+	/* Attempt to merge into other free objects */
 	while (i < SMA_MAX_FREE) {
-		if (sma_freelist[i].addr == NULL) {
-			sma_freelist[i].addr = sizeptr;
-			sma_freelist[i].size = size;
-			sma_freelist_cnt++;
-			DBG(sma_free_good++;)
-			return;
+		/* Record first empty slot */
+		if (emptyslot == NULL && sma_freelist[i].addr == NULL) {
+			emptyslot = &(sma_freelist[i]);
+			break;
 		}
 		i++;
+	}
+
+	/* Merges failed; add to empty slot (if any found) */
+	if (emptyslot != NULL) {
+		emptyslot->addr = sizeptr;
+		emptyslot->size = size;
+		sma_freelist_cnt++;
+		DBG(sma_free_good++;)
+		return;
 	}
 
 	/* Fall through */
