@@ -86,7 +86,7 @@ ifndef NO_UNICODE
 	COMPILER_OPTIONS += -municode
 endif
 	COMPILER_OPTIONS += -D__USE_MINGW_ANSI_STDIO=1
-	OBJECT_FILES += win_stat.o
+	OBJS += win_stat.o
 	override undefine ENABLE_BTRFS
 	override undefine HAVE_BTRFS_IOCTL_H
 endif
@@ -98,9 +98,9 @@ endif
 # New BTRFS support option
 ifdef ENABLE_BTRFS
 COMPILER_OPTIONS += -DENABLE_BTRFS
-OBJECT_FILES += act_dedupefiles.o
+OBJS += act_dedupefiles.o
 else
-OBJECT_CLEANS += act_dedupefiles.o
+OBJS_CLEAN += act_dedupefiles.o
 endif
 # Low memory mode
 ifdef LOW_MEMORY
@@ -116,15 +116,15 @@ INSTALL_DATA    = $(INSTALL) -c -m 0644
 # to support features not supplied by their vendor. Eg: GNU getopt()
 #ADDITIONAL_OBJECTS += getopt.o
 
-OBJECT_FILES += jdupes.o jody_hash.o jody_paths.o jody_sort.o jody_win_unicode.o string_malloc.o
-OBJECT_FILES += jody_cacheinfo.o
-OBJECT_FILES += act_deletefiles.o act_linkfiles.o act_printmatches.o act_summarize.o
-OBJECT_FILES += $(ADDITIONAL_OBJECTS)
+OBJS += jdupes.o jody_hash.o jody_paths.o jody_sort.o jody_win_unicode.o string_malloc.o
+OBJS += jody_cacheinfo.o
+OBJS += act_deletefiles.o act_linkfiles.o act_printmatches.o act_summarize.o
+OBJS += $(ADDITIONAL_OBJECTS)
 
 all: jdupes
 
-jdupes: $(OBJECT_FILES)
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $(PROGRAM_NAME) $(OBJECT_FILES)
+jdupes: $(OBJS)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $(PROGRAM_NAME) $(OBJS)
 
 installdirs:
 	test -d $(DESTDIR)$(BIN_DIR) || $(MKDIR) $(DESTDIR)$(BIN_DIR)
@@ -135,7 +135,7 @@ install: jdupes installdirs
 	$(INSTALL_DATA)		$(PROGRAM_NAME).1 $(DESTDIR)$(MAN_DIR)/$(PROGRAM_NAME).$(MAN_EXT)
 
 clean:
-	$(RM) $(OBJECT_FILES) $(OBJECT_CLEANS) $(PROGRAM_NAME) jdupes.exe *~ *.gcno *.gcda *.gcov
+	$(RM) $(OBJS) $(OBJS_CLEAN) $(PROGRAM_NAME) jdupes.exe *~ *.gcno *.gcda *.gcov
 
 distclean: clean
 	$(RM) *.pkg.tar.xz

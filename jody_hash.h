@@ -12,7 +12,7 @@ extern "C" {
 #include <stdint.h>
 
 /* Width of a jody_hash. Changing this will also require
- * changing the width of tail masks and endian conversion */
+ * changing the width of tail masks to match. */
 #ifndef JODY_HASH_WIDTH
 #define JODY_HASH_WIDTH 64
 #endif
@@ -28,7 +28,7 @@ typedef uint16_t hash_t;
 #endif
 
 /* Version increments when algorithm changes incompatibly */
-#define JODY_HASH_VERSION 4
+#define JODY_HASH_VERSION 5
 
 extern hash_t jody_block_hash(const hash_t * restrict data,
 		const hash_t start_hash, const size_t count);

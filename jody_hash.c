@@ -17,7 +17,7 @@
  * This shift was decided upon after lots of testing and
  * changing it will likely cause lots of hash collisions. */
 #ifndef JODY_HASH_SHIFT
-#define JODY_HASH_SHIFT 11
+#define JODY_HASH_SHIFT 14
 #endif
 
 /* The salt value's purpose is to cause each byte in the
@@ -88,7 +88,7 @@ extern hash_t jody_block_hash(const hash_t * restrict data,
 		element = *data;
 		hash += element;
 		hash += JODY_HASH_CONSTANT;
-		hash = (hash << JODY_HASH_SHIFT) | hash >> (sizeof(hash_t) * 8 - JODY_HASH_SHIFT);
+		hash = (hash << JODY_HASH_SHIFT) | hash >> (sizeof(hash_t) * 8 - JODY_HASH_SHIFT); /* bit rotate left */
 		hash ^= element;
 		hash = (hash << JODY_HASH_SHIFT) | hash >> (sizeof(hash_t) * 8 - JODY_HASH_SHIFT);
 		hash ^= JODY_HASH_CONSTANT;
