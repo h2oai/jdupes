@@ -2027,12 +2027,12 @@ skip_file_scan:
     fprintf(stderr, "\n%d partial (+%d small) -> %d full hash -> %d full (%d partial elim) (%d hash%u fail)\n",
         partial_hash, small_file, full_hash, partial_to_full,
         partial_elim, hash_fail, (unsigned int)sizeof(hash_t)*8);
-    fprintf(stderr, "%" PRIuMAX " total files, %" PRIuMAX " comparisons, branch L %u, R %u, both %u\n",
+    fprintf(stderr, "%" PRIuMAX " total files, %" PRIuMAX " comparisons, branch L %u, R %u, both %u, max tree depth %u\n",
         filecount, comparisons, left_branch, right_branch,
-        left_branch + right_branch);
-    fprintf(stderr, "Max tree depth: %u; SMA: allocs %" PRIuMAX ", free %" PRIuMAX ", fail %" PRIuMAX ", reuse %" PRIuMAX ", scan %" PRIuMAX ", tails %" PRIuMAX "\n",
-        max_depth, sma_allocs, sma_free_good, sma_free_ignored,
-        sma_free_reclaimed, sma_free_scanned, sma_free_tails);
+        left_branch + right_branch, max_depth);
+    fprintf(stderr, "SMA: allocs %" PRIuMAX ", free %" PRIuMAX " (merge %" PRIuMAX "), fail %" PRIuMAX ", reuse %" PRIuMAX ", scan %" PRIuMAX ", tails %" PRIuMAX "\n",
+        sma_allocs, sma_free_good, sma_free_merged, sma_free_ignored, sma_free_reclaimed,
+        sma_free_scanned, sma_free_tails);
     fprintf(stderr, "I/O chunk size: %" PRIuMAX " KiB (%s)\n", (uintmax_t)(auto_chunk_size >> 10),
         (pci.l1 + pci.l1d) != 0 ? "dynamically sized" : "default size");
 #ifdef ON_WINDOWS

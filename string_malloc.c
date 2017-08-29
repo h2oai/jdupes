@@ -33,6 +33,7 @@
 uintmax_t sma_allocs = 0;
 uintmax_t sma_free_ignored = 0;
 uintmax_t sma_free_good = 0;
+uintmax_t sma_free_merged = 0;
 uintmax_t sma_free_reclaimed = 0;
 uintmax_t sma_free_scanned = 0;
 uintmax_t sma_free_tails = 0;
@@ -214,7 +215,7 @@ void *string_malloc(size_t len)
 /* Free an object, adding to free list if possible */
 void string_free(void * const restrict addr)
 {
-	int i = 0, sma_freefull = 0;
+	int freefull = 0;
 	struct freelist *emptyslot = NULL;
 	static uintptr_t before, after;
 	static size_t * restrict sizeptr;
@@ -230,19 +231,40 @@ void string_free(void * const restrict addr)
 	after = (uintptr_t)addr + size;
 
 	/* If free list is full, try to replace a smaller object */
-	if (sma_freelist_cnt == SMA_MAX_FREE) sma_freefull = 1;
+	if (sma_freelist_cnt == SMA_MAX_FREE) freefull = 1;
 
 	/* Tiny objects keep big ones from being freed; ignore them */
 //	if (size < SMA_MIN_SLACK) goto sf_failed;
 
 	/* Attempt to merge into other free objects */
-	while (i < SMA_MAX_FREE) {
+	for (int i = 0; i < SMA_MAX_FREE; i++) {
 		/* Record first empty slot */
 		if (emptyslot == NULL && sma_freelist[i].addr == NULL) {
 			emptyslot = &(sma_freelist[i]);
+//			break;
+		}
+
+		/* Replace object if list is full and new one is bigger */
+		if (freefull && sma_freelist[i].size < size) {
+			emptyslot = &(sma_freelist[i]);
 			break;
 		}
-		i++;
+
+		/* Attempt to merge objects */
+		if ((uintptr_t)sizeptr == after) {
+			/* Merge with a block after this one */
+			sma_freelist[i].addr = sizeptr;
+			sma_freelist[i].size += (size + sizeof(size_t *));
+			DBG(sma_free_good++;)
+			DBG(sma_free_merged++;)
+			return;
+		} else {
+			before = (uintptr_t)sizeptr + size;
+			if (before == (uintptr_t)(sma_freelist[i].addr)) {
+				/* Merge with a block before this one */
+			DBG(sma_free_merged++;)
+			}
+		}
 	}
 
 	/* Merges failed; add to empty slot (if any found) */
