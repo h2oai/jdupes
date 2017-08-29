@@ -44,20 +44,9 @@ uintmax_t sma_free_tails = 0;
 
 /* This is used to bypass string_malloc for debugging */
 #ifdef SMA_PASSTHROUGH
-void *string_malloc(size_t len)
-{
-	return malloc(len);
-}
-
-void string_free(void *ptr)
-{
-	free(ptr);
-	return;
-}
-
-void string_malloc_destroy(void) {
-	return;
-}
+void *string_malloc(size_t len) { return malloc(len); }
+void string_free(void *ptr) { free(ptr); return; }
+void string_malloc_destroy(void) { return; }
 
 #else /* Not SMA_PASSTHROUGH mode */
 
