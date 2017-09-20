@@ -421,7 +421,7 @@ extern inline int getfilestats(file_t * const restrict file)
   file->mode = ws.mode;
  #ifndef NO_HARDLINKS
   file->nlink = ws.nlink;
- #endif /* NO_HARDLINKS */
+ #endif
 #else
   if (stat(file->d_name, &s) != 0) return -1;
   file->inode = s.st_ino;
@@ -429,7 +429,9 @@ extern inline int getfilestats(file_t * const restrict file)
   file->device = s.st_dev;
   file->mtime = s.st_mtime;
   file->mode = s.st_mode;
+ #ifndef NO_HARDLINKS
   file->nlink = s.st_nlink;
+ #endif
  #ifndef NO_PERMS
   file->uid = s.st_uid;
   file->gid = s.st_gid;
@@ -1580,10 +1582,8 @@ int main(int argc, char **argv)
     { "debug", 0, 0, 'D' },
     { "omitfirst", 0, 0, 'f' },
     { "help", 0, 0, 'h' },
-#ifndef NO_HARDLINKS
     { "hardlinks", 0, 0, 'H' },
     { "linkhard", 0, 0, 'L' },
-#endif
     { "reverse", 0, 0, 'i' },
     { "isolate", 0, 0, 'I' },
     { "summarize", 0, 0, 'm'},
@@ -1592,19 +1592,15 @@ int main(int argc, char **argv)
     { "noprompt", 0, 0, 'N' },
     { "order", 1, 0, 'o' },
     { "paramorder", 0, 0, 'O' },
-#ifndef NO_PERMS
     { "permissions", 0, 0, 'p' },
-#endif
     { "quiet", 0, 0, 'q' },
     { "quick", 0, 0, 'Q' },
     { "recurse", 0, 0, 'r' },
     { "recursive", 0, 0, 'r' },
     { "recurse:", 0, 0, 'R' },
     { "recursive:", 0, 0, 'R' },
-#ifndef NO_SYMLINKS
     { "linksoft", 0, 0, 'l' },
     { "symlinks", 0, 0, 's' },
-#endif
     { "size", 0, 0, 'S' },
     { "version", 0, 0, 'v' },
     { "xsize", 1, 0, 'x' },
@@ -1823,6 +1819,7 @@ int main(int argc, char **argv)
       break;
 
     default:
+      if (opt != '?') fprintf(stderr, "Sorry, using '-%c' is not supported in this build.\n", opt);
       fprintf(stderr, "Try `jdupes --help' for more information.\n");
       string_malloc_destroy();
       exit(EXIT_FAILURE);

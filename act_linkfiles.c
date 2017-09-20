@@ -3,7 +3,8 @@
 
 #include "jdupes.h"
 
-#if !defined NO_HARDLINKS || !defined NO_SYMLINKS
+/* Compile out the code if no linking support is built in */
+#if !defined NO_HARDLINKS && !defined NO_SYMLINKS
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
