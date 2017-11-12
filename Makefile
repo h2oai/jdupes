@@ -109,8 +109,8 @@ endif
 
 CFLAGS += $(COMPILER_OPTIONS) $(CFLAGS_EXTRA)
 
-INSTALL_PROGRAM = $(INSTALL) -c -m 0755
-INSTALL_DATA    = $(INSTALL) -c -m 0644
+INSTALL_PROGRAM = $(INSTALL) -m 0755
+INSTALL_DATA    = $(INSTALL) -m 0644
 
 # ADDITIONAL_OBJECTS - some platforms will need additional object files
 # to support features not supplied by their vendor. Eg: GNU getopt()
@@ -127,15 +127,15 @@ jdupes: $(OBJS)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $(PROGRAM_NAME) $(OBJS)
 
 installdirs:
-	test -d $(DESTDIR)$(BIN_DIR) || $(MKDIR) $(DESTDIR)$(BIN_DIR)
-	test -d $(DESTDIR)$(MAN_DIR) || $(MKDIR) $(DESTDIR)$(MAN_DIR)
+	test -e $(DESTDIR)$(BIN_DIR) || $(MKDIR) $(DESTDIR)$(BIN_DIR)
+	test -e $(DESTDIR)$(MAN_DIR) || $(MKDIR) $(DESTDIR)$(MAN_DIR)
 
 install: jdupes installdirs
 	$(INSTALL_PROGRAM)	$(PROGRAM_NAME)   $(DESTDIR)$(BIN_DIR)/$(PROGRAM_NAME)
 	$(INSTALL_DATA)		$(PROGRAM_NAME).1 $(DESTDIR)$(MAN_DIR)/$(PROGRAM_NAME).$(MAN_EXT)
 
 clean:
-	$(RM) $(OBJS) $(OBJS_CLEAN) $(PROGRAM_NAME) jdupes.exe *~ *.gcno *.gcda *.gcov
+	$(RM) $(OBJS) $(OBJS_CLEAN) $(PROGRAM_NAME) $(PROGRAM_NAME).exe *~ *.gcno *.gcda *.gcov
 
 distclean: clean
 	$(RM) *.pkg.tar.xz
