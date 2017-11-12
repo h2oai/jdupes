@@ -18,6 +18,9 @@ byte-by-byte comparison.
 
 .SH OPTIONS
 .TP
+.B -@ --loud
+output annoying low-level debug info while running
+.TP
 .B -1 --one-file-system
 do not match files that are on different filesystems or devices
 .TP
@@ -112,19 +115,23 @@ follow symlinked directories
 .B -v --version
 display jdupes version and compilation feature flags
 .TP
-.B -x --xsize=[+]SIZE
+.B -x --xsize=[+]SIZE (NOTE: deprecated in favor of \-X)
 exclude files of size less than SIZE from consideration, or if SIZE is
 prefixed with a '+' i.e.
 jdupes -x +226 [files]
-then exclude files larger than SIZE. The following suffixes can be used
-and are not case-sensitive:
+then exclude files larger than SIZE. Suffixes K/M/G can be used.
+.TP
+.B -X --exclude=spec:info
+exclude files based on specified criteria; supported specs are:
 .RS
-.IP `K'
-for kilobytes (units of 1024 bytes)
-.IP `M'
-for megabytes (units of 1024 x 1024 bytes)
-.IP `G'
-for gigabytes (units of 1024 x 1024 x 1024 bytes)
+.IP `size[+-=]:number[suffix]'
+Match only if size is greater (+), less than (-), or equal to (=) the
+specified number, with an optional multiplier suffix. The +/- and =
+specifiers can be combined; ex :"size+=4K" will match if size is greater
+than or equal to four kilobytes (4096 bytes). Suffixes supported are
+K/M/G/T/P/E with a B or iB extension (all case-insensitive); no extension
+or an IB extension specify binary multipliers while a B extension
+specifies decimal multipliers (ex: 4K or 4KiB = 4096, 4KB = 4000.)
 .RE
 .TP
 .B -z --zeromatch

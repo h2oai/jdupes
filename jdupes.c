@@ -1486,6 +1486,9 @@ static inline void help_text(void)
 {
   printf("Usage: jdupes [options] DIRECTORY...\n\n");
 
+#ifdef LOUD
+  printf(" -@ --loud        \toutput annoying low-level debug info while running\n");
+#endif
   printf(" -1 --one-file-system \tdo not match files on different filesystems/devices\n");
   printf(" -A --nohidden    \texclude hidden files from consideration\n");
 #ifdef ENABLE_BTRFS
@@ -1497,6 +1500,9 @@ static inline void help_text(void)
   printf("                  \twith -s or --symlinks, or when specifying a\n");
   printf("                  \tparticular directory more than once; refer to the\n");
   printf("                  \tdocumentation for additional information\n");
+#ifdef DEBUG
+  printf(" -D --debug       \toutput debug statistics after completion\n");
+#endif
   printf(" -f --omitfirst   \tomit the first file in each set of matches\n");
   printf(" -h --help        \tdisplay this help message\n");
 #ifndef NO_HARDLINKS
@@ -1526,8 +1532,9 @@ static inline void help_text(void)
   printf(" -p --permissions \tdon't consider files with different owner/group or\n");
   printf("                  \tpermission bits as duplicates\n");
 #endif
-  printf(" -r --recurse     \tfor every directory given follow subdirectories\n");
-  printf("                  \tencountered within\n");
+  printf(" -Q --quick       \tskip byte-for-byte confirmation for quick matching\n");
+  printf("                  \tWARNING: -Q can result in data loss! Be very careful!\n");
+  printf(" -r --recurse     \tfor every directory, process its subdirectories too\n");
   printf(" -R --recurse:    \tfor each directory given after this option follow\n");
   printf("                  \tsubdirectories encountered within (note the ':' at\n");
   printf("                  \tthe end of the option, manpage for more details)\n");
@@ -1543,12 +1550,12 @@ static inline void help_text(void)
   printf(" -v --version     \tdisplay jdupes version and license information\n");
   printf(" -x --xsize=SIZE  \texclude files of size < SIZE bytes from consideration\n");
   printf("    --xsize=+SIZE \t'+' specified before SIZE, exclude size > SIZE\n");
-  printf("                  \tK/M/G size suffixes can be used (case-insensitive)\n");
   printf(" -X --exclude=spec:info\texclude files based on specified criteria\n");
   printf("                  \tspecs: dir size+-=\n");
   printf("                  \tExclusions are cumulative: -X dir:abc -X dir:efg\n");
   printf(" -z --zeromatch   \tconsider zero-length files to be duplicates\n");
   printf(" -Z --softabort   \tIf the user aborts (i.e. CTRL-C) act on matches so far\n");
+  printf("\nFor sizes, K/M/G/T/P/E[B|iB] suffixes can be used (case-insensitive)\n");
 #ifdef OMIT_GETOPT_LONG
   printf("Note: Long options are not supported in this build.\n\n");
 #endif

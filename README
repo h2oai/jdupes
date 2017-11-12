@@ -69,47 +69,53 @@ Usage
 --------------------------------------------------------------------------
 Usage: jdupes [options] DIRECTORY...
 
+ -@ --loud              output annoying low-level debug info while running
  -1 --one-file-system   do not match files on different filesystems/devices
- -A --nohidden    	exclude hidden files from consideration
- -B --dedupe      	Send matches to btrfs for block-level deduplication
- -d --delete      	prompt user for files to preserve and delete all
-                  	others; important: under particular circumstances,
-                  	data may be lost when using this option together
-                  	with -s or --symlinks, or when specifying a
-                  	particular directory more than once; refer to the
-                  	documentation for additional information
- -f --omitfirst   	omit the first file in each set of matches
- -h --help        	display this help message
- -H --hardlinks   	treat hard-linked files as duplicate files. Normally
-                  	hard links are treated as non-duplicates for safety
- -i --reverse     	reverse (invert) the match sort order
- -I --isolate     	files in the same specified directory won't match
+ -A --nohidden          exclude hidden files from consideration
+ -B --dedupe            Send matches to btrfs for block-level deduplication
+ -d --delete            prompt user for files to preserve and delete all
+                        others; important: under particular circumstances,
+                        data may be lost when using this option together
+                        with -s or --symlinks, or when specifying a
+                        particular directory more than once; refer to the
+                        documentation for additional information
+ -D --debug             output debug statistics after completion
+ -f --omitfirst         omit the first file in each set of matches
+ -h --help              display this help message
+ -H --hardlinks         treat any linked files as duplicate files. Normally
+                        linked files are treated as non-duplicates for safety
+ -i --reverse           reverse (invert) the match sort order
+ -I --isolate           files in the same specified directory won't match
  -l --linksoft          make relative symlinks for duplicates w/o prompting
- -L --linkhard    	hard link all duplicate files without prompting
-                  	Windows allows a maximum of 1023 hard links per file
- -m --summarize   	summarize dupe information
- -N --noprompt    	together with --delete, preserve the first file in
-                  	each set of duplicates and delete the rest without
-                  	prompting the user
- -o --order=BY    	select sort order for output, linking and deleting; by
- -O --paramorder  	Parameter order is more important than selected -O sort
-                  	mtime (BY=time) or filename (BY=name, the default)
- -p --permissions 	don't consider files with different owner/group or
-                  	permission bits as duplicates
- -r --recurse     	for every directory given follow subdirectories
-                  	encountered within
- -R --recurse:    	for each directory given after this option follow
-                  	subdirectories encountered within (note the ':' at
-                  	the end of the option, manpage for more details)
- -s --symlinks    	follow symlinks
- -S --size        	show size of duplicate files
- -q --quiet       	hide progress indicator
- -v --version     	display jdupes version and license information
- -x --xsize=SIZE  	exclude files of size < SIZE bytes from consideration
-    --xsize=+SIZE 	'+' specified before SIZE, exclude size > SIZE
-                  	K/M/G size suffixes can be used (case-insensitive)
+ -L --linkhard          hard link all duplicate files without prompting
+ -m --summarize         summarize dupe information
+ -N --noprompt          together with --delete, preserve the first file in
+                        each set of duplicates and delete the rest without
+                        prompting the user
+ -o --order=BY          select sort order for output, linking and deleting; by
+ -O --paramorder        Parameter order is more important than selected -O sort
+                        mtime (BY=time) or filename (BY=name, the default)
+ -p --permissions       don't consider files with different owner/group or
+                        permission bits as duplicates
+ -Q --quick             skip byte-for-byte confirmation for quick matching
+                        WARNING: -Q can result in data loss! Be very careful!
+ -r --recurse           for every directory, process its subdirectories too
+ -R --recurse:          for each directory given after this option follow
+                        subdirectories encountered within (note the ':' at
+                        the end of the option, manpage for more details)
+ -s --symlinks          follow symlinks
+ -S --size              show size of duplicate files
+ -q --quiet             hide progress indicator
+ -v --version           display jdupes version and license information
+ -x --xsize=SIZE        exclude files of size < SIZE bytes from consideration
+    --xsize=+SIZE       '+' specified before SIZE, exclude size > SIZE
+ -X --exclude=spec:info exclude files based on specified criteria
+                        specs: dir size+-=
+                        Exclusions are cumulative: -X dir:abc -X dir:efg
  -z --zeromatch         consider zero-length files to be duplicates
- -Z --softabort   	If the user aborts (i.e. CTRL-C) act on matches so far
+ -Z --softabort         If the user aborts (i.e. CTRL-C) act on matches so far
+
+For sizes, K/M/G/T/P/E[B|iB] suffixes can be used (case-insensitive)
 
 The -n/--noempty option was removed for safety. Matching zero-length files as
 duplicates now requires explicit use of the -z/--zeromatch option instead.

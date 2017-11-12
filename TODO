@@ -11,9 +11,3 @@
 - Add a way to store stat() info + inital and full hashes for
   explicit loading in future runs to speed up repeated calls to
   the program.
-
-- The --xsize option can be improved. Instead of simply specifying an
-  exclusion size min/max, the option should offer multiple ways to
-  specify allowed file sizes. Examples:
-  - '--xsize=512-1024' only examine files between 512 and 1024 bytes
-  - '--xsize=1M-3M,+20M' examine files 1-3 MB and >20 MB in size
