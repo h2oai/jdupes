@@ -743,7 +743,7 @@ static void grokdir(const char * const restrict dir,
 
   LOUD(fprintf(stderr, "FindFirstFile: %s\n", dir));
   hFind = FindFirstFile((LPCWSTR)wname, &ffd);
-  if (hFind == INVALID_HANDLE_VALUE) { fprintf(stderr, "\nfile handle bad\n"); goto error_cd; }
+  if (hFind == INVALID_HANDLE_VALUE) { LOUD(fprintf(stderr, "\nfile handle bad\n")); goto error_cd; }
   LOUD(fprintf(stderr, "Loop start\n"));
   do {
     char * restrict tp = tempname;
