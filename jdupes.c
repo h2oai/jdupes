@@ -676,7 +676,6 @@ static void grokdir(const char * const restrict dir,
   static char tempname[PATHBUF_SIZE * 2];
   size_t dirlen;
   struct travdone *traverse;
-  struct exclude *excl;
   int excluded;
   jdupes_ino_t inode, n_inode;
   dev_t device, n_device;
@@ -833,9 +832,8 @@ static void grokdir(const char * const restrict dir,
         }
 
         /* Exclude files based on exclusion stack size specs */
-	excl = exclude_head;
 	excluded = 0;
-	while (excl != NULL) {
+	for (struct exclude *excl = exclude_head; excl != NULL; excl = excl->next) {
           uint32_t sflag = excl->flags & XX_EXCL_SIZE;
           if (
                ((sflag == X_SIZE_EQ) && (newfile->size != excl->size)) ||
@@ -844,7 +842,6 @@ static void grokdir(const char * const restrict dir,
                ((sflag == X_SIZE_GT) && (newfile->size > excl->size)) ||
                ((sflag == X_SIZE_LT) && (newfile->size < excl->size))
           ) excluded = 1;
-	  excl = excl->next;
         }
 	if (excluded) {
           LOUD(fprintf(stderr, "grokdir: excluding based on xsize limit (-x set)\n"));
@@ -877,8 +874,8 @@ static void grokdir(const char * const restrict dir,
         string_free(newfile);
         continue;
       }
- #endif
-#endif
+ #endif /* NO_HARDLINKS */
+#endif /* ON_WINDOWS */
       /* Optionally recurse directories, including symlinked ones if requested */
       if (S_ISDIR(newfile->mode)) {
         if (recurse) {
