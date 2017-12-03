@@ -5,12 +5,12 @@
  * Released under The MIT License
  */
 
-#include "win_stat.h"
-#include <stdint.h>
 #ifndef WIN32_LEAN_AND_MEAN
  #define WIN32_LEAN_AND_MEAN
 #endif
 #include <windows.h>
+#include "win_stat.h"
+#include <stdint.h>
 
 /* Convert NT epoch to UNIX epoch */
 static time_t nttime_to_unixtime(const uint64_t * const restrict timestamp)

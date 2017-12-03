@@ -8,6 +8,22 @@
 extern "C" {
 #endif
 
+/* Detect Windows and modify as needed */
+#if defined _WIN32 || defined __CYGWIN__
+ #define ON_WINDOWS 1
+ #define NO_SYMLINKS 1
+ #define NO_PERMS 1
+ #define NO_SIGACTION 1
+ #ifndef WIN32_LEAN_AND_MEAN
+  #define WIN32_LEAN_AND_MEAN
+ #endif
+ #include <windows.h>
+ #include <io.h>
+ #include "win_stat.h"
+ #define S_ISREG WS_ISREG
+ #define S_ISDIR WS_ISDIR
+#endif /* Win32 */
+
 #include <limits.h>
 #include <stdint.h>
 #include <sys/types.h>
@@ -23,20 +39,8 @@ extern "C" {
 #include <linux/btrfs.h>
 #endif
 
-/* Detect Windows and modify as needed */
-#if defined _WIN32 || defined __CYGWIN__
- #define ON_WINDOWS 1
- #define NO_SYMLINKS 1
- #define NO_PERMS 1
- #define NO_SIGACTION 1
- #ifndef WIN32_LEAN_AND_MEAN
-  #define WIN32_LEAN_AND_MEAN
- #endif
- #include <windows.h>
- #include <io.h>
- #include "win_stat.h"
- #define S_ISREG WS_ISREG
- #define S_ISDIR WS_ISDIR
+/* Some types are different on Windows */
+#ifdef ON_WINDOWS
  typedef uint64_t jdupes_ino_t;
  typedef uint32_t jdupes_mode_t;
  extern const char dir_sep;

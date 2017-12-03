@@ -8,11 +8,11 @@
 extern "C" {
 #endif
 
-#include <stdint.h>
 #ifndef WIN32_LEAN_AND_MEAN
  #define WIN32_LEAN_AND_MAN
 #endif
 #include <windows.h>
+#include <stdint.h>
 
 struct winstat {
 	uint64_t inode;

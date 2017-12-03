@@ -12,7 +12,7 @@
 #include <errno.h>
 #include "act_linkfiles.h"
 #include "jody_win_unicode.h"
-#if defined _WIN32 || defined __CYGWIN__
+#ifdef ON_WINDOWS
  #include "win_stat.h"
 #endif
 
