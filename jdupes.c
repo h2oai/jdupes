@@ -648,6 +648,10 @@ static int check_singlefile(file_t * const restrict newfile)
   static char *tp = tempname;
   int excluded;
 
+  if (newfile == NULL) nullptr("check_singlefile()");
+
+  LOUD(fprintf(stderr, "check_singlefile: checking '%s'\n", newfile->d_name));
+
   /* Exclude hidden files if requested */
   if (ISFLAG(flags, F_EXCLUDEHIDDEN)) {
     strcpy(tp, newfile->d_name);
@@ -750,7 +754,7 @@ static void grokdir(const char * const restrict dir,
 #endif
 
   if (dir == NULL || filelistp == NULL) nullptr("grokdir()");
-  LOUD(fprintf(stderr, "grokdir: scanning '%s' (order %d)\n", dir, user_dir_count));
+  LOUD(fprintf(stderr, "grokdir: scanning '%s' (order %d, recurse %d)\n", dir, user_dir_count, recurse));
 
   /* Double traversal prevention tree */
   if (getdirstats(dir, &inode, &device) != 0) goto error_travdone;
@@ -864,7 +868,8 @@ static void grokdir(const char * const restrict dir,
     memcpy(newfile->d_name, tp, dirlen + d_name_len);
 
     /* Single-file [l]stat() and exclusion condition check */
-    if (check_singlefile(newfile) == 1) {
+    if (check_singlefile(newfile) != 0) {
+      LOUD(fprintf(stderr, "grokdir: check_singlefile rejected file\n"));
       string_free(newfile->d_name);
       string_free(newfile);
       continue;
@@ -883,8 +888,8 @@ static void grokdir(const char * const restrict dir,
           continue;
         }
 #ifndef NO_SYMLINKS
-        else if (/*ISFLAG(flags, F_FOLLOWLINKS) ||*/ ISFLAG(newfile->flags, F_IS_SYMLINK)) {
-          LOUD(fprintf(stderr, "grokdir: directory: recursing (-r/-R)\n"));
+        else if (ISFLAG(flags, F_FOLLOWLINKS) || !ISFLAG(newfile->flags, F_IS_SYMLINK)) {
+          LOUD(fprintf(stderr, "grokdir: directory(symlink): recursing (-r/-R)\n"));
           grokdir(newfile->d_name, filelistp, recurse);
         }
 #else
@@ -893,8 +898,7 @@ static void grokdir(const char * const restrict dir,
           grokdir(newfile->d_name, filelistp, recurse);
         }
 #endif
-      }
-      LOUD(fprintf(stderr, "grokdir: directory: not recursing\n"));
+      } else LOUD(fprintf(stderr, "grokdir: directory: not recursing\n"));
       string_free(newfile->d_name);
       string_free(newfile);
       continue;
