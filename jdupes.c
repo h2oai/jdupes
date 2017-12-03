@@ -1616,9 +1616,10 @@ int main(int argc, char **argv)
     { "omitfirst", 0, 0, 'f' },
     { "help", 0, 0, 'h' },
     { "hardlinks", 0, 0, 'H' },
-    { "linkhard", 0, 0, 'L' },
     { "reverse", 0, 0, 'i' },
     { "isolate", 0, 0, 'I' },
+    { "linksoft", 0, 0, 'l' },
+    { "linkhard", 0, 0, 'L' },
     { "summarize", 0, 0, 'm'},
     { "summary", 0, 0, 'm' },
     { "noempty", 0, 0, 'n' },
@@ -1632,7 +1633,6 @@ int main(int argc, char **argv)
     { "recursive", 0, 0, 'r' },
     { "recurse:", 0, 0, 'R' },
     { "recursive:", 0, 0, 'R' },
-    { "linksoft", 0, 0, 'l' },
     { "symlinks", 0, 0, 's' },
     { "size", 0, 0, 'S' },
     { "version", 0, 0, 'v' },
@@ -1640,7 +1640,7 @@ int main(int argc, char **argv)
     { "exclude", 1, 0, 'X' },
     { "zeromatch", 0, 0, 'z' },
     { "softabort", 0, 0, 'Z' },
-    { 0, 0, 0, 0 }
+    { NULL, 0, 0, 0 }
   };
 #define GETOPT getopt_long
 #else
@@ -1659,6 +1659,8 @@ int main(int argc, char **argv)
   argv = (char **)string_malloc(sizeof(char *) * argc);
   if (!argv) oom("main() unicode argv");
   widearg_to_argv(argc, wargv, argv);
+  /* fix up __argv so getopt etc. don't crash */
+  __argv = argv;
   /* Only use UTF-16 for terminal output, else use UTF-8 */
   if (!_isatty(_fileno(stdout))) out_mode = _O_BINARY;
   else out_mode = _O_U16TEXT;
