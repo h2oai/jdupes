@@ -641,6 +641,72 @@ extern int check_conditions(const file_t * const restrict file1, const file_t * 
 }
 
 
+/* Check for exclusion conditions for a single file (1 = fail) */
+static int check_singlefile(file_t * const restrict newfile)
+{
+  static char tempname[PATHBUF_SIZE * 2];
+  static char *tp = tempname;
+  int excluded;
+
+  /* Exclude hidden files if requested */
+  if (ISFLAG(flags, F_EXCLUDEHIDDEN)) {
+    strcpy(tp, newfile->d_name);
+    tp = basename(tp);
+    if (tp[0] == '.' && strcmp(tp, ".") && strcmp(tp, "..")) {
+      LOUD(fprintf(stderr, "check_singlefile: excluding hidden file (-A on)\n"));
+      return 1;
+    }
+  }
+
+  /* Get file information and check for validity */
+  const int i = getfilestats(newfile);
+  if (i || newfile->size == -1) {
+    LOUD(fprintf(stderr, "check_singlefile: excluding due to bad stat()\n"));
+    return 1;
+  }
+
+  if (!S_ISDIR(newfile->mode)) {
+    /* Exclude zero-length files if requested */
+    if (newfile->size == 0 && !ISFLAG(flags, F_INCLUDEEMPTY)) {
+    LOUD(fprintf(stderr, "check_singlefile: excluding zero-length empty file (-z not set)\n"));
+    return 1;
+  }
+
+    /* Exclude files based on exclusion stack size specs */
+    excluded = 0;
+    for (struct exclude *excl = exclude_head; excl != NULL; excl = excl->next) {
+      uint32_t sflag = excl->flags & XX_EXCL_SIZE;
+      if (
+           ((sflag == X_SIZE_EQ) && (newfile->size != excl->size)) ||
+           ((sflag == X_SIZE_LTEQ) && (newfile->size <= excl->size)) ||
+           ((sflag == X_SIZE_GTEQ) && (newfile->size >= excl->size)) ||
+           ((sflag == X_SIZE_GT) && (newfile->size > excl->size)) ||
+           ((sflag == X_SIZE_LT) && (newfile->size < excl->size))
+      ) excluded = 1;
+    }
+    if (excluded) {
+      LOUD(fprintf(stderr, "check_singlefile: excluding based on xsize limit (-x set)\n"));
+      return 1;
+    }
+  }
+
+#ifdef ON_WINDOWS
+  /* Windows has a 1023 (+1) hard link limit. If we're hard linking,
+   * ignore all files that have hit this limit */
+ #ifndef NO_HARDLINKS
+  if (ISFLAG(flags, F_HARDLINKFILES) && newfile->nlink >= 1024) {
+  #ifdef DEBUG
+    hll_exclude++;
+  #endif
+    LOUD(fprintf(stderr, "check_singlefile: excluding due to Windows 1024 hard link limit\n"));
+    return 1;
+  }
+ #endif /* NO_HARDLINKS */
+#endif /* ON_WINDOWS */
+  return 0;
+}
+
+
 /* Create a new traversal check object and initialize its values */
 static struct travdone *travdone_alloc(const jdupes_ino_t inode, const dev_t device)
 {
@@ -668,15 +734,11 @@ static void grokdir(const char * const restrict dir,
                 int recurse)
 {
   file_t * restrict newfile;
-#ifndef NO_SYMLINKS
-  static struct stat linfo;
-#endif
   struct dirent *dirinfo;
   static int grokdir_level = 0;
   static char tempname[PATHBUF_SIZE * 2];
   size_t dirlen;
   struct travdone *traverse;
-  int excluded;
   jdupes_ino_t inode, n_inode;
   dev_t device, n_device;
 #ifdef UNICODE
@@ -801,81 +863,13 @@ static void grokdir(const char * const restrict dir,
     tp = tempname;
     memcpy(newfile->d_name, tp, dirlen + d_name_len);
 
-    if (ISFLAG(flags, F_EXCLUDEHIDDEN)) {
-      /* WARNING: Re-used tp here to eliminate a strdup() */
-      strncpy(tp, newfile->d_name, dirlen + d_name_len);
-      tp = basename(tp);
-      if (tp[0] == '.' && strcmp(tp, ".") && strcmp(tp, "..")) {
-        LOUD(fprintf(stderr, "grokdir: excluding hidden file (-A on)\n"));
-        string_free(newfile->d_name);
-        string_free(newfile);
-        continue;
-      }
-    }
-
-    /* Get file information and check for validity */
-    const int i = getfilestats(newfile);
-    if (i || newfile->size == -1) {
-      LOUD(fprintf(stderr, "grokdir: excluding due to bad stat()\n"));
+    /* Single-file [l]stat() and exclusion condition check */
+    if (check_singlefile(newfile) == 1) {
       string_free(newfile->d_name);
       string_free(newfile);
       continue;
     }
 
-    if (!S_ISDIR(newfile->mode)) {
-      /* Exclude zero-length files if requested */
-      if (newfile->size == 0 && !ISFLAG(flags, F_INCLUDEEMPTY)) {
-        LOUD(fprintf(stderr, "grokdir: excluding zero-length empty file (-z not set)\n"));
-        string_free(newfile->d_name);
-        string_free(newfile);
-        continue;
-      }
-
-      /* Exclude files based on exclusion stack size specs */
-      excluded = 0;
-      for (struct exclude *excl = exclude_head; excl != NULL; excl = excl->next) {
-        uint32_t sflag = excl->flags & XX_EXCL_SIZE;
-        if (
-             ((sflag == X_SIZE_EQ) && (newfile->size != excl->size)) ||
-             ((sflag == X_SIZE_LTEQ) && (newfile->size <= excl->size)) ||
-             ((sflag == X_SIZE_GTEQ) && (newfile->size >= excl->size)) ||
-             ((sflag == X_SIZE_GT) && (newfile->size > excl->size)) ||
-             ((sflag == X_SIZE_LT) && (newfile->size < excl->size))
-        ) excluded = 1;
-      }
-      if (excluded) {
-        LOUD(fprintf(stderr, "grokdir: excluding based on xsize limit (-x set)\n"));
-        string_free(newfile->d_name);
-        string_free(newfile);
-        continue;
-      }
-    }
-
-#ifndef NO_SYMLINKS
-    /* Get lstat() information */
-    if (lstat(newfile->d_name, &linfo) == -1) {
-      LOUD(fprintf(stderr, "grokdir: excluding due to bad lstat()\n"));
-      string_free(newfile->d_name);
-      string_free(newfile);
-      continue;
-    }
-#endif
-
-    /* Windows has a 1023 (+1) hard link limit. If we're hard linking,
-     * ignore all files that have hit this limit */
-#ifdef ON_WINDOWS
- #ifndef NO_HARDLINKS
-    if (ISFLAG(flags, F_HARDLINKFILES) && newfile->nlink >= 1024) {
-  #ifdef DEBUG
-      hll_exclude++;
-  #endif
-      LOUD(fprintf(stderr, "grokdir: excluding due to Windows 1024 hard link limit\n"));
-      string_free(newfile->d_name);
-      string_free(newfile);
-      continue;
-    }
- #endif /* NO_HARDLINKS */
-#endif /* ON_WINDOWS */
     /* Optionally recurse directories, including symlinked ones if requested */
     if (S_ISDIR(newfile->mode)) {
       if (recurse) {
@@ -889,7 +883,7 @@ static void grokdir(const char * const restrict dir,
           continue;
         }
 #ifndef NO_SYMLINKS
-        else if (/*ISFLAG(flags, F_FOLLOWLINKS) ||*/ !S_ISLNK(linfo.st_mode)) {
+        else if (/*ISFLAG(flags, F_FOLLOWLINKS) ||*/ ISFLAG(newfile->flags, F_IS_SYMLINK)) {
           LOUD(fprintf(stderr, "grokdir: directory: recursing (-r/-R)\n"));
           grokdir(newfile->d_name, filelistp, recurse);
         }
@@ -907,7 +901,7 @@ static void grokdir(const char * const restrict dir,
     } else {
       /* Add regular files to list, including symlink targets if requested */
 #ifndef NO_SYMLINKS
-      if (S_ISREG(linfo.st_mode) || (S_ISLNK(linfo.st_mode) && ISFLAG(flags, F_FOLLOWLINKS))) {
+      if (!ISFLAG(newfile->flags, F_IS_SYMLINK) || (ISFLAG(newfile->flags, F_IS_SYMLINK) && ISFLAG(flags, F_FOLLOWLINKS))) {
 #else
       if (S_ISREG(newfile->mode)) {
 #endif
