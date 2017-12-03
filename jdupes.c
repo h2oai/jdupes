@@ -131,6 +131,32 @@ static size_t auto_chunk_size;
 /* For interactive deletion input */
 #define INPUT_SIZE 512
 
+/* Size suffixes - this gets exported */
+const struct size_suffix size_suffix[] = {
+  /* Byte (someone may actually try to use this) */
+  { "b", 1 },
+  { "k", 1024 },
+  { "kib", 1024 },
+  { "m", 1048576 },
+  { "mib", 1048576 },
+  { "g", (uint64_t)1048576 * 1024 },
+  { "gib", (uint64_t)1048576 * 1024 },
+  { "t", (uint64_t)1048576 * 1048576 },
+  { "tib", (uint64_t)1048576 * 1048576 },
+  { "p", (uint64_t)1048576 * 1048576 * 1024},
+  { "pib", (uint64_t)1048576 * 1048576 * 1024},
+  { "e", (uint64_t)1048576 * 1048576 * 1048576},
+  { "eib", (uint64_t)1048576 * 1048576 * 1048576},
+  /* Decimal suffixes */
+  { "kb", 1000 },
+  { "mb", 1000000 },
+  { "gb", 1000000000 },
+  { "tb", 1000000000000 },
+  { "pb", 1000000000000000 },
+  { "eb", 1000000000000000000 },
+  { NULL, 0 },
+};
+
 /* Assemble extension string from compile-time options */
 static const char *extensions[] = {
   #ifdef ON_WINDOWS
