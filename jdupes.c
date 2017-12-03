@@ -761,175 +761,174 @@ static void grokdir(const char * const restrict dir,
 #endif /* UNICODE */
 
     LOUD(fprintf(stderr, "grokdir: readdir: '%s'\n", dirinfo->d_name));
-    if (strcmp(dirinfo->d_name, ".") && strcmp(dirinfo->d_name, "..")) {
-      if (!ISFLAG(flags, F_HIDEPROGRESS)) {
-        gettimeofday(&time2, NULL);
-        if (progress == 0 || time2.tv_sec > time1.tv_sec) {
-          fprintf(stderr, "\rScanning: %" PRIuMAX " files, %" PRIuMAX " dirs (in %u specified)",
-              progress, dir_progress, user_dir_count);
-        }
-        time1.tv_sec = time2.tv_sec;
+    if (!strcmp(dirinfo->d_name, ".") || !strcmp(dirinfo->d_name, "..")) continue;
+    if (!ISFLAG(flags, F_HIDEPROGRESS)) {
+      gettimeofday(&time2, NULL);
+      if (progress == 0 || time2.tv_sec > time1.tv_sec) {
+        fprintf(stderr, "\rScanning: %" PRIuMAX " files, %" PRIuMAX " dirs (in %u specified)",
+            progress, dir_progress, user_dir_count);
       }
+      time1.tv_sec = time2.tv_sec;
+    }
 
-      /* Assemble the file's full path name, optimized to avoid strcat() */
-      dirlen = strlen(dir);
-      d_name_len = strlen(dirinfo->d_name);
-      memcpy(tp, dir, dirlen+1);
-      if (dirlen != 0 && tp[dirlen-1] != dir_sep) {
-        tp[dirlen] = dir_sep;
-        dirlen++;
+    /* Assemble the file's full path name, optimized to avoid strcat() */
+    dirlen = strlen(dir);
+    d_name_len = strlen(dirinfo->d_name);
+    memcpy(tp, dir, dirlen+1);
+    if (dirlen != 0 && tp[dirlen-1] != dir_sep) {
+      tp[dirlen] = dir_sep;
+      dirlen++;
+    }
+    if (dirlen + d_name_len + 1 >= (PATHBUF_SIZE * 2)) goto error_overflow;
+    tp += dirlen;
+    memcpy(tp, dirinfo->d_name, d_name_len);
+    tp += d_name_len;
+    *tp = '\0';
+    d_name_len++;
+
+    /* Allocate the file_t and the d_name entries */
+    newfile = (file_t *)string_malloc(sizeof(file_t));
+    if (!newfile) oom("grokdir() file structure");
+    memset(newfile, 0, sizeof(file_t));
+    newfile->d_name = (char *)string_malloc(dirlen + d_name_len + 2);
+    if (!newfile->d_name) oom("grokdir() filename");
+
+    newfile->next = *filelistp;
+    newfile->user_order = user_dir_count;
+    newfile->size = -1;
+    newfile->duplicates = NULL;
+
+    tp = tempname;
+    memcpy(newfile->d_name, tp, dirlen + d_name_len);
+
+    if (ISFLAG(flags, F_EXCLUDEHIDDEN)) {
+      /* WARNING: Re-used tp here to eliminate a strdup() */
+      strncpy(tp, newfile->d_name, dirlen + d_name_len);
+      tp = basename(tp);
+      if (tp[0] == '.' && strcmp(tp, ".") && strcmp(tp, "..")) {
+        LOUD(fprintf(stderr, "grokdir: excluding hidden file (-A on)\n"));
+        string_free(newfile->d_name);
+        string_free(newfile);
+        continue;
       }
-      if (dirlen + d_name_len + 1 >= (PATHBUF_SIZE * 2)) goto error_overflow;
-      tp += dirlen;
-      memcpy(tp, dirinfo->d_name, d_name_len);
-      tp += d_name_len;
-      *tp = '\0';
-      d_name_len++;
+    }
 
-      /* Allocate the file_t and the d_name entries */
-      newfile = (file_t *)string_malloc(sizeof(file_t));
-      if (!newfile) oom("grokdir() file structure");
-      memset(newfile, 0, sizeof(file_t));
-      newfile->d_name = (char *)string_malloc(dirlen + d_name_len + 2);
-      if (!newfile->d_name) oom("grokdir() filename");
+    /* Get file information and check for validity */
+    const int i = getfilestats(newfile);
+    if (i || newfile->size == -1) {
+      LOUD(fprintf(stderr, "grokdir: excluding due to bad stat()\n"));
+      string_free(newfile->d_name);
+      string_free(newfile);
+      continue;
+    }
 
-      newfile->next = *filelistp;
-      newfile->user_order = user_dir_count;
-      newfile->size = -1;
-      newfile->duplicates = NULL;
-
-      tp = tempname;
-      memcpy(newfile->d_name, tp, dirlen + d_name_len);
-
-      if (ISFLAG(flags, F_EXCLUDEHIDDEN)) {
-        /* WARNING: Re-used tp here to eliminate a strdup() */
-        strncpy(tp, newfile->d_name, dirlen + d_name_len);
-        tp = basename(tp);
-        if (tp[0] == '.' && strcmp(tp, ".") && strcmp(tp, "..")) {
-          LOUD(fprintf(stderr, "grokdir: excluding hidden file (-A on)\n"));
-          string_free(newfile->d_name);
-          string_free(newfile);
-          continue;
-        }
-      }
-
-      /* Get file information and check for validity */
-      const int i = getfilestats(newfile);
-      if (i || newfile->size == -1) {
-        LOUD(fprintf(stderr, "grokdir: excluding due to bad stat()\n"));
+    if (!S_ISDIR(newfile->mode)) {
+      /* Exclude zero-length files if requested */
+      if (newfile->size == 0 && !ISFLAG(flags, F_INCLUDEEMPTY)) {
+        LOUD(fprintf(stderr, "grokdir: excluding zero-length empty file (-z not set)\n"));
         string_free(newfile->d_name);
         string_free(newfile);
         continue;
       }
 
-      if (!S_ISDIR(newfile->mode)) {
-        /* Exclude zero-length files if requested */
-        if (newfile->size == 0 && !ISFLAG(flags, F_INCLUDEEMPTY)) {
-          LOUD(fprintf(stderr, "grokdir: excluding zero-length empty file (-z not set)\n"));
-          string_free(newfile->d_name);
-          string_free(newfile);
-          continue;
-        }
-
-        /* Exclude files based on exclusion stack size specs */
-	excluded = 0;
-	for (struct exclude *excl = exclude_head; excl != NULL; excl = excl->next) {
-          uint32_t sflag = excl->flags & XX_EXCL_SIZE;
-          if (
-               ((sflag == X_SIZE_EQ) && (newfile->size != excl->size)) ||
-               ((sflag == X_SIZE_LTEQ) && (newfile->size <= excl->size)) ||
-               ((sflag == X_SIZE_GTEQ) && (newfile->size >= excl->size)) ||
-               ((sflag == X_SIZE_GT) && (newfile->size > excl->size)) ||
-               ((sflag == X_SIZE_LT) && (newfile->size < excl->size))
-          ) excluded = 1;
-        }
-	if (excluded) {
-          LOUD(fprintf(stderr, "grokdir: excluding based on xsize limit (-x set)\n"));
-          string_free(newfile->d_name);
-          string_free(newfile);
-          continue;
-	}
+      /* Exclude files based on exclusion stack size specs */
+      excluded = 0;
+      for (struct exclude *excl = exclude_head; excl != NULL; excl = excl->next) {
+        uint32_t sflag = excl->flags & XX_EXCL_SIZE;
+        if (
+             ((sflag == X_SIZE_EQ) && (newfile->size != excl->size)) ||
+             ((sflag == X_SIZE_LTEQ) && (newfile->size <= excl->size)) ||
+             ((sflag == X_SIZE_GTEQ) && (newfile->size >= excl->size)) ||
+             ((sflag == X_SIZE_GT) && (newfile->size > excl->size)) ||
+             ((sflag == X_SIZE_LT) && (newfile->size < excl->size))
+        ) excluded = 1;
       }
+      if (excluded) {
+        LOUD(fprintf(stderr, "grokdir: excluding based on xsize limit (-x set)\n"));
+        string_free(newfile->d_name);
+        string_free(newfile);
+        continue;
+      }
+    }
 
 #ifndef NO_SYMLINKS
-      /* Get lstat() information */
-      if (lstat(newfile->d_name, &linfo) == -1) {
-        LOUD(fprintf(stderr, "grokdir: excluding due to bad lstat()\n"));
-        string_free(newfile->d_name);
-        string_free(newfile);
-        continue;
-      }
+    /* Get lstat() information */
+    if (lstat(newfile->d_name, &linfo) == -1) {
+      LOUD(fprintf(stderr, "grokdir: excluding due to bad lstat()\n"));
+      string_free(newfile->d_name);
+      string_free(newfile);
+      continue;
+    }
 #endif
 
-      /* Windows has a 1023 (+1) hard link limit. If we're hard linking,
-       * ignore all files that have hit this limit */
+    /* Windows has a 1023 (+1) hard link limit. If we're hard linking,
+     * ignore all files that have hit this limit */
 #ifdef ON_WINDOWS
  #ifndef NO_HARDLINKS
-      if (ISFLAG(flags, F_HARDLINKFILES) && newfile->nlink >= 1024) {
+    if (ISFLAG(flags, F_HARDLINKFILES) && newfile->nlink >= 1024) {
   #ifdef DEBUG
-        hll_exclude++;
+      hll_exclude++;
   #endif
-        LOUD(fprintf(stderr, "grokdir: excluding due to Windows 1024 hard link limit\n"));
-        string_free(newfile->d_name);
-        string_free(newfile);
-        continue;
-      }
+      LOUD(fprintf(stderr, "grokdir: excluding due to Windows 1024 hard link limit\n"));
+      string_free(newfile->d_name);
+      string_free(newfile);
+      continue;
+    }
  #endif /* NO_HARDLINKS */
 #endif /* ON_WINDOWS */
-      /* Optionally recurse directories, including symlinked ones if requested */
-      if (S_ISDIR(newfile->mode)) {
-        if (recurse) {
-          /* --one-file-system */
-          if (ISFLAG(flags, F_ONEFS)
-              && (getdirstats(newfile->d_name, &n_inode, &n_device) == 0)
-              && (device != n_device)) {
-            LOUD(fprintf(stderr, "grokdir: directory: not recursing (--one-file-system)\n"));
-            string_free(newfile->d_name);
-            string_free(newfile);
-            continue;
-          }
-#ifndef NO_SYMLINKS
-          else if (/*ISFLAG(flags, F_FOLLOWLINKS) ||*/ !S_ISLNK(linfo.st_mode)) {
-            LOUD(fprintf(stderr, "grokdir: directory: recursing (-r/-R)\n"));
-            grokdir(newfile->d_name, filelistp, recurse);
-          }
-#else
-          else {
-            LOUD(fprintf(stderr, "grokdir: directory: recursing (-r/-R)\n"));
-            grokdir(newfile->d_name, filelistp, recurse);
-          }
-#endif
-        }
-        LOUD(fprintf(stderr, "grokdir: directory: not recursing\n"));
-        string_free(newfile->d_name);
-        string_free(newfile);
-        continue;
-      } else {
-        /* Add regular files to list, including symlink targets if requested */
-#ifndef NO_SYMLINKS
-        if (S_ISREG(linfo.st_mode) || (S_ISLNK(linfo.st_mode) && ISFLAG(flags, F_FOLLOWLINKS))) {
-#else
-        if (S_ISREG(newfile->mode)) {
-#endif
-          *filelistp = newfile;
-          filecount++;
-          progress++;
-        } else {
-          LOUD(fprintf(stderr, "grokdir: not a regular file: %s\n", newfile->d_name);)
+    /* Optionally recurse directories, including symlinked ones if requested */
+    if (S_ISDIR(newfile->mode)) {
+      if (recurse) {
+        /* --one-file-system */
+        if (ISFLAG(flags, F_ONEFS)
+            && (getdirstats(newfile->d_name, &n_inode, &n_device) == 0)
+            && (device != n_device)) {
+          LOUD(fprintf(stderr, "grokdir: directory: not recursing (--one-file-system)\n"));
           string_free(newfile->d_name);
           string_free(newfile);
           continue;
         }
+#ifndef NO_SYMLINKS
+        else if (/*ISFLAG(flags, F_FOLLOWLINKS) ||*/ !S_ISLNK(linfo.st_mode)) {
+          LOUD(fprintf(stderr, "grokdir: directory: recursing (-r/-R)\n"));
+          grokdir(newfile->d_name, filelistp, recurse);
+        }
+#else
+        else {
+          LOUD(fprintf(stderr, "grokdir: directory: recursing (-r/-R)\n"));
+          grokdir(newfile->d_name, filelistp, recurse);
+        }
+#endif
+      }
+      LOUD(fprintf(stderr, "grokdir: directory: not recursing\n"));
+      string_free(newfile->d_name);
+      string_free(newfile);
+      continue;
+    } else {
+      /* Add regular files to list, including symlink targets if requested */
+#ifndef NO_SYMLINKS
+      if (S_ISREG(linfo.st_mode) || (S_ISLNK(linfo.st_mode) && ISFLAG(flags, F_FOLLOWLINKS))) {
+#else
+      if (S_ISREG(newfile->mode)) {
+#endif
+        *filelistp = newfile;
+        filecount++;
+        progress++;
+      } else {
+        LOUD(fprintf(stderr, "grokdir: not a regular file: %s\n", newfile->d_name);)
+        string_free(newfile->d_name);
+        string_free(newfile);
+        continue;
       }
     }
   }
+
 #ifdef UNICODE
   while (FindNextFile(hFind, &ffd) != 0);
   FindClose(hFind);
 #else
   closedir(cd);
 #endif
-
 
   grokdir_level--;
   if (grokdir_level == 0 && !ISFLAG(flags, F_HIDEPROGRESS)) {
