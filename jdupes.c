@@ -539,7 +539,7 @@ static void add_exclude(const char *option)
     strcpy(excl->param, p);
   }
 
-  LOUD(fprintf(stderr, "Added exclude: tag '%s', data '%s', size %lld, flags %d\n", opt, excl->param, excl->size, excl->flags);)
+  LOUD(fprintf(stderr, "Added exclude: tag '%s', data '%s', size %lld, flags %d\n", opt, excl->param, (long long)excl->size, excl->flags);)
   string_free(opt);
   return;
 
