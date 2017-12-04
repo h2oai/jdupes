@@ -1,3 +1,16 @@
+jdupes 1.9
+
+- stderr on Windows is no longer polluted or empty when redirected
+- Added -1/--one-file-system to restrict recursion to the same filesystem
+- Added a universal exclusion stack which is currently only used for -X
+- Added -X/--exclude to use exclusion stack; supersedes -x/--xsize
+- More robust BTRFS enablement behavior in Makefile
+- Fixed Unicode display for hard linking on Windows
+- Efficiency improvements to internal memory allocator (string_malloc)
+- Documentation improvements and updates
+- Provide "fdupes_oneline.sh" which emulates old "fdupes -1" feature
+- Single file names passed as arguments are now accepted and processed
+
 jdupes 1.8
 
 - All files are now licensed under The MIT License exclusively

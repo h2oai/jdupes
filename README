@@ -125,9 +125,7 @@ Separate line. The groups are then separated from each other by blank lines.
 
 The -s/--symlinks option will treat symlinked files as regular files, but
 direct symlinks will be treated as if they are hard linked files and the
--H/--hardlinks option will apply to them in the same manner. This option
-used to follow symlinked directories but in the current implementation this
-behavior has been disabled due to it being too dangerous.
+-H/--hardlinks option will apply to them in the same manner.
 
 When using -d or --delete, care should be taken to insure against accidental
 data loss. While no information will be immediately lost, using this option
@@ -248,9 +246,10 @@ This is also an exercise for the user.
 jdupes tracks each directory traversed by dev:inode pair to avoid adding
 the contents of the same directory twice. This prevents the user from
 being able to register all of their files twice by duplicating an entry
-on the command line. Symlinked directories are not followed. Files are
-renamed to a temporary name before any linking is done and if the link
-operation fails they are renamed back to the original name.
+on the command line. Symlinked directories are only followed if they
+weren't already followed earlier. Files are renamed to a temporary name
+before any linking is done and if the link operation fails they are renamed
+back to the original name.
 
 "Collision Robustness"
 jdupes uses jodyhash for file data hashing. This hash is extremely fast
