@@ -1,18 +1,19 @@
 Installing jdupes
---------------------------------------------------------------------
-To install the program, issue the following commands:
+-----------------------------------------------------------------------------
+To install the program with the default options and flags, just issue the
+following commands (note that btrfs support is off by default):
 
 make
 su root
 make install
 
-This will install the program in /usr/bin. You may change this to a
-different location by editing the Makefile. Please refer to the
-Makefile for an explanation of compile-time options. If you're having
-trouble compiling, please take a look at the Makefile.
+This will install the program in /usr/bin. You may change this to a different
+location by editing the Makefile. Please refer to the Makefile for an
+explanation of compile-time options. If you're having trouble compiling,
+please take a look at the Makefile.
 
-Various build options are available and can be turned on at compile
-time by setting CFLAGS_EXTRA or by passing it to 'make':
+Various build options are available and can be turned on at compile time by
+setting CFLAGS_EXTRA or by passing it to 'make':
 
 make CFLAGS_EXTRA=-DYOUR_OPTION
 make CFLAGS_EXTRA='-DYOUR_OPTION_ONE -DYOUR_OPTION_TWO'
@@ -24,35 +25,34 @@ ON_WINDOWS             Modify code to compile with MinGW on Windows
 USE_TREE_REBALANCE *   Use experimental tree rebalancing code
 CONSIDER_IMBALANCE *   Change tree rebalance to analyze weights first
 
-* These options may slow down the program somewhat and are off by
-  default. Do not enable them unless you are experimenting.
+* These options may slow down the program somewhat and are off by default. Do
+  not enable them unless you are experimenting.
 
-Certain options need to be turned on by setting a variable passed to
-make instead of using CFLAGS_EXTRA, i.e. 'make DEBUG=1':
+Certain options need to be turned on by setting a variable passed to make
+instead of using CFLAGS_EXTRA, i.e. 'make DEBUG=1':
 
 DEBUG                  Turn on algorithm statistic reporting with '-D'
 LOUD                   '-@' for low-level debugging; enables DEBUG
 ENABLE_BTRFS           Enable '-B/--dedupe' for btrfs deduplication
 LOW_MEMORY             Build for lower memory usage instead of speed
 
-The LOW_MEMORY option tweaks various knobs in the program to lower
-total memory usage. It also disables some features to reduce the size
-of certain data structures. The improvements in memory usage are not
-very large, but if you're running in a very RAM-limited environment
-or have a CPU with very small caches it may be the best choice.
+The LOW_MEMORY option tweaks various knobs in the program to lower total
+memory usage. It also disables some features to reduce the size of certain
+data structures. The improvements in memory usage are not very large, but if
+you're running in a very RAM-limited environment or have a CPU with very small
+caches it may be the best choice.
 
-A test directory is included so that you may familiarize yourself with
-the way jdupes operates. You may test the program before installing
-it by issuing a command such as "./jdupes testdir" or
-"./jdupes -r testdir", just to name a couple of examples. Refer to the
-documentation for information on valid options.
+A test directory is included so that you may familiarize yourself with the way
+jdupes operates. You may test the program before installing it by issuing a
+command such as "./jdupes testdir" or "./jdupes -r testdir", just to name a
+couple of examples. See the README for information on valid options.
 
 A comparison shell script is also included. It will run your natively
-installed 'jdupes' or 'jdupes' with the directories and extra options
-you specify and compare the run times and output a 'diff' of the two
-program outputs. Unless the core algorithm or sort behavior is changed,
-both programs should produce identical outputs and the 'diff' output
-shouldn't appear at all. To use it, type:
+installed 'jdupes' or 'jdupes' with the directories and extra options you
+specify and compare the run times and output a 'diff' of the two program
+outputs. Unless the core algorithm or sort behavior is changed, both programs
+should produce identical outputs and the 'diff' output shouldn't appear at
+all. To use it, type:
 
 ./compare_jdupes.sh [options]
 
