@@ -233,7 +233,7 @@ const struct exclude_tags exclude_tags[] = {
 
 /* Required for progress indicator code */
 static uintmax_t filecount = 0;
-static uintmax_t progress = 0, dir_progress = 0, dupecount = 0;
+static uintmax_t progress = 0, item_progress = 0, dupecount = 0;
 /* Number of read loops before checking progress indicator */
 #define CHECK_MINIMUM 256
 
@@ -258,8 +258,8 @@ static unsigned int max_depth = 0;
 /* File tree head */
 static filetree_t *checktree = NULL;
 
-/* Directory parameter position counter */
-static unsigned int user_dir_count = 1;
+/* Directory/file parameter position counter */
+static unsigned int user_item_count = 1;
 
 /* registerfile() direction options */
 enum tree_direction { NONE, LEFT, RIGHT };
@@ -570,7 +570,7 @@ extern int getdirstats(const char * const restrict name,
   if (stat(name, &s) != 0) return -1;
   *inode = s.st_ino;
   *dev = s.st_dev;
-  if (!S_ISDIR(s.mode)) return 1;
+  if (!S_ISDIR(s.st_mode)) return 1;
 #endif /* ON_WINDOWS */
   return 0;
 }
@@ -722,7 +722,7 @@ static file_t *init_newfile(const size_t len, file_t * restrict * const restrict
   if (!newfile->d_name) oom("init_newfile() filename");
 
   newfile->next = *filelistp;
-  newfile->user_order = user_dir_count;
+  newfile->user_order = user_item_count;
   newfile->size = -1;
   newfile->duplicates = NULL;
   return newfile;
@@ -785,7 +785,7 @@ static void grokdir(const char * const restrict dir,
   static char tempname[PATHBUF_SIZE * 2];
   size_t dirlen;
   struct travdone *traverse;
-  int i;
+  int i, single = 0;
   jdupes_ino_t inode, n_inode;
   dev_t device, n_device;
 #ifdef UNICODE
@@ -797,7 +797,7 @@ static void grokdir(const char * const restrict dir,
 #endif
 
   if (dir == NULL || filelistp == NULL) nullptr("grokdir()");
-  LOUD(fprintf(stderr, "grokdir: scanning '%s' (order %d, recurse %d)\n", dir, user_dir_count, recurse));
+  LOUD(fprintf(stderr, "grokdir: scanning '%s' (order %d, recurse %d)\n", dir, user_item_count, recurse));
 
   /* Double traversal prevention tree */
   i = getdirstats(dir, &inode, &device);
@@ -838,6 +838,9 @@ static void grokdir(const char * const restrict dir,
     }
   }
 
+  item_progress++;
+  grokdir_level++;
+
   /* if dir is actually a file, just add it to the file tree */
   if (i == 1) {
     newfile = grokfile(dir, filelistp);
@@ -845,11 +848,9 @@ static void grokdir(const char * const restrict dir,
       LOUD(fprintf(stderr, "grokfile rejected '%s'\n", newfile->d_name));
       return;
     }
+    single = 1;
     goto add_single_file;
   }
-
-  dir_progress++;
-  grokdir_level++;
 
 #ifdef UNICODE
   /* Windows requires \* at the end of directory names */
@@ -887,7 +888,7 @@ static void grokdir(const char * const restrict dir,
       gettimeofday(&time2, NULL);
       if (progress == 0 || time2.tv_sec > time1.tv_sec) {
         fprintf(stderr, "\rScanning: %" PRIuMAX " files, %" PRIuMAX " dirs (in %u specified)",
-            progress, dir_progress, user_dir_count);
+            progress, item_progress, user_item_count);
       }
       time1.tv_sec = time2.tv_sec;
     }
@@ -959,12 +960,18 @@ add_single_file:
         *filelistp = newfile;
         filecount++;
         progress++;
+
       } else {
         LOUD(fprintf(stderr, "grokdir: not a regular file: %s\n", newfile->d_name);)
         string_free(newfile->d_name);
         string_free(newfile);
         continue;
       }
+    }
+    /* Skip directory stuff if adding only a single file */
+    if (single == 1) {
+      single = 0;
+      goto skip_single;
     }
   }
 
@@ -975,10 +982,11 @@ add_single_file:
   closedir(cd);
 #endif
 
+skip_single:
   grokdir_level--;
   if (grokdir_level == 0 && !ISFLAG(flags, F_HIDEPROGRESS)) {
-    fprintf(stderr, "\rScanning: %" PRIuMAX " files, %" PRIuMAX " dirs (in %u specified)",
-            progress, dir_progress, user_dir_count);
+    fprintf(stderr, "\rScanning: %" PRIuMAX " files, %" PRIuMAX " items (in %u specified)",
+            progress, item_progress, user_item_count);
   }
   return;
 
@@ -1957,7 +1965,7 @@ int main(int argc, char **argv)
     for (int x = optind; x < firstrecurse; x++) {
       slash_convert(argv[x]);
       grokdir(argv[x], &files, 0);
-      user_dir_count++;
+      user_item_count++;
     }
 
     /* Set F_RECURSE for directories after --recurse: */
@@ -1966,13 +1974,13 @@ int main(int argc, char **argv)
     for (int x = firstrecurse; x < argc; x++) {
       slash_convert(argv[x]);
       grokdir(argv[x], &files, 1);
-      user_dir_count++;
+      user_item_count++;
     }
   } else {
     for (int x = optind; x < argc; x++) {
       slash_convert(argv[x]);
       grokdir(argv[x], &files, ISFLAG(flags, F_RECURSE));
-      user_dir_count++;
+      user_item_count++;
     }
   }
 
