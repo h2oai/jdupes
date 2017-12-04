@@ -23,6 +23,8 @@ extern void deletefiles(file_t *files, int prompt, FILE *tty)
   unsigned int number, sum, max, x;
   size_t i;
 
+  if (!files) return;
+
   groups = get_max_dupes(files, &max, NULL);
 
   max++;

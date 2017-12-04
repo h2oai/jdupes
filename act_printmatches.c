@@ -13,6 +13,8 @@ extern void printmatches(file_t * restrict files)
   file_t * restrict tmpfile;
   int printed = 0;
 
+  LOUD(fprintf(stderr, "act_printmatches: %p\n", files));
+
   while (files != NULL) {
     if (ISFLAG(files->flags, F_HAS_DUPES)) {
       printed = 1;

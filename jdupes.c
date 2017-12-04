@@ -844,8 +844,8 @@ static void grokdir(const char * const restrict dir,
   /* if dir is actually a file, just add it to the file tree */
   if (i == 1) {
     newfile = grokfile(dir, filelistp);
-    if (!newfile) {
-      LOUD(fprintf(stderr, "grokfile rejected '%s'\n", newfile->d_name));
+    if (newfile == NULL) {
+      LOUD(fprintf(stderr, "grokfile rejected '%s'\n", dir));
       return;
     }
     single = 1;
@@ -965,6 +965,10 @@ add_single_file:
         LOUD(fprintf(stderr, "grokdir: not a regular file: %s\n", newfile->d_name);)
         string_free(newfile->d_name);
         string_free(newfile);
+        if (single == 1) {
+          single = 0;
+          goto skip_single;
+        }
         continue;
       }
     }
@@ -1986,7 +1990,10 @@ int main(int argc, char **argv)
 
   if (ISFLAG(flags, F_REVERSESORT)) sort_direction = -1;
   if (!ISFLAG(flags, F_HIDEPROGRESS)) fprintf(stderr, "\n");
-  if (!files) exit(EXIT_SUCCESS);
+  if (!files) {
+    fwprint(stderr, "No duplicates found.", 1);
+    exit(EXIT_SUCCESS);
+  }
 
   curfile = files;
   progress = 0;
