@@ -539,7 +539,7 @@ static void add_exclude(const char *option)
     strcpy(excl->param, p);
   }
 
-  LOUD(fprintf(stderr, "Added exclude: tag '%s', data '%s', size %lu, flags %d\n", opt, excl->param, excl->size, excl->flags);)
+  LOUD(fprintf(stderr, "Added exclude: tag '%s', data '%s', size %lld, flags %d\n", opt, excl->param, excl->size, excl->flags);)
   string_free(opt);
   return;
 
@@ -565,10 +565,12 @@ extern int getdirstats(const char * const restrict name,
   if (win_stat(name, &ws) != 0) return -1;
   *inode = ws.inode;
   *dev = ws.device;
+  if (!S_ISDIR(ws.mode)) return 1;
 #else
   if (stat(name, &s) != 0) return -1;
   *inode = s.st_ino;
   *dev = s.st_dev;
+  if (!S_ISDIR(s.mode)) return 1;
 #endif /* ON_WINDOWS */
   return 0;
 }
@@ -711,6 +713,22 @@ static int check_singlefile(file_t * const restrict newfile)
 }
 
 
+static file_t *init_newfile(const size_t len, file_t * restrict * const restrict filelistp)
+{
+  file_t * const restrict newfile = (file_t *)string_malloc(sizeof(file_t));
+  if (!newfile) oom("init_newfile() file structure");
+  memset(newfile, 0, sizeof(file_t));
+  newfile->d_name = (char *)string_malloc(len);
+  if (!newfile->d_name) oom("init_newfile() filename");
+
+  newfile->next = *filelistp;
+  newfile->user_order = user_dir_count;
+  newfile->size = -1;
+  newfile->duplicates = NULL;
+  return newfile;
+}
+
+
 /* Create a new traversal check object and initialize its values */
 static struct travdone *travdone_alloc(const jdupes_ino_t inode, const dev_t device)
 {
@@ -732,6 +750,30 @@ static struct travdone *travdone_alloc(const jdupes_ino_t inode, const dev_t dev
 }
 
 
+/* Add a single file to the file tree */
+static inline file_t *grokfile(const char * const restrict name, file_t * restrict * const restrict filelistp)
+{
+  file_t * restrict newfile;
+
+  if (!name || !filelistp) nullptr("grokfile()");
+  LOUD(fprintf(stderr, "grokfile: '%s' %p\n", name, filelistp));
+
+  /* Allocate the file_t and the d_name entries */
+  newfile = init_newfile(strlen(name) + 2, filelistp);
+
+  strcpy(newfile->d_name, name);
+
+  /* Single-file [l]stat() and exclusion condition check */
+  if (check_singlefile(newfile) != 0) {
+    LOUD(fprintf(stderr, "grokfile: check_singlefile rejected file\n"));
+    string_free(newfile->d_name);
+    string_free(newfile);
+    return NULL;
+  }
+  return newfile;
+}
+
+
 /* Load a directory's contents into the file tree, recursing as needed */
 static void grokdir(const char * const restrict dir,
                 file_t * restrict * const restrict filelistp,
@@ -743,6 +785,7 @@ static void grokdir(const char * const restrict dir,
   static char tempname[PATHBUF_SIZE * 2];
   size_t dirlen;
   struct travdone *traverse;
+  int i;
   jdupes_ino_t inode, n_inode;
   dev_t device, n_device;
 #ifdef UNICODE
@@ -757,7 +800,9 @@ static void grokdir(const char * const restrict dir,
   LOUD(fprintf(stderr, "grokdir: scanning '%s' (order %d, recurse %d)\n", dir, user_dir_count, recurse));
 
   /* Double traversal prevention tree */
-  if (getdirstats(dir, &inode, &device) != 0) goto error_travdone;
+  i = getdirstats(dir, &inode, &device);
+  if (i < 0) goto error_travdone;
+
   if (travdone_head == NULL) {
     travdone_head = travdone_alloc(inode, device);
     if (travdone_head == NULL) goto error_travdone;
@@ -767,12 +812,12 @@ static void grokdir(const char * const restrict dir,
       if (traverse == NULL) nullptr("grokdir() traverse");
       /* Don't re-traverse directories we've already seen */
       if (inode == traverse->inode && device == traverse->device) {
-        LOUD(fprintf(stderr, "already seen dir '%s', skipping\n", dir);)
+        LOUD(fprintf(stderr, "already seen item '%s', skipping\n", dir);)
         return;
       } else if (inode > traverse->inode || (inode == traverse->inode && device > traverse->device)) {
         /* Traverse right */
         if (traverse->right == NULL) {
-          LOUD(fprintf(stderr, "traverse dir right '%s'\n", dir);)
+          LOUD(fprintf(stderr, "traverse item right '%s'\n", dir);)
           traverse->right = travdone_alloc(inode, device);
           if (traverse->right == NULL) goto error_travdone;
           break;
@@ -782,7 +827,7 @@ static void grokdir(const char * const restrict dir,
       } else {
         /* Traverse left */
         if (traverse->left == NULL) {
-          LOUD(fprintf(stderr, "traverse dir left '%s'\n", dir);)
+          LOUD(fprintf(stderr, "traverse item left '%s'\n", dir);)
           traverse->left = travdone_alloc(inode, device);
           if (traverse->left == NULL) goto error_travdone;
           break;
@@ -791,6 +836,16 @@ static void grokdir(const char * const restrict dir,
         continue;
       }
     }
+  }
+
+  /* if dir is actually a file, just add it to the file tree */
+  if (i == 1) {
+    newfile = grokfile(dir, filelistp);
+    if (!newfile) {
+      LOUD(fprintf(stderr, "grokfile rejected '%s'\n", newfile->d_name));
+      return;
+    }
+    goto add_single_file;
   }
 
   dir_progress++;
@@ -853,16 +908,7 @@ static void grokdir(const char * const restrict dir,
     d_name_len++;
 
     /* Allocate the file_t and the d_name entries */
-    newfile = (file_t *)string_malloc(sizeof(file_t));
-    if (!newfile) oom("grokdir() file structure");
-    memset(newfile, 0, sizeof(file_t));
-    newfile->d_name = (char *)string_malloc(dirlen + d_name_len + 2);
-    if (!newfile->d_name) oom("grokdir() filename");
-
-    newfile->next = *filelistp;
-    newfile->user_order = user_dir_count;
-    newfile->size = -1;
-    newfile->duplicates = NULL;
+    newfile = init_newfile(dirlen + d_name_len + 2, filelistp);
 
     tp = tempname;
     memcpy(newfile->d_name, tp, dirlen + d_name_len);
@@ -898,11 +944,12 @@ static void grokdir(const char * const restrict dir,
           grokdir(newfile->d_name, filelistp, recurse);
         }
 #endif
-      } else LOUD(fprintf(stderr, "grokdir: directory: not recursing\n"));
+      } else { LOUD(fprintf(stderr, "grokdir: directory: not recursing\n")); }
       string_free(newfile->d_name);
       string_free(newfile);
       continue;
     } else {
+add_single_file:
       /* Add regular files to list, including symlink targets if requested */
 #ifndef NO_SYMLINKS
       if (!ISFLAG(newfile->flags, F_IS_SYMLINK) || (ISFLAG(newfile->flags, F_IS_SYMLINK) && ISFLAG(flags, F_FOLLOWLINKS))) {
@@ -946,6 +993,7 @@ error_overflow:
   exit(EXIT_FAILURE);
 }
 
+
 /* Use Jody Bruchon's hash function on part or all of a file */
 static hash_t *get_filehash(const file_t * const restrict checkfile,
                 const size_t max_read)
@@ -988,6 +1036,7 @@ static hash_t *get_filehash(const file_t * const restrict checkfile,
       return hash;
     }
   }
+  errno = 0;
 #ifdef UNICODE
   if (!M2W(checkfile->d_name, wstr)) file = NULL;
   else file = _wfopen(wstr, FILE_MODE_RO);
@@ -995,7 +1044,7 @@ static hash_t *get_filehash(const file_t * const restrict checkfile,
   file = fopen(checkfile->d_name, FILE_MODE_RO);
 #endif
   if (file == NULL) {
-    fprintf(stderr, "\nerror opening file "); fwprint(stderr, checkfile->d_name, 1);
+    fprintf(stderr, "\n%s error opening file ", strerror(errno)); fwprint(stderr, checkfile->d_name, 1);
     return NULL;
   }
   /* Actually seek past the first chunk if applicable
