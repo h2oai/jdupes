@@ -110,7 +110,7 @@ Usage: jdupes [options] DIRECTORY...
  -x --xsize=SIZE        exclude files of size < SIZE bytes from consideration
     --xsize=+SIZE       '+' specified before SIZE, exclude size > SIZE
  -X --exclude=spec:info exclude files based on specified criteria
-                        specs: dir size+-=
+                        specs: size+-=
                         Exclusions are cumulative: -X dir:abc -X dir:efg
  -z --zeromatch         consider zero-length files to be duplicates
  -Z --softabort         If the user aborts (i.e. CTRL-C) act on matches so far
