@@ -108,7 +108,7 @@ struct stat s;
  #define PARTIAL_HASH_SIZE 4096
 #endif
 
-static size_t auto_chunk_size;
+static size_t auto_chunk_size = CHUNK_SIZE;
 
 /* Maximum path buffer size to use; must be large enough for a path plus
  * any work that might be done to the array it's stored in. PATH_MAX is
@@ -1649,7 +1649,6 @@ int wmain(int argc, wchar_t **wargv)
 int main(int argc, char **argv)
 #endif
 {
-  static struct proc_cacheinfo pci;
   static file_t *files = NULL;
   static file_t *curfile;
   static char **oldargv;
@@ -1658,6 +1657,9 @@ int main(int argc, char **argv)
   static int opt;
   static int pm = 1;
   static ordertype_t ordertype = ORDER_NAME;
+#ifndef ON_WINDOWS
+  static struct proc_cacheinfo pci;
+#endif
 
 #ifndef OMIT_GETOPT_LONG
   static const struct option long_options[] =
@@ -1723,6 +1725,7 @@ int main(int argc, char **argv)
   else err_mode = _O_U16TEXT;
 #endif /* UNICODE */
 
+#ifndef ON_WINDOWS
   /* Auto-tune chunk size to be half of L1 data cache if possible */
   get_proc_cacheinfo(&pci);
   if (pci.l1 != 0) auto_chunk_size = (pci.l1 / 2);
@@ -1732,6 +1735,7 @@ int main(int argc, char **argv)
   /* Force to a multiple of 4096 if it isn't already */
   if ((auto_chunk_size & 0x00000fffUL) != 0)
     auto_chunk_size = (auto_chunk_size + 0x00000fffUL) & 0x000ff000;
+#endif /* ON_WINDOWS */
 
   program_name = argv[0];
 

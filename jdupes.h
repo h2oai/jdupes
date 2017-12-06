@@ -10,7 +10,9 @@ extern "C" {
 
 /* Detect Windows and modify as needed */
 #if defined _WIN32 || defined __CYGWIN__
- #define ON_WINDOWS 1
+ #ifndef ON_WINDOWS
+  #define ON_WINDOWS 1
+ #endif
  #define NO_SYMLINKS 1
  #define NO_PERMS 1
  #define NO_SIGACTION 1

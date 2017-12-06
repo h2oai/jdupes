@@ -12,6 +12,9 @@
 #include <string.h>
 #include "jody_cacheinfo.h"
 
+/* None of this code is useful on Windows, don't build anything there */
+#ifndef ON_WINDOWS
+
 static char *pathidx;
 static char buf[16];
 static char path[64] = "/sys/devices/system/cpu/cpu0/cache/index";
@@ -21,7 +24,6 @@ static char path[64] = "/sys/devices/system/cpu/cpu0/cache/index";
 
 
 /* Linux sysfs */
-#ifndef ON_WINDOWS
 static size_t read_procfile(const char * const restrict name)
 {
 	FILE *fp;
@@ -110,8 +112,7 @@ void get_proc_cacheinfo(struct proc_cacheinfo *pci)
 	}
 	return;
 }
-#else 
-#define get_proc_cacheinfo(a)
+
 #endif /* ON_WINDOWS */
 
 

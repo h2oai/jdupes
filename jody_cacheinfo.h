@@ -8,6 +8,9 @@
 extern "C" {
 #endif
 
+/* Don't allow anything on Windows */
+#ifndef ON_WINDOWS
+
 /* Cache information structure
  * Split caches populate i/d, unified caches populate non-i/d */
 struct proc_cacheinfo {
@@ -23,6 +26,10 @@ struct proc_cacheinfo {
 };
 
 extern void get_proc_cacheinfo(struct proc_cacheinfo *pci);
+
+#else
+ #define get_proc_cacheinfo(a)
+#endif /* ON_WINDOWS */
 
 #ifdef __cplusplus
 }
