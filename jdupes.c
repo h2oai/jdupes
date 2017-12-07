@@ -2132,8 +2132,11 @@ skip_file_scan:
         sma_allocs, sma_free_good, sma_free_merged, sma_free_replaced,
 	sma_free_ignored, sma_free_reclaimed,
         sma_free_scanned, sma_free_tails);
-    fprintf(stderr, "I/O chunk size: %" PRIuMAX " KiB (%s)\n", (uintmax_t)(auto_chunk_size >> 10),
-        (pci.l1 + pci.l1d) != 0 ? "dynamically sized" : "default size");
+#ifndef ON_WINDOWS
+    fprintf(stderr, "I/O chunk size: %" PRIuMAX " KiB (%s)\n", (uintmax_t)(auto_chunk_size >> 10), (pci.l1 + pci.l1d) != 0 ? "dynamically sized" : "default size");
+#else
+    fprintf(stderr, "I/O chunk size: %" PRIuMAX " KiB (default size)\n", (uintmax_t)(auto_chunk_size >> 10));
+#endif
 #ifdef ON_WINDOWS
  #ifndef NO_HARDLINKS
     if (ISFLAG(flags, F_HARDLINKFILES))
