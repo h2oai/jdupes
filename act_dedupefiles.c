@@ -116,7 +116,7 @@ extern void dedupefiles(file_t * restrict files)
       n_dupes = cur_info;
 
       same->logical_offset = 0;
-      same->length = (unsigned long)files->size;
+      same->length = (uint64_t)files->size;
       same->dest_count = (uint16_t)n_dupes;  /* kernel type is __u16 */
 
       fd = open(files->d_name, O_RDONLY);
