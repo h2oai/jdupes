@@ -556,7 +556,8 @@ bad_size_suffix:
 
 
 extern int getdirstats(const char * const restrict name,
-        jdupes_ino_t * const restrict inode, dev_t * const restrict dev)
+        jdupes_ino_t * const restrict inode, dev_t * const restrict dev,
+	jdupes_mode_t * const restrict mode)
 {
   if (name == NULL || inode == NULL || dev == NULL) nullptr("getdirstats");
   LOUD(fprintf(stderr, "getdirstats('%s', %p, %p)\n", name, (void *)inode, (void *)dev);)
@@ -565,11 +566,13 @@ extern int getdirstats(const char * const restrict name,
   if (win_stat(name, &ws) != 0) return -1;
   *inode = ws.inode;
   *dev = ws.device;
+  *mode = ws.mode;
   if (!S_ISDIR(ws.mode)) return 1;
 #else
   if (stat(name, &s) != 0) return -1;
   *inode = s.st_ino;
   *dev = s.st_dev;
+  *mode = s.st_mode;
   if (!S_ISDIR(s.st_mode)) return 1;
 #endif /* ON_WINDOWS */
   return 0;
@@ -788,6 +791,7 @@ static void grokdir(const char * const restrict dir,
   int i, single = 0;
   jdupes_ino_t inode, n_inode;
   dev_t device, n_device;
+  jdupes_mode_t mode;
 #ifdef UNICODE
   WIN32_FIND_DATA ffd;
   HANDLE hFind = INVALID_HANDLE_VALUE;
@@ -800,7 +804,7 @@ static void grokdir(const char * const restrict dir,
   LOUD(fprintf(stderr, "grokdir: scanning '%s' (order %d, recurse %d)\n", dir, user_item_count, recurse));
 
   /* Double traversal prevention tree */
-  i = getdirstats(dir, &inode, &device);
+  i = getdirstats(dir, &inode, &device, &mode);
   if (i < 0) goto error_travdone;
 
   if (travdone_head == NULL) {
@@ -811,7 +815,7 @@ static void grokdir(const char * const restrict dir,
     while (1) {
       if (traverse == NULL) nullptr("grokdir() traverse");
       /* Don't re-traverse directories we've already seen */
-      if (inode == traverse->inode && device == traverse->device) {
+      if (S_ISDIR(mode) && inode == traverse->inode && device == traverse->device) {
         LOUD(fprintf(stderr, "already seen item '%s', skipping\n", dir);)
         return;
       } else if (inode > traverse->inode || (inode == traverse->inode && device > traverse->device)) {
@@ -927,7 +931,7 @@ static void grokdir(const char * const restrict dir,
       if (recurse) {
         /* --one-file-system */
         if (ISFLAG(flags, F_ONEFS)
-            && (getdirstats(newfile->d_name, &n_inode, &n_device) == 0)
+            && (getdirstats(newfile->d_name, &n_inode, &n_device, &mode) == 0)
             && (device != n_device)) {
           LOUD(fprintf(stderr, "grokdir: directory: not recursing (--one-file-system)\n"));
           string_free(newfile->d_name);
