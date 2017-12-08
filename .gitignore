@@ -20,6 +20,8 @@
 /jdupes
 /jdupes*.exe
 /*.pkg.tar.xz
+test_temp
+output.log
 
 #
 # Backups / patches
