@@ -650,7 +650,7 @@ extern int check_conditions(const file_t * const restrict file1, const file_t * 
 static int check_singlefile(file_t * const restrict newfile)
 {
   static char tempname[PATHBUF_SIZE * 2];
-  static char *tp = tempname;
+  char * restrict tp = tempname;
   int excluded;
 
   if (newfile == NULL) nullptr("check_singlefile()");
@@ -659,6 +659,7 @@ static int check_singlefile(file_t * const restrict newfile)
 
   /* Exclude hidden files if requested */
   if (ISFLAG(flags, F_EXCLUDEHIDDEN)) {
+    if (newfile->d_name == NULL) nullptr("check_singlefile newfile->d_name");
     strcpy(tp, newfile->d_name);
     tp = basename(tp);
     if (tp[0] == '.' && strcmp(tp, ".") && strcmp(tp, "..")) {
@@ -719,7 +720,12 @@ static int check_singlefile(file_t * const restrict newfile)
 static file_t *init_newfile(const size_t len, file_t * restrict * const restrict filelistp)
 {
   file_t * const restrict newfile = (file_t *)string_malloc(sizeof(file_t));
+
   if (!newfile) oom("init_newfile() file structure");
+  if (!filelistp) nullptr("init_newfile() filelistp");
+
+  LOUD(fprintf(stderr, "init_newfile(%lu len, %p filelistp)", len, filelistp));
+
   memset(newfile, 0, sizeof(file_t));
   newfile->d_name = (char *)string_malloc(len);
   if (!newfile->d_name) oom("init_newfile() filename");
