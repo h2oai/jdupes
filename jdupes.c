@@ -724,7 +724,7 @@ static file_t *init_newfile(const size_t len, file_t * restrict * const restrict
   if (!newfile) oom("init_newfile() file structure");
   if (!filelistp) nullptr("init_newfile() filelistp");
 
-  LOUD(fprintf(stderr, "init_newfile(%lu len, %p filelistp)", len, filelistp));
+  LOUD(fprintf(stderr, "init_newfile(%lu len, %p filelistp)\n", len, filelistp));
 
   memset(newfile, 0, sizeof(file_t));
   newfile->d_name = (char *)string_malloc(len);
