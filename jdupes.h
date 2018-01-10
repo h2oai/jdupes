@@ -183,8 +183,8 @@ typedef struct _file {
   jdupes_mode_t mode;
   off_t size;
   jdupes_ino_t inode;
-  hash_t filehash_partial;
-  hash_t filehash;
+  jodyhash_t filehash_partial;
+  jodyhash_t filehash;
   time_t mtime;
   uint32_t flags;  /* Status flags */
   unsigned int user_order; /* Order of the originating command-line parameter */

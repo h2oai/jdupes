@@ -18,20 +18,24 @@ extern "C" {
 #endif
 
 #if JODY_HASH_WIDTH == 64
-typedef uint64_t hash_t;
+typedef uint64_t jodyhash_t;
 #endif
 #if JODY_HASH_WIDTH == 32
-typedef uint32_t hash_t;
+typedef uint32_t jodyhash_t;
 #endif
 #if JODY_HASH_WIDTH == 16
-typedef uint16_t hash_t;
+typedef uint16_t jodyhash_t;
+#endif
+
+#ifndef JODY_HASH_NOCOMPAT
+typedef jodyhash_t hash_t;
 #endif
 
 /* Version increments when algorithm changes incompatibly */
 #define JODY_HASH_VERSION 5
 
-extern hash_t jody_block_hash(const hash_t * restrict data,
-		const hash_t start_hash, const size_t count);
+extern jodyhash_t jody_block_hash(const jodyhash_t * restrict data,
+		const jodyhash_t start_hash, const size_t count);
 
 #ifdef __cplusplus
 }
