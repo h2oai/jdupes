@@ -42,6 +42,9 @@ extern "C" {
 #include <linux/btrfs.h>
 #endif
 
+/* Set hash type (change this if swapping in a different hash function) */
+typedef jodyhash_t jdupes_hash_t;
+
 /* Some types are different on Windows */
 #ifdef ON_WINDOWS
  typedef uint64_t jdupes_ino_t;
@@ -184,8 +187,8 @@ typedef struct _file {
   jdupes_mode_t mode;
   off_t size;
   jdupes_ino_t inode;
-  jodyhash_t filehash_partial;
-  jodyhash_t filehash;
+  jdupes_hash_t filehash_partial;
+  jdupes_hash_t filehash;
   time_t mtime;
   uint32_t flags;  /* Status flags */
   unsigned int user_order; /* Order of the originating command-line parameter */

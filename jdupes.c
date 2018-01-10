@@ -1018,13 +1018,13 @@ error_overflow:
 
 
 /* Use Jody Bruchon's hash function on part or all of a file */
-static jodyhash_t *get_filehash(const file_t * const restrict checkfile,
+static jdupes_hash_t *get_filehash(const file_t * const restrict checkfile,
                 const size_t max_read)
 {
   off_t fsize;
   /* This is an array because we return a pointer to it */
-  static jodyhash_t hash[1];
-  static jodyhash_t chunk[(CHUNK_SIZE / sizeof(jodyhash_t))];
+  static jdupes_hash_t hash[1];
+  static jdupes_hash_t chunk[(CHUNK_SIZE / sizeof(jdupes_hash_t))];
   FILE *file;
   int check = 0;
 
@@ -1303,7 +1303,7 @@ static inline void rebalance_tree(filetree_t * const tree)
 static file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict file)
 {
   int cmpresult = 0;
-  const jodyhash_t * restrict filehash;
+  const jdupes_hash_t * restrict filehash;
 
   if (tree == NULL || file == NULL || tree->file == NULL || tree->file->d_name == NULL || file->d_name == NULL) nullptr("checkmatch()");
   LOUD(fprintf(stderr, "checkmatch ('%s', '%s')\n", tree->file->d_name, file->d_name));
@@ -2131,7 +2131,7 @@ skip_file_scan:
   if (ISFLAG(flags, F_DEBUG)) {
     fprintf(stderr, "\n%d partial (+%d small) -> %d full hash -> %d full (%d partial elim) (%d hash%u fail)\n",
         partial_hash, small_file, full_hash, partial_to_full,
-        partial_elim, hash_fail, (unsigned int)sizeof(jodyhash_t)*8);
+        partial_elim, hash_fail, (unsigned int)sizeof(jdupes_hash_t)*8);
     fprintf(stderr, "%" PRIuMAX " total files, %" PRIuMAX " comparisons, branch L %u, R %u, both %u, max tree depth %u\n",
         filecount, comparisons, left_branch, right_branch,
         left_branch + right_branch, max_depth);
