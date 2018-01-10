@@ -41,8 +41,14 @@
 #include <sys/time.h>
 #include "jdupes.h"
 #include "string_malloc.h"
-#define JODY_HASH_NOCOMPAT
-#include "jody_hash.h"
+#if defined USE_HASH_JODYHASH
+ #define JODY_HASH_NOCOMPAT
+ #include "jody_hash.h"
+#elif defined USE_HASH_XXHASH64
+ #include "xxhash.h"
+#else
+ #error No USE_HASH is defined
+#endif
 #include "jody_sort.h"
 #include "jody_win_unicode.h"
 #include "jody_cacheinfo.h"
@@ -187,11 +193,19 @@ static const char *extensions[] = {
     #ifdef SMA_PAGE_SIZE
     "smapage",
     #endif
+    #ifdef USE_JODY_HASH
+    #if JODY_HASH_WIDTH == 64
+    "jodyhash64",
+    #endif
     #if JODY_HASH_WIDTH == 32
-    "hash32",
+    "jodyhash32",
     #endif
     #if JODY_HASH_WIDTH == 16
-    "hash16",
+    "jodyhash16",
+    #endif
+    #endif /* USE_JODY_HASH */
+    #ifdef USE_HASH_XXHASH64
+    "xxhash64",
     #endif
     #ifdef NO_PERMS
     "noperm",
@@ -1027,6 +1041,9 @@ static jdupes_hash_t *get_filehash(const file_t * const restrict checkfile,
   static jdupes_hash_t chunk[(CHUNK_SIZE / sizeof(jdupes_hash_t))];
   FILE *file;
   int check = 0;
+#ifdef USE_HASH_XXHASH64
+  XXH64_state_t *xxhstate;
+#endif
 
   if (checkfile == NULL || checkfile->d_name == NULL) nullptr("get_filehash()");
   LOUD(fprintf(stderr, "get_filehash('%s', %" PRIdMAX ")\n", checkfile->d_name, (intmax_t)max_read);)
@@ -1080,6 +1097,13 @@ static jdupes_hash_t *get_filehash(const file_t * const restrict checkfile,
     }
     fsize -= PARTIAL_HASH_SIZE;
   }
+
+#ifdef USE_HASH_XXHASH64
+  xxhstate = XXH64_createState();
+  if (xxhstate == NULL) nullptr("xxhstate");
+  XXH64_reset(xxhstate, 0);
+#endif
+
   /* Read the file in CHUNK_SIZE chunks until we've read it all. */
   while (fsize > 0) {
     size_t bytes_to_read;
@@ -1092,7 +1116,12 @@ static jdupes_hash_t *get_filehash(const file_t * const restrict checkfile,
       return NULL;
     }
 
+#if defined USE_HASH_JODYHASH
     *hash = jody_block_hash(chunk, *hash, bytes_to_read);
+#elif defined USE_HASH_XXHASH64
+    XXH64_update(xxhstate, chunk, bytes_to_read);
+#endif
+
     if ((off_t)bytes_to_read > fsize) break;
     else fsize -= (off_t)bytes_to_read;
 
@@ -1107,6 +1136,10 @@ static jdupes_hash_t *get_filehash(const file_t * const restrict checkfile,
 
   fclose(file);
 
+#ifdef USE_HASH_XXHASH64
+  *hash = XXH64_digest(xxhstate);
+  XXH64_freeState(xxhstate);
+#endif 
   LOUD(fprintf(stderr, "get_filehash: returning hash: 0x%016jx\n", (uintmax_t)*hash));
   return hash;
 }
