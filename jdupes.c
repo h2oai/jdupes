@@ -41,6 +41,7 @@
 #include <sys/time.h>
 #include "jdupes.h"
 #include "string_malloc.h"
+#define JODY_HASH_NOCOMPAT
 #include "jody_hash.h"
 #include "jody_sort.h"
 #include "jody_win_unicode.h"

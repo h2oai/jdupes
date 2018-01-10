@@ -31,6 +31,7 @@ extern "C" {
 #include <sys/types.h>
 #include <unistd.h>
 #include "string_malloc.h"
+#define JODY_HASH_NOCOMPAT
 #include "jody_hash.h"
 #include "jody_sort.h"
 #include "version.h"
