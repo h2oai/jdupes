@@ -5,7 +5,7 @@
  * a secure hash algorithm, but the calculation is drastically simpler
  * and faster.
  *
- * Copyright (C) 2014-2017 by Jody Bruchon <jody@jodybruchon.com>
+ * Copyright (C) 2014-2018 by Jody Bruchon <jody@jodybruchon.com>
  * Released under The MIT License
  */
 

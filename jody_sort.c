@@ -1,6 +1,6 @@
 /* Jody Bruchon's sorting code library
  *
- * Copyright (C) 2014-2017 by Jody Bruchon <jody@jodybruchon.com>
+ * Copyright (C) 2014-2018 by Jody Bruchon <jody@jodybruchon.com>
  * Released under The MIT License
  */
 
