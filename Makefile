@@ -91,6 +91,14 @@ endif
 	override undefine HAVE_BTRFS_IOCTL_H
 endif
 
+# xxHash support
+ifdef USE_XXHASH
+COMPILER_OPTIONS += -DUSE_HASH_XXHASH64
+OBJS += xxhash.o
+else
+COMPILER_OPTIONS += -DUSE_HASH_JODYHASH
+OBJS += jody_hash.o
+endif
 # Remap old BTRFS support option to new name
 ifdef HAVE_BTRFS_IOCTL_H
 ENABLE_BTRFS=1
@@ -116,7 +124,7 @@ INSTALL_DATA    = $(INSTALL) -m 0644
 # to support features not supplied by their vendor. Eg: GNU getopt()
 #ADDITIONAL_OBJECTS += getopt.o
 
-OBJS += jdupes.o jody_hash.o jody_paths.o jody_sort.o jody_win_unicode.o string_malloc.o
+OBJS += jdupes.o jody_paths.o jody_sort.o jody_win_unicode.o string_malloc.o
 OBJS += jody_cacheinfo.o
 OBJS += act_deletefiles.o act_linkfiles.o act_printmatches.o act_summarize.o
 OBJS += $(ADDITIONAL_OBJECTS)
