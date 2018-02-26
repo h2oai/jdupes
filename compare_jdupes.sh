@@ -8,7 +8,6 @@ ERR=0
 # Detect installed program type (fdupes or jdupes)
 ORIG_DUPE=false
 jdupes -v 2>/dev/null >/dev/null && ORIG_DUPE=jdupes
-fdupes-jody -v 2>/dev/null >/dev/null && ORIG_DUPE=fdupes-jody
 fdupes -v 2>/dev/null >/dev/null && ORIG_DUPE=fdupes
 test ! -z "$WINDIR" && "$WINDIR/jdupes.exe" -v 2>/dev/null >/dev/null && ORIG_DUPE="$WINDIR/jdupes.exe"
 if [ ! $ORIG_DUPE -v 2>/dev/null >/dev/null ]
