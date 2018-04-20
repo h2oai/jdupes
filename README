@@ -73,6 +73,7 @@ Usage: jdupes [options] DIRECTORY...
  -1 --one-file-system   do not match files on different filesystems/devices
  -A --nohidden          exclude hidden files from consideration
  -B --dedupe            Send matches to btrfs for block-level deduplication
+ -C --chunksize=#       override I/O chunk size (min 4096, max 16777216)
  -d --delete            prompt user for files to preserve and delete all
                         others; important: under particular circumstances,
                         data may be lost when using this option together
@@ -142,6 +143,20 @@ the same specified directory parameter on the command line. Due to the
 underlying nature of the jdupes algorithm, a lot of matches will be
 blocked by this option that probably should not be. This code could use
 improvement.
+
+The -C/--chunksize option overrides the size of the I/O "chunk" used for all
+file operations. Larger numbers will increase the amount of data read at
+once from each file and may improve performance when scanning lots of files
+that are larger than the default chunk size by reducing "thrashing" of the
+hard disk heads. Smaller numbers may increase algorithm speed depending on
+the characteristics of your CPU but will usually increase I/O and system
+call overhead as well. The nubmer also directly affects memory usage: I/O
+chunk size is used for at least three allocations in the program, so using
+a chunk size of 16777216 (16 MiB) will require 48 MiB of RAM. The default
+is usually between 32768 and 65536 which results in the fastest raw speed
+of the algorithm and generally good all-around performance. Feel free to
+experiment with the number on your data set and report your experiences
+(preferably with benchmarks and info on your data set.)
 
 
 Hard and soft (symbolic) linking status symbols and behavior

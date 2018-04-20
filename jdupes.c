@@ -108,8 +108,10 @@ struct stat s;
 #endif
 
 /* Larger chunk size makes large files process faster but uses more RAM */
+#define MIN_CHUNK_SIZE 4096
+#define MAX_CHUNK_SIZE 16777216
 #ifndef CHUNK_SIZE
- #define CHUNK_SIZE 32768
+ #define CHUNK_SIZE 65536
 #endif
 #ifndef PARTIAL_HASH_SIZE
  #define PARTIAL_HASH_SIZE 4096
@@ -572,7 +574,7 @@ bad_size_suffix:
 
 extern int getdirstats(const char * const restrict name,
         jdupes_ino_t * const restrict inode, dev_t * const restrict dev,
-	jdupes_mode_t * const restrict mode)
+        jdupes_mode_t * const restrict mode)
 {
   if (name == NULL || inode == NULL || dev == NULL) nullptr("getdirstats");
   LOUD(fprintf(stderr, "getdirstats('%s', %p, %p)\n", name, (void *)inode, (void *)dev);)
@@ -1038,7 +1040,7 @@ static jdupes_hash_t *get_filehash(const file_t * const restrict checkfile,
   off_t fsize;
   /* This is an array because we return a pointer to it */
   static jdupes_hash_t hash[1];
-  static jdupes_hash_t chunk[(CHUNK_SIZE / sizeof(jdupes_hash_t))];
+  static jdupes_hash_t *chunk = NULL;
   FILE *file;
   int check = 0;
 #ifdef USE_HASH_XXHASH64
@@ -1047,6 +1049,12 @@ static jdupes_hash_t *get_filehash(const file_t * const restrict checkfile,
 
   if (checkfile == NULL || checkfile->d_name == NULL) nullptr("get_filehash()");
   LOUD(fprintf(stderr, "get_filehash('%s', %" PRIdMAX ")\n", checkfile->d_name, (intmax_t)max_read);)
+
+  /* Allocate on first use */
+  if (chunk == NULL) {
+    chunk = (jdupes_hash_t *)string_malloc(auto_chunk_size);
+    if (!chunk) oom("get_filehash() chunk");
+  }
 
   /* Get the file size. If we can't read it, bail out early */
   if (checkfile->size == -1) {
@@ -1064,8 +1072,7 @@ static jdupes_hash_t *get_filehash(const file_t * const restrict checkfile,
    * If we already hashed the first chunk of this file, we don't want to
    * wastefully read and hash it again, so skip the first chunk and use
    * the computed hash for that chunk as our starting point.
-   *
-   * WARNING: We assume max_read is NEVER less than CHUNK_SIZE here! */
+   */
 
   *hash = 0;
   if (ISFLAG(checkfile->flags, F_HASH_PARTIAL)) {
@@ -1465,13 +1472,20 @@ static file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict f
    same signature. Unlikely, but better safe than sorry. */
 static inline int confirmmatch(FILE * const restrict file1, FILE * const restrict file2, off_t size)
 {
-  static char c1[CHUNK_SIZE], c2[CHUNK_SIZE];
+  static char *c1 = NULL, *c2 = NULL;
   size_t r1, r2;
   off_t bytes = 0;
   int check = 0;
 
   if (file1 == NULL || file2 == NULL) nullptr("confirmmatch()");
   LOUD(fprintf(stderr, "confirmmatch running\n"));
+
+  /* Allocate on first use; OOM if either is ever NULLed */
+  if (!c1) {
+    c1 = (char *)string_malloc(auto_chunk_size);
+    c2 = (char *)string_malloc(auto_chunk_size);
+  }
+  if (!c1 || !c2) oom("confirmmatch() c1/c2");
 
   fseek(file1, 0, SEEK_SET);
   fseek(file2, 0, SEEK_SET);
@@ -1617,8 +1631,9 @@ static inline void help_text(void)
   printf(" -1 --one-file-system \tdo not match files on different filesystems/devices\n");
   printf(" -A --nohidden    \texclude hidden files from consideration\n");
 #ifdef ENABLE_BTRFS
-  printf(" -B --dedupe      \tSend matches to btrfs for block-level deduplication\n");
+  printf(" -B --dedupe      \tsend matches to btrfs for block-level deduplication\n");
 #endif
+  printf(" -C --chunksize=# \toverride I/O chunk size (min %d, max %d)\n", MIN_CHUNK_SIZE, MAX_CHUNK_SIZE);
   printf(" -d --delete      \tprompt user for files to preserve and delete all\n");
   printf("                  \tothers; important: under particular circumstances,\n");
   printf("                  \tdata may be lost when using this option together\n");
@@ -1701,6 +1716,7 @@ int main(int argc, char **argv)
   static int opt;
   static int pm = 1;
   static ordertype_t ordertype = ORDER_NAME;
+  static long manual_chunk_size = 0;
 #ifndef ON_WINDOWS
   static struct proc_cacheinfo pci;
 #endif
@@ -1712,6 +1728,7 @@ int main(int argc, char **argv)
     { "one-file-system", 0, 0, '1' },
     { "nohidden", 0, 0, 'A' },
     { "dedupe", 0, 0, 'B' },
+    { "chunksize", 1, 0, 'C' },
     { "delete", 0, 0, 'd' },
     { "debug", 0, 0, 'D' },
     { "omitfirst", 0, 0, 'f' },
@@ -1775,7 +1792,7 @@ int main(int argc, char **argv)
   if (pci.l1 != 0) auto_chunk_size = (pci.l1 / 2);
   else if (pci.l1d != 0) auto_chunk_size = (pci.l1d / 2);
   /* Must be at least 4096 (4 KiB) and cannot exceed CHUNK_SIZE */
-  if (auto_chunk_size < 4096 || auto_chunk_size > CHUNK_SIZE) auto_chunk_size = CHUNK_SIZE;
+  if (auto_chunk_size < MIN_CHUNK_SIZE || auto_chunk_size > MAX_CHUNK_SIZE) auto_chunk_size = CHUNK_SIZE;
   /* Force to a multiple of 4096 if it isn't already */
   if ((auto_chunk_size & 0x00000fffUL) != 0)
     auto_chunk_size = (auto_chunk_size + 0x00000fffUL) & 0x000ff000;
@@ -1786,7 +1803,7 @@ int main(int argc, char **argv)
   oldargv = cloneargs(argc, argv);
 
   while ((opt = GETOPT(argc, argv,
-  "@1ABdDfhHiIlLmnNOpqQrRsSvzZo:x:X:"
+  "@1ABC:dDfhHiIlLmnNOpqQrRsSvzZo:x:X:"
 #ifndef OMIT_GETOPT_LONG
           , long_options, NULL
 #endif
@@ -1797,6 +1814,15 @@ int main(int argc, char **argv)
       break;
     case 'A':
       SETFLAG(flags, F_EXCLUDEHIDDEN);
+      break;
+    case 'C':
+      manual_chunk_size = strtol(optarg, NULL, 10) & 0x0ffff000L;  /* Align to 4K sizes */
+      if (manual_chunk_size < MIN_CHUNK_SIZE || manual_chunk_size > MAX_CHUNK_SIZE) {
+        fprintf(stderr, "warning: invalid manual chunk size (must be %d-%d); using defaults\n", MIN_CHUNK_SIZE, MAX_CHUNK_SIZE);
+        LOUD(fprintf(stderr, "Manual chunk size (failed) was apparently '%s' => %ld\n", optarg, manual_chunk_size));
+        manual_chunk_size = 0;
+      } else auto_chunk_size = (size_t)manual_chunk_size;
+      LOUD(fprintf(stderr, "Manual chunk size is %ld\n", manual_chunk_size));
       break;
     case 'd':
       SETFLAG(flags, F_DELETEFILES);
@@ -2170,13 +2196,16 @@ skip_file_scan:
         left_branch + right_branch, max_depth);
     fprintf(stderr, "SMA: allocs %" PRIuMAX ", free %" PRIuMAX " (merge %" PRIuMAX ", repl %" PRIuMAX "), fail %" PRIuMAX ", reuse %" PRIuMAX ", scan %" PRIuMAX ", tails %" PRIuMAX "\n",
         sma_allocs, sma_free_good, sma_free_merged, sma_free_replaced,
-	sma_free_ignored, sma_free_reclaimed,
+        sma_free_ignored, sma_free_reclaimed,
         sma_free_scanned, sma_free_tails);
+    if (manual_chunk_size > 0) fprintf(stderr, "I/O chunk size: %ld KiB (manually set)\n", manual_chunk_size >> 10);
+    else {
 #ifndef ON_WINDOWS
-    fprintf(stderr, "I/O chunk size: %" PRIuMAX " KiB (%s)\n", (uintmax_t)(auto_chunk_size >> 10), (pci.l1 + pci.l1d) != 0 ? "dynamically sized" : "default size");
+      fprintf(stderr, "I/O chunk size: %" PRIuMAX " KiB (%s)\n", (uintmax_t)(auto_chunk_size >> 10), (pci.l1 + pci.l1d) != 0 ? "dynamically sized" : "default size");
 #else
-    fprintf(stderr, "I/O chunk size: %" PRIuMAX " KiB (default size)\n", (uintmax_t)(auto_chunk_size >> 10));
+      fprintf(stderr, "I/O chunk size: %" PRIuMAX " KiB (default size)\n", (uintmax_t)(auto_chunk_size >> 10));
 #endif
+    }
 #ifdef ON_WINDOWS
  #ifndef NO_HARDLINKS
     if (ISFLAG(flags, F_HARDLINKFILES))
