@@ -88,7 +88,6 @@ endif
 	COMPILER_OPTIONS += -D__USE_MINGW_ANSI_STDIO=1 -DON_WINDOWS=1
 	OBJS += win_stat.o
 	override undefine ENABLE_BTRFS
-	override undefine HAVE_BTRFS_IOCTL_H
 endif
 
 # xxHash support
@@ -98,10 +97,6 @@ OBJS += xxhash.o
 else
 COMPILER_OPTIONS += -DUSE_HASH_JODYHASH
 OBJS += jody_hash.o
-endif
-# Remap old BTRFS support option to new name
-ifdef HAVE_BTRFS_IOCTL_H
-ENABLE_BTRFS=1
 endif
 # New BTRFS support option
 ifdef ENABLE_BTRFS
