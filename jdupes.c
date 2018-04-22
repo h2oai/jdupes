@@ -215,15 +215,6 @@ static const char *extensions[] = {
     #ifdef NO_SYMLINKS
     "nosymlink",
     #endif
-    #ifdef USE_TREE_REBALANCE
-    "rebal",
-    #endif
-    #ifdef CONSIDER_IMBALANCE
-    "ci",
-    #endif
-    #ifdef BALANCE_THRESHOLD
-    "bt",
-    #endif
     NULL
 };
 
@@ -1166,49 +1157,7 @@ static inline void registerfile(filetree_t * restrict * const restrict nodeptr,
   branch->file = file;
   branch->left = NULL;
   branch->right = NULL;
-#ifdef USE_TREE_REBALANCE
-  branch->left_weight = 0;
-  branch->right_weight = 0;
 
-  /* Attach the new node to the requested branch and the parent */
-  switch (d) {
-    case LEFT:
-      branch->parent = *nodeptr;
-      (*nodeptr)->left = branch;
-      (*nodeptr)->left_weight++;
-      break;
-    case RIGHT:
-      branch->parent = *nodeptr;
-      (*nodeptr)->right = branch;
-      (*nodeptr)->right_weight++;
-      break;
-    case NONE:
-      /* For the root of the tree only */
-      branch->parent = NULL;
-      *nodeptr = branch;
-      break;
-    default:
-      /* This should never ever happen */
-      fprintf(stderr, "\ninternal error: invalid direction for registerfile(), report this\n");
-      string_malloc_destroy();
-      exit(EXIT_FAILURE);
-      break;
-  }
-
-  /* Propagate weights up the tree */
-  while (branch->parent != NULL) {
-    filetree_t * restrict up;
-
-    up = branch->parent;
-    if (up->left == branch) up->left_weight++;
-    else if (up->right == branch) up->right_weight++;
-    else {
-      fprintf(stderr, "\nInternal error: file tree linkage is broken\n");
-      exit(EXIT_FAILURE);
-    }
-    branch = up;
-  }
-#else /* USE_TREE_REBALANCE */
   /* Attach the new node to the requested branch */
   switch (d) {
     case LEFT:
@@ -1229,107 +1178,8 @@ static inline void registerfile(filetree_t * restrict * const restrict nodeptr,
       break;
   }
 
-#endif /* USE_TREE_REBALANCE */
-
   return;
 }
-
-
-/* Experimental tree rebalance code. This slows things down in testing
- * but may be more useful in the future. Pass -DUSE_TREE_REBALANCE
- * to try it. */
-#ifdef USE_TREE_REBALANCE
-
-/* How much difference to ignore when considering a rebalance */
-#ifndef BALANCE_THRESHOLD
-#define BALANCE_THRESHOLD 4
-#endif
-
-/* Rebalance the file tree to reduce search depth */
-static inline void rebalance_tree(filetree_t * const tree)
-{
-  filetree_t * restrict promote;
-  filetree_t * restrict demote;
-  int difference, direction;
-#ifdef CONSIDER_IMBALANCE
-  int l, r, imbalance;
-#endif
-
-  if (!tree) return;
-
-  /* Rebalance all children first */
-  if (tree->left_weight > BALANCE_THRESHOLD) rebalance_tree(tree->left);
-  if (tree->right_weight > BALANCE_THRESHOLD) rebalance_tree(tree->right);
-
-  /* If weights are within a certain threshold, do nothing */
-  direction = tree->right_weight - tree->left_weight;
-  difference = direction;
-  if (difference < 0) difference = -difference;
-  if (difference <= BALANCE_THRESHOLD) return;
-
-  /* Determine if a tree rotation will help, and do it if so */
-  if (direction > 0) {
-#ifdef CONSIDER_IMBALANCE
-    l = tree->right->left_weight + tree->right_weight;
-    r = tree->right->right_weight;
-    imbalance = l - r;
-    if (imbalance < 0) imbalance = -imbalance;
-    /* Don't rotate if imbalance will increase */
-    if (imbalance >= difference) return;
-#endif /* CONSIDER_IMBALANCE */
-
-    /* Rotate the right node up one level */
-    promote = tree->right;
-    demote = tree;
-    /* Attach new parent's left tree to old parent */
-    demote->right = promote->left;
-    demote->right_weight = promote->left_weight;
-    /* Attach old parent to new parent */
-    promote->left = demote;
-    promote->left_weight = demote->left_weight + demote->right_weight + 1;
-    /* Reconnect parent linkages */
-    promote->parent = demote->parent;
-    if (demote->right) demote->right->parent = demote;
-    demote->parent = promote;
-    if (promote->parent == NULL) checktree = promote;
-    else if (promote->parent->left == demote) promote->parent->left = promote;
-    else promote->parent->right = promote;
-    return;
-  } else if (direction < 0) {
-#ifdef CONSIDER_IMBALANCE
-    r = tree->left->right_weight + tree->left_weight;
-    l = tree->left->left_weight;
-    imbalance = r - l;
-    if (imbalance < 0) imbalance = -imbalance;
-    /* Don't rotate if imbalance will increase */
-    if (imbalance >= difference) return;
-#endif /* CONSIDER_IMBALANCE */
-
-    /* Rotate the left node up one level */
-    promote = tree->left;
-    demote = tree;
-    /* Attach new parent's right tree to old parent */
-    demote->left = promote->right;
-    demote->left_weight = promote->right_weight;
-    /* Attach old parent to new parent */
-    promote->right = demote;
-    promote->right_weight = demote->right_weight + demote->left_weight + 1;
-    /* Reconnect parent linkages */
-    promote->parent = demote->parent;
-    if (demote->left) demote->left->parent = demote;
-    demote->parent = promote;
-    if (promote->parent == NULL) checktree = promote;
-    else if (promote->parent->left == demote) promote->parent->left = promote;
-    else promote->parent->right = promote;
-    return;
-
-  }
-
-  /* Fall through */
-  return;
-}
-
-#endif /* USE_TREE_REBALANCE */
 
 
 #ifdef TREE_DEPTH_STATS
@@ -2079,9 +1929,6 @@ int main(int argc, char **argv)
     static file_t **match = NULL;
     static FILE *file1;
     static FILE *file2;
-#ifdef USE_TREE_REBALANCE
-    static unsigned int depth_threshold = INITIAL_DEPTH_THRESHOLD;
-#endif
 
     if (interrupt) {
       fprintf(stderr, "\nStopping file scan due to user abort\n");
@@ -2094,16 +1941,6 @@ int main(int argc, char **argv)
 
     if (!checktree) registerfile(&checktree, NONE, curfile);
     else match = checkmatch(checktree, curfile);
-
-#ifdef USE_TREE_REBALANCE
-    /* Rebalance the match tree after a certain number of files processed */
-    if (max_depth > depth_threshold) {
-      rebalance_tree(checktree);
-      max_depth = 0;
-      if (depth_threshold < 512) depth_threshold <<= 1;
-      else depth_threshold += 64;
-    }
-#endif /* USE_TREE_REBALANCE */
 
     /* Byte-for-byte check that a matched pair are actually matched */
     if (match != NULL) {

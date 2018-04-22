@@ -111,7 +111,6 @@ extern int err_mode;
 
 /* Low memory option overrides */
 #ifdef LOW_MEMORY
- #undef USE_TREE_REBALANCE
  #ifndef NO_PERMS
   #define NO_PERMS 1
  #endif
@@ -231,11 +230,6 @@ typedef struct _filetree {
   file_t *file;
   struct _filetree *left;
   struct _filetree *right;
-#ifdef USE_TREE_REBALANCE
-  struct _filetree *parent;
-  unsigned int left_weight;
-  unsigned int right_weight;
-#endif /* USE_TREE_REBALANCE */
 } filetree_t;
 
 /* This gets used in many functions */
