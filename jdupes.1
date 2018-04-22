@@ -32,6 +32,11 @@ issue the btrfs same-extents ioctl to trigger a deduplication on
 disk. The program must be built with btrfs support for this option
 to be available
 .TP
+.B -C --chunksize=\fIBYTES\fR
+set the I/O chunk size manually; larger values may improve performance
+on rotating media by reducing the number of head seeks required, but
+also increases memory usage and can reduce performance in some cases
+.TP
 .B -D --debug
 if this feature is compiled in, show debugging statistics and info
 at the end of program execution
@@ -237,6 +242,21 @@ comparison that this option explicitly bypasses. Do not use it on ANY data
 set for which any amount of data loss is unacceptable. This option is not
 included in the help text for the program due to its risky nature.
 .B You have been warned!
+
+Using the
+.B \-C
+or
+.BR \-\-chunksize
+option to override I/O chunk size can increase performance on rotating
+storage media by reducing "head thrashing," reading larger amounts of
+data sequentially from each file. This tunable size can have bad side
+effects; the default size maximizes algorithmic performance without
+regard to the I/O characteristics of any given device and uses a modest
+amount of memory, but other values may greatly increase memory usage or
+incur a lot more system call overhead. Try several different values to
+see how they affect performance for your hardware and data set. This
+option does not affect match results in any way, so even if it slows
+down the file matching process it will not hurt anything.
 
 .SH REPORTING BUGS
 Send all bug reports to jody@jodybruchon.com or use the Issue tracker at
