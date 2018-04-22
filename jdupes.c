@@ -212,8 +212,14 @@ static const char *extensions[] = {
     #ifdef NO_PERMS
     "noperm",
     #endif
+    #ifdef NO_HARDLINKS
+    "nohardlink",
+    #endif
     #ifdef NO_SYMLINKS
     "nosymlink",
+    #endif
+    #ifdef NO_USER_ORDER
+    "nouserorder",
     #endif
     NULL
 };
@@ -599,11 +605,13 @@ extern int check_conditions(const file_t * const restrict file1, const file_t * 
 
   LOUD(fprintf(stderr, "check_conditions('%s', '%s')\n", file1->d_name, file2->d_name);)
 
+#ifndef NO_USER_ORDER
   /* Exclude based on -I/--isolate */
   if (ISFLAG(flags, F_ISOLATE) && (file1->user_order == file2->user_order)) {
     LOUD(fprintf(stderr, "check_conditions: files ignored: parameter isolation\n"));
     return -1;
   }
+#endif /* NO_USER_ORDER */
 
   /* Exclude based on -1/--one-file-system */
   if (ISFLAG(flags, F_ONEFS) && (file1->device != file2->device)) {
@@ -739,7 +747,9 @@ static file_t *init_newfile(const size_t len, file_t * restrict * const restrict
   if (!newfile->d_name) oom("init_newfile() filename");
 
   newfile->next = *filelistp;
+#ifndef NO_USER_ORDER
   newfile->user_order = user_item_count;
+#endif
   newfile->size = -1;
   newfile->duplicates = NULL;
   return newfile;
@@ -1391,6 +1401,7 @@ extern unsigned int get_max_dupes(const file_t *files, unsigned int * const rest
 }
 
 
+#ifndef NO_USER_ORDER
 static int sort_pairs_by_param_order(file_t *f1, file_t *f2)
 {
   if (!ISFLAG(flags, F_USEPARAMORDER)) return 0;
@@ -1399,14 +1410,17 @@ static int sort_pairs_by_param_order(file_t *f1, file_t *f2)
   if (f1->user_order > f2->user_order) return sort_direction;
   return 0;
 }
+#endif
 
 
 static int sort_pairs_by_mtime(file_t *f1, file_t *f2)
 {
   if (f1 == NULL || f2 == NULL) nullptr("sort_pairs_by_mtime()");
-  int po = sort_pairs_by_param_order(f1, f2);
 
+#ifndef NO_USER_ORDER
+  int po = sort_pairs_by_param_order(f1, f2);
   if (po != 0) return po;
+#endif /* NO_USER_ORDER */
 
   if (f1->mtime < f2->mtime) return -sort_direction;
   else if (f1->mtime > f2->mtime) return sort_direction;
@@ -1418,9 +1432,11 @@ static int sort_pairs_by_mtime(file_t *f1, file_t *f2)
 static int sort_pairs_by_filename(file_t *f1, file_t *f2)
 {
   if (f1 == NULL || f2 == NULL) nullptr("sort_pairs_by_filename()");
-  int po = sort_pairs_by_param_order(f1, f2);
 
+#ifndef NO_USER_ORDER
+  int po = sort_pairs_by_param_order(f1, f2);
   if (po != 0) return po;
+#endif /* NO_USER_ORDER */
 
   return numeric_sort(f1->d_name, f2->d_name, sort_direction);
 }
@@ -1500,7 +1516,9 @@ static inline void help_text(void)
   printf("                  \tlinked files are treated as non-duplicates for safety\n");
 #endif
   printf(" -i --reverse     \treverse (invert) the match sort order\n");
+#ifndef NO_USER_ORDER
   printf(" -I --isolate     \tfiles in the same specified directory won't match\n");
+#endif
 #ifndef NO_SYMLINKS
   printf(" -l --linksoft    \tmake relative symlinks for duplicates w/o prompting\n");
 #endif
@@ -1516,8 +1534,10 @@ static inline void help_text(void)
   printf("                  \teach set of duplicates and delete the rest without\n");
   printf("                  \tprompting the user\n");
   printf(" -o --order=BY    \tselect sort order for output, linking and deleting; by\n");
+#ifndef NO_USER_ORDER
   printf(" -O --paramorder  \tParameter order is more important than selected -O sort\n");
   printf("                  \tmtime (BY=time) or filename (BY=name, the default)\n");
+#endif
 #ifndef NO_PERMS
   printf(" -p --permissions \tdon't consider files with different owner/group or\n");
   printf("                  \tpermission bits as duplicates\n");
@@ -1700,9 +1720,18 @@ int main(int argc, char **argv)
     case 'i':
       SETFLAG(flags, F_REVERSESORT);
       break;
-    case 'I':
+#ifndef NO_USER_ORDER
       SETFLAG(flags, F_ISOLATE);
       break;
+    case 'O':
+      SETFLAG(flags, F_USEPARAMORDER);
+      break;
+#else
+    case 'I':
+    case 'O':
+      fprintf(stderr, "warning: -I and -O are disabled and ignored in this build\n");
+      break;
+#endif
     case 'm':
       SETFLAG(flags, F_SUMMARIZEMATCHES);
       break;
@@ -1711,9 +1740,6 @@ int main(int argc, char **argv)
       break;
     case 'N':
       SETFLAG(flags, F_NOPROMPT);
-      break;
-    case 'O':
-      SETFLAG(flags, F_USEPARAMORDER);
       break;
     case 'p':
       SETFLAG(flags, F_PERMISSIONS);

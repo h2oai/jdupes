@@ -212,10 +212,8 @@ typedef struct _file {
   jdupes_hash_t filehash;
   time_t mtime;
   uint32_t flags;  /* Status flags */
+#ifndef NO_USER_ORDER
   unsigned int user_order; /* Order of the originating command-line parameter */
-#ifndef NO_PERMS
-  uid_t uid;
-  gid_t gid;
 #endif
 #ifndef NO_HARDLINKS
  #ifndef ON_WINDOWS
@@ -223,6 +221,10 @@ typedef struct _file {
  #else
   uint32_t nlink;  /* link count on Windows is always a DWORD */
  #endif
+#endif
+#ifndef NO_PERMS
+  uid_t uid;
+  gid_t gid;
 #endif
 } file_t;
 

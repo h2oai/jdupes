@@ -30,12 +30,17 @@ DEBUG                  Turn on algorithm statistic reporting with '-D'
 LOUD                   '-@' for low-level debugging; enables DEBUG
 ENABLE_BTRFS           Enable '-B/--dedupe' for btrfs deduplication
 LOW_MEMORY             Build for lower memory usage instead of speed
+NO_PERMS               Disable permission options and code
+NO_HARDLINKS           Disable hard linking options and code
+NO_SYMLINKS            Disable symbolic linking options and code
+NO_USER_ORDER          Disable -I/-O options and code
+NO_UNICODE             [Windows only] disable all Unicode support
 
 The LOW_MEMORY option tweaks various knobs in the program to lower total
 memory usage. It also disables some features to reduce the size of certain
 data structures. The improvements in memory usage are not very large, but if
 you're running in a very RAM-limited environment or have a CPU with very small
-caches it may be the best choice.
+caches it may be a good choice.
 
 A test directory is included so that you may familiarize yourself with the way
 jdupes operates. You may test the program before installing it by issuing a
