@@ -1,3 +1,15 @@
+jdupes 1.10
+
+- cacheinfo code not included on Windows where it is not used
+- Fix -H to work properly on individual files (not just directories)
+- Fix memory corruption which causes a crash when using -A option
+- Block btrfs dedupe on Linux kernels < 3.0 due to possible data loss bugs
+- Removed all references to 'fdupes-jody' and unused TODO file
+- Add -C/--chunksize option for tuning I/O chunk size (see README)
+- Make more features configurable and exclude them in LOW_MEMORY mode
+- Remove HAVE_BTRFS_IOCTL_H deprecated compile-time option
+- Remove experimental tree rebalance code
+
 jdupes 1.9
 
 - stderr on Windows is no longer polluted or empty when redirected
