@@ -1,3 +1,7 @@
+jdupes 1.10.1
+
+- Fix -I option
+
 jdupes 1.10
 
 - cacheinfo code not included on Windows where it is not used
