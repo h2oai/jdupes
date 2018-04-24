@@ -1721,6 +1721,7 @@ int main(int argc, char **argv)
       SETFLAG(flags, F_REVERSESORT);
       break;
 #ifndef NO_USER_ORDER
+    case 'I':
       SETFLAG(flags, F_ISOLATE);
       break;
     case 'O':
