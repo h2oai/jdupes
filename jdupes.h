@@ -177,6 +177,11 @@ extern uint_fast32_t flags;
 #define F_HAS_DUPES		0x00000008U
 #define F_IS_SYMLINK		0x00000010U
 
+/* Extra print flags */
+#define P_PARTIAL		0x00000001U
+#define P_EARLYMATCH		0x00000002U
+#define P_FULLHASH		0x00000004U
+
 typedef enum {
   ORDER_NAME = 0,
   ORDER_TIME

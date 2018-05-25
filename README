@@ -98,6 +98,7 @@ Usage: jdupes [options] DIRECTORY...
                         mtime (BY=time) or filename (BY=name, the default)
  -p --permissions       don't consider files with different owner/group or
                         permission bits as duplicates
+ -P --print=type        print extra info (partial, early, fullhash)
  -Q --quick             skip byte-for-byte confirmation for quick matching
                         WARNING: -Q can result in data loss! Be very careful!
  -r --recurse           for every directory, process its subdirectories too
@@ -157,6 +158,13 @@ is usually between 32768 and 65536 which results in the fastest raw speed
 of the algorithm and generally good all-around performance. Feel free to
 experiment with the number on your data set and report your experiences
 (preferably with benchmarks and info on your data set.)
+
+Using -P/--print will cause the program to print extra information that
+may be useful but will pollute the output in a way that makes scripted
+handling difficult. Its current purpose is to reveal more information about
+the file matching process by printing match pairs that pass certain steps
+of the process prior to full file comparison. This can be useful if you
+have two files that are passing early checks but failing after full checks.
 
 
 Hard and soft (symbolic) linking status symbols and behavior

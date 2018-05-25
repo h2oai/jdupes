@@ -96,7 +96,7 @@ int err_mode = _O_TEXT;
 #endif
 
 /* Behavior modification flags */
-uint_fast32_t flags = 0;
+uint_fast32_t flags = 0, p_flags = 0;
 
 static const char *program_name;
 
@@ -1147,7 +1147,7 @@ static jdupes_hash_t *get_filehash(const file_t * const restrict checkfile,
 #ifdef USE_HASH_XXHASH64
   *hash = XXH64_digest(xxhstate);
   XXH64_freeState(xxhstate);
-#endif 
+#endif
   LOUD(fprintf(stderr, "get_filehash: returning hash: 0x%016jx\n", (uintmax_t)*hash));
   return hash;
 }
@@ -1228,7 +1228,10 @@ static file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict f
     default: break;
   }
 
-  /* If preliminary matching succeeded, move to full file checks */
+  /* Print pre-check (early) match candidates if requested */
+  if (ISFLAG(p_flags, P_EARLYMATCH)) printf("Early match check passed:\n   %s\n   %s\n\n", file->d_name, tree->file->d_name);
+
+  /* If preliminary matching succeeded, do main file data checks */
   if (cmpresult == 0) {
     LOUD(fprintf(stderr, "checkmatch: starting file data comparisons\n"));
     /* Attempt to exclude files quickly with partial file hashing */
@@ -1284,6 +1287,9 @@ static file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict f
         SETFLAG(file->flags, F_HASH_FULL);
       }
 
+      /* Print partial hash matching pairs if requested */
+      if (ISFLAG(p_flags, P_PARTIAL)) printf("Partial hashes match:\n   %s\n   %s\n\n", file->d_name, tree->file->d_name);
+
       /* Full file hash comparison */
       cmpresult = HASH_COMPARE(file->filehash, tree->file->filehash);
       LOUD(if (!cmpresult) fprintf(stderr, "checkmatch: full hashes match\n"));
@@ -1321,6 +1327,7 @@ static file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict f
     DBG(partial_to_full++;)
     TREE_DEPTH_UPDATE_MAX();
     LOUD(fprintf(stderr, "checkmatch: files appear to match based on hashes\n"));
+    if (ISFLAG(p_flags, P_FULLHASH)) printf("Full hashes match:\n   %s\n   %s\n\n", file->d_name, tree->file->d_name);
     return &tree->file;
   }
   /* Fall through - should never be reached */
@@ -1542,6 +1549,7 @@ static inline void help_text(void)
   printf(" -p --permissions \tdon't consider files with different owner/group or\n");
   printf("                  \tpermission bits as duplicates\n");
 #endif
+  printf(" -P --print=type  \tprint extra info (partial, early, fullhash)\n");
   printf(" -Q --quick       \tskip byte-for-byte confirmation for quick matching\n");
   printf("                  \tWARNING: -Q can result in data loss! Be very careful!\n");
   printf(" -r --recurse     \tfor every directory, process its subdirectories too\n");
@@ -1615,6 +1623,7 @@ int main(int argc, char **argv)
     { "order", 1, 0, 'o' },
     { "paramorder", 0, 0, 'O' },
     { "permissions", 0, 0, 'p' },
+    { "print", 0, 0, 'P' },
     { "quiet", 0, 0, 'q' },
     { "quick", 0, 0, 'Q' },
     { "recurse", 0, 0, 'r' },
@@ -1673,7 +1682,7 @@ int main(int argc, char **argv)
   oldargv = cloneargs(argc, argv);
 
   while ((opt = GETOPT(argc, argv,
-  "@1ABC:dDfhHiIlLmnNOpqQrRsSvzZo:x:X:"
+  "@1ABC:dDfhHiIlLmnNOpP:qQrRsSvzZo:x:X:"
 #ifndef OMIT_GETOPT_LONG
           , long_options, NULL
 #endif
@@ -1744,6 +1753,15 @@ int main(int argc, char **argv)
       break;
     case 'p':
       SETFLAG(flags, F_PERMISSIONS);
+      break;
+    case 'P':
+      if (strcmp(optarg, "partial") == 0) SETFLAG(p_flags, P_PARTIAL);
+      else if (strcmp(optarg, "early") == 0) SETFLAG(p_flags, P_EARLYMATCH);
+      else if (strcmp(optarg, "fullhash") == 0) SETFLAG(p_flags, P_FULLHASH);
+      else {
+        fprintf(stderr, "Option '%s' is not valid for -P\n", optarg);
+	exit(EXIT_FAILURE);
+      }
       break;
     case 'q':
       SETFLAG(flags, F_HIDEPROGRESS);

@@ -92,6 +92,12 @@ name - sort by filename (default)
 don't consider files with different owner/group or permission bits as
 duplicates
 .TP
+.B -P --print=type
+print extra information to stdout; valid options are:
+early - matches that pass early size/permission/link/etc. checks
+partial - files whose partial hashes match
+fullhash - files whose full hashes match
+.TP
 .B -Q --quick
 .B [WARNING: RISK OF DATA LOSS, SEE CAVEATS]
 skip byte-for-byte verification of duplicate pairs (use hashes only)
