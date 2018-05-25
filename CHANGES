@@ -1,3 +1,7 @@
+jdupes 1.10.2
+
+- Add -P/--print option
+
 jdupes 1.10.1
 
 - Fix -I option
