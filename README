@@ -70,6 +70,7 @@ Usage
 Usage: jdupes [options] DIRECTORY...
 
  -@ --loud              output annoying low-level debug info while running
+ -0 --printnull         output nulls instead of CR/LF (like 'find -print0')
  -1 --one-file-system   do not match files on different filesystems/devices
  -A --nohidden          exclude hidden files from consideration
  -B --dedupe            Send matches to btrfs for block-level deduplication

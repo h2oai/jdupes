@@ -3,12 +3,14 @@
  * Copyright (C) 2014-2018 by Jody Bruchon <jody@jodybruchon.com>
  * Released under The MIT License
  */
+#include "jody_win_unicode.h"
 #include "jdupes.h"
 
-#ifdef UNICODE
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
+
+#ifdef UNICODE
 /* Convert slashes to backslashes in a file path */
 extern void slash_convert(char *path)
 {
@@ -45,10 +47,14 @@ error_wc2mb:
   exit(EXIT_FAILURE);
 }
 
+#else
+ #define slash_convert(a)
+#endif /* UNICODE */
 
 /* Print a string that is wide on Windows but normal on POSIX */
 extern int fwprint(FILE * const restrict stream, const char * const restrict str, const int cr)
 {
+#ifdef UNICODE
   int retval;
   int stream_mode = out_mode;
 
@@ -59,15 +65,16 @@ extern int fwprint(FILE * const restrict stream, const char * const restrict str
     if (!M2W(str,wstr)) return -1;
     fflush(stream);
     _setmode(_fileno(stream), stream_mode);
-    retval = fwprintf(stream, L"%S%S", wstr, cr ? L"\n" : L"");
+    if (cr == 2) retval = fwprintf(stream, L"%S%C", wstr, 0);
+    else retval = fwprintf(stream, L"%S%S", wstr, cr == 1 ? L"\n" : L"");
     fflush(stream);
     _setmode(_fileno(stream), _O_TEXT);
     return retval;
   } else {
-    return fprintf(stream, "%s%s", str, cr ? "\n" : "");
+#endif
+    if (cr == 2) return fprintf(stream, "%s%c", str, 0);
+    else return fprintf(stream, "%s%s", str, cr == 1 ? "\n" : "");
+#ifdef UNICODE
   }
+#endif
 }
-#else
- #define fwprint(a,b,c) fprintf(a, "%s%s", b, c ? "\n" : "")
- #define slash_convert(a)
-#endif /* UNICODE */

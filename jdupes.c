@@ -1497,6 +1497,7 @@ static inline void help_text(void)
 #ifdef LOUD
   printf(" -@ --loud        \toutput annoying low-level debug info while running\n");
 #endif
+  printf(" -0 --printnull   \toutput nulls instead of CR/LF (like 'find -print0')\n");
   printf(" -1 --one-file-system \tdo not match files on different filesystems/devices\n");
   printf(" -A --nohidden    \texclude hidden files from consideration\n");
 #ifdef ENABLE_BTRFS
@@ -1599,6 +1600,7 @@ int main(int argc, char **argv)
   static const struct option long_options[] =
   {
     { "loud", 0, 0, '@' },
+    { "printnull", 0, 0, '0' },
     { "one-file-system", 0, 0, '1' },
     { "nohidden", 0, 0, 'A' },
     { "dedupe", 0, 0, 'B' },
@@ -1678,12 +1680,15 @@ int main(int argc, char **argv)
   oldargv = cloneargs(argc, argv);
 
   while ((opt = GETOPT(argc, argv,
-  "@1ABC:dDfhHiIlLmnNOpP:qQrRsSvzZo:x:X:"
+  "@01ABC:dDfhHiIlLmnNOpP:qQrRsSvzZo:x:X:"
 #ifndef OMIT_GETOPT_LONG
           , long_options, NULL
 #endif
          )) != EOF) {
     switch (opt) {
+    case '0':
+      SETFLAG(flags, F_PRINTNULL);
+      break;
     case '1':
       SETFLAG(flags, F_ONEFS);
       break;

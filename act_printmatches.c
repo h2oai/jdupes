@@ -12,8 +12,11 @@ extern void printmatches(file_t * restrict files)
 {
   file_t * restrict tmpfile;
   int printed = 0;
+  int cr = 1;
 
   LOUD(fprintf(stderr, "act_printmatches: %p\n", files));
+
+  if (ISFLAG(flags, F_PRINTNULL)) cr = 2;
 
   while (files != NULL) {
     if (ISFLAG(files->flags, F_HAS_DUPES)) {
@@ -21,14 +24,14 @@ extern void printmatches(file_t * restrict files)
       if (!ISFLAG(flags, F_OMITFIRST)) {
         if (ISFLAG(flags, F_SHOWSIZE)) printf("%" PRIdMAX " byte%c each:\n", (intmax_t)files->size,
          (files->size != 1) ? 's' : ' ');
-        fwprint(stdout, files->d_name, 1);
+        fwprint(stdout, files->d_name, cr);
       }
       tmpfile = files->duplicates;
       while (tmpfile != NULL) {
-        fwprint(stdout, tmpfile->d_name, 1);
+        fwprint(stdout, tmpfile->d_name, cr);
         tmpfile = tmpfile->duplicates;
       }
-      if (files->next != NULL) fwprint(stdout, "", 1);
+      if (files->next != NULL) fwprint(stdout, "", cr);
 
     }
 

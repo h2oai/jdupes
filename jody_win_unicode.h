@@ -9,13 +9,14 @@ extern "C" {
 #endif
 
 #include "jdupes.h"
+#include <stdio.h>
+
+extern int fwprint(FILE * const restrict stream, const char * const restrict str, const int cr);
 
 #ifdef UNICODE
 extern void slash_convert(char *path);
 extern void widearg_to_argv(int argc, wchar_t **wargv, char **argv);
-extern int fwprint(FILE * const restrict stream, const char * const restrict str, const int cr);
 #else
- #define fwprint(a,b,c) fprintf(a, "%s%s", b, c ? "\n" : "")
  #define slash_convert(a)
 #endif /* UNICODE */
 
