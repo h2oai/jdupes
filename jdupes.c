@@ -1675,6 +1675,13 @@ int main(int argc, char **argv)
     auto_chunk_size = (auto_chunk_size + 0x00000fffUL) & 0x000ff000;
 #endif /* ON_WINDOWS */
 
+  /* Is stderr a terminal? If not, we won't write progress to it */
+#ifdef ON_WINDOWS
+  if (!_isatty(_fileno(stderr))) SETFLAG(flags, F_HIDEPROGRESS);
+#else
+  if (!isatty(fileno(stderr))) SETFLAG(flags, F_HIDEPROGRESS);
+#endif
+
   program_name = argv[0];
 
   oldargv = cloneargs(argc, argv);
