@@ -91,6 +91,7 @@ Usage: jdupes [options] DIRECTORY...
  -l --linksoft          make relative symlinks for duplicates w/o prompting
  -L --linkhard          hard link all duplicate files without prompting
  -m --summarize         summarize dupe information
+ -M --printwithsummary  will print matches and --summarize at the end
  -N --noprompt          together with --delete, preserve the first file in
                         each set of duplicates and delete the rest without
                         prompting the user
