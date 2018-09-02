@@ -1,3 +1,11 @@
+jdupes 1.10.3
+
+- Add -M/--printwithsummary option
+- Add -0/--printnull option
+- Add very long path support on Windows 10
+- Do not output progress indicators if output is not a TTY
+- Remove an old undocumented long option '--summary'
+
 jdupes 1.10.2
 
 - Add -P/--print option
