@@ -1533,7 +1533,7 @@ static inline void help_text(void)
  #endif /* ON_WINDOWS */
 #endif /* NO_HARDLINKS */
   printf(" -m --summarize   \tsummarize dupe information\n");
-  //printf(" -n --noempty     \texclude zero-length files from consideration\n");
+  printf(" -M --printwithsummary\twill print matches and --summarize at the end\n");
   printf(" -N --noprompt    \ttogether with --delete, preserve the first file in\n");
   printf("                  \teach set of duplicates and delete the rest without\n");
   printf("                  \tprompting the user\n");
@@ -1615,6 +1615,7 @@ int main(int argc, char **argv)
     { "linksoft", 0, 0, 'l' },
     { "linkhard", 0, 0, 'L' },
     { "summarize", 0, 0, 'm'},
+    { "printwithsummary", 0, 0, 'M'},
     { "noempty", 0, 0, 'n' },
     { "noprompt", 0, 0, 'N' },
     { "order", 1, 0, 'o' },
@@ -1686,7 +1687,7 @@ int main(int argc, char **argv)
   oldargv = cloneargs(argc, argv);
 
   while ((opt = GETOPT(argc, argv,
-  "@01ABC:dDfhHiIlLmnNOpP:qQrRsSvzZo:x:X:"
+  "@01ABC:dDfhHiIlLmMnNOpP:qQrRsSvzZo:x:X:"
 #ifndef OMIT_GETOPT_LONG
           , long_options, NULL
 #endif
@@ -1751,6 +1752,10 @@ int main(int argc, char **argv)
 #endif
     case 'm':
       SETFLAG(flags, F_SUMMARIZEMATCHES);
+      break;
+    case 'M':
+      SETFLAG(flags, F_SUMMARIZEMATCHES);
+      SETFLAG(flags, F_PRINTMATCHES);
       break;
     case 'n':
       //fprintf(stderr, "note: -n/--noempty is the default behavior now and is deprecated.\n");
@@ -1923,7 +1928,7 @@ int main(int argc, char **argv)
       !!ISFLAG(flags, F_DEDUPEFILES);
 
   if (pm > 1) {
-      fprintf(stderr, "Only one of --summarize, --delete, --linkhard, --linksoft, or --dedupe\nmay be used\n");
+      fprintf(stderr, "Only one of --summarize, --printwithsummary, --delete,\n--linkhard, --linksoft, or --dedupe may be used\n");
       string_malloc_destroy();
       exit(EXIT_FAILURE);
   }
@@ -2061,7 +2066,6 @@ skip_file_scan:
     if (ISFLAG(flags, F_NOPROMPT)) deletefiles(files, 0, 0);
     else deletefiles(files, 1, stdin);
   }
-  if (ISFLAG(flags, F_SUMMARIZEMATCHES)) summarizematches(files);
 #ifndef NO_SYMLINKS
   if (ISFLAG(flags, F_MAKESYMLINKS)) linkfiles(files, 0);
 #endif
@@ -2072,6 +2076,10 @@ skip_file_scan:
   if (ISFLAG(flags, F_DEDUPEFILES)) dedupefiles(files);
 #endif /* ENABLE_BTRFS */
   if (ISFLAG(flags, F_PRINTMATCHES)) printmatches(files);
+  if (ISFLAG(flags, F_SUMMARIZEMATCHES)) {
+    if (ISFLAG(flags, F_PRINTMATCHES)) printf("\n\n");
+    summarizematches(files);
+  }
 
   string_malloc_destroy();
 
