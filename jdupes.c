@@ -1615,7 +1615,6 @@ int main(int argc, char **argv)
     { "linksoft", 0, 0, 'l' },
     { "linkhard", 0, 0, 'L' },
     { "summarize", 0, 0, 'm'},
-    { "summary", 0, 0, 'm' },
     { "noempty", 0, 0, 'n' },
     { "noprompt", 0, 0, 'N' },
     { "order", 1, 0, 'o' },
