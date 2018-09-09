@@ -1808,7 +1808,7 @@ int main(int argc, char **argv)
       fprintf(stderr, "-x/--xsize is deprecated; use -X size[+-=]:size[suffix] instead\n");
       xs = string_malloc(8 + strlen(optarg));
       if (xs == NULL) oom("xsize temp string");
-      strcat(xs, "size");
+      strcpy(xs, "size");
       if (*optarg == '+') {
         strcat(xs, "+:");
         optarg++;
