@@ -1,3 +1,7 @@
+jdupes 1.10.4
+
+- Fix a bug that caused -x/--xsize to fail randomly
+
 jdupes 1.10.3
 
 - Add -M/--printwithsummary option
