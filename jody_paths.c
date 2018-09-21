@@ -89,7 +89,7 @@ extern int make_relative_link_name(const char * const src,
   if (*src != '/' || *dest != '/') {
     if (!getcwd(p1, PATHBUF_SIZE * 2)) goto error_getcwd;
     *(p1 + (PATHBUF_SIZE * 2) - 1) = '\0';
-    strncat(p1, "/", PATHBUF_SIZE * 2);
+    strncat(p1, "/", PATHBUF_SIZE * 2 - 1);
     strncpy(p2, p1, PATHBUF_SIZE * 2);
   }
 

@@ -41,14 +41,7 @@
 #include <sys/time.h>
 #include "jdupes.h"
 #include "string_malloc.h"
-#if defined USE_HASH_JODYHASH
- #define JODY_HASH_NOCOMPAT
- #include "jody_hash.h"
-#elif defined USE_HASH_XXHASH64
- #include "xxhash.h"
-#else
- #error No USE_HASH is defined
-#endif
+#include "xxhash.h"
 #include "jody_sort.h"
 #include "jody_win_unicode.h"
 #include "jody_cacheinfo.h"
@@ -191,20 +184,6 @@ static const char *extensions[] = {
     #ifdef SMA_PAGE_SIZE
     "smapage",
     #endif
-    #ifdef USE_JODY_HASH
-    #if JODY_HASH_WIDTH == 64
-    "jodyhash64",
-    #endif
-    #if JODY_HASH_WIDTH == 32
-    "jodyhash32",
-    #endif
-    #if JODY_HASH_WIDTH == 16
-    "jodyhash16",
-    #endif
-    #endif /* USE_JODY_HASH */
-    #ifdef USE_HASH_XXHASH64
-    "xxhash64",
-    #endif
     #ifdef NO_PERMS
     "noperm",
     #endif
@@ -320,7 +299,7 @@ extern void nullptr(const char * restrict func)
   exit(EXIT_FAILURE);
 }
 
-/* Compare two jody_hashes like memcmp() */
+/* Compare two hashes like memcmp() */
 #define HASH_COMPARE(a,b) ((a > b) ? 1:((a == b) ? 0:-1))
 
 
@@ -878,11 +857,11 @@ static void grokdir(const char * const restrict dir,
 
 #ifdef UNICODE
   /* Windows requires \* at the end of directory names */
-  strncpy(tempname, dir, PATHBUF_SIZE * 2);
+  strncpy(tempname, dir, PATHBUF_SIZE * 2 - 1);
   dirlen = strlen(tempname) - 1;
   p = tempname + dirlen;
   if (*p == '/' || *p == '\\') *p = '\0';
-  strncat(tempname, "\\*", PATHBUF_SIZE * 2);
+  strncat(tempname, "\\*", PATHBUF_SIZE * 2 - 1);
 
   if (!M2W(tempname, wname)) goto error_cd;
 
@@ -1040,9 +1019,7 @@ static jdupes_hash_t *get_filehash(const file_t * const restrict checkfile,
   static jdupes_hash_t *chunk = NULL;
   FILE *file;
   int check = 0;
-#ifdef USE_HASH_XXHASH64
   XXH64_state_t *xxhstate;
-#endif
 
   if (checkfile == NULL || checkfile->d_name == NULL) nullptr("get_filehash()");
   LOUD(fprintf(stderr, "get_filehash('%s', %" PRIdMAX ")\n", checkfile->d_name, (intmax_t)max_read);)
@@ -1102,11 +1079,9 @@ static jdupes_hash_t *get_filehash(const file_t * const restrict checkfile,
     fsize -= PARTIAL_HASH_SIZE;
   }
 
-#ifdef USE_HASH_XXHASH64
   xxhstate = XXH64_createState();
   if (xxhstate == NULL) nullptr("xxhstate");
   XXH64_reset(xxhstate, 0);
-#endif
 
   /* Read the file in CHUNK_SIZE chunks until we've read it all. */
   while (fsize > 0) {
@@ -1120,11 +1095,7 @@ static jdupes_hash_t *get_filehash(const file_t * const restrict checkfile,
       return NULL;
     }
 
-#if defined USE_HASH_JODYHASH
-    *hash = jody_block_hash(chunk, *hash, bytes_to_read);
-#elif defined USE_HASH_XXHASH64
     XXH64_update(xxhstate, chunk, bytes_to_read);
-#endif
 
     if ((off_t)bytes_to_read > fsize) break;
     else fsize -= (off_t)bytes_to_read;
@@ -1140,10 +1111,9 @@ static jdupes_hash_t *get_filehash(const file_t * const restrict checkfile,
 
   fclose(file);
 
-#ifdef USE_HASH_XXHASH64
   *hash = XXH64_digest(xxhstate);
   XXH64_freeState(xxhstate);
-#endif
+
   LOUD(fprintf(stderr, "get_filehash: returning hash: 0x%016jx\n", (uintmax_t)*hash));
   return hash;
 }

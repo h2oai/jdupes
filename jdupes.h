@@ -8,18 +8,6 @@
 extern "C" {
 #endif
 
-/* Select hash algorithm */
-//#define USE_HASH_JODYHASH /* jodyhash */
-//#define USE_HASH_XXHASH64 /* xxHash64 */
-
-/* Failsafes */
-#if !defined USE_HASH_JODYHASH && !defined USE_HASH_XXHASH64
-#define USE_HASH_JODYHASH
-#endif
-#if defined USE_HASH_JODYHASH && defined USE_HASH_XXHASH64
-#error Multiple USE_HASH options
-#endif
-
 /* Detect Windows and modify as needed */
 #if defined _WIN32 || defined __CYGWIN__
  #ifndef ON_WINDOWS
@@ -46,13 +34,7 @@ extern "C" {
 #include "jody_sort.h"
 #include "version.h"
 
-/* Configure hash function based on choice above */
-#if defined USE_HASH_JODYHASH
- #define JODY_HASH_NOCOMPAT
- #include "jody_hash.h"
-#elif defined USE_HASH_XXHASH64
- #include "xxhash.h"
-#endif
+#include "xxhash.h"
 
 /* Optional btrfs support */
 #ifdef ENABLE_BTRFS
@@ -61,11 +43,7 @@ extern "C" {
 #endif
 
 /* Set hash type (change this if swapping in a different hash function) */
-#if defined USE_HASH_JODYHASH
- typedef jodyhash_t jdupes_hash_t;
-#elif defined USE_HASH_XXHASH64
  typedef XXH64_hash_t jdupes_hash_t;
-#endif
 
 /* Some types are different on Windows */
 #ifdef ON_WINDOWS

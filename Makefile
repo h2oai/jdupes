@@ -90,16 +90,6 @@ endif
 	override undefine ENABLE_BTRFS
 endif
 
-# xxHash support
-ifdef USE_XXHASH
-COMPILER_OPTIONS += -DUSE_HASH_XXHASH64
-OBJS += xxhash.o
-OBJS_CLEAN += jody_hash.o
-else
-COMPILER_OPTIONS += -DUSE_HASH_JODYHASH
-OBJS += jody_hash.o
-OBJS_CLEAN += xxhash.o
-endif
 # New BTRFS support option
 ifdef ENABLE_BTRFS
 COMPILER_OPTIONS += -DENABLE_BTRFS
@@ -109,7 +99,7 @@ OBJS_CLEAN += act_dedupefiles.o
 endif
 # Low memory mode
 ifdef LOW_MEMORY
-COMPILER_OPTIONS += -DLOW_MEMORY -DJODY_HASH_WIDTH=32 -DSMA_PAGE_SIZE=32768 -DCHUNK_SIZE=16384 -DNO_HARDLINKS -DNO_USER_ORDER
+COMPILER_OPTIONS += -DLOW_MEMORY -DSMA_PAGE_SIZE=32768 -DCHUNK_SIZE=16384 -DNO_HARDLINKS -DNO_USER_ORDER
 endif
 
 CFLAGS += $(COMPILER_OPTIONS) $(CFLAGS_EXTRA)
@@ -124,6 +114,7 @@ INSTALL_DATA    = $(INSTALL) -m 0644
 OBJS += jdupes.o jody_paths.o jody_sort.o jody_win_unicode.o string_malloc.o
 OBJS += jody_cacheinfo.o
 OBJS += act_deletefiles.o act_linkfiles.o act_printmatches.o act_summarize.o
+OBJS += xxhash.o
 OBJS += $(ADDITIONAL_OBJECTS)
 
 all: $(PROGRAM_NAME)
