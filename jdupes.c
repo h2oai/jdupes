@@ -1492,8 +1492,10 @@ static void registerpair(file_t **matchlist, file_t *newmatch,
 
 static inline void help_text(void)
 {
-  printf("Usage: jdupes [options] DIRECTORY...\n\n");
+  printf("Usage: jdupes [options] FILES and/or DIRECTORIES...\n\n");
 
+  printf("Duplicate file sets will be printed by default unless a different action\n");
+  printf("option is specified (delete, summarize, link, dedupe, etc.)\n");
 #ifdef LOUD
   printf(" -@ --loud        \toutput annoying low-level debug info while running\n");
 #endif
@@ -1898,7 +1900,7 @@ int main(int argc, char **argv)
   }
 
   if (optind >= argc) {
-    fprintf(stderr, "no directories specified (use -h option for help)\n");
+    fprintf(stderr, "no files or directories specified (use -h option for help)\n");
     string_malloc_destroy();
     exit(EXIT_FAILURE);
   }

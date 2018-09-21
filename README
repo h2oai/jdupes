@@ -69,6 +69,8 @@ Usage
 --------------------------------------------------------------------------
 Usage: jdupes [options] DIRECTORY...
 
+Duplicate file sets will be printed by default unless a different action
+option is specified (delete, summarize, link, dedupe, etc.)
  -@ --loud              output annoying low-level debug info while running
  -0 --printnull         output nulls instead of CR/LF (like 'find -print0')
  -1 --one-file-system   do not match files on different filesystems/devices

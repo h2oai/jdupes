@@ -8,13 +8,15 @@ jdupes \- finds and performs actions upon duplicate files
 [
 .I options
 ]
-.I DIRECTORY
+.I FILES and/or DIRECTORIES
 \|.\|.\|.
 
 .SH "DESCRIPTION"
 Searches the given path(s) for duplicate files. Such files are found by
 comparing file sizes, then partial and full file hashes, followed by a
-byte-by-byte comparison.
+byte-by-byte comparison. The default behavior with no other "action
+options" specified (delete, summarize, link, dedupe, etc.) is to print
+sets of matching files.
 
 .SH OPTIONS
 .TP
