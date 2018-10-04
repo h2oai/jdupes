@@ -84,6 +84,7 @@ ifeq ($(OS), Windows_NT)
 ifndef NO_UNICODE
 	UNICODE=1
 	COMPILER_OPTIONS += -municode
+	PROGRAM_SUFFIX=.exe
 endif
 	COMPILER_OPTIONS += -D__USE_MINGW_ANSI_STDIO=1 -DON_WINDOWS=1
 	OBJS += win_stat.o winres.o
@@ -129,12 +130,16 @@ installdirs:
 	test -e $(DESTDIR)$(BIN_DIR) || $(MKDIR) $(DESTDIR)$(BIN_DIR)
 	test -e $(DESTDIR)$(MAN_DIR) || $(MKDIR) $(DESTDIR)$(MAN_DIR)
 
-install: jdupes installdirs
+install: $(PROGRAM_NAME) installdirs
 	$(INSTALL_PROGRAM)	$(PROGRAM_NAME)   $(DESTDIR)$(BIN_DIR)/$(PROGRAM_NAME)
 	$(INSTALL_DATA)		$(PROGRAM_NAME).1 $(DESTDIR)$(MAN_DIR)/$(PROGRAM_NAME).$(MAN_EXT)
 
 test:
 	./test.sh
+
+stripped: $(PROGRAM_NAME)
+	strip $(PROGRAM_NAME)$(PROGRAM_SUFFIX)
+
 clean:
 	$(RM) $(OBJS) $(OBJS_CLEAN) $(PROGRAM_NAME) $(PROGRAM_NAME).exe *~ *.gcno *.gcda *.gcov
 
