@@ -54,7 +54,6 @@
 #include "act_printmatches.h"
 #include "act_summarize.h"
 
-
 /* Detect Windows and modify as needed */
 #if defined _WIN32 || defined __CYGWIN__
  const char dir_sep = '\\';
@@ -1659,7 +1658,7 @@ int main(int argc, char **argv)
   oldargv = cloneargs(argc, argv);
 
   while ((opt = GETOPT(argc, argv,
-  "@01ABC:dDfhHiIlLmMnNOpP:qQrRsSvzZo:x:X:"
+  "@01ABC:dDfhHiIlLmMnNOpP:qQrRsSvVzZo:x:X:"
 #ifndef OMIT_GETOPT_LONG
           , long_options, NULL
 #endif
@@ -1800,6 +1799,7 @@ int main(int argc, char **argv)
 #endif
       break;
     case 'v':
+    case 'V':
       printf("jdupes %s (%s) ", VER, VERDATE);
 
       /* Indicate bitness information */
@@ -1811,6 +1811,11 @@ int main(int argc, char **argv)
         else if (sizeof(long) == 8) printf("32-bit i64\n");
       } else printf("%u-bit i%u\n", (unsigned int)(sizeof(uintptr_t) * 8),
           (unsigned int)(sizeof(long) * 8));
+
+#ifdef BUILD_DATE
+#include "build_date.h"
+      printf("Built on %s\n", BUILT_ON_DATE);
+#endif
 
       printf("Compile-time extensions:");
       if (*extensions != NULL) {

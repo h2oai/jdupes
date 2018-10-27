@@ -17,6 +17,7 @@
 #
 # Normal output and testing dirs
 #
+/build_date.h
 /jdupes
 /jdupes*.exe
 /*.pkg.tar.xz

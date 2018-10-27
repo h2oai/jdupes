@@ -59,6 +59,11 @@ COMPILER_OPTIONS += -std=gnu99 -O2 -g -D_FILE_OFFSET_BITS=64 -fstrict-aliasing -
 # no need to modify anything beyond this point                      #
 #####################################################################
 
+# Set built-on date for display in program version info screen
+$(shell echo -n "#define BUILT_ON_DATE " > build_date.h)
+$(shell date +"\"%Y-%m-%d %H:%M:%S %z\"" >> build_date.h)
+COMPILER_OPTIONS += -DBUILD_DATE
+
 # Debugging code inclusion
 ifdef LOUD
 DEBUG=1
@@ -141,7 +146,7 @@ stripped: $(PROGRAM_NAME)
 	strip $(PROGRAM_NAME)$(PROGRAM_SUFFIX)
 
 clean:
-	$(RM) $(OBJS) $(OBJS_CLEAN) $(PROGRAM_NAME) $(PROGRAM_NAME).exe *~ *.gcno *.gcda *.gcov
+	$(RM) $(OBJS) $(OBJS_CLEAN) build_date.h $(PROGRAM_NAME) $(PROGRAM_NAME).exe *~ *.gcno *.gcda *.gcov
 
 distclean: clean
 	$(RM) *.pkg.tar.xz
