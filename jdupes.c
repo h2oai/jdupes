@@ -1221,8 +1221,13 @@ static file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict f
     LOUD(if (cmpresult) fprintf(stderr, "checkmatch: partial hashes do not match\n"));
     DBG(partial_hash++;)
 
-    if (file->size <= PARTIAL_HASH_SIZE) {
-      LOUD(fprintf(stderr, "checkmatch: small file: copying partial hash to full hash\n"));
+    /* Print partial hash matching pairs if requested */
+    if (cmpresult == 0 && ISFLAG(p_flags, P_PARTIAL))
+      printf("Partial hashes match:\n   %s\n   %s\n\n", file->d_name, tree->file->d_name);
+
+    if (file->size <= PARTIAL_HASH_SIZE || ISFLAG(flags, F_PARTIALONLY)) {
+      if (ISFLAG(flags, F_PARTIALONLY)) LOUD(fprintf(stderr, "checkmatch: partial only mode: treating partial hash as full hash\n"));
+      else LOUD(fprintf(stderr, "checkmatch: small file: copying partial hash to full hash\n"));
       /* filehash_partial = filehash if file is small enough */
       if (!ISFLAG(file->flags, F_HASH_FULL)) {
         file->filehash = file->filehash_partial;
@@ -1251,9 +1256,6 @@ static file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict f
         file->filehash = *filehash;
         SETFLAG(file->flags, F_HASH_FULL);
       }
-
-      /* Print partial hash matching pairs if requested */
-      if (ISFLAG(p_flags, P_PARTIAL)) printf("Partial hashes match:\n   %s\n   %s\n\n", file->d_name, tree->file->d_name);
 
       /* Full file hash comparison */
       cmpresult = HASH_COMPARE(file->filehash, tree->file->filehash);
@@ -1529,10 +1531,11 @@ static inline void help_text(void)
 #endif
   printf(" -S --size        \tshow size of duplicate files\n");
   printf(" -q --quiet       \thide progress indicator\n");
-/* This is undocumented in the quick help because it is a dangerous option. If you
- * really want it, uncomment it here, and may your data rest in peace. */
-/*  printf(" -Q --quick       \tskip byte-by-byte duplicate verification. WARNING:\n");
-  printf("                  \tthis may delete non-duplicates! Read the manual first!\n"); */
+  printf(" -Q --quick       \tskip byte-by-byte duplicate verification. WARNING:\n");
+  printf("                  \tthis may delete non-duplicates! Read the manual first!\n");
+  printf(" -T --partial-only \tmatch based on partial hashes only. WARNING:\n");
+  printf("                  \tEXTREMELY DANGEROUS paired with destructive actions!\n");
+  printf("                  \t-T must be specified twice to work. Read the manual!\n");
   printf(" -v --version     \tdisplay jdupes version and license information\n");
   printf(" -x --xsize=SIZE  \texclude files of size < SIZE bytes from consideration\n");
   printf("    --xsize=+SIZE \t'+' specified before SIZE, exclude size > SIZE\n");
@@ -1561,6 +1564,7 @@ int main(int argc, char **argv)
   static int firstrecurse;
   static int opt;
   static int pm = 1;
+  static int partialonly_spec = 0;
   static ordertype_t ordertype = ORDER_NAME;
   static long manual_chunk_size = 0;
 #ifndef ON_WINDOWS
@@ -1601,6 +1605,7 @@ int main(int argc, char **argv)
     { "recursive:", 0, 0, 'R' },
     { "symlinks", 0, 0, 's' },
     { "size", 0, 0, 'S' },
+    { "partial-only", 0, 0, 'T' },
     { "version", 0, 0, 'v' },
     { "xsize", 1, 0, 'x' },
     { "exclude", 1, 0, 'X' },
@@ -1658,7 +1663,7 @@ int main(int argc, char **argv)
   oldargv = cloneargs(argc, argv);
 
   while ((opt = GETOPT(argc, argv,
-  "@01ABC:dDfhHiIlLmMnNOpP:qQrRsSvVzZo:x:X:"
+  "@01ABC:dDfhHiIlLmMnNOpP:qQrRsSTvVzZo:x:X:"
 #ifndef OMIT_GETOPT_LONG
           , long_options, NULL
 #endif
@@ -1757,6 +1762,14 @@ int main(int argc, char **argv)
       break;
     case 'R':
       SETFLAG(flags, F_RECURSEAFTER);
+      break;
+    case 'T':
+      if (partialonly_spec == 0)
+        partialonly_spec = 1;
+      else {
+        partialonly_spec = 2;
+        SETFLAG(flags, F_PARTIALONLY);
+      }
       break;
 #ifndef NO_SYMLINKS
     case 'l':
@@ -1880,6 +1893,18 @@ int main(int argc, char **argv)
     exit(EXIT_FAILURE);
   }
 
+  if (partialonly_spec == 1) {
+    fprintf(stderr, "--partial-only specified only once (it's VERY DANGEROUS, read the manual!)\n");
+    string_malloc_destroy();
+    exit(EXIT_FAILURE);
+  }
+
+  if (ISFLAG(flags, F_PARTIALONLY) && ISFLAG(flags, F_QUICKCOMPARE)) {
+    fprintf(stderr, "--partial-only overrides --quick and is even more dangerous (read the manual!)\n");
+    string_malloc_destroy();
+    exit(EXIT_FAILURE);
+  }
+
   if (ISFLAG(flags, F_RECURSE) && ISFLAG(flags, F_RECURSEAFTER)) {
     fprintf(stderr, "options --recurse and --recurse: are not compatible\n");
     string_malloc_destroy();
@@ -1978,15 +2003,15 @@ int main(int argc, char **argv)
 
     /* Byte-for-byte check that a matched pair are actually matched */
     if (match != NULL) {
-      /* Quick comparison mode will never run confirmmatch()
+      /* Quick or partial-only compare will never run confirmmatch()
        * Also skip match confirmation for hard-linked files
        * (This set of comparisons is ugly, but quite efficient) */
-      if (ISFLAG(flags, F_QUICKCOMPARE) ||
+      if (ISFLAG(flags, F_QUICKCOMPARE) || ISFLAG(flags, F_PARTIALONLY) ||
            (ISFLAG(flags, F_CONSIDERHARDLINKS) &&
            (curfile->inode == (*match)->inode) &&
            (curfile->device == (*match)->device))
          ) {
-        LOUD(fprintf(stderr, "MAIN: notice: quick compare match (-Q)\n"));
+        LOUD(fprintf(stderr, "MAIN: notice: quick or partial-only match (-Q/-T)\n"));
         registerpair(match, curfile,
             (ordertype == ORDER_TIME) ? sort_pairs_by_mtime : sort_pairs_by_filename);
         dupecount++;

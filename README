@@ -103,8 +103,11 @@ option is specified (delete, summarize, link, dedupe, etc.)
  -p --permissions       don't consider files with different owner/group or
                         permission bits as duplicates
  -P --print=type        print extra info (partial, early, fullhash)
- -Q --quick             skip byte-for-byte confirmation for quick matching
-                        WARNING: -Q can result in data loss! Be very careful!
+ -Q --quick             skip byte-by-byte duplicate verification. WARNING:
+                        this may delete non-duplicates! Read the manual first!
+ -T --partial-only      match based on partial hashes only. WARNING:
+                        EXTREMELY DANGEROUS paired with destructive actions!
+                        -T must be specified twice to work. Read the manual!
  -r --recurse           for every directory, process its subdirectories too
  -R --recurse:          for each directory given after this option follow
                         subdirectories encountered within (note the ':' at

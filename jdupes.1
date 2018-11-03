@@ -134,6 +134,10 @@ show size of duplicate files
 .B -s --symlinks
 follow symlinked directories
 .TP
+.B -T --partial-only
+.B [WARNING: EXTREME RISK OF DATA LOSS, SEE CAVEATS]
+match based on hash of first block of file data, ignoring the rest
+.TP
 .B -v --version
 display jdupes version and compilation feature flags
 .TP
@@ -259,6 +263,29 @@ comparison that this option explicitly bypasses. Do not use it on ANY data
 set for which any amount of data loss is unacceptable. This option is not
 included in the help text for the program due to its risky nature.
 .B You have been warned!
+
+The
+.B \-T
+or
+.BR \-\-partial\-only
+option produces results based on a hash of the first block of file data
+in each file, ignoring everything else in the file. Partial hash checks
+have always been an important exclusion step in the jdupes algorithm,
+usually hashing the first 4096 bytes of data and allowing files that are
+different at the start to be rejected early. In certain scenarios it may
+be a useful heuristic for a user to see that a set of files has the same
+size and the same starting data, even if the remaining data does not
+match; one example of this would be comparing files with data blocks that
+are damaged or missing such as an incomplete file transfer or checking a
+data recovery against known-good copies to see what damaged data can be
+deleted in favor of restoring the known-good copy. This option is meant
+to be used with informational actions and
+.B can result in EXTREME DATA LOSS
+if used with options that delete files, create hard links, or perform
+other destructive actions on data based on the matching output. Because
+of the potential for massive data destruction,
+.B this option MUST BE SPECIFIED TWICE
+to take effect and will error out if it is only specified once.
 
 Using the
 .B \-C
