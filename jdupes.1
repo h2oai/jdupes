@@ -224,7 +224,7 @@ or
 .BR \-\-softabort
 used to be --hardabort in jdupes prior to v1.5 and had the opposite behavior.
 Defaulting to taking action on abort is probably not what most users would
-expect. The decision to invert rather than reassign to a different switch
+expect. The decision to invert rather than reassign to a different option
 was made because this feature was still fairly new at the time of the change.
 
 The
@@ -246,11 +246,6 @@ or
 .BR \-\-symlink ,
 a user could accidentally preserve a symlink while deleting the file it
 points to.
-
-Furthermore, when specifying a particular directory more than once, all
-files within that directory will be listed as their own duplicates,
-leading to data loss should a user preserve a file without its "duplicate"
-(the file itself!).
 
 The
 .B \-Q
@@ -311,4 +306,3 @@ jdupes is a fork of 'fdupes' which is maintained by and contains
 extra code copyrighted by Jody Bruchon <jody@jodybruchon.com>
 
 Based on 'fdupes' created by Adrian Lopez <adrian2@caribe.net>
-

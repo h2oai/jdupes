@@ -1,8 +1,7 @@
 Introduction
 --------------------------------------------------------------------------
 jdupes is a program for identifying and taking actions upon duplicate
-files. This fork known as 'jdupes' is heavily modified from and improved
-over the original. See CHANGES for details.
+files.
 
 A WORD OF WARNING: jdupes IS NOT a drop-in compatible replacement for
 fdupes! Do not blindly replace fdupes with jdupes in scripts and expect
@@ -12,12 +11,12 @@ between the two programs. For example, the -I switch in jdupes means
 "immediately delete files during scanning without prompting the user."
 
 
-Why use jdupes instead of the original fdupes or other forks?
+Why use jdupes instead of the original fdupes or other duplicate finders?
 --------------------------------------------------------------------------
 The biggest reason is raw speed. In testing on various data sets, jdupes is
 over 7 times faster than fdupes-1.51 on average.
 
-jdupes is the only Windows port of fdupes. Most duplicate scanners built on
+jdupes provides a native Wndows port. Most duplicate scanners built on
 Linux and other UNIX-like systems do not compile for Windows out-of-the-box
 and even if they do, they don't support Unicode and other Windows-specific
 quirks and features.
@@ -38,16 +37,15 @@ not afraid of dropping features of low value; a prime example is the -1
 switch which outputs all matches in a set on one line, a feature which was
 found to be useless in real-world tests and therefore thrown out.
 
-The downside is that jdupes development is never guaranteed to be bug-free!
-If the program eats your dog or sets fire to your lawn, the authors cannot
-be held responsible. If you notice a bug, please report it.
-
 While jdupes maintains some degree of compatibility with fdupes from which
 it was originally derived, there is no guarantee that it will continue to
 maintain such compatibility in the future. However, compatibility will be
 retained between minor versions, i.e. jdupes-1.6 and jdupes-1.6.1 should
 not have any significant differences in results with identical command
 lines.
+
+If the program eats your dog or sets fire to your lawn, the authors cannot
+be held responsible. If you notice a bug, please report it.
 
 
 What jdupes is not: a similar (but not identical) file finding tool
@@ -63,6 +61,13 @@ to the original.
 Plenty of excellent tools already exist to "fuzzy match" specific file types
 using knowledge of their file formats to help. There are no plans to add
 this type of matching to jdupes.
+
+There are some match options available in jdupes that enable dangerous file
+matching based on partial or likely but not 100% certain matching. These
+are considered expert options for special situations and are clearly and
+loudly documented as being dangerous. The -Q and -T options are notable
+examples, and the extreme danger of the -T option is safeguarded by a
+requirement to specify it twice so it can't be used accidentally.
 
 
 Usage
@@ -92,6 +97,7 @@ option is specified (delete, summarize, link, dedupe, etc.)
  -I --isolate           files in the same specified directory won't match
  -l --linksoft          make relative symlinks for duplicates w/o prompting
  -L --linkhard          hard link all duplicate files without prompting
+                        Windows allows a maximum of 1023 hard links per file
  -m --summarize         summarize dupe information
  -M --printwithsummary  will print matches and --summarize at the end
  -N --noprompt          together with --delete, preserve the first file in
@@ -103,18 +109,18 @@ option is specified (delete, summarize, link, dedupe, etc.)
  -p --permissions       don't consider files with different owner/group or
                         permission bits as duplicates
  -P --print=type        print extra info (partial, early, fullhash)
+ -q --quiet             hide progress indicator
  -Q --quick             skip byte-by-byte duplicate verification. WARNING:
                         this may delete non-duplicates! Read the manual first!
- -T --partial-only      match based on partial hashes only. WARNING:
-                        EXTREMELY DANGEROUS paired with destructive actions!
-                        -T must be specified twice to work. Read the manual!
  -r --recurse           for every directory, process its subdirectories too
  -R --recurse:          for each directory given after this option follow
                         subdirectories encountered within (note the ':' at
                         the end of the option, manpage for more details)
  -s --symlinks          follow symlinks
  -S --size              show size of duplicate files
- -q --quiet             hide progress indicator
+ -T --partial-only      match based on partial hashes only. WARNING:
+                        EXTREMELY DANGEROUS paired with destructive actions!
+                        -T must be specified twice to work. Read the manual!
  -v --version           display jdupes version and license information
  -x --xsize=SIZE        exclude files of size < SIZE bytes from consideration
     --xsize=+SIZE       '+' specified before SIZE, exclude size > SIZE
@@ -145,6 +151,51 @@ to. A similar problem arises when specifying a particular directory more
 than once. All files within that directory will be listed as their own
 duplicates, leading to data loss should a user preserve a file without its
 "duplicate" (the file itself!)
+
+Using -1 or --one-file-system prevents matches that cross filesystems, but a
+more relaxed form of this option may be added that allows cross-matching for
+all filesystems that each parameter is present on.
+
+-Z or --softabort used to be --hardabort in jdupes prior to v1.5 and had the
+opposite behavior. Defaulting to taking action on abort is probably not what
+most users would expect. The decision to invert rather than reassign to a
+different option was made because this feature was still fairly new at the
+time of the change.
+
+The -O or --paramorder option allows the user greater control over wha
+appears in the first position of a match set, specifically for keeping the -N
+option from deleting all but one file in a set in a seemingly random way. All
+directories specified on the command line will be used as the sorting order
+of result sets first, followed by the sorting algorithm set by the -o or
+--order option. This means that the order of all match pairs for a single
+directory specification will retain the old sorting behavior even if this
+option is specified.
+
+When used together with options -s or --symlink, a user could accidentally
+preserve a symlink while deleting the file it points to.
+
+The -Q or --quick option only reads each file once, hashes it, and performs
+comparisons based solely on the hashes. There is a small but significant risk
+of a hash collision which is the purpose of the failsafe byte-for-byte
+comparison that this option explicitly bypasses. Do not use it on ANY data
+set for which any amount of data loss is unacceptable. You have been warned!
+
+The -T or --partial-only option produces results based on a hash of the first
+block of file data in each file, ignoring everything else in the file.
+Partial hash checks have always been an important exclusion step in the
+jdupes algorithm, usually hashing the first 4096 bytes of data and allowing
+files that are different at the start to be rejected early. In certain
+scenarios it may be a useful heuristic for a user to see that a set of files
+has the same size and the same starting data, even if the remaining data does
+not match; one example of this would be comparing files with data blocks that
+are damaged or missing such as an incomplete file transfer or checking a data
+recovery against known-good copies to see what damaged data can be deleted in
+favor of restoring the known-good copy. This option is meant to be used with
+informational actions and can result in EXTREME DATA LOSS if used with
+options that delete files, create hard links, or perform other destructive
+actions on data based on the matching output. Because of the potential for
+massive data destruction, this option MUST BE SPECIFIED TWICE to take effect
+and will error out if it is only specified once.
 
 The -I/--isolate option attempts to block matches that are contained in
 the same specified directory parameter on the command line. Due to the
@@ -359,3 +410,4 @@ IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
 CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+

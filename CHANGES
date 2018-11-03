@@ -1,3 +1,8 @@
+jdupes 1.11
+
+- Add new option -T for partial hash matches only (dangerous!)
+- Fix '-P partial' printing
+
 jdupes 1.10.4
 
 - Fix a bug that caused -x/--xsize to fail randomly
