@@ -1227,7 +1227,7 @@ static file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict f
 
     if (file->size <= PARTIAL_HASH_SIZE || ISFLAG(flags, F_PARTIALONLY)) {
       if (ISFLAG(flags, F_PARTIALONLY)) LOUD(fprintf(stderr, "checkmatch: partial only mode: treating partial hash as full hash\n"));
-      else LOUD(fprintf(stderr, "checkmatch: small file: copying partial hash to full hash\n"));
+      else { LOUD(fprintf(stderr, "checkmatch: small file: copying partial hash to full hash\n")); }
       /* filehash_partial = filehash if file is small enough */
       if (!ISFLAG(file->flags, F_HASH_FULL)) {
         file->filehash = file->filehash_partial;
