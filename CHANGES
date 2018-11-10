@@ -1,3 +1,7 @@
+jdupes 1.11.1
+
+- Disable build date embedding by default to make reproducible builds easier
+
 jdupes 1.11
 
 - Add new option -T for partial hash matches only (dangerous!)
