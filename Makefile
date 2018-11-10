@@ -60,9 +60,11 @@ COMPILER_OPTIONS += -std=gnu99 -O2 -g -D_FILE_OFFSET_BITS=64 -fstrict-aliasing -
 #####################################################################
 
 # Set built-on date for display in program version info screen
+ifdef EMBED_BUILD_DATE
 BD=$(shell date +"\"%Y-%m-%d %H:%M:%S %z\"")
 $(shell echo "#define BUILT_ON_DATE \"$(BD)\"" > build_date.h)
 COMPILER_OPTIONS += -DBUILD_DATE
+endif
 
 # Debugging code inclusion
 ifdef LOUD
