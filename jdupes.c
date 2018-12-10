@@ -121,10 +121,6 @@ static size_t auto_chunk_size = CHUNK_SIZE;
 #error "PATHBUF_SIZE can't be less than PATH_MAX"
 #endif
 
-#ifndef INITIAL_DEPTH_THRESHOLD
-#define INITIAL_DEPTH_THRESHOLD 8
-#endif
-
 /* For interactive deletion input */
 #define INPUT_SIZE 512
 
