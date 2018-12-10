@@ -1067,7 +1067,7 @@ preserve_none:
 /* Compile out link code if no linking support is built in */
 #if !(defined NO_HARDLINKS && defined NO_SYMLINKS)
 
-extern void linkfiles(file_t *files, const int hard)
+static void linkfiles(file_t *files, const int hard)
 {
   static file_t *tmpfile;
   static file_t *srcfile;
@@ -2019,6 +2019,11 @@ int main(int argc, char **argv)
   "@01ABC:dDfhHiIlLmMnNOpP:qQrRsSTvVzZo:x:X:",
   long_options, NULL)) != EOF) {
     switch (opt) {
+    /* Unsupported but benign options can just be skipped */
+    case '@':
+    case 'C':
+    case 'D':
+      break;
     case '0':
       SETFLAG(flags, F_PRINTNULL);
       break;
