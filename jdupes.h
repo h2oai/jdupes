@@ -269,7 +269,7 @@ struct size_suffix {
 };
 
 extern const struct size_suffix size_suffix[];
-
+extern char tempname[];
 
 extern void oom(const char * const restrict msg);
 extern void nullptr(const char * restrict func);

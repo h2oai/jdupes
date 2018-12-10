@@ -31,7 +31,6 @@ extern void linkfiles(file_t *files, const int hard)
   static unsigned int symsrc;
   static char rel_path[PATHBUF_SIZE];
 #endif
-  static char temp_path[PATHBUF_SIZE];
 
   LOUD(fprintf(stderr, "Running linkfiles(%d)\n", hard);)
   curfile = files;
@@ -188,17 +187,17 @@ extern void linkfiles(file_t *files, const int hard)
         name_len = strlen(dupelist[x]->d_name) + 14;
         if (name_len > PATHBUF_SIZE) continue;
         /* Assemble a temporary file name */
-        strcpy(temp_path, dupelist[x]->d_name);
-        strcat(temp_path, ".__jdupes__.tmp");
+        strcpy(tempname, dupelist[x]->d_name);
+        strcat(tempname, ".__jdupes__.tmp");
         /* Rename the source file to the temporary name */
 #ifdef UNICODE
-        if (!M2W(temp_path, wname2)) {
+        if (!M2W(tempname, wname2)) {
           fprintf(stderr, "error: MultiByteToWideChar failed: "); fwprint(stderr, srcfile->d_name, 1);
           continue;
         }
         i = MoveFileW(wname, wname2) ? 0 : 1;
 #else
-        i = rename(dupelist[x]->d_name, temp_path);
+        i = rename(dupelist[x]->d_name, tempname);
 #endif
         if (i != 0) {
           fprintf(stderr, "warning: cannot move link target to a temporary name, not linking:\n-//-> ");
@@ -207,7 +206,7 @@ extern void linkfiles(file_t *files, const int hard)
 #ifdef UNICODE
           MoveFileW(wname2, wname);
 #else
-          rename(temp_path, dupelist[x]->d_name);
+          rename(tempname, dupelist[x]->d_name);
 #endif
           continue;
         }
@@ -256,37 +255,37 @@ extern void linkfiles(file_t *files, const int hard)
           fprintf(stderr, "' -> '"); fwprint(stderr, srcfile->d_name, 0);
           fprintf(stderr, "': %s\n", strerror(errno));
 #ifdef UNICODE
-          if (!M2W(temp_path, wname2)) {
-            fprintf(stderr, "error: MultiByteToWideChar failed: "); fwprint(stderr, temp_path, 1);
+          if (!M2W(tempname, wname2)) {
+            fprintf(stderr, "error: MultiByteToWideChar failed: "); fwprint(stderr, tempname, 1);
             continue;
           }
           i = MoveFileW(wname2, wname) ? 0 : 1;
 #else
-          i = rename(temp_path, dupelist[x]->d_name);
+          i = rename(tempname, dupelist[x]->d_name);
 #endif
           if (i != 0) {
             fprintf(stderr, "error: cannot rename temp file back to original\n");
             fprintf(stderr, "original: "); fwprint(stderr, dupelist[x]->d_name, 1);
-            fprintf(stderr, "current:  "); fwprint(stderr, temp_path, 1);
+            fprintf(stderr, "current:  "); fwprint(stderr, tempname, 1);
           }
           continue;
         }
 
         /* Remove temporary file to clean up; if we can't, reverse the linking */
 #ifdef UNICODE
-          if (!M2W(temp_path, wname2)) {
-            fprintf(stderr, "error: MultiByteToWideChar failed: "); fwprint(stderr, temp_path, 1);
+          if (!M2W(tempname, wname2)) {
+            fprintf(stderr, "error: MultiByteToWideChar failed: "); fwprint(stderr, tempname, 1);
             continue;
           }
         i = DeleteFileW(wname2) ? 0 : 1;
 #else
-        i = remove(temp_path);
+        i = remove(tempname);
 #endif
         if (i != 0) {
           /* If the temp file can't be deleted, there may be a permissions problem
            * so reverse the process and warn the user */
           fprintf(stderr, "\nwarning: can't delete temp file, reverting: ");
-          fwprint(stderr, temp_path, 1);
+          fwprint(stderr, tempname, 1);
 #ifdef UNICODE
           i = DeleteFileW(wname) ? 0 : 1;
 #else
@@ -298,12 +297,12 @@ extern void linkfiles(file_t *files, const int hard)
 #ifdef UNICODE
             i = MoveFileW(wname2, wname) ? 0 : 1;
 #else
-            i = rename(temp_path, dupelist[x]->d_name);
+            i = rename(tempname, dupelist[x]->d_name);
 #endif
             if (i != 0) {
               fprintf(stderr, "\nwarning: couldn't revert the file to its original name\n");
               fprintf(stderr, "original: "); fwprint(stderr, dupelist[x]->d_name, 1);
-              fprintf(stderr, "current:  "); fwprint(stderr, temp_path, 1);
+              fprintf(stderr, "current:  "); fwprint(stderr, tempname, 1);
             }
           }
         }

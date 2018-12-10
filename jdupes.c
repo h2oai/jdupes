@@ -257,6 +257,8 @@ static int interrupt = 0;
 /* Progress indicator time */
 struct timeval time1, time2;
 
+/* For path name mangling */
+char tempname[PATHBUF_SIZE * 2];
 
 /***** End definitions, begin code *****/
 
@@ -635,7 +637,6 @@ extern int check_conditions(const file_t * const restrict file1, const file_t * 
 /* Check for exclusion conditions for a single file (1 = fail) */
 static int check_singlefile(file_t * const restrict newfile)
 {
-  static char tempname[PATHBUF_SIZE * 2];
   char * restrict tp = tempname;
   int excluded;
 
@@ -779,7 +780,6 @@ static void grokdir(const char * const restrict dir,
   file_t * restrict newfile;
   struct dirent *dirinfo;
   static int grokdir_level = 0;
-  static char tempname[PATHBUF_SIZE * 2];
   size_t dirlen;
   struct travdone *traverse;
   int i, single = 0;
@@ -911,6 +911,8 @@ static void grokdir(const char * const restrict dir,
 
     tp = tempname;
     memcpy(newfile->d_name, tp, dirlen + d_name_len);
+
+    /*** WARNING: tempname global gets reused by check_singlefile here! ***/
 
     /* Single-file [l]stat() and exclusion condition check */
     if (check_singlefile(newfile) != 0) {
