@@ -116,9 +116,6 @@ extern "C" {
 #endif
 
 
-/* How many operations to wait before updating progress counters */
-#define DELAY_COUNT 256
-
 /* Behavior modification flags */
 extern uint_fast32_t flags;
 #define F_RECURSE		0x00000001U
