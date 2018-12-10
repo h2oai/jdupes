@@ -179,9 +179,6 @@ typedef enum {
 #define PATHBUF_SIZE 4096
 #endif
 
-/* For interactive deletion input */
-#define INPUT_SIZE 512
-
 /* Per-file information */
 typedef struct _file {
   struct _file *duplicates;

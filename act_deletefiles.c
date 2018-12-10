@@ -10,6 +10,9 @@
 #include "jody_win_unicode.h"
 #include "act_deletefiles.h"
 
+/* For interactive deletion input */
+#define INPUT_SIZE 512
+
 extern void deletefiles(file_t *files, int prompt, FILE *tty)
 {
   unsigned int counter, groups;

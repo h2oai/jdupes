@@ -121,9 +121,6 @@ static size_t auto_chunk_size = CHUNK_SIZE;
 #error "PATHBUF_SIZE can't be less than PATH_MAX"
 #endif
 
-/* For interactive deletion input */
-#define INPUT_SIZE 512
-
 /* Size suffixes - this gets exported */
 const struct size_suffix size_suffix[] = {
   /* Byte (someone may actually try to use this) */
