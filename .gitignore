@@ -20,6 +20,7 @@
 /build_date.h
 /jdupes
 /jdupes*.exe
+/jdupes-standalone
 /*.pkg.tar.xz
 test_temp
 output.log

@@ -125,6 +125,8 @@ OBJS += act_deletefiles.o act_linkfiles.o act_printmatches.o act_summarize.o
 OBJS += xxhash.o
 OBJS += $(ADDITIONAL_OBJECTS)
 
+OBJS_CLEAN += jdupes-standalone
+
 all: $(PROGRAM_NAME)
 
 $(PROGRAM_NAME): $(OBJS)
@@ -132,6 +134,8 @@ $(PROGRAM_NAME): $(OBJS)
 
 winres.o : winres.rc winres.manifest.xml
 	windres winres.rc winres.o
+
+standalone: jdupes-standalone
 
 installdirs:
 	test -e $(DESTDIR)$(BIN_DIR) || $(MKDIR) $(DESTDIR)$(BIN_DIR)
