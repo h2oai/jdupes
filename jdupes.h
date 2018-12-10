@@ -263,7 +263,7 @@ struct size_suffix {
 };
 
 extern const struct size_suffix size_suffix[];
-extern char tempname[];
+extern char tempname[PATHBUF_SIZE * 2];
 
 extern void oom(const char * const restrict msg);
 extern void nullptr(const char * restrict func);

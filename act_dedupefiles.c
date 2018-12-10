@@ -24,17 +24,15 @@ static const char *readonly_msg[] = {
 };
 
 static char *dedupeerrstr(int err) {
-  static char buf[256];
-
-  buf[sizeof(buf)-1] = '\0';
+  tempname[sizeof(tempname)-1] = '\0';
   if (err == BTRFS_SAME_DATA_DIFFERS) {
-    snprintf(buf, sizeof(buf), "BTRFS_SAME_DATA_DIFFERS (data modified in the meantime?)");
-    return buf;
+    snprintf(tempname, sizeof(tempname), "BTRFS_SAME_DATA_DIFFERS (data modified in the meantime?)");
+    return tempname;
   } else if (err < 0) {
     return strerror(-err);
   } else {
-    snprintf(buf, sizeof(buf), "Unknown error %d", err);
-    return buf;
+    snprintf(tempname, sizeof(tempname), "Unknown error %d", err);
+    return tempname;
   }
 }
 
