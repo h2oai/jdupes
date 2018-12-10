@@ -1515,6 +1515,7 @@ static inline void help_text(void)
   printf("                  \tpermission bits as duplicates\n");
 #endif
   printf(" -P --print=type  \tprint extra info (partial, early, fullhash)\n");
+  printf(" -q --quiet       \thide progress indicator\n");
   printf(" -Q --quick       \tskip byte-for-byte confirmation for quick matching\n");
   printf("                  \tWARNING: -Q can result in data loss! Be very careful!\n");
   printf(" -r --recurse     \tfor every directory, process its subdirectories too\n");
@@ -1525,9 +1526,6 @@ static inline void help_text(void)
   printf(" -s --symlinks    \tfollow symlinks\n");
 #endif
   printf(" -S --size        \tshow size of duplicate files\n");
-  printf(" -q --quiet       \thide progress indicator\n");
-  printf(" -Q --quick       \tskip byte-by-byte duplicate verification. WARNING:\n");
-  printf("                  \tthis may delete non-duplicates! Read the manual first!\n");
   printf(" -T --partial-only \tmatch based on partial hashes only. WARNING:\n");
   printf("                  \tEXTREMELY DANGEROUS paired with destructive actions!\n");
   printf("                  \t-T must be specified twice to work. Read the manual!\n");
