@@ -51,15 +51,12 @@ typedef jodyhash_t jdupes_hash_t;
 
 typedef ino_t jdupes_ino_t;
 typedef mode_t jdupes_mode_t;
-extern const char *FILE_MODE_RO;
-extern const char dir_sep;
 
 #define ISFLAG(a,b) ((a & b) == b)
 #define SETFLAG(a,b) (a |= b)
 #define CLEARFLAG(a,b) (a &= (~b))
 
 /* Behavior modification flags */
-extern uint_fast32_t flags;
 #define F_RECURSE		0x00000001U
 #define F_HIDEPROGRESS		0x00000002U
 #define F_SOFTABORT		0x00000004U
@@ -138,9 +135,6 @@ typedef struct _filetree {
   struct _filetree *right;
 } filetree_t;
 
-/* This gets used in many functions */
-extern struct stat s;
-
 /* -X exclusion parameter stack */
 struct exclude {
   struct exclude *next;
@@ -171,28 +165,22 @@ struct exclude_tags {
   const uint32_t flags;
 };
 
-extern const struct exclude_tags exclude_tags[];
-extern struct exclude *exclude_head;
-
-
 /* Suffix definitions (treat as case-insensitive) */
 struct size_suffix {
   const char * const suffix;
   const int64_t multiplier;
 };
 
-extern const struct size_suffix size_suffix[];
-
 const char *FILE_MODE_RO = "rb";
 const char dir_sep = '/';
 
 /* Behavior modification flags */
-uint_fast32_t flags = 0, p_flags = 0;
+static uint_fast32_t flags = 0, p_flags = 0;
 
 static const char *program_name;
 
 /* This gets used in many functions */
-struct stat s;
+static struct stat s;
 
 /* Larger chunk size makes large files process faster but uses more RAM */
 #ifndef CHUNK_SIZE
@@ -208,7 +196,7 @@ struct stat s;
 #define PATHBUF_SIZE 4096
 
 /* Size suffixes - this gets exported */
-const struct size_suffix size_suffix[] = {
+static const struct size_suffix size_suffix[] = {
   /* Byte (someone may actually try to use this) */
   { "b", 1 },
   { "k", 1024 },
@@ -244,7 +232,7 @@ static struct travdone *travdone_head = NULL;
 
 /* Exclusion tree head and static tag list */
 struct exclude *exclude_head = NULL;
-const struct exclude_tags exclude_tags[] = {
+static const struct exclude_tags exclude_tags[] = {
   { "dir",	X_DIR },
   { "size+",	X_SIZE_GT },
   { "size+=",	X_SIZE_GTEQ },
@@ -1603,7 +1591,7 @@ static jdupes_hash_t *get_filehash(const file_t * const restrict checkfile,
 }
 
 
-static inline void registerfile(filetree_t * restrict * const restrict nodeptr,
+static void registerfile(filetree_t * restrict * const restrict nodeptr,
                 const enum tree_direction d, file_t * const restrict file)
 {
   filetree_t * restrict branch;
@@ -1755,7 +1743,7 @@ static file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict f
 static inline int confirmmatch(FILE * const restrict file1, FILE * const restrict file2, off_t size)
 {
   static char *c1 = NULL, *c2 = NULL;
-  size_t r1, r2;
+  static size_t r1, r2;
   off_t bytes = 0;
   int check = 0;
 
