@@ -1299,7 +1299,7 @@ static file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict f
 
 /* Do a byte-by-byte comparison in case two different files produce the
    same signature. Unlikely, but better safe than sorry. */
-static inline int confirmmatch(FILE * const restrict file1, FILE * const restrict file2, off_t size)
+static inline int confirmmatch(FILE * const restrict file1, FILE * const restrict file2, const off_t size)
 {
   static char *c1 = NULL, *c2 = NULL;
   size_t r1, r2;
