@@ -73,3 +73,11 @@ numeric sorting with the faster but naive strcmp() sort method, and other
 minor adjustments and consolidations appropriate for single-file compilation.
 This version of the program is suitable for inclusion in "Swiss army knife"
 projects such as BusyBox and Toybox.
+
+The standalone version is not meant to work on Windows; it has all of the
+quirks for Windows support stripped out and there's no real advantage to
+using it on Windows anyway. However, if you need added stress in your life
+and you understand that this is NOT SUPPORTED and YOU'RE 100% ON YOUR OWN,
+you can compile it with this make command and it'll even partially work:
+
+make standalone NO_UNICODE=1 CFLAGS_EXTRA='-DNO_PERMS -DNO_SYMLINKS -DNO_HARDLINKS'
