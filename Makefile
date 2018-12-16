@@ -45,6 +45,7 @@ MAN_EXT = 1
 INSTALL = install	# install : UCB/GNU Install compatiable
 #INSTALL = ginstall
 RM      = rm -f
+RMDIR	= rmdir -p
 MKDIR   = mkdir -p
 #MKDIR   = mkdirhier
 #MKDIR   = mkinstalldirs
@@ -144,6 +145,14 @@ installdirs:
 install: $(PROGRAM_NAME) installdirs
 	$(INSTALL_PROGRAM)	$(PROGRAM_NAME)   $(DESTDIR)$(BIN_DIR)/$(PROGRAM_NAME)
 	$(INSTALL_DATA)		$(PROGRAM_NAME).1 $(DESTDIR)$(MAN_DIR)/$(PROGRAM_NAME).$(MAN_EXT)
+
+uninstalldirs:
+	-test -e $(DESTDIR)$(BIN_DIR) && $(RMDIR) $(DESTDIR)$(BIN_DIR)
+	-test -e $(DESTDIR)$(MAN_DIR) && $(RMDIR) $(DESTDIR)$(MAN_DIR)
+
+uninstall: uninstalldirs
+	$(RM)	$(DESTDIR)$(BIN_DIR)/$(PROGRAM_NAME)
+	$(RM)	$(DESTDIR)$(MAN_DIR)/$(PROGRAM_NAME).$(MAN_EXT)
 
 test:
 	./test.sh
