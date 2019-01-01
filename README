@@ -129,6 +129,7 @@ option is specified (delete, summarize, link, dedupe, etc.)
                         Exclusions are cumulative: -X dir:abc -X dir:efg
  -z --zeromatch         consider zero-length files to be duplicates
  -Z --softabort         If the user aborts (i.e. CTRL-C) act on matches so far
+                        You can send SIGUSR1 to the program to toggle this
 
 For sizes, K/M/G/T/P/E[B|iB] suffixes can be used (case-insensitive)
 
@@ -161,6 +162,17 @@ opposite behavior. Defaulting to taking action on abort is probably not what
 most users would expect. The decision to invert rather than reassign to a
 different option was made because this feature was still fairly new at the
 time of the change.
+
+On non-Windows platforms that support SIGUSR1, you can toggle the state of
+the -Z option by sending a SIGUSR1 to the program. This is handy if you want
+to abort jdupes, didn't specify -Z, and changed your mind and don't want to
+lose all the work that was done so far. Just do 'killall -USR1 jdupes' and
+you wll be able to abort with -Z. This works in reverse: if you want to
+prevent a -Z from happening, a SIGUSR1 will toggle it back off. That's a lot
+less useful because you can just stop and kill the program to get the same
+effect, but it's there if you want it for some reason. Sending the signal
+twice while the program is stopped will behave as if it was only sent once,
+as per normal POSIX signal behavior.
 
 The -O or --paramorder option allows the user greater control over wha
 appears in the first position of a match set, specifically for keeping the -N
