@@ -285,6 +285,17 @@ void sighandler(const int signum)
 }
 
 
+#ifndef ON_WINDOWS
+void sigusr1(const int signum)
+{
+  (void)signum;
+  if (!ISFLAG(flags, F_SOFTABORT)) SETFLAG(flags, F_SOFTABORT);
+  else CLEARFLAG(flags, F_SOFTABORT);
+  return;
+}
+#endif
+
+
 /* Out of memory */
 static void oom(const char * const restrict msg)
 {
@@ -1938,6 +1949,9 @@ static inline void help_text(void)
   printf("                  \tExclusions are cumulative: -X dir:abc -X dir:efg\n");
   printf(" -z --zeromatch   \tconsider zero-length files to be duplicates\n");
   printf(" -Z --softabort   \tIf the user aborts (i.e. CTRL-C) act on matches so far\n");
+#ifndef ON_WINDOWS
+  printf("                  \tYou can send SIGUSR1 to the program to toggle this\n");
+#endif
   printf("\nFor sizes, K/M/G/T/P/E[B|iB] suffixes can be used (case-insensitive)\n");
 }
 
@@ -2255,6 +2269,10 @@ int main(int argc, char **argv)
 
   /* Catch CTRL-C */
   signal(SIGINT, sighandler);
+#ifndef ON_WINDOWS
+  /* Catch SIGUSR1 and use it to enable -Z */
+  signal(SIGUSR1, sigusr1);
+#endif
 
   while (curfile) {
     static file_t **match = NULL;
