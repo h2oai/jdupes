@@ -273,6 +273,16 @@ void sighandler(const int signum)
   return;
 }
 
+#ifndef ON_WINDOWS
+void sigusr1(const int signum)
+{
+  (void)signum;
+  if (!ISFLAG(flags, F_SOFTABORT)) SETFLAG(flags, F_SOFTABORT);
+  else CLEARFLAG(flags, F_SOFTABORT);
+  return;
+}
+#endif
+
 
 /* Out of memory */
 extern void oom(const char * const restrict msg)
@@ -1976,6 +1986,10 @@ int main(int argc, char **argv)
 
   /* Catch CTRL-C */
   signal(SIGINT, sighandler);
+#ifndef ON_WINDOWS
+  /* Catch SIGUSR1 and use it to enable -Z */
+  signal(SIGUSR1, sigusr1);
+#endif
 
   while (curfile) {
     static file_t **match = NULL;
