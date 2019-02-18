@@ -144,6 +144,7 @@ extern uint_fast32_t flags;
 #define F_ONEFS			0x00800000U
 #define F_PRINTNULL		0x01000000U
 #define F_PARTIALONLY		0x02000000U
+#define F_NO_TOCTTOU		0x04000000U
 
 #define F_LOUD			0x40000000U
 #define F_DEBUG			0x80000000U

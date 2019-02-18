@@ -118,6 +118,7 @@ option is specified (delete, summarize, link, dedupe, etc.)
                         the end of the option, manpage for more details)
  -s --symlinks          follow symlinks
  -S --size              show size of duplicate files
+ -t --no-tocttou        disable security check for file changes (aka TOCTTOU)
  -T --partial-only      match based on partial hashes only. WARNING:
                         EXTREMELY DANGEROUS paired with destructive actions!
                         -T must be specified twice to work. Read the manual!
@@ -133,11 +134,28 @@ option is specified (delete, summarize, link, dedupe, etc.)
 
 For sizes, K/M/G/T/P/E[B|iB] suffixes can be used (case-insensitive)
 
+The -t/-no-tocttou option disables checks for file changes during and after
+scanning. This opens a security vulnerability that is called a TOCTTOU (time
+of check to time of use) vulnerability. The program normally runs checks
+immediately before scanning or taking action upon a file to see if the file
+has changed in some way since it was last checked. With this option enabled,
+the program will not run any of these checks, making the algorithm slightly
+faster, but also increasing the risk that the program scans a file, the file
+is changed after the scan, and the program still acts like the file was in
+its previous state. This is particularly dangerous when considering actions
+such as linking and deleting. In the most extreme case, a file could be
+deleted during scanning but match other files prior to that deletion; if the
+file is the first in the list of duplicates and auto-delete is used, all of
+the remaining matched files will be deleted as well. This option was added
+due to user reports of some filesystems (particularly network filesystems)
+changing the reported file information inappropriately, rendering the entire
+program unusable on such filesystems.
+
 The -n/--noempty option was removed for safety. Matching zero-length files as
 duplicates now requires explicit use of the -z/--zeromatch option instead.
 
 Duplicate files are listed together in groups with each file displayed on a
-Separate line. The groups are then separated from each other by blank lines.
+separate line. The groups are then separated from each other by blank lines.
 
 The -s/--symlinks option will treat symlinked files as regular files, but
 direct symlinks will be treated as if they are hard linked files and the

@@ -391,6 +391,7 @@ extern int file_has_changed(file_t * const restrict file)
   if (file == NULL || file->d_name == NULL) nullptr("file_has_changed()");
   LOUD(fprintf(stderr, "file_has_changed('%s')\n", file->d_name);)
 
+  if (ISFLAG(flags, F_NO_TOCTTOU)) return 0;
   if (!ISFLAG(file->flags, F_VALID_STAT)) return -66;
 
 #ifdef ON_WINDOWS
@@ -1536,6 +1537,7 @@ static inline void help_text(void)
   printf(" -s --symlinks    \tfollow symlinks\n");
 #endif
   printf(" -S --size        \tshow size of duplicate files\n");
+  printf(" -t --no-tocttou  \tdisable security check for file changes (aka TOCTTOU)\n");
   printf(" -T --partial-only \tmatch based on partial hashes only. WARNING:\n");
   printf("                  \tEXTREMELY DANGEROUS paired with destructive actions!\n");
   printf("                  \t-T must be specified twice to work. Read the manual!\n");
@@ -1611,6 +1613,7 @@ int main(int argc, char **argv)
     { "recursive:", 0, 0, 'R' },
     { "symlinks", 0, 0, 's' },
     { "size", 0, 0, 'S' },
+    { "no-tocttou", 0, 0, 't' },
     { "partial-only", 0, 0, 'T' },
     { "version", 0, 0, 'v' },
     { "xsize", 1, 0, 'x' },
@@ -1669,7 +1672,7 @@ int main(int argc, char **argv)
   oldargv = cloneargs(argc, argv);
 
   while ((opt = GETOPT(argc, argv,
-  "@01ABC:dDfhHiIlLmMnNOpP:qQrRsSTvVzZo:x:X:"
+  "@01ABC:dDfhHiIlLmMnNOpP:qQrRsStTvVzZo:x:X:"
 #ifndef OMIT_GETOPT_LONG
           , long_options, NULL
 #endif
@@ -1768,6 +1771,9 @@ int main(int argc, char **argv)
       break;
     case 'R':
       SETFLAG(flags, F_RECURSEAFTER);
+      break;
+    case 't':
+      SETFLAG(flags, F_NO_TOCTTOU);
       break;
     case 'T':
       if (partialonly_spec == 0)

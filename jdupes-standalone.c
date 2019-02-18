@@ -83,6 +83,7 @@ typedef mode_t jdupes_mode_t;
 #define F_ONEFS			0x00800000U
 #define F_PRINTNULL		0x01000000U
 #define F_PARTIALONLY		0x02000000U
+#define F_NO_TOCTTOU		0x04000000U
 
 /* Per-file true/false flags */
 #define F_VALID_STAT		0x00000001U
@@ -285,7 +286,6 @@ void sighandler(const int signum)
 }
 
 
-#ifndef ON_WINDOWS
 void sigusr1(const int signum)
 {
   (void)signum;
@@ -293,7 +293,6 @@ void sigusr1(const int signum)
   else CLEARFLAG(flags, F_SOFTABORT);
   return;
 }
-#endif
 
 
 /* Out of memory */
@@ -458,6 +457,7 @@ static int file_has_changed(file_t * const restrict file)
 {
   if (file == NULL || file->d_name == NULL) nullptr("file_has_changed()");
 
+  if (ISFLAG(flags, F_NO_TOCTTOU)) return 0;
   if (!ISFLAG(file->flags, F_VALID_STAT)) return -66;
 
   if (stat(file->d_name, &s) != 0) return -2;
@@ -1938,6 +1938,7 @@ static inline void help_text(void)
   printf(" -s --symlinks    \tfollow symlinks\n");
 #endif
   printf(" -S --size        \tshow size of duplicate files\n");
+  printf(" -t --no-tocttou  \tdisable security check for file changes (aka TOCTTOU)\n");
   printf(" -T --partial-only \tmatch based on partial hashes only. WARNING:\n");
   printf("                  \tEXTREMELY DANGEROUS paired with destructive actions!\n");
   printf("                  \t-T must be specified twice to work. Read the manual!\n");
@@ -1949,9 +1950,7 @@ static inline void help_text(void)
   printf("                  \tExclusions are cumulative: -X dir:abc -X dir:efg\n");
   printf(" -z --zeromatch   \tconsider zero-length files to be duplicates\n");
   printf(" -Z --softabort   \tIf the user aborts (i.e. CTRL-C) act on matches so far\n");
-#ifndef ON_WINDOWS
   printf("                  \tYou can send SIGUSR1 to the program to toggle this\n");
-#endif
   printf("\nFor sizes, K/M/G/T/P/E[B|iB] suffixes can be used (case-insensitive)\n");
 }
 
@@ -2001,6 +2000,7 @@ int main(int argc, char **argv)
     { "recursive:", 0, 0, 'R' },
     { "symlinks", 0, 0, 's' },
     { "size", 0, 0, 'S' },
+    { "no-tocttou", 0, 0, 't' },
     { "partial-only", 0, 0, 'T' },
     { "version", 0, 0, 'v' },
     { "xsize", 1, 0, 'x' },
@@ -2018,7 +2018,7 @@ int main(int argc, char **argv)
   oldargv = cloneargs(argc, argv);
 
   while ((opt = getopt_long(argc, argv,
-  "@01ABC:dDfhHiIlLmMnNOpP:qQrRsSTvVzZo:x:X:",
+  "@01ABC:dDfhHiIlLmMnNOpP:qQrRsStTvVzZo:x:X:",
   long_options, NULL)) != EOF) {
     switch (opt) {
     /* Unsupported but benign options can just be skipped */
@@ -2104,6 +2104,9 @@ int main(int argc, char **argv)
       break;
     case 'R':
       SETFLAG(flags, F_RECURSEAFTER);
+      break;
+    case 't':
+      SETFLAG(flags, F_NO_TOCTTOU);
       break;
     case 'T':
       if (partialonly_spec == 0)
@@ -2269,10 +2272,8 @@ int main(int argc, char **argv)
 
   /* Catch CTRL-C */
   signal(SIGINT, sighandler);
-#ifndef ON_WINDOWS
   /* Catch SIGUSR1 and use it to enable -Z */
   signal(SIGUSR1, sigusr1);
-#endif
 
   while (curfile) {
     static file_t **match = NULL;
