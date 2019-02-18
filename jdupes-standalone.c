@@ -455,9 +455,11 @@ static void update_progress(const char * const restrict msg, const int file_perc
  * Returns 1 if changed, 0 if not changed, negative if error */
 static int file_has_changed(file_t * const restrict file)
 {
+  /* If -t/--no-tocttou specified then completely bypass this code */
+  if (ISFLAG(flags, F_NO_TOCTTOU)) return 0;
+
   if (file == NULL || file->d_name == NULL) nullptr("file_has_changed()");
 
-  if (ISFLAG(flags, F_NO_TOCTTOU)) return 0;
   if (!ISFLAG(file->flags, F_VALID_STAT)) return -66;
 
   if (stat(file->d_name, &s) != 0) return -2;
