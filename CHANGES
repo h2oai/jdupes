@@ -1,3 +1,10 @@
+jdupes 1.12
+
+- Small reductions in memory usage
+- Add "standalone" jdupes C file which has no external requirements
+- Add ability to toggle -Z with a USR1 signal (not available on Windows)
+- Add -t/-no-tocttou option to disable file change safety checks
+
 jdupes 1.11.1
 
 - Disable build date embedding by default to make reproducible builds easier
