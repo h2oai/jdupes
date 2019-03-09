@@ -1,6 +1,6 @@
 /* Detect and report size of CPU caches
  *
- * Copyright (C) 2018 by Jody Bruchon <jody@jodybruchon.com>
+ * Copyright (C) 2019 by Jody Bruchon <jody@jodybruchon.com>
  * Distributed under The MIT License
  *
  * If an error occurs or a cache is missing, zeroes are returned

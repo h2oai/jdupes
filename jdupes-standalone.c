@@ -1,5 +1,5 @@
-/* jdupes (C) 2015-2018 Jody Bruchon <jody@jodybruchon.com>
-   Derived from fdupes (C) 1999-2018 Adrian Lopez
+/* jdupes (C) 2015-2019 Jody Bruchon <jody@jodybruchon.com>
+   Derived from fdupes (C) 1999-2019 Adrian Lopez
 
    Permission is hereby granted, free of charge, to any person
    obtaining a copy of this software and associated documentation files
