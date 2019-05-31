@@ -502,12 +502,12 @@ static void add_exclude(const char *option)
   if (exclude_head != NULL) {
     /* Add to end of exclusion stack if head is present */
     while (excl->next != NULL) excl = excl->next;
-    excl->next = string_malloc(sizeof(struct exclude) + strlen(p));
+    excl->next = string_malloc(sizeof(struct exclude) + strlen(p) + 1);
     if (excl->next == NULL) oom("add_exclude alloc");
     excl = excl->next;
   } else {
     /* Allocate exclude_head if no exclusions exist yet */
-    exclude_head = string_malloc(sizeof(struct exclude) + strlen(p));
+    exclude_head = string_malloc(sizeof(struct exclude) + strlen(p) + 1);
     if (exclude_head == NULL) oom("add_exclude alloc");
     excl = exclude_head;
   }
@@ -532,7 +532,8 @@ static void add_exclude(const char *option)
   } else {
     /* Exclude uses string data; just copy it */
     excl->size = 0;
-    strcpy(excl->param, p);
+    if (*p != '\0') strcpy(excl->param, p);
+    else *(excl->param) = '\0';
   }
 
   LOUD(fprintf(stderr, "Added exclude: tag '%s', data '%s', size %lld, flags %d\n", opt, excl->param, (long long)excl->size, excl->flags);)
@@ -2029,7 +2030,7 @@ int main(int argc, char **argv)
            (curfile->inode == (*match)->inode) &&
            (curfile->device == (*match)->device))
          ) {
-        LOUD(fprintf(stderr, "MAIN: notice: quick or partial-only match (-Q/-T)\n"));
+        LOUD(fprintf(stderr, "MAIN: notice: hard linked, quick, or partial-only match (-H/-Q/-T)\n"));
         registerpair(match, curfile,
             (ordertype == ORDER_TIME) ? sort_pairs_by_mtime : sort_pairs_by_filename);
         dupecount++;
@@ -2043,6 +2044,7 @@ int main(int argc, char **argv)
       file1 = fopen(curfile->d_name, FILE_MODE_RO);
 #endif
       if (!file1) {
+        LOUD(fprintf(stderr, "MAIN: warning: file1 fopen() failed ('%s')\n", curfile->d_name));
         curfile = curfile->next;
         continue;
       }
@@ -2055,6 +2057,7 @@ int main(int argc, char **argv)
 #endif
       if (!file2) {
         fclose(file1);
+        LOUD(fprintf(stderr, "MAIN: warning: file2 fopen() failed ('%s')\n", (*match)->d_name));
         curfile = curfile->next;
         continue;
       }
