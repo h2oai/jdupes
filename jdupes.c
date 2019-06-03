@@ -760,6 +760,17 @@ static struct travdone *travdone_alloc(const jdupes_ino_t inode, const dev_t dev
 }
 
 
+/* De-allocate the travdone tree */
+static void travdone_free(struct travdone * const restrict cur)
+{
+  if (cur == NULL) return;
+  if (cur->left != NULL) travdone_free(cur->left);
+  if (cur->left != NULL) travdone_free(cur->right);
+  string_free(cur);
+  return;
+}
+
+
 /* Add a single file to the file tree */
 static inline file_t *grokfile(const char * const restrict name, file_t * restrict * const restrict filelistp)
 {
@@ -1018,7 +1029,7 @@ error_overflow:
 }
 
 
-/* Use Jody Bruchon's hash function on part or all of a file */
+/* Hash part or all of a file */
 static jdupes_hash_t *get_filehash(const file_t * const restrict checkfile,
                 const size_t max_read)
 {
@@ -1987,10 +1998,14 @@ int main(int argc, char **argv)
     }
   }
 
+  /* We don't need the double traversal check tree anymore */
+  travdone_free(travdone_head);
+
   if (ISFLAG(flags, F_REVERSESORT)) sort_direction = -1;
   if (!ISFLAG(flags, F_HIDEPROGRESS)) fprintf(stderr, "\n");
   if (!files) {
     fwprint(stderr, "No duplicates found.", 1);
+    string_malloc_destroy();
     exit(EXIT_SUCCESS);
   }
 
