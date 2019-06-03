@@ -552,6 +552,7 @@ bad_size_suffix:
 }
 
 
+/* Returns -1 if stat() fails, 0 if it's a directory, 1 if it's not */
 extern int getdirstats(const char * const restrict name,
         jdupes_ino_t * const restrict inode, dev_t * const restrict dev,
         jdupes_mode_t * const restrict mode)
@@ -794,7 +795,7 @@ static void grokdir(const char * const restrict dir,
   size_t dirlen;
   struct travdone *traverse;
   int i, single = 0;
-  jdupes_ino_t inode, n_inode;
+  jdupes_ino_t inode;
   dev_t device, n_device;
   jdupes_mode_t mode;
 #ifdef UNICODE
@@ -936,9 +937,9 @@ static void grokdir(const char * const restrict dir,
     /* Optionally recurse directories, including symlinked ones if requested */
     if (S_ISDIR(newfile->mode)) {
       if (recurse) {
-        /* --one-file-system */
+        /* --one-file-system - WARNING: this clobbers inode/mode */
         if (ISFLAG(flags, F_ONEFS)
-            && (getdirstats(newfile->d_name, &n_inode, &n_device, &mode) == 0)
+            && (getdirstats(newfile->d_name, &inode, &n_device, &mode) == 0)
             && (device != n_device)) {
           LOUD(fprintf(stderr, "grokdir: directory: not recursing (--one-file-system)\n"));
           string_free(newfile->d_name);
