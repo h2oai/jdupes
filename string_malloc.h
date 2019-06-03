@@ -21,7 +21,7 @@ extern uintmax_t sma_free_tails;
 #endif
 
 extern void *string_malloc(size_t len);
-extern void string_free(void * const restrict addr);
+extern void string_free(void * const addr);
 extern void string_malloc_destroy(void);
 
 #ifdef __cplusplus
