@@ -89,5 +89,6 @@ extern void printjson(file_t * restrict files, const int argc, char **argv)
 
   printf("\n  ]\n}\n");
 
+  string_free(temp); string_free(temp2);
   return;
 }
