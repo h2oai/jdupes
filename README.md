@@ -99,6 +99,7 @@ option is specified (delete, summarize, link, dedupe, etc.)
                         linked files are treated as non-duplicates for safety
  -i --reverse           reverse (invert) the match sort order
  -I --isolate           files in the same specified directory won't match
+ -j --json              produce JSON (machine-readable) output
  -l --linksoft          make relative symlinks for duplicates w/o prompting
  -L --linkhard          hard link all duplicate files without prompting
                         Windows allows a maximum of 1023 hard links per file

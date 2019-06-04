@@ -145,6 +145,7 @@ extern uint_fast32_t flags;
 #define F_PRINTNULL		0x01000000U
 #define F_PARTIALONLY		0x02000000U
 #define F_NO_TOCTTOU		0x04000000U
+#define F_PRINTJSON		0x08000000U
 
 #define F_LOUD			0x40000000U
 #define F_DEBUG			0x80000000U
@@ -265,6 +266,8 @@ struct size_suffix {
 
 extern const struct size_suffix size_suffix[];
 extern char tempname[PATHBUF_SIZE * 2];
+
+extern const char *extensions[];
 
 extern void oom(const char * const restrict msg);
 extern void nullptr(const char * restrict func);
