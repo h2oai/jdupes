@@ -33,7 +33,8 @@ way is always chosen.
 jdupes includes features that are not always found elsewhere. Examples of
 such features include btrfs block-level deduplication and control over
 which file is kept when a match set is automatically deleted. jdupes is
-not afraid of dropping features of low value; a prime example is the `-1` switch which outputs all matches in a set on one line, a feature which was
+not afraid of dropping features of low value; a prime example is the `-1`
+switch which outputs all matches in a set on one line, a feature which was
 found to be useless in real-world tests and therefore thrown out.
 
 While jdupes maintains some degree of compatibility with fdupes from which
@@ -415,13 +416,13 @@ A low memory mode can be chosen at compile time to reduce overall memory
 usage with a small performance penalty.
 
 
-Contact Information
+Contact information
 --------------------------------------------------------------------------
 For all jdupes inquiries, contact Jody Bruchon <jody@jodybruchon.com>
 Please DO NOT contact Adrian Lopez about issues with jdupes.
 
 
-Legal Information and Software License
+Legal information and software license
 --------------------------------------------------------------------------
 jdupes is Copyright (C) 2015-2019 by Jody Bruchon <jody@jodybruchon.com>
 Derived from the original 'fdupes' (C) 1999-2019 by Adrian Lopez
