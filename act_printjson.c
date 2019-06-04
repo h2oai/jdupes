@@ -72,12 +72,16 @@ extern void printjson(file_t * restrict files, const int argc, char **argv)
     if (ISFLAG(files->flags, F_HAS_DUPES)) {
       if (comma) printf(",\n");
       printf("    {\n      \"fileSize\": %" PRIdMAX ",\n      \"fileList\": [\n        { \"filePath\": \"", (intmax_t)files->size);
-      fwprint(stdout, files->d_name, 0);
+      sprintf(temp, "%s", files->d_name);
+      json_escape(temp, temp2);
+      fwprint(stdout, temp2, 0);
       printf("\"");
       tmpfile = files->duplicates;
       while (tmpfile != NULL) {
         printf(" },\n        { \"filePath\": \"");
-        fwprint(stdout, tmpfile->d_name, 0);
+        sprintf(temp, "%s", tmpfile->d_name);
+        json_escape(temp, temp2);
+        fwprint(stdout, temp2, 0);
         printf("\"");
         tmpfile = tmpfile->duplicates;
       }
