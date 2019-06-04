@@ -24,5 +24,13 @@ echo -en "\nBuilt jdupes:"
 sync
 time ./jdupes -nrq "$@" > built_output.txt || ERR=1
 diff -Nau installed_output.txt built_output.txt
+if [ -e jdupes-standalone ]
+	then
+	echo -en "\nBuilt jdupes-standalone:"
+	sync
+	time ./jdupes-standalone -nrq "$@" > built_output.txt || ERR=1
+	diff -Nau installed_output.txt built_output.txt
+fi
+
 rm -f installed_output.txt built_output.txt
 test "$ERR" != "0" && echo "Errors were returned during execution"

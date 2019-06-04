@@ -314,7 +314,7 @@ static void nullptr(const char * restrict func)
 
 
 /* Jody Bruchon's fast hashing function
- * Copyright (C) 2014-2017 by Jody Bruchon <jody@jodybruchon.com>
+ * Copyright (C) 2014-2019 by Jody Bruchon <jody@jodybruchon.com>
  * Released under The MIT License
  */
 
@@ -543,12 +543,12 @@ static void add_exclude(const char *option)
   if (exclude_head != NULL) {
     /* Add to end of exclusion stack if head is present */
     while (excl->next != NULL) excl = excl->next;
-    excl->next = malloc(sizeof(struct exclude) + strlen(p));
+    excl->next = malloc(sizeof(struct exclude) + strlen(p) + 1);
     if (excl->next == NULL) oom("add_exclude alloc");
     excl = excl->next;
   } else {
     /* Allocate exclude_head if no exclusions exist yet */
-    exclude_head = malloc(sizeof(struct exclude) + strlen(p));
+    exclude_head = malloc(sizeof(struct exclude) + strlen(p) + 1);
     if (exclude_head == NULL) oom("add_exclude alloc");
     excl = exclude_head;
   }
@@ -573,7 +573,8 @@ static void add_exclude(const char *option)
   } else {
     /* Exclude uses string data; just copy it */
     excl->size = 0;
-    strcpy(excl->param, p);
+    if (*p != '\0') strcpy(excl->param, p);
+    else *(excl->param) = '\0';
   }
 
   free(opt);
@@ -728,6 +729,17 @@ static struct travdone *travdone_alloc(const jdupes_ino_t inode, const dev_t dev
   trav->inode = inode;
   trav->device = device;
   return trav;
+}
+
+
+/* De-allocate the travdone tree */
+static void travdone_free(struct travdone * const restrict cur)
+{
+  if (cur == NULL) return;
+  if (cur->left != NULL) travdone_free(cur->left);
+  if (cur->left != NULL) travdone_free(cur->right);
+  free(cur);
+  return;
 }
 
 
@@ -1346,7 +1358,7 @@ static void grokdir(const char * const restrict dir,
   size_t dirlen;
   struct travdone *traverse;
   int i, single = 0;
-  jdupes_ino_t inode, n_inode;
+  jdupes_ino_t inode;
   dev_t device, n_device;
   jdupes_mode_t mode;
   DIR *cd;
@@ -1449,7 +1461,7 @@ static void grokdir(const char * const restrict dir,
       if (recurse) {
         /* --one-file-system */
         if (ISFLAG(flags, F_ONEFS)
-            && (getdirstats(newfile->d_name, &n_inode, &n_device, &mode) == 0)
+            && (getdirstats(newfile->d_name, &inode, &n_device, &mode) == 0)
             && (device != n_device)) {
           free(newfile->d_name);
           free(newfile);
@@ -2155,7 +2167,7 @@ int main(int argc, char **argv)
       break;
     case 'v':
     case 'V':
-      printf("jdupes small stand-alone version (derived from v1.11.1)");
+      printf("jdupes small stand-alone version (derived from v1.12)");
       printf("\nCopyright (C) 2015-2019 by Jody Bruchon <jody@jodybruchon.com>\n");
       exit(EXIT_SUCCESS);
     case 'o':
@@ -2261,6 +2273,9 @@ int main(int argc, char **argv)
       user_item_count++;
     }
   }
+
+  /* We don't need the double traversal check tree anymore */
+  travdone_free(travdone_head);
 
   if (ISFLAG(flags, F_REVERSESORT)) sort_direction = -1;
   if (!ISFLAG(flags, F_HIDEPROGRESS)) fprintf(stderr, "\n");
