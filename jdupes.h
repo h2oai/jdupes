@@ -118,49 +118,49 @@ extern "C" {
 
 /* Behavior modification flags */
 extern uint_fast32_t flags;
-#define F_RECURSE		0x00000001U
-#define F_HIDEPROGRESS		0x00000002U
-#define F_SOFTABORT		0x00000004U
-#define F_FOLLOWLINKS		0x00000008U
-#define F_DELETEFILES		0x00000010U
-#define F_INCLUDEEMPTY		0x00000020U
-#define F_CONSIDERHARDLINKS	0x00000040U
-#define F_SHOWSIZE		0x00000080U
-#define F_OMITFIRST		0x00000100U
-#define F_RECURSEAFTER		0x00000200U
-#define F_NOPROMPT		0x00000400U
-#define F_SUMMARIZEMATCHES	0x00000800U
-#define F_EXCLUDEHIDDEN		0x00001000U
-#define F_PERMISSIONS		0x00002000U
-#define F_HARDLINKFILES		0x00004000U
-#define F_EXCLUDESIZE		0x00008000U
-#define F_QUICKCOMPARE		0x00010000U
-#define F_USEPARAMORDER		0x00020000U
-#define F_DEDUPEFILES		0x00040000U
-#define F_REVERSESORT		0x00080000U
-#define F_ISOLATE		0x00100000U
-#define F_MAKESYMLINKS		0x00200000U
-#define F_PRINTMATCHES		0x00400000U
-#define F_ONEFS			0x00800000U
-#define F_PRINTNULL		0x01000000U
-#define F_PARTIALONLY		0x02000000U
-#define F_NO_TOCTTOU		0x04000000U
-#define F_PRINTJSON		0x08000000U
+#define F_RECURSE		(1U << 0)
+#define F_HIDEPROGRESS		(1U << 1)
+#define F_SOFTABORT		(1U << 2)
+#define F_FOLLOWLINKS		(1U << 3)
+#define F_DELETEFILES		(1U << 4)
+#define F_INCLUDEEMPTY		(1U << 5)
+#define F_CONSIDERHARDLINKS	(1U << 6)
+#define F_SHOWSIZE		(1U << 7)
+#define F_OMITFIRST		(1U << 8)
+#define F_RECURSEAFTER		(1U << 9)
+#define F_NOPROMPT		(1U << 10)
+#define F_SUMMARIZEMATCHES	(1U << 11)
+#define F_EXCLUDEHIDDEN		(1U << 12)
+#define F_PERMISSIONS		(1U << 13)
+#define F_HARDLINKFILES		(1U << 14)
+#define F_EXCLUDESIZE		(1U << 15)
+#define F_QUICKCOMPARE		(1U << 16)
+#define F_USEPARAMORDER		(1U << 17)
+#define F_DEDUPEFILES		(1U << 18)
+#define F_REVERSESORT		(1U << 19)
+#define F_ISOLATE		(1U << 20)
+#define F_MAKESYMLINKS		(1U << 21)
+#define F_PRINTMATCHES		(1U << 22)
+#define F_ONEFS			(1U << 23)
+#define F_PRINTNULL		(1U << 24)
+#define F_PARTIALONLY		(1U << 25)
+#define F_NO_TOCTTOU		(1U << 26)
+#define F_PRINTJSON		(1U << 27)
 
-#define F_LOUD			0x40000000U
-#define F_DEBUG			0x80000000U
+#define F_LOUD			(1U << 30)
+#define F_DEBUG			(1U << 31)
 
 /* Per-file true/false flags */
-#define F_VALID_STAT		0x00000001U
-#define F_HASH_PARTIAL		0x00000002U
-#define F_HASH_FULL		0x00000004U
-#define F_HAS_DUPES		0x00000008U
-#define F_IS_SYMLINK		0x00000010U
+#define F_VALID_STAT		(1U << 0)
+#define F_HASH_PARTIAL		(1U << 1)
+#define F_HASH_FULL		(1U << 2)
+#define F_HAS_DUPES		(1U << 3)
+#define F_IS_SYMLINK		(1U << 4)
 
 /* Extra print flags */
-#define P_PARTIAL		0x00000001U
-#define P_EARLYMATCH		0x00000002U
-#define P_FULLHASH		0x00000004U
+#define P_PARTIAL		(1U << 0)
+#define P_EARLYMATCH		(1U << 1)
+#define P_FULLHASH		(1U << 2)
 
 typedef enum {
   ORDER_NAME = 0,

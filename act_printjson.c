@@ -53,7 +53,7 @@ extern void printjson(file_t * restrict files, const int argc, char **argv)
 
   /* Output information about the jdupes command environment */
   printf("{\n  \"jdupesVersion\": \"%s\",\n  \"jdupesVersionDate\": \"%s\",\n", VER, VERDATE);
-  
+
   printf("  \"commandLine\": \"");
   while (arg < argc) {
     sprintf(temp_insert, " %s", argv[arg]);

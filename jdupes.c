@@ -1778,7 +1778,7 @@ int main(int argc, char **argv)
       else if (strcmp(optarg, "fullhash") == 0) SETFLAG(p_flags, P_FULLHASH);
       else {
         fprintf(stderr, "Option '%s' is not valid for -P\n", optarg);
-	exit(EXIT_FAILURE);
+        exit(EXIT_FAILURE);
       }
       break;
     case 'q':
