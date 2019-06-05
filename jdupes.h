@@ -144,7 +144,7 @@ extern uint_fast32_t flags;
 #define F_ONEFS			(1U << 23)
 #define F_PRINTNULL		(1U << 24)
 #define F_PARTIALONLY		(1U << 25)
-#define F_NO_TOCTTOU		(1U << 26)
+#define F_NOCHANGECHECK		(1U << 26)
 #define F_PRINTJSON		(1U << 27)
 
 #define F_LOUD			(1U << 30)

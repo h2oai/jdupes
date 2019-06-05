@@ -123,7 +123,7 @@ option is specified (delete, summarize, link, dedupe, etc.)
                         the end of the option, manpage for more details)
  -s --symlinks          follow symlinks
  -S --size              show size of duplicate files
- -t --no-tocttou        disable security check for file changes (aka TOCTTOU)
+ -t --nochangecheck     disable security check for file changes (aka TOCTTOU)
  -T --partial-only      match based on partial hashes only. WARNING:
                         EXTREMELY DANGEROUS paired with destructive actions!
                         -T must be specified twice to work. Read the manual!
@@ -140,7 +140,7 @@ option is specified (delete, summarize, link, dedupe, etc.)
 
 For sizes, K/M/G/T/P/E[B|iB] suffixes can be used (case-insensitive)
 
-The `-t`/`-no-tocttou` option disables checks for file changes during and after
+The `-t`/`-nochangecheck` option disables file change checks during/after
 scanning. This opens a security vulnerability that is called a TOCTTOU (time
 of check to time of use) vulnerability. The program normally runs checks
 immediately before scanning or taking action upon a file to see if the file

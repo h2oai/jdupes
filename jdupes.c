@@ -389,8 +389,8 @@ static void update_progress(const char * const restrict msg, const int file_perc
  * Returns 1 if changed, 0 if not changed, negative if error */
 extern int file_has_changed(file_t * const restrict file)
 {
-  /* If -t/--no-tocttou specified then completely bypass this code */
-  if (ISFLAG(flags, F_NO_TOCTTOU)) return 0;
+  /* If -t/--nochangecheck specified then completely bypass this code */
+  if (ISFLAG(flags, F_NOCHANGECHECK)) return 0;
 
   if (file == NULL || file->d_name == NULL) nullptr("file_has_changed()");
   LOUD(fprintf(stderr, "file_has_changed('%s')\n", file->d_name);)
@@ -1554,7 +1554,7 @@ static inline void help_text(void)
   printf(" -s --symlinks    \tfollow symlinks\n");
 #endif
   printf(" -S --size        \tshow size of duplicate files\n");
-  printf(" -t --no-tocttou  \tdisable security check for file changes (aka TOCTTOU)\n");
+  printf(" -t --nochangecheck\tdisable security check for file changes (aka TOCTTOU)\n");
   printf(" -T --partial-only \tmatch based on partial hashes only. WARNING:\n");
   printf("                  \tEXTREMELY DANGEROUS paired with destructive actions!\n");
   printf("                  \t-T must be specified twice to work. Read the manual!\n");
@@ -1631,7 +1631,7 @@ int main(int argc, char **argv)
     { "recursive:", 0, 0, 'R' },
     { "symlinks", 0, 0, 's' },
     { "size", 0, 0, 'S' },
-    { "no-tocttou", 0, 0, 't' },
+    { "nochangecheck", 0, 0, 't' },
     { "partial-only", 0, 0, 'T' },
     { "version", 0, 0, 'v' },
     { "xsize", 1, 0, 'x' },
@@ -1794,7 +1794,7 @@ int main(int argc, char **argv)
       SETFLAG(flags, F_RECURSEAFTER);
       break;
     case 't':
-      SETFLAG(flags, F_NO_TOCTTOU);
+      SETFLAG(flags, F_NOCHANGECHECK);
       break;
     case 'T':
       if (partialonly_spec == 0)
