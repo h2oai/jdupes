@@ -766,7 +766,7 @@ static void travdone_free(struct travdone * const restrict cur)
 {
   if (cur == NULL) return;
   if (cur->left != NULL) travdone_free(cur->left);
-  if (cur->left != NULL) travdone_free(cur->right);
+  if (cur->right != NULL) travdone_free(cur->right);
   string_free(cur);
   return;
 }
