@@ -20,8 +20,8 @@
    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. */
 
-#define VER "1.13"
-#define VERDATE "2019-06-04"
+#define VER "1.13.1"
+#define VERDATE "2019-06-10"
 
 #include <dirent.h>
 #include <errno.h>
@@ -744,7 +744,7 @@ static void travdone_free(struct travdone * const restrict cur)
 {
   if (cur == NULL) return;
   if (cur->left != NULL) travdone_free(cur->left);
-  if (cur->left != NULL) travdone_free(cur->right);
+  if (cur->right != NULL) travdone_free(cur->right);
   free(cur);
   return;
 }

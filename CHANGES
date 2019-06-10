@@ -1,3 +1,7 @@
+jdupes 1.13.1
+
+- Fix an incorrect NULL pointer check
+
 jdupes 1.13
 
 - Add new option -j/--json for JSON (machine-readable) output
