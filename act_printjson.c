@@ -24,12 +24,12 @@ static void json_escape(char *string, char *escaped)
         length += 2;
         break;
       default:
-	if (*string < 0x20) {
+	if (!(*string & 0xe0)) {
 	  strcpy(escaped, "\\u00");
-	  escaped += 3;
+	  escaped += 4;
 	  *escaped++ = TO_HEX((*string >> 4));
 	  *escaped++ = TO_HEX(*string++);
-	  length += 5;
+	  length += 6;
 	} else {
           *escaped++ = *string++;
           length++;
