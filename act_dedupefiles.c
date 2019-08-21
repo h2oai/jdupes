@@ -12,7 +12,13 @@
 #include <errno.h>
 #include <fcntl.h>
 
+/* Use built-in static BTRFS header if requested */
+#ifdef STATIC_BTRFS_H
+#include "btrfs-static.h"
+#else
 #include <linux/btrfs.h>
+#endif
+
 #include <sys/ioctl.h>
 #include <sys/utsname.h>
 #include "act_dedupefiles.h"

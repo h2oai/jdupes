@@ -36,12 +36,6 @@ extern "C" {
 
 #include "xxhash.h"
 
-/* Optional btrfs support */
-#ifdef ENABLE_BTRFS
-#include <sys/ioctl.h>
-#include <linux/btrfs.h>
-#endif
-
 /* Set hash type (change this if swapping in a different hash function) */
  typedef XXH64_hash_t jdupes_hash_t;
 
