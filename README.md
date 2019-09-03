@@ -283,11 +283,6 @@ problem" in jdupes for technical details.
 
 Microsoft Windows platform-specific notes
 --------------------------------------------------------------------------
-The Windows port does not support Unicode, only ANSI file names. This is
-because Unicode support on Windows is difficult to add to existing code
-without making it very messy or breaking things. Support is eventually
-planned for Unicode on Windows.
-
 Windows has a hard limit of 1024 hard links per file. There is no way to
 change this. The documentation for CreateHardLink() states: "The maximum
 number of hard links that can be created with this function is 1023 per
