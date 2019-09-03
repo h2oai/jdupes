@@ -138,6 +138,7 @@ $(PROGRAM_NAME): $(OBJS)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $(PROGRAM_NAME) $(OBJS)
 
 winres.o : winres.rc winres.manifest.xml
+	./tune_winres.sh
 	windres winres.rc winres.o
 
 standalone: jdupes-standalone
