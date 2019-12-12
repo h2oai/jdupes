@@ -13,7 +13,8 @@
 #include "win_stat.h"
 #include <stdint.h>
 
-#include "jdupes.h"
+#define WPATH_MAX 8192
+#define M2W(a,b) MultiByteToWideChar(CP_UTF8, 0, a, -1, (LPWSTR)b, WPATH_MAX)
 
 /* Convert NT epoch to UNIX epoch */
 static time_t nttime_to_unixtime(const uint64_t * const restrict timestamp)
@@ -35,6 +36,8 @@ int win_stat(const char * const filename, struct winstat * const restrict buf)
   uint64_t timetemp;
 
 #ifdef UNICODE
+  static wchar_t wname2[WPATH_MAX];
+
   if (!buf) return -127;
   if (!M2W(filename,wname2)) return -126;
   hFile = CreateFileW(wname2, 0, FILE_SHARE_READ, NULL, OPEN_EXISTING,

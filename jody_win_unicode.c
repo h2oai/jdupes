@@ -11,6 +11,9 @@
 #include <fcntl.h>
 
 #ifdef UNICODE
+
+wpath_t wstr;
+
 /* Convert slashes to backslashes in a file path */
 extern void slash_convert(char *path)
 {
@@ -62,7 +65,7 @@ extern int fwprint(FILE * const restrict stream, const char * const restrict str
 
   if (stream_mode == _O_U16TEXT) {
     /* Convert to wide string and send to wide console output */
-    if (!M2W(str,wstr)) return -1;
+    if (!M2W(str, wstr)) return -1;
     fflush(stream);
     _setmode(_fileno(stream), stream_mode);
     if (cr == 2) retval = fwprintf(stream, L"%S%C", wstr, 0);

@@ -75,7 +75,7 @@
 
 /* Windows + Unicode compilation */
 #ifdef UNICODE
-wpath_t wname,wname2,wstr;
+static wpath_t wname, wstr;
 int out_mode = _O_TEXT;
 int err_mode = _O_TEXT;
 #endif /* UNICODE */

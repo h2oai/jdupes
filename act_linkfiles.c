@@ -16,6 +16,10 @@
  #include "win_stat.h"
 #endif
 
+#ifdef UNICODE
+ wpath_t wname, wname2;
+#endif
+
 extern void linkfiles(file_t *files, const int hard)
 {
   static file_t *tmpfile;

@@ -22,8 +22,6 @@ extern "C" {
  #include <windows.h>
  #include <io.h>
  #include "win_stat.h"
- #define S_ISREG WS_ISREG
- #define S_ISDIR WS_ISDIR
 #endif /* Win32 */
 
 #include <limits.h>
@@ -67,7 +65,6 @@ extern "C" {
  #define WPATH_MAX 8192
  #define PATHBUF_SIZE WPATH_MAX
   typedef wchar_t wpath_t[WPATH_MAX];
-  extern wpath_t wname,wname2,wstr;
   extern int out_mode;
   extern int err_mode;
  #define M2W(a,b) MultiByteToWideChar(CP_UTF8, 0, a, -1, (LPWSTR)b, WPATH_MAX)
