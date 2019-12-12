@@ -48,17 +48,17 @@ int win_stat(const char * const filename, struct winstat * const restrict buf)
   if (hFile == INVALID_HANDLE_VALUE) goto failure;
   if (!GetFileInformationByHandle(hFile, &bhfi)) goto failure2;
 
-  buf->inode = ((uint64_t)(bhfi.nFileIndexHigh) << 32) + (uint64_t)bhfi.nFileIndexLow;
-  buf->size = ((uint64_t)(bhfi.nFileSizeHigh) << 32) + (uint64_t)bhfi.nFileSizeLow;
+  buf->st_ino = ((uint64_t)(bhfi.nFileIndexHigh) << 32) + (uint64_t)bhfi.nFileIndexLow;
+  buf->st_size = ((uint64_t)(bhfi.nFileSizeHigh) << 32) + (uint64_t)bhfi.nFileSizeLow;
   timetemp = ((uint64_t)(bhfi.ftCreationTime.dwHighDateTime) << 32) + bhfi.ftCreationTime.dwLowDateTime;
-  buf->ctime = nttime_to_unixtime(&timetemp);
+  buf->st_ctime = nttime_to_unixtime(&timetemp);
   timetemp = ((uint64_t)(bhfi.ftLastWriteTime.dwHighDateTime) << 32) + bhfi.ftLastWriteTime.dwLowDateTime;
-  buf->mtime = nttime_to_unixtime(&timetemp);
+  buf->st_mtime = nttime_to_unixtime(&timetemp);
   timetemp = ((uint64_t)(bhfi.ftLastAccessTime.dwHighDateTime) << 32) + bhfi.ftLastAccessTime.dwLowDateTime;
-  buf->atime = nttime_to_unixtime(&timetemp);
-  buf->device = (uint32_t)bhfi.dwVolumeSerialNumber;
-  buf->nlink = (uint32_t)bhfi.nNumberOfLinks;
-  buf->mode = (uint32_t)bhfi.dwFileAttributes;
+  buf->st_atime = nttime_to_unixtime(&timetemp);
+  buf->st_dev = (uint32_t)bhfi.dwVolumeSerialNumber;
+  buf->st_nlink = (uint32_t)bhfi.nNumberOfLinks;
+  buf->st_mode = (uint32_t)bhfi.dwFileAttributes;
 
   CloseHandle(hFile);
   return 0;

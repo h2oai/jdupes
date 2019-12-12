@@ -15,9 +15,9 @@ extern "C" {
 #include <stdint.h>
 
 struct winstat {
-	uint64_t st_inode;
+	uint64_t st_ino;
 	int64_t st_size;
-	uint32_t st_device;
+	uint32_t st_dev;
 	uint32_t st_nlink;
 	uint32_t st_mode;
 	time_t st_ctime;

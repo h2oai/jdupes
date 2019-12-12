@@ -170,13 +170,13 @@ extern void linkfiles(file_t *files, const int hard)
           srcfile = dupelist[x];
           continue;
         }
-        if (ws.nlink >= 1024) {
+        if (ws.st_nlink >= 1024) {
           fprintf(stderr, "warning: maximum source link count reached, changing source file:\n[SRC] ");
           srcfile = dupelist[x];
           continue;
         }
         if (win_stat(dupelist[x]->d_name, &ws) != 0) continue;
-        if (ws.nlink >= 1024) {
+        if (ws.st_nlink >= 1024) {
           fprintf(stderr, "warning: maximum destination link count reached, skipping:\n-//-> ");
           fwprint(stderr, dupelist[x]->d_name, 1);
           continue;
