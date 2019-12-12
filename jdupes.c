@@ -400,11 +400,11 @@ extern int file_has_changed(file_t * const restrict file)
 #ifdef ON_WINDOWS
   int i;
   if ((i = win_stat(file->d_name, &ws)) != 0) return i;
-  if (file->inode != ws.inode) return 1;
-  if (file->size != ws.size) return 1;
-  if (file->device != ws.device) return 1;
-  if (file->mtime != ws.mtime) return 1;
-  if (file->mode != ws.mode) return 1;
+  if (file->inode != ws.st_inode) return 1;
+  if (file->size != ws.st_size) return 1;
+  if (file->device != ws.st_device) return 1;
+  if (file->mtime != ws.st_mtime) return 1;
+  if (file->mode != ws.st_mode) return 1;
 #else
   if (stat(file->d_name, &s) != 0) return -2;
   if (file->inode != s.st_ino) return 1;
@@ -437,13 +437,13 @@ extern inline int getfilestats(file_t * const restrict file)
 
 #ifdef ON_WINDOWS
   if (win_stat(file->d_name, &ws) != 0) return -1;
-  file->inode = ws.inode;
-  file->size = ws.size;
-  file->device = ws.device;
-  file->mtime = ws.mtime;
-  file->mode = ws.mode;
+  file->inode = ws.st_inode;
+  file->size = ws.st_size;
+  file->device = ws.st_device;
+  file->mtime = ws.st_mtime;
+  file->mode = ws.st_mode;
  #ifndef NO_HARDLINKS
-  file->nlink = ws.nlink;
+  file->nlink = ws.st_nlink;
  #endif
 #else
   if (stat(file->d_name, &s) != 0) return -1;
@@ -563,10 +563,10 @@ extern int getdirstats(const char * const restrict name,
 
 #ifdef ON_WINDOWS
   if (win_stat(name, &ws) != 0) return -1;
-  *inode = ws.inode;
-  *dev = ws.device;
-  *mode = ws.mode;
-  if (!S_ISDIR(ws.mode)) return 1;
+  *inode = ws.st_inode;
+  *dev = ws.st_device;
+  *mode = ws.st_mode;
+  if (!S_ISDIR(ws.st_mode)) return 1;
 #else
   if (stat(name, &s) != 0) return -1;
   *inode = s.st_ino;
