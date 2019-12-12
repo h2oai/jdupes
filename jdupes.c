@@ -91,9 +91,9 @@ static const char *program_name;
 
 /* This gets used in many functions */
 #ifdef ON_WINDOWS
-struct winstat ws;
+ struct winstat s;
 #else
-struct stat s;
+ struct stat s;
 #endif
 
 /* Larger chunk size makes large files process faster but uses more RAM */
@@ -397,30 +397,20 @@ extern int file_has_changed(file_t * const restrict file)
 
   if (!ISFLAG(file->flags, F_VALID_STAT)) return -66;
 
-#ifdef ON_WINDOWS
-  int i;
-  if ((i = win_stat(file->d_name, &ws)) != 0) return i;
-  if (file->inode != ws.st_ino) return 1;
-  if (file->size != ws.st_size) return 1;
-  if (file->device != ws.st_dev) return 1;
-  if (file->mtime != ws.st_mtime) return 1;
-  if (file->mode != ws.st_mode) return 1;
-#else
-  if (stat(file->d_name, &s) != 0) return -2;
+  if (STAT(file->d_name, &s) != 0) return -2;
   if (file->inode != s.st_ino) return 1;
   if (file->size != s.st_size) return 1;
   if (file->device != s.st_dev) return 1;
   if (file->mtime != s.st_mtime) return 1;
   if (file->mode != s.st_mode) return 1;
- #ifndef NO_PERMS
+#ifndef NO_PERMS
   if (file->uid != s.st_uid) return 1;
   if (file->gid != s.st_gid) return 1;
- #endif
- #ifndef NO_SYMLINKS
+#endif
+#ifndef NO_SYMLINKS
   if (lstat(file->d_name, &s) != 0) return -3;
   if ((S_ISLNK(s.st_mode) > 0) ^ ISFLAG(file->flags, F_IS_SYMLINK)) return 1;
- #endif
-#endif /* ON_WINDOWS */
+#endif
 
   return 0;
 }
@@ -435,35 +425,23 @@ extern inline int getfilestats(file_t * const restrict file)
   if (ISFLAG(file->flags, F_VALID_STAT)) return 0;
   SETFLAG(file->flags, F_VALID_STAT);
 
-#ifdef ON_WINDOWS
-  if (win_stat(file->d_name, &ws) != 0) return -1;
-  file->inode = ws.st_ino;
-  file->size = ws.st_size;
-  file->device = ws.st_dev;
-  file->mtime = ws.st_mtime;
-  file->mode = ws.st_mode;
- #ifndef NO_HARDLINKS
-  file->nlink = ws.st_nlink;
- #endif
-#else
-  if (stat(file->d_name, &s) != 0) return -1;
+  if (STAT(file->d_name, &s) != 0) return -1;
   file->inode = s.st_ino;
   file->size = s.st_size;
   file->device = s.st_dev;
   file->mtime = s.st_mtime;
   file->mode = s.st_mode;
- #ifndef NO_HARDLINKS
+#ifndef NO_HARDLINKS
   file->nlink = s.st_nlink;
- #endif
- #ifndef NO_PERMS
+#endif
+#ifndef NO_PERMS
   file->uid = s.st_uid;
   file->gid = s.st_gid;
- #endif
- #ifndef NO_SYMLINKS
+#endif
+#ifndef NO_SYMLINKS
   if (lstat(file->d_name, &s) != 0) return -1;
   if (S_ISLNK(s.st_mode) > 0) SETFLAG(file->flags, F_IS_SYMLINK);
- #endif
-#endif /* ON_WINDOWS */
+#endif
   return 0;
 }
 
@@ -561,19 +539,11 @@ extern int getdirstats(const char * const restrict name,
   if (name == NULL || inode == NULL || dev == NULL) nullptr("getdirstats");
   LOUD(fprintf(stderr, "getdirstats('%s', %p, %p)\n", name, (void *)inode, (void *)dev);)
 
-#ifdef ON_WINDOWS
-  if (win_stat(name, &ws) != 0) return -1;
-  *inode = ws.st_ino;
-  *dev = ws.st_dev;
-  *mode = ws.st_mode;
-  if (!S_ISDIR(ws.st_mode)) return 1;
-#else
-  if (stat(name, &s) != 0) return -1;
+  if (STAT(name, &s) != 0) return -1;
   *inode = s.st_ino;
   *dev = s.st_dev;
   *mode = s.st_mode;
   if (!S_ISDIR(s.st_mode)) return 1;
-#endif /* ON_WINDOWS */
   return 0;
 }
 

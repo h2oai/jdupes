@@ -212,9 +212,11 @@ typedef struct _filetree {
 
 /* This gets used in many functions */
 #ifdef ON_WINDOWS
-extern struct winstat ws;
+ extern struct winstat s;
+ #define STAT win_stat
 #else
-extern struct stat s;
+ extern struct stat s;
+ #define STAT stat
 #endif
 
 

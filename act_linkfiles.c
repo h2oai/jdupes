@@ -164,19 +164,19 @@ extern void linkfiles(file_t *files, const int hard)
 #ifdef ON_WINDOWS
         /* For Windows, the hard link count maximum is 1023 (+1); work around
          * by skipping linking or changing the link source file as needed */
-        if (win_stat(srcfile->d_name, &ws) != 0) {
+        if (STAT(srcfile->d_name, &s) != 0) {
           fprintf(stderr, "warning: win_stat() on source file failed, changing source file:\n[SRC] ");
           fwprint(stderr, dupelist[x]->d_name, 1);
           srcfile = dupelist[x];
           continue;
         }
-        if (ws.st_nlink >= 1024) {
+        if (s.st_nlink >= 1024) {
           fprintf(stderr, "warning: maximum source link count reached, changing source file:\n[SRC] ");
           srcfile = dupelist[x];
           continue;
         }
-        if (win_stat(dupelist[x]->d_name, &ws) != 0) continue;
-        if (ws.st_nlink >= 1024) {
+        if (STAT(dupelist[x]->d_name, &s) != 0) continue;
+        if (s.st_nlink >= 1024) {
           fprintf(stderr, "warning: maximum destination link count reached, skipping:\n-//-> ");
           fwprint(stderr, dupelist[x]->d_name, 1);
           continue;
