@@ -1269,9 +1269,7 @@ static file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict f
     }
   }
 
-  if( (cantmatch!=0) && (cmpresult==0) ) {
-    cmpresult = -1;
-  }
+  if ((cantmatch!=0) && (cmpresult==0)) cmpresult = -1;
 
   if (cmpresult < 0) {
     if (tree->left != NULL) {
