@@ -1,3 +1,13 @@
+jdupes 1.13.3
+
+- Fix the behavior of the -I/--isolate option
+- Move BTRFS-specific dedupe interfaces to general Linux 4.5+ interfaces
+- Change BTRFS compilation flag name (see README)
+- Fix FS dedupe only working on the first 16 MiB of files
+- Add FS dedupe static header for when this header is mising
+- Add EXE version info for generated Windows executables
+- Correct several copyright dates and comments
+
 jdupes 1.13.2
 
 - Fix Unicode and escaped in JSON output
