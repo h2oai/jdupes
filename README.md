@@ -424,9 +424,9 @@ Please DO NOT contact Adrian Lopez about issues with jdupes.
 
 Legal information and software license
 --------------------------------------------------------------------------
-jdupes is Copyright (C) 2015-2019 by Jody Bruchon <jody@jodybruchon.com>
-Derived from the original 'fdupes' (C) 1999-2019 by Adrian Lopez
-Includes other code libraries which are (C) 2015-2019 by Jody Bruchon
+jdupes is Copyright (C) 2015-2020 by Jody Bruchon <jody@jodybruchon.com>
+Derived from the original 'fdupes' 1.51 (C) 1999-2014 by Adrian Lopez
+Includes other code libraries which are (C) 2015-2020 by Jody Bruchon
 
 The MIT License
 

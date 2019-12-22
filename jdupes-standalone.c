@@ -1,5 +1,5 @@
-/* jdupes (C) 2015-2019 Jody Bruchon <jody@jodybruchon.com>
-   Derived from fdupes (C) 1999-2019 Adrian Lopez
+/* jdupes (C) 2015-2020 Jody Bruchon <jody@jodybruchon.com>
+   Forked from fdupes 1.51 (C) 1999-2014 Adrian Lopez
 
    Permission is hereby granted, free of charge, to any person
    obtaining a copy of this software and associated documentation files
@@ -21,7 +21,7 @@
    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. */
 
 #define VER "1.13.1"
-#define VERDATE "2019-06-10"
+#define VERDATE "2020-06-10"
 
 #include <dirent.h>
 #include <errno.h>
@@ -341,7 +341,7 @@ static void nullptr(const char * restrict func)
 
 
 /* Jody Bruchon's fast hashing function
- * Copyright (C) 2014-2019 by Jody Bruchon <jody@jodybruchon.com>
+ * Copyright (C) 2014-2020 by Jody Bruchon <jody@jodybruchon.com>
  * Released under The MIT License
  */
 
@@ -2299,7 +2299,7 @@ int main(int argc, char **argv)
     case 'v':
     case 'V':
       printf("jdupes small stand-alone version (derived from v%s, %s)", VER, VERDATE);
-      printf("\nCopyright (C) 2015-2019 by Jody Bruchon <jody@jodybruchon.com>\n");
+      printf("\nCopyright (C) 2015-2020 by Jody Bruchon <jody@jodybruchon.com>\n");
       exit(EXIT_SUCCESS);
     case 'o':
       if (!strncasecmp("name", optarg, 5)) {
