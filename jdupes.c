@@ -201,9 +201,9 @@ struct travdone {
 };
 static struct travdone *travdone_head = NULL;
 
-/* Exclusion tree head and static tag list */
-struct exclude *exclude_head = NULL;
-const struct exclude_tags exclude_tags[] = {
+/* Extended filter tree head and static tag list */
+struct extfilter *extfilter_head = NULL;
+const struct extfilter_tags extfilter_tags[] = {
   { "dir",	X_DIR },
   { "size+",	X_SIZE_GT },
   { "size+=",	X_SIZE_GTEQ },
@@ -446,19 +446,19 @@ extern inline int getfilestats(file_t * const restrict file)
 }
 
 
-static void add_exclude(const char *option)
+static void add_extfilter(const char *option)
 {
   char *opt, *p;
-  struct exclude *excl = exclude_head;
-  const struct exclude_tags *tags = exclude_tags;
+  struct extfilter *extf = extfilter_head;
+  const struct extfilter_tags *tags = extfilter_tags;
   const struct size_suffix *ss = size_suffix;
 
-  if (option == NULL) nullptr("add_exclude()");
+  if (option == NULL) nullptr("add_extfilter()");
 
-  LOUD(fprintf(stderr, "add_exclude '%s'\n", option);)
+  LOUD(fprintf(stderr, "add_extfilter '%s'\n", option);)
 
   opt = string_malloc(strlen(option) + 1);
-  if (opt == NULL) oom("add_exclude option");
+  if (opt == NULL) oom("add_extfilter option");
   strcpy(opt, option);
   p = opt;
 
@@ -478,52 +478,52 @@ static void add_exclude(const char *option)
 
   /* *p is now at the value, NOT the tag string! */
 
-  if (exclude_head != NULL) {
+  if (extfilter_head != NULL) {
     /* Add to end of exclusion stack if head is present */
-    while (excl->next != NULL) excl = excl->next;
-    excl->next = string_malloc(sizeof(struct exclude) + strlen(p) + 1);
-    if (excl->next == NULL) oom("add_exclude alloc");
-    excl = excl->next;
+    while (extf->next != NULL) extf = extf->next;
+    extf->next = string_malloc(sizeof(struct extfilter) + strlen(p) + 1);
+    if (extf->next == NULL) oom("add_extfilter alloc");
+    extf = extf->next;
   } else {
-    /* Allocate exclude_head if no exclusions exist yet */
-    exclude_head = string_malloc(sizeof(struct exclude) + strlen(p) + 1);
-    if (exclude_head == NULL) oom("add_exclude alloc");
-    excl = exclude_head;
+    /* Allocate extfilter_head if no exclusions exist yet */
+    extfilter_head = string_malloc(sizeof(struct extfilter) + strlen(p) + 1);
+    if (extfilter_head == NULL) oom("add_extfilter alloc");
+    extf = extfilter_head;
   }
 
   /* Set tag value from predefined tag array */
-  excl->flags = tags->flags;
+  extf->flags = tags->flags;
 
   /* Initialize the new exclude element */
-  excl->next = NULL;
-  if (excl->flags & XX_EXCL_OFFSET) {
+  extf->next = NULL;
+  if (extf->flags & XX_EXCL_OFFSET) {
     /* Exclude uses a number; handle it with possible suffixes */
-    *(excl->param) = '\0';
+    *(extf->param) = '\0';
     /* Get base size */
     if (*p < '0' || *p > '9') goto bad_size_suffix;
-    excl->size = strtoll(p, &p, 10);
+    extf->size = strtoll(p, &p, 10);
     /* Handle suffix, if any */
     if (*p != '\0') {
       while (ss->suffix != NULL && strcasecmp(ss->suffix, p) != 0) ss++;
       if (ss->suffix == NULL) goto bad_size_suffix;
-      excl->size *= ss->multiplier;
+      extf->size *= ss->multiplier;
     }
   } else {
     /* Exclude uses string data; just copy it */
-    excl->size = 0;
-    if (*p != '\0') strcpy(excl->param, p);
-    else *(excl->param) = '\0';
+    extf->size = 0;
+    if (*p != '\0') strcpy(extf->param, p);
+    else *(extf->param) = '\0';
   }
 
-  LOUD(fprintf(stderr, "Added exclude: tag '%s', data '%s', size %lld, flags %d\n", opt, excl->param, (long long)excl->size, excl->flags);)
+  LOUD(fprintf(stderr, "Added extfilter: tag '%s', data '%s', size %lld, flags %d\n", opt, extf->param, (long long)extf->size, extf->flags);)
   string_free(opt);
   return;
 
 spec_missing:
-  fprintf(stderr, "Exclude spec missing or invalid: -X spec:data\n");
+  fprintf(stderr, "extfilter spec missing or invalid: -X spec:data\n");
   exit(EXIT_FAILURE);
 bad_tag:
-  fprintf(stderr, "Invalid exclusion tag was specified\n");
+  fprintf(stderr, "Invalid extfilter tag was specified\n");
   exit(EXIT_FAILURE);
 bad_size_suffix:
   fprintf(stderr, "Invalid -X size suffix specified; use B or KMGTPE[i][B]\n");
@@ -657,14 +657,14 @@ static int check_singlefile(file_t * const restrict newfile)
 
     /* Exclude files based on exclusion stack size specs */
     excluded = 0;
-    for (struct exclude *excl = exclude_head; excl != NULL; excl = excl->next) {
-      uint32_t sflag = excl->flags & XX_EXCL_SIZE;
+    for (struct extfilter *extf = extfilter_head; extf != NULL; extf = extf->next) {
+      uint32_t sflag = extf->flags & XX_EXCL_SIZE;
       if (
-           ((sflag == X_SIZE_EQ) && (newfile->size != excl->size)) ||
-           ((sflag == X_SIZE_LTEQ) && (newfile->size <= excl->size)) ||
-           ((sflag == X_SIZE_GTEQ) && (newfile->size >= excl->size)) ||
-           ((sflag == X_SIZE_GT) && (newfile->size > excl->size)) ||
-           ((sflag == X_SIZE_LT) && (newfile->size < excl->size))
+           ((sflag == X_SIZE_EQ) && (newfile->size != extf->size)) ||
+           ((sflag == X_SIZE_LTEQ) && (newfile->size <= extf->size)) ||
+           ((sflag == X_SIZE_GTEQ) && (newfile->size >= extf->size)) ||
+           ((sflag == X_SIZE_GT) && (newfile->size > extf->size)) ||
+           ((sflag == X_SIZE_LT) && (newfile->size < extf->size))
       ) excluded = 1;
     }
     if (excluded) {
@@ -1543,9 +1543,9 @@ static inline void help_text(void)
   printf(" -v --version     \tdisplay jdupes version and license information\n");
   printf(" -x --xsize=SIZE  \texclude files of size < SIZE bytes from consideration\n");
   printf("    --xsize=+SIZE \t'+' specified before SIZE, exclude size > SIZE\n");
-  printf(" -X --exclude=spec:info\texclude files based on specified criteria\n");
+  printf(" -X --extfilter=spec:x\tfilter files based on specified criteria\n");
   printf("                  \tspecs: size+-=\n");
-  printf("                  \tExclusions are cumulative: -X dir:abc -X dir:efg\n");
+  printf("                  \tFilters are cumulative: -X spec:ab -X spec:cd\n");
   printf(" -z --zeromatch   \tconsider zero-length files to be duplicates\n");
   printf(" -Z --softabort   \tIf the user aborts (i.e. CTRL-C) act on matches so far\n");
 #ifndef ON_WINDOWS
@@ -1618,6 +1618,7 @@ int main(int argc, char **argv)
     { "version", 0, 0, 'v' },
     { "xsize", 1, 0, 'x' },
     { "exclude", 1, 0, 'X' },
+    { "extfilter", 1, 0, 'X' },
     { "zeromatch", 0, 0, 'z' },
     { "softabort", 0, 0, 'Z' },
     { NULL, 0, 0, 0 }
@@ -1815,11 +1816,11 @@ int main(int argc, char **argv)
         strcat(xs, "-=:");
       }
       strcat(xs, optarg);
-      add_exclude(xs);
+      add_extfilter(xs);
       string_free(xs);
       break;
     case 'X':
-      add_exclude(optarg);
+      add_extfilter(optarg);
       break;
     case '@':
 #ifdef LOUD_DEBUG

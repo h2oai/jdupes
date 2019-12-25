@@ -1,3 +1,7 @@
+jdupes 1.14.0
+
+- Long option --exclude is deprecated and renamed --extfilter
+
 jdupes 1.13.3
 
 - Fix the behavior of the -I/--isolate option

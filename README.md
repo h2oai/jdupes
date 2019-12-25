@@ -134,6 +134,9 @@ option is specified (delete, summarize, link, dedupe, etc.)
  -v --version           display jdupes version and license information
  -x --xsize=SIZE        exclude files of size < SIZE bytes from consideration
     --xsize=+SIZE       '+' specified before SIZE, exclude size > SIZE
+ -X --extfilter=spec:x  filter files based on specified criteria
+                        specs: size+-=
+                        Filters are cumulative: -X spec:ab -X spec:cd
  -X --exclude=spec:info exclude files based on specified criteria
                         specs: size+-=
                         Exclusions are cumulative: -X dir:abc -X dir:efg

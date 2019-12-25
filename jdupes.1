@@ -147,16 +147,16 @@ prefixed with a '+' i.e.
 jdupes -x +226 [files]
 then exclude files larger than SIZE. Suffixes K/M/G can be used.
 .TP
-.B -X --exclude=spec:info
-exclude files based on specified criteria; supported specs are:
+.B -X --extfilter=spec:info
+exclude/filter files based on specified criteria; supported specs are:
 .RS
 .IP `size[+-=]:number[suffix]'
 Match only if size is greater (+), less than (-), or equal to (=) the
 specified number, with an optional multiplier suffix. The +/- and =
-specifiers can be combined; ex :"size+=:4K" will match if size is greater
+specifiers can be combined: "size+=:4K" will match if size is greater
 than or equal to four kilobytes (4096 bytes). Suffixes supported are
 K/M/G/T/P/E with a B or iB extension (all case-insensitive); no extension
-or an IB extension specify binary multipliers while a B extension
+or an iB extension specify binary multipliers while a B extension
 specifies decimal multipliers (ex: 4K or 4KiB = 4096, 4KB = 4000.)
 .RE
 .TP

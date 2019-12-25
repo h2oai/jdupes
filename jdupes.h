@@ -217,15 +217,15 @@ typedef struct _filetree {
 #endif
 
 
-/* -X exclusion parameter stack */
-struct exclude {
-  struct exclude *next;
+/* -X extended filter parameter stack */
+struct extfilter {
+  struct extfilter *next;
   unsigned int flags;
   int64_t size;
   char param[];
 };
 
-/* Exclude parameter flags */
+/* Extended filter parameter flags */
 #define X_DIR			0x00000001U
 #define X_SIZE_EQ		0x00000002U
 #define X_SIZE_GT		0x00000004U
@@ -242,13 +242,13 @@ struct exclude {
 #define XX_EXCL_DATA		0x0000000fU
 
 /* Exclude definition array */
-struct exclude_tags {
+struct extfilter_tags {
   const char * const tag;
   const uint32_t flags;
 };
 
-extern const struct exclude_tags exclude_tags[];
-extern struct exclude *exclude_head;
+extern const struct extfilter_tags extfilter_tags[];
+extern struct extfilter *extfilter_head;
 
 
 /* Suffix definitions (treat as case-insensitive) */
