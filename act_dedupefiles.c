@@ -160,10 +160,10 @@ extern void dedupefiles(file_t * restrict files)
         else
           same->length = (uint64_t)(files->size - cur_offset);
 
-        ret = ioctl(fd, BTRFS_IOC_FILE_EXTENT_SAME, same);
+        ret = ioctl(fd, FIDEDUPERANGE, same);
         if (ret < 0)
           break;
-        LOUD(fprintf(stderr, "dedupe: ioctl('%s' [%d], BTRFS_IOC_FILE_EXTENT_SAME, same) => %d\n", files->d_name, fd, ret);)
+        LOUD(fprintf(stderr, "dedupe: ioctl('%s' [%d], FIDEDUPERANGE, same) => %d\n", files->d_name, fd, ret);)
       } 
       if (close(fd) == -1) fprintf(stderr, "Unable to close(\"%s\"): %s\n", files->d_name, strerror(errno));
 
