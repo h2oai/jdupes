@@ -1678,7 +1678,7 @@ int main(int argc, char **argv)
           , long_options, NULL
 #endif
          )) != EOF) {
-    if ((uintptr_t)optarg <= 0x20) goto error_optarg;
+    if ((uintptr_t)optarg == 0x20) goto error_optarg;
     switch (opt) {
     case '0':
       SETFLAG(flags, F_PRINTNULL);
