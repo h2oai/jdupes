@@ -1,6 +1,8 @@
 jdupes 1.14.0
 
 - Long option --exclude is deprecated and renamed --extfilter
+- BTRFS compile options have been generalized to dedupe (see README)
+- Fix a bug in 1.13.3 where many options caused an inappropriate exit
 
 jdupes 1.13.3
 

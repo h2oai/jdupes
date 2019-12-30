@@ -35,7 +35,7 @@ If a choice must be made between being aggressive or careful, the careful
 way is always chosen.
 
 jdupes includes features that are not always found elsewhere. Examples of
-such features include btrfs block-level deduplication and control over
+such features include block-level data deduplication and control over
 which file is kept when a match set is automatically deleted. jdupes is
 not afraid of dropping features of low value; a prime example is the `-1`
 switch which outputs all matches in a set on one line, a feature which was
