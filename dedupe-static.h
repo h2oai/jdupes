@@ -28,8 +28,8 @@
 #define FILE_DEDUPE_RANGE_DIFFERS	1
 /* For extent-same ioctl */
 struct file_dedupe_range_info {
-	__s64 fd;		/* in - destination file */
-	__u64 logical_offset;	/* in - start of extent in destination */
+	__s64 dest_fd;		/* in - destination file */
+	__u64 dest_offset;	/* in - start of extent in destination */
 	__u64 bytes_deduped;	/* out - total # of bytes we were able
 				 * to dedupe from this file */
 	/* status of this dedupe operation:
@@ -42,8 +42,8 @@ struct file_dedupe_range_info {
 };
 
 struct file_dedupe_range {
-	__u64 logical_offset;	/* in - start of extent in source */
-	__u64 length;		/* in - length of extent */
+	__u64 src_offset;	/* in - start of extent in source */
+	__u64 src_length;	/* in - length of extent */
 	__u16 dest_count;	/* in - total elements in info array */
 	__u16 reserved1;
 	__u32 reserved2;
