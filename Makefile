@@ -13,8 +13,8 @@ PREFIX = /usr/local
 #CFLAGS += -DOMIT_GETOPT_LONG
 
 # Uncomment for Linux for -B/--dedupe.
-# This can also be enabled at build time: 'make ENABLE_FSDEDUP=1'
-#CFLAGS += -DENABLE_FSDEDUP
+# This can also be enabled at build time: 'make ENABLE_DEDUPE=1'
+#CFLAGS += -DENABLE_DEDUPE
 
 # Uncomment for low memory usage at the expense of speed and features
 # This can be enabled at build time: 'make LOW_MEMORY=1'
@@ -82,12 +82,12 @@ ifdef HARDEN
 COMPILER_OPTIONS += -Wformat -Wformat-security -D_FORTIFY_SOURCE=2 -fstack-protector-strong -fPIE -fpie -Wl,-z,relro -Wl,-z,now
 endif
 
-# Catch someone trying to enable BTRFS in flags and turn on ENABLE_FSDEDUP
+# Catch someone trying to enable BTRFS in flags and turn on ENABLE_DEDUPE
 ifneq (,$(findstring DENABLE_BTRFS,$(CFLAGS) $(CFLAGS_EXTRA)))
-	ENABLE_FSDEDUP=1
+	ENABLE_DEDUPE=1
 endif
-ifneq (,$(findstring DENABLE_FSDEDUP,$(CFLAGS) $(CFLAGS_EXTRA)))
-	ENABLE_FSDEDUP=1
+ifneq (,$(findstring DENABLE_DEDUPE,$(CFLAGS) $(CFLAGS_EXTRA)))
+	ENABLE_DEDUPE=1
 endif
 
 # MinGW needs this for printf() conversions to work
@@ -99,22 +99,28 @@ ifndef NO_UNICODE
 endif
 	COMPILER_OPTIONS += -D__USE_MINGW_ANSI_STDIO=1 -DON_WINDOWS=1
 	OBJS += win_stat.o winres.o
-	override undefine ENABLE_FSDEDUP
+	override undefine ENABLE_DEDUPE
 endif
 
-# New BTRFS support option
+# Compatibility mappings for dedupe feature
 ifdef ENABLE_BTRFS
-ENABLE_FSDEDUP=1
+ENABLE_DEDUPE=1
 endif
-ifdef ENABLE_FSDEDUP
-COMPILER_OPTIONS += -DENABLE_FSDEDUP
+ifdef STATIC_BTRFS_H
+STATIC_DEDUPE_H=1
+endif
+
+# Dedupe feature (originally only BTRFS, now generalized)
+ifdef ENABLE_DEDUPE
+COMPILER_OPTIONS += -DENABLE_DEDUPE
 OBJS += act_dedupefiles.o
 else
 OBJS_CLEAN += act_dedupefiles.o
 endif
-ifdef STATIC_BTRFS_H
-COMPILER_OPTIONS += -DSTATIC_BTRFS_H
+ifdef STATIC_DEDUPE_H
+COMPILER_OPTIONS += -DSTATIC_DEDUPE_H
 endif
+
 # Low memory mode
 ifdef LOW_MEMORY
 COMPILER_OPTIONS += -DLOW_MEMORY -DSMA_PAGE_SIZE=32768 -DCHUNK_SIZE=16384 -DNO_HARDLINKS -DNO_USER_ORDER

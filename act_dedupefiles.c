@@ -3,7 +3,7 @@
 
 #include "jdupes.h"
 
-#ifdef ENABLE_FSDEDUP
+#ifdef ENABLE_DEDUPE
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -13,11 +13,17 @@
 #include <fcntl.h>
 
 #ifdef __linux__
-/* Use built-in static BTRFS header if requested */
-#ifdef STATIC_BTRFS_H
-#include "btrfs-static.h"
+/* Use built-in static dedupe header if requested */
+#ifdef STATIC_DEDUPE_H
+#include "dedupe-static.h"
 #else
 #include <linux/fs.h>
+#endif
+
+/* If the Linux headers are too old, automatically use the static one */
+#ifndef FILE_DEDUPE_RANGE_DIFFERS
+#warning Automatically enabled STATIC_DEDUPE_H due to insufficient header support
+#include "dedupe-static.h"
 #endif
 
 #include <sys/ioctl.h>
@@ -205,4 +211,4 @@ cleanup:
   free(dupe_filenames);
   return;
 }
-#endif /* ENABLE_FSDEDUP */
+#endif /* ENABLE_DEDUPE */

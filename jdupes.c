@@ -168,7 +168,7 @@ const char *extensions[] = {
     #ifdef LOUD_DEBUG
     "loud",
     #endif
-    #ifdef ENABLE_FSDEDUP
+    #ifdef ENABLE_DEDUPE
     "fsdedup",
     #endif
     #ifdef LOW_MEMORY
@@ -1477,7 +1477,7 @@ static inline void help_text(void)
   printf(" -0 --printnull   \toutput nulls instead of CR/LF (like 'find -print0')\n");
   printf(" -1 --one-file-system \tdo not match files on different filesystems/devices\n");
   printf(" -A --nohidden    \texclude hidden files from consideration\n");
-#ifdef ENABLE_FSDEDUP
+#ifdef ENABLE_DEDUPE
   printf(" -B --dedupe      \tsend matches to filesystem for block-level deduplication\n");
 #endif
   printf(" -C --chunksize=# \toverride I/O chunk size (min %d, max %d)\n", MIN_CHUNK_SIZE, MAX_CHUNK_SIZE);
@@ -1888,7 +1888,7 @@ int main(int argc, char **argv)
       }
       break;
     case 'B':
-#ifdef ENABLE_FSDEDUP
+#ifdef ENABLE_DEDUPE
       SETFLAG(flags, F_DEDUPEFILES);
       /* btrfs will do the byte-for-byte check itself */
       SETFLAG(flags, F_QUICKCOMPARE);
@@ -1938,7 +1938,7 @@ int main(int argc, char **argv)
     exit(EXIT_FAILURE);
   }
 
-#ifdef ENABLE_FSDEDUP
+#ifdef ENABLE_DEDUPE
   if (ISFLAG(flags, F_CONSIDERHARDLINKS) && ISFLAG(flags, F_DEDUPEFILES))
     fprintf(stderr, "warning: option --dedupe overrides the behavior of --hardlinks\n");
 #endif
@@ -2106,9 +2106,9 @@ skip_file_scan:
 #ifndef NO_HARDLINKS
   if (ISFLAG(flags, F_HARDLINKFILES)) linkfiles(files, 1);
 #endif /* NO_HARDLINKS */
-#ifdef ENABLE_FSDEDUP
+#ifdef ENABLE_DEDUPE
   if (ISFLAG(flags, F_DEDUPEFILES)) dedupefiles(files);
-#endif /* ENABLE_FSDEDUP */
+#endif /* ENABLE_DEDUPE */
   if (ISFLAG(flags, F_PRINTMATCHES)) printmatches(files);
   if (ISFLAG(flags, F_PRINTJSON)) printjson(files, argc, argv);
   if (ISFLAG(flags, F_SUMMARIZEMATCHES)) {
