@@ -1242,34 +1242,42 @@ static file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict f
         DBG(small_file++;)
       }
     } else if (cmpresult == 0) {
-      /* If partial match was correct, perform a full file hash match */
-      if (!ISFLAG(tree->file->flags, F_HASH_FULL)) {
-        filehash = get_filehash(tree->file, 0);
-        if (filehash == NULL) return NULL;
+      if (ISFLAG(flags, F_SKIPHASH)) {
+	/* Skip full file hashing if requested by the user */
+        LOUD(fprintf(stderr, "checkmatch: skipping full file hashes (F_SKIPMATCH)\n"));
+      } else {
+        /* If partial match was correct, perform a full file hash match */
+        if (!ISFLAG(tree->file->flags, F_HASH_FULL)) {
+          filehash = get_filehash(tree->file, 0);
+          if (filehash == NULL) return NULL;
 
-        tree->file->filehash = *filehash;
-        SETFLAG(tree->file->flags, F_HASH_FULL);
+          tree->file->filehash = *filehash;
+          SETFLAG(tree->file->flags, F_HASH_FULL);
+        }
+
+        if (!ISFLAG(file->flags, F_HASH_FULL)) {
+          filehash = get_filehash(file, 0);
+          if (filehash == NULL) return NULL;
+
+          file->filehash = *filehash;
+          SETFLAG(file->flags, F_HASH_FULL);
+        }
+
+        /* Full file hash comparison */
+        cmpresult = HASH_COMPARE(file->filehash, tree->file->filehash);
+        LOUD(if (!cmpresult) fprintf(stderr, "checkmatch: full hashes match\n"));
+        LOUD(if (cmpresult) fprintf(stderr, "checkmatch: full hashes do not match\n"));
+        DBG(full_hash++);
       }
-
-      if (!ISFLAG(file->flags, F_HASH_FULL)) {
-        filehash = get_filehash(file, 0);
-        if (filehash == NULL) return NULL;
-
-        file->filehash = *filehash;
-        SETFLAG(file->flags, F_HASH_FULL);
-      }
-
-      /* Full file hash comparison */
-      cmpresult = HASH_COMPARE(file->filehash, tree->file->filehash);
-      LOUD(if (!cmpresult) fprintf(stderr, "checkmatch: full hashes match\n"));
-      LOUD(if (cmpresult) fprintf(stderr, "checkmatch: full hashes do not match\n"));
-      DBG(full_hash++);
     } else {
       DBG(partial_elim++);
     }
   }
 
-  if ((cantmatch!=0) && (cmpresult==0)) cmpresult = -1;
+  if ((cantmatch != 0) && (cmpresult == 0)) {
+    LOUD(fprintf(stderr, "checkmatch: rejecting because match not allowed (cantmatch = 1)\n"));
+    cmpresult = -1;
+  }
 
   if (cmpresult < 0) {
     if (tree->left != NULL) {
@@ -1501,6 +1509,7 @@ static inline void help_text(void)
   printf(" -I --isolate     \tfiles in the same specified directory won't match\n");
 #endif
   printf(" -j --json        \tproduce JSON (machine-readable) output\n");
+  printf(" -K --skiphash    \tskip full file hashing (may be faster; 100%% safe)\n");
 #ifndef NO_SYMLINKS
   printf(" -l --linksoft    \tmake relative symlinks for duplicates w/o prompting\n");
 #endif
@@ -1595,6 +1604,7 @@ int main(int argc, char **argv)
     { "reverse", 0, 0, 'i' },
     { "isolate", 0, 0, 'I' },
     { "json", 0, 0, 'j' },
+    { "skiphash", 0, 0, 'K' },
     { "linksoft", 0, 0, 'l' },
     { "linkhard", 0, 0, 'L' },
     { "summarize", 0, 0, 'm'},
@@ -1673,7 +1683,7 @@ int main(int argc, char **argv)
   oldargv = cloneargs(argc, argv);
 
   while ((opt = GETOPT(argc, argv,
-  "@01ABC:dDfhHiIjlLmMnNOpP:qQrRsStTvVzZo:x:X:"
+  "@01ABC:dDfhHiIjKlLmMnNOpP:qQrRsStTvVzZo:x:X:"
 #ifndef OMIT_GETOPT_LONG
           , long_options, NULL
 #endif
@@ -1739,6 +1749,9 @@ int main(int argc, char **argv)
 #endif
     case 'j':
       SETFLAG(flags, F_PRINTJSON);
+      break;
+    case 'K':
+      SETFLAG(flags, F_SKIPHASH);
       break;
     case 'm':
       SETFLAG(flags, F_SUMMARIZEMATCHES);

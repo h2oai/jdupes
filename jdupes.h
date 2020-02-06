@@ -137,6 +137,7 @@ extern uint_fast32_t flags;
 #define F_PARTIALONLY		(1U << 25)
 #define F_NOCHANGECHECK		(1U << 26)
 #define F_PRINTJSON		(1U << 27)
+#define F_SKIPHASH		(1U << 28)
 
 #define F_LOUD			(1U << 30)
 #define F_DEBUG			(1U << 31)
