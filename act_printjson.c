@@ -77,7 +77,6 @@ static inline void escape_uni16(uint16_t u16, char ** const json) {
 /** Escapes a UTF-8 string to ASCII JSON format. */
 static void json_escape(const char * restrict string, char * restrict const target)
 {
-  int length = 0;
   uint32_t curr = 0;
   char * escaped = target;
   while (*string != '\0' && (escaped - target) < (PATH_MAX * 2 - 1)) {
