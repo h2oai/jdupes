@@ -74,6 +74,19 @@ examples, and the extreme danger of the `-T` option is safeguarded by a
 requirement to specify it twice so it can't be used accidentally.
 
 
+How can I do stuff with jdupes that isn't supported by jdupes?
+--------------------------------------------------------------------------
+The standard output format of jdupes is extremely simple. Match sets are
+presented with one file path per line, and match sets are separated by a
+blank line. This is easy to process with fairly simple shell scripts. You
+can find example shell scripts in the "example scripts" directory in the
+jdupes source code. The main example script, "example.sh", is easy to
+modify to take basic actions on each file in a match set. These scripts
+are used by piping the standard jdupes output to them:
+
+jdupes dir1 dir2 dir3 | example.sh scriptparameters
+
+
 Usage
 --------------------------------------------------------------------------
 ```
