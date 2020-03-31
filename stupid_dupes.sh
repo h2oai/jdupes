@@ -29,6 +29,7 @@ VERDATE=2020-02-18
 V=1		# Verbosity
 AC=0		# Argument count
 PHS=4096	# Partial hash size
+FQUICK=0	# Quick (no final compare) mode
 FICNT=0		# File index counter
 MSCNT=0		# Match set counter
 STATUS=0	# Exit status
@@ -119,7 +120,7 @@ check_match () {
 	fi
 
 	# Byte-for-byte compare the files
-	if cmp -s "${FILES[$1]}" "${FILES[$2]}"
+	if [ $FQUICK -eq 1 ] || cmp -s "${FILES[$1]}" "${FILES[$2]}"
 		then test $V -gt 1 && echo "check_match: files are identical" >&2
 		return 0
 		else test $V -gt 1 && echo "check_match: files are not identical" >&2
@@ -218,6 +219,7 @@ show_help () {
 		echo -e "Options:\n"
 		echo "-r|--recurse     Recurse into any subdirectories"
 		echo "-q|--quiet       Only show final output and errors"
+		echo "-Q|--quick       Skip the full file byte-for-byte comparison"
 		echo "-D|--debug       Show lots of extra debugging text"
 		echo "-v|-V|--version  Display program version and exit"
 		echo "-h|--help        Show this help text and exit"
@@ -258,6 +260,7 @@ for X in $@
 		-q|--quiet) V=0 ;;
 		-D|--debug) V=2 ;;
 		-r|--recurse) FRECURSE="" ;;
+		-Q|--quick) FQUICK=1 ;;
 		-v|-V|--version) show_help 0 version ;;
 		-h|--help) show_help 0 full ;;
 		--license) show_help 0 license ;;
