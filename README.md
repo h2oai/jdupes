@@ -126,9 +126,11 @@ option is specified (delete, summarize, link, dedupe, etc.)
  -N --noprompt          together with --delete, preserve the first file in
                         each set of duplicates and delete the rest without
                         prompting the user
- -o --order=BY          select sort order for output, linking and deleting; by
- -O --paramorder        Parameter order is more important than selected -O sort
-                        mtime (BY=time) or filename (BY=name, the default)
+ -o --order=BY          select sort order for output, linking and deleting: 
+                        by mtime (BY=time) or filename (BY=name, the default)
+ -O --paramorder        sort output files in order of command line parameter sequence
+                        Parameter order is more important than selected -o sort
+			which applies should several files share the same parameter order
  -p --permissions       don't consider files with different owner/group or
                         permission bits as duplicates
  -P --print=type        print extra info (partial, early, fullhash)
