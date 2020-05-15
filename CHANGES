@@ -1,3 +1,11 @@
+jdupes 11.4.1
+
+- Fix some compilation issues
+- Add example shell scripts for processing piped jdupes output
+- Add `stupid_dupes` educational shell script to source code
+- Fix some swapped/mangled help text in program and documentation
+- LOW_MEMORY compiles exclude more stuff to further reduce usage
+
 jdupes 1.14.0
 
 - Long option --exclude is deprecated and renamed --extfilter
