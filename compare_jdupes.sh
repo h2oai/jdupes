@@ -6,10 +6,13 @@
 ERR=0
 
 # Detect installed program type (fdupes or jdupes)
-ORIG_DUPE=false
-jdupes -v 2>/dev/null >/dev/null && ORIG_DUPE=jdupes
-fdupes -v 2>/dev/null >/dev/null && ORIG_DUPE=fdupes
-test ! -z "$WINDIR" && "$WINDIR/jdupes.exe" -v 2>/dev/null >/dev/null && ORIG_DUPE="$WINDIR/jdupes.exe"
+if [ -z "$ORIG_DUPE" ]
+	then ORIG_DUPE=false
+	jdupes -v 2>/dev/null >/dev/null && ORIG_DUPE=jdupes
+	fdupes -v 2>/dev/null >/dev/null && ORIG_DUPE=fdupes
+	test ! -z "$WINDIR" && "$WINDIR/jdupes.exe" -v 2>/dev/null >/dev/null && ORIG_DUPE="$WINDIR/jdupes.exe"
+fi
+
 if [ ! $ORIG_DUPE -v 2>/dev/null >/dev/null ]
 	then echo "Cannot run installed jdupes or fdupes"
 	exit 1
