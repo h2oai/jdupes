@@ -1,4 +1,8 @@
-jdupes 11.4.1
+jdupes 1.15.0
+
+- Disable single file addition on the command line for safety
+
+jdupes 1.14.1
 
 - Fix some compilation issues
 - Add example shell scripts for processing piped jdupes output

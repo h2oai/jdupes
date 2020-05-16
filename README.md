@@ -15,6 +15,36 @@ Please consider financially supporting continued developemnt of jdupes:
 https://www.subscribestar.com/JodyBruchon
 
 
+v1.15.x specific: Why is the addition of single files not working?
+--------------------------------------------------------------------------
+If a file was added through recursion and also added explicitly, that file
+would end up matching itself. This issue can be seen in v1.14.1 or older
+versions that support single file addition using a command like this in
+the jdupes source code directory:
+
+/usr/src/jdupes$ jdupes -rH testdir/isolate/1/ testdir/isolate/1/1.txt
+testdir/isolate/1/1.txt
+testdir/isolate/1/1.txt
+testdir/isolate/1/2.txt
+
+Even worse, using the special dot directory will make it happen without
+the -H option, which is how I discovered this bug:
+
+
+/usr/src/jdupes/testdir/isolate/1$ jdupes . 1.txt
+./1.txt
+./2.txt
+1.txt
+
+This works for any path with a single dot directory anywhere in the path,
+so it has a good deal of potential for data loss in some use cases. As
+such, the best option was to shove out a new minor release with this
+feature turned off until some additional checking can be done, e.g. by
+making sure the canonical paths aren't identical between any two files.
+
+v1.16.0 will be released with a safe fix for this.
+
+
 Why use jdupes instead of the original fdupes or other duplicate finders?
 --------------------------------------------------------------------------
 The biggest reason is raw speed. In testing on various data sets, jdupes is
@@ -467,4 +497,3 @@ IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
 CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
