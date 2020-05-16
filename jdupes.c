@@ -788,7 +788,8 @@ static int traverse_check(const dev_t device, const jdupes_ino_t inode)
 }
 
 
-
+/* This is disabled until a check is in place to make it safe */
+#if 0
 /* Add a single file to the file tree */
 static inline file_t *grokfile(const char * const restrict name, file_t * restrict * const restrict filelistp)
 {
@@ -811,6 +812,7 @@ static inline file_t *grokfile(const char * const restrict name, file_t * restri
   }
   return newfile;
 }
+#endif
 
 
 /* Load a directory's contents into the file tree, recursing as needed */
@@ -842,6 +844,10 @@ static void grokdir(const char * const restrict dir,
   if (i < 0) goto error_travdone;
   /* if dir is actually a file, just add it to the file tree */
   if (i == 1) {
+/* Single file addition is disabled for now because there is no safeguard
+ * against the file being compared against itself if it's added in both a
+ * recursion and explicitly on the command line. */
+#if 0
     LOUD(fprintf(stderr, "grokdir -> grokfile '%s'\n", dir));
     newfile = grokfile(dir, filelistp);
     if (newfile == NULL) {
@@ -850,6 +856,11 @@ static void grokdir(const char * const restrict dir,
     }
     single = 1;
     goto add_single_file;
+#endif
+    fprintf(stderr, "\nFile specs on command line disabled in this version for safety\n");
+    fprintf(stderr, "This should be restored (and safe) in future release v1.16.0\n");
+    fprintf(stderr, "See https://github.com/jbruchon/jdupes or email jody@jodybruchon.com\n");
+    return; /* Remove when single file is restored */
   }
 
   /* Double traversal prevention tree */
