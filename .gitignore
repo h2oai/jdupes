@@ -21,6 +21,7 @@
 /jdupes
 /jdupes*.exe
 /jdupes-standalone
+/jdupes-*-win*
 /*.pkg.tar.xz
 test_temp
 output.log

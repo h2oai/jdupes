@@ -184,3 +184,5 @@ distclean: clean
 
 package:
 	+./chroot_build.sh
+winpackage:
+	+./generate_windows_packages.sh
