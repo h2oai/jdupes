@@ -1554,7 +1554,9 @@ static inline void help_text(void)
 #ifndef NO_HARDLINKS
   printf(" -L --linkhard    \thard link all duplicate files without prompting\n");
  #ifdef ON_WINDOWS
-  printf("                  \tWindows allows a maximum of 1023 hard links per file\n");
+  printf("                  \tWindows allows a maximum of 1023 hard links per file;\n");
+  printf("                  \tlinking large match sets will result in multiple sets\n");
+  printf("                  \tof hard linked files due to this limit.\n");
  #endif /* ON_WINDOWS */
 #endif /* NO_HARDLINKS */
   printf(" -m --summarize   \tsummarize dupe information\n");
