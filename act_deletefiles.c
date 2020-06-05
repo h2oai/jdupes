@@ -14,7 +14,7 @@
 #define INPUT_SIZE 512
 
 #ifdef UNICODE
- wpath_t wstr;
+ static wpath_t wstr;
 #endif
 
 extern void deletefiles(file_t *files, int prompt, FILE *tty)

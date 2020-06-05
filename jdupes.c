@@ -204,12 +204,12 @@ static struct travdone *travdone_head = NULL;
 /* Extended filter tree head and static tag list */
 struct extfilter *extfilter_head = NULL;
 const struct extfilter_tags extfilter_tags[] = {
-  { "dir",	X_DIR },
-  { "size+",	X_SIZE_GT },
-  { "size+=",	X_SIZE_GTEQ },
-  { "size-=",	X_SIZE_LTEQ },
-  { "size-",	X_SIZE_LT },
-  { "size=",	X_SIZE_EQ },
+  { "noext",	XF_EXCL_EXT },
+  { "size+",	XF_SIZE_GT },
+  { "size-",	XF_SIZE_LT },
+  { "size+=",	XF_SIZE_GTEQ },
+  { "size-=",	XF_SIZE_LTEQ },
+  { "size=",	XF_SIZE_EQ },
   { NULL, 0 },
 };
 
@@ -660,11 +660,11 @@ static int check_singlefile(file_t * const restrict newfile)
     for (struct extfilter *extf = extfilter_head; extf != NULL; extf = extf->next) {
       uint32_t sflag = extf->flags & XX_EXCL_SIZE;
       if (
-           ((sflag == X_SIZE_EQ) && (newfile->size != extf->size)) ||
-           ((sflag == X_SIZE_LTEQ) && (newfile->size <= extf->size)) ||
-           ((sflag == X_SIZE_GTEQ) && (newfile->size >= extf->size)) ||
-           ((sflag == X_SIZE_GT) && (newfile->size > extf->size)) ||
-           ((sflag == X_SIZE_LT) && (newfile->size < extf->size))
+           ((sflag == XF_SIZE_EQ) && (newfile->size != extf->size)) ||
+           ((sflag == XF_SIZE_LTEQ) && (newfile->size <= extf->size)) ||
+           ((sflag == XF_SIZE_GTEQ) && (newfile->size >= extf->size)) ||
+           ((sflag == XF_SIZE_GT) && (newfile->size > extf->size)) ||
+           ((sflag == XF_SIZE_LT) && (newfile->size < extf->size))
       ) excluded = 1;
     }
     if (excluded) {

@@ -227,13 +227,13 @@ struct extfilter {
 };
 
 /* Extended filter parameter flags */
-#define X_DIR			0x00000001U
-#define X_SIZE_EQ		0x00000002U
-#define X_SIZE_GT		0x00000004U
-#define X_SIZE_LT		0x00000008U
+#define XF_EXCL_EXT		0x00000001U
+#define XF_SIZE_EQ		0x00000002U
+#define XF_SIZE_GT		0x00000004U
+#define XF_SIZE_LT		0x00000008U
 /* The X-than-or-equal are combination flags */
-#define X_SIZE_GTEQ		0x00000006U
-#define X_SIZE_LTEQ		0x0000000aU
+#define XF_SIZE_GTEQ		0x00000006U
+#define XF_SIZE_LTEQ		0x0000000aU
 
 /* Size specifier flags */
 #define XX_EXCL_SIZE		0x0000000eU
