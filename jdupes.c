@@ -721,7 +721,7 @@ static int check_singlefile(file_t * const restrict newfile)
     excluded = 0;
     for (struct extfilter *extf = extfilter_head; extf != NULL; extf = extf->next) {
       uint32_t sflag = extf->flags;
-      LOUD(fprintf(stderr, "check_singlefile: extfilter check: %08x %d %d %s\n", sflag, newfile->size, extf->size, newfile->d_name);)
+      LOUD(fprintf(stderr, "check_singlefile: extfilter check: %08x %ld %ld %s\n", sflag, newfile->size, extf->size, newfile->d_name);)
       if (
            ((sflag == XF_SIZE_EQ) && (newfile->size != extf->size)) ||
            ((sflag == XF_SIZE_LTEQ) && (newfile->size <= extf->size)) ||
