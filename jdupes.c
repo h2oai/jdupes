@@ -394,8 +394,49 @@ static void update_progress(const char * const restrict msg, const int file_perc
 
 /* Does a file have one of these comma-separated extensions?
  * Returns 1 after any match, 0 if no matches */
-int match_extensions(char *path, const char * const extlist)
+int match_extensions(char *path, const char *extlist)
 {
+  char *dot;
+  const char *ext;
+  size_t len;
+
+  LOUD(fprintf(stderr, "match_extensions('%s', '%s')\n", path, extlist);)
+  if (path == NULL || extlist == NULL) nullptr("match_extensions");
+
+  dot = NULL;
+  /* Scan to end of path, save the last dot, reset on path separators */
+  while (*path != '\0') {
+    if (*path == '.') dot = path;
+    if (*path == '/' || *path == '\\') dot = NULL;
+    path++;
+  }
+  /* No dots in the file name = no extension, so give up now */
+  if (dot == NULL) return 0;
+  dot++;
+  /* Handle a dot at the end of a file name */
+  if (*dot == '\0') return 0;
+
+  /* dot is now at the location of the last file extension; check the list */
+  while (*extlist == ',') extlist++;
+  ext = extlist;
+  len = 0;
+  while (1) {
+    if (*extlist == '\0' && len == 0) return 0;
+    if (*extlist == ',' || *extlist == '\0') {
+      while (*extlist == ',') extlist++;
+      if (extlist == ext)  goto skip_empty;
+      if (strncmp(dot, ext, len) == 0) {
+        LOUD(fprintf(stderr, "match_extensions: matched on extension '%s'\n", dot);)
+        return 1;
+      }
+skip_empty:
+      ext = extlist;
+      if (*extlist != '\0') extlist++;
+      len = 0;
+      continue;
+    }
+    extlist++; len++;
+  }
   return 0;
 }
 
@@ -472,6 +513,9 @@ static void add_extfilter(const char *option)
 
   LOUD(fprintf(stderr, "add_extfilter '%s'\n", option);)
 
+  /* Invoke help text if requested */
+  if (strcasecmp(option, "help") == 0) { help_text_extfilter(); exit(EXIT_SUCCESS); }
+
   opt = string_malloc(strlen(option) + 1);
   if (opt == NULL) oom("add_extfilter option");
   strcpy(opt, option);
@@ -487,8 +531,6 @@ static void add_extfilter(const char *option)
 
   while (tags->tag != NULL && strcmp(tags->tag, opt) != 0) tags++;
   if (tags->tag == NULL) goto error_bad_filter;
-  /* Invoke help text if requested */
-  if (strcasecmp(tags->tag, "help") == 0) { help_text_extfilter(); exit(EXIT_SUCCESS); }
 
   /* Check for a tag that requires a value */
   if (tags->flags & XF_REQ_VALUE && *p == '\0') goto error_value_missing;
@@ -678,7 +720,8 @@ static int check_singlefile(file_t * const restrict newfile)
     /* Exclude files based on exclusion stack size specs */
     excluded = 0;
     for (struct extfilter *extf = extfilter_head; extf != NULL; extf = extf->next) {
-      uint32_t sflag = extf->flags & XF_REQ_NUMBER;
+      uint32_t sflag = extf->flags;
+      LOUD(fprintf(stderr, "check_singlefile: extfilter check: %08x %d %d %s\n", sflag, newfile->size, extf->size, newfile->d_name);)
       if (
            ((sflag == XF_SIZE_EQ) && (newfile->size != extf->size)) ||
            ((sflag == XF_SIZE_LTEQ) && (newfile->size <= extf->size)) ||
@@ -690,7 +733,7 @@ static int check_singlefile(file_t * const restrict newfile)
       ) excluded = 1;
     }
     if (excluded) {
-      LOUD(fprintf(stderr, "check_singlefile: excluding based on xsize limit (-x set)\n"));
+      LOUD(fprintf(stderr, "check_singlefile: excluding based on an extfilter option\n"));
       return 1;
     }
   }
@@ -708,6 +751,7 @@ static int check_singlefile(file_t * const restrict newfile)
   }
  #endif /* NO_HARDLINKS */
 #endif /* ON_WINDOWS */
+  LOUD(fprintf(stderr, "check_singlefile: all checks passed\n"));
   return 0;
 }
 
