@@ -205,6 +205,7 @@ static struct travdone *travdone_head = NULL;
 struct extfilter *extfilter_head = NULL;
 const struct extfilter_tags extfilter_tags[] = {
   { "noext",	XF_EXCL_EXT },
+  { "onlyext",	XF_ONLY_EXT },
   { "size+",	XF_SIZE_GT },
   { "size-",	XF_SIZE_LT },
   { "size+=",	XF_SIZE_GTEQ },
@@ -258,8 +259,12 @@ struct timeval time1, time2;
 /* For path name mangling */
 char tempname[PATHBUF_SIZE * 2];
 
-/***** End definitions, begin code *****/
+/* Compare two hashes like memcmp() */
+#define HASH_COMPARE(a,b) ((a > b) ? 1:((a == b) ? 0:-1))
 
+static void help_text_extfilter(void);
+
+/***** End definitions, begin code *****/
 
 /* Catch CTRL-C and either notify or terminate */
 void sighandler(const int signum)
@@ -273,6 +278,7 @@ void sighandler(const int signum)
   interrupt = 1;
   return;
 }
+
 
 #ifndef ON_WINDOWS
 void sigusr1(const int signum)
@@ -303,9 +309,6 @@ extern void nullptr(const char * restrict func)
   string_malloc_destroy();
   exit(EXIT_FAILURE);
 }
-
-/* Compare two hashes like memcmp() */
-#define HASH_COMPARE(a,b) ((a > b) ? 1:((a == b) ? 0:-1))
 
 
 static inline char **cloneargs(const int argc, char **argv)
@@ -384,6 +387,18 @@ static void update_progress(const char * const restrict msg, const int file_perc
   time1.tv_sec = time2.tv_sec;
   return;
 }
+
+
+/***** Add new functions here *****/
+
+
+/* Does a file have one of these comma-separated extensions?
+ * Returns 1 after any match, 0 if no matches */
+int match_extensions(char *path, const char * const extlist)
+{
+  return 0;
+}
+
 
 /* Check file's stat() info to make sure nothing has changed
  * Returns 1 if changed, 0 if not changed, negative if error */
@@ -471,10 +486,12 @@ static void add_extfilter(const char *option)
   }
 
   while (tags->tag != NULL && strcmp(tags->tag, opt) != 0) tags++;
-  if (tags->tag == NULL) goto bad_tag;
+  if (tags->tag == NULL) goto error_bad_filter;
+  /* Invoke help text if requested */
+  if (strcasecmp(tags->tag, "help") == 0) { help_text_extfilter(); exit(EXIT_SUCCESS); }
 
   /* Check for a tag that requires a value */
-  if (tags->flags & XX_EXCL_DATA && *p == '\0') goto spec_missing;
+  if (tags->flags & XF_REQ_VALUE && *p == '\0') goto error_value_missing;
 
   /* *p is now at the value, NOT the tag string! */
 
@@ -494,18 +511,18 @@ static void add_extfilter(const char *option)
   /* Set tag value from predefined tag array */
   extf->flags = tags->flags;
 
-  /* Initialize the new exclude element */
+  /* Initialize the new extfilter element */
   extf->next = NULL;
-  if (extf->flags & XX_EXCL_OFFSET) {
+  if (extf->flags & XF_REQ_NUMBER) {
     /* Exclude uses a number; handle it with possible suffixes */
     *(extf->param) = '\0';
     /* Get base size */
-    if (*p < '0' || *p > '9') goto bad_size_suffix;
+    if (*p < '0' || *p > '9') goto error_bad_size_suffix;
     extf->size = strtoll(p, &p, 10);
     /* Handle suffix, if any */
     if (*p != '\0') {
       while (ss->suffix != NULL && strcasecmp(ss->suffix, p) != 0) ss++;
-      if (ss->suffix == NULL) goto bad_size_suffix;
+      if (ss->suffix == NULL) goto error_bad_size_suffix;
       extf->size *= ss->multiplier;
     }
   } else {
@@ -519,14 +536,17 @@ static void add_extfilter(const char *option)
   string_free(opt);
   return;
 
-spec_missing:
-  fprintf(stderr, "extfilter spec missing or invalid: -X spec:data\n");
+error_value_missing:
+  fprintf(stderr, "extfilter value missing or invalid: -X filter:value\n");
+  help_text_extfilter();
   exit(EXIT_FAILURE);
-bad_tag:
-  fprintf(stderr, "Invalid extfilter tag was specified\n");
+error_bad_filter:
+  fprintf(stderr, "Invalid extfilter filter name was specified\n");
+  help_text_extfilter();
   exit(EXIT_FAILURE);
-bad_size_suffix:
-  fprintf(stderr, "Invalid -X size suffix specified; use B or KMGTPE[i][B]\n");
+error_bad_size_suffix:
+  fprintf(stderr, "Invalid extfilter size suffix specified; use B or KMGTPE[i][B]\n");
+  help_text_extfilter();
   exit(EXIT_FAILURE);
 }
 
@@ -658,13 +678,15 @@ static int check_singlefile(file_t * const restrict newfile)
     /* Exclude files based on exclusion stack size specs */
     excluded = 0;
     for (struct extfilter *extf = extfilter_head; extf != NULL; extf = extf->next) {
-      uint32_t sflag = extf->flags & XX_EXCL_SIZE;
+      uint32_t sflag = extf->flags & XF_REQ_NUMBER;
       if (
            ((sflag == XF_SIZE_EQ) && (newfile->size != extf->size)) ||
            ((sflag == XF_SIZE_LTEQ) && (newfile->size <= extf->size)) ||
            ((sflag == XF_SIZE_GTEQ) && (newfile->size >= extf->size)) ||
            ((sflag == XF_SIZE_GT) && (newfile->size > extf->size)) ||
-           ((sflag == XF_SIZE_LT) && (newfile->size < extf->size))
+           ((sflag == XF_SIZE_LT) && (newfile->size < extf->size)) ||
+	   ((sflag == XF_EXCL_EXT) && match_extensions(newfile->d_name, extf->param)) ||
+	   ((sflag == XF_ONLY_EXT) && !match_extensions(newfile->d_name, extf->param))
       ) excluded = 1;
     }
     if (excluded) {
@@ -971,7 +993,7 @@ static void grokdir(const char * const restrict dir,
       string_free(newfile);
       continue;
     } else {
-add_single_file:
+//add_single_file:
       /* Add regular files to list, including symlink targets if requested */
 #ifndef NO_SYMLINKS
       if (!ISFLAG(newfile->flags, F_IS_SYMLINK) || (ISFLAG(newfile->flags, F_IS_SYMLINK) && ISFLAG(flags, F_FOLLOWLINKS))) {
@@ -1592,18 +1614,37 @@ static inline void help_text(void)
   printf(" -v --version     \tdisplay jdupes version and license information\n");
   printf(" -x --xsize=SIZE  \texclude files of size < SIZE bytes from consideration\n");
   printf("    --xsize=+SIZE \t'+' specified before SIZE, exclude size > SIZE\n");
-  printf(" -X --extfilter=spec:x\tfilter files based on specified criteria\n");
-  printf("                  \tspecs: size+-=\n");
-  printf("                  \tFilters are cumulative: -X spec:ab -X spec:cd\n");
+  printf(" -X --extfilter=x:y\tfilter files based on specified criteria\n");
+  printf("                  \tUse '-X help' for detailed extfilter help\n");
   printf(" -z --zeromatch   \tconsider zero-length files to be duplicates\n");
   printf(" -Z --softabort   \tIf the user aborts (i.e. CTRL-C) act on matches so far\n");
 #ifndef ON_WINDOWS
   printf("                  \tYou can send SIGUSR1 to the program to toggle this\n");
 #endif
-  printf("\nFor sizes, K/M/G/T/P/E[B|iB] suffixes can be used (case-insensitive)\n");
 #ifdef OMIT_GETOPT_LONG
   printf("Note: Long options are not supported in this build.\n\n");
 #endif
+}
+
+
+static void help_text_extfilter(void)
+{
+  printf("Detailed help for jdupes -X/--extfilter options\n");
+  printf("General format: jdupes -X filter[:value][size_suffix]\n\n");
+  printf("noext:ext1[,ext2,...]   \tExclude files with certain extension(s)\n\n");
+  printf("onlyext:ext1[,ext2,...] \tOnly include files with certain extension(s)\n\n");
+  printf("size[+-=]:size[suffix]  \tExclude files meeting certain size criteria\n");
+  printf("                        \tSize specs: + larger, - smaller, = equal to\n");
+  printf("                        \tSpecs can be mixed, i.e. size+=:100k will\n");
+  printf("                        \texclude files 100KiB or larger in size.\n\n");
+//  printf("\t\n");
+  printf("\nSome filters take no value or multiple values. Filters that can take\n");
+  printf("a numeric option generally support the size multipliers K/M/G/T/P/E\n");
+  printf("with or without an added iB or B. Multipliers are binary-style unless\n");
+  printf("the B is used, which will use decimal multipliers. For example,\n");
+  printf("10k or 10kib = 10240; 10kb = 10000. Multipliers are case-insensitive.\n\n");
+  printf("Filters have cumulative effects: jdupes -X size+:100 -X size-:100 will\n");
+  printf("cause only files of exactly 100 bytes in size to be included.\n");
 }
 
 

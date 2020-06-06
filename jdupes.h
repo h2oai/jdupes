@@ -231,16 +231,15 @@ struct extfilter {
 #define XF_SIZE_EQ		0x00000002U
 #define XF_SIZE_GT		0x00000004U
 #define XF_SIZE_LT		0x00000008U
+#define XF_ONLY_EXT		0x00000010U
 /* The X-than-or-equal are combination flags */
 #define XF_SIZE_GTEQ		0x00000006U
 #define XF_SIZE_LTEQ		0x0000000aU
 
-/* Size specifier flags */
-#define XX_EXCL_SIZE		0x0000000eU
-/* Flags that use numeric offset instead of a string */
-#define XX_EXCL_OFFSET		0x0000000eU
-/* Flags that require a data parameter */
-#define XX_EXCL_DATA		0x0000000fU
+/* Flags that use a numeric size with optional suffix */
+#define XF_REQ_NUMBER		0x0000000eU
+/* Flags that require a data parameter (after a colon) */
+#define XF_REQ_VALUE		0x0000001fU
 
 /* Exclude definition array */
 struct extfilter_tags {
