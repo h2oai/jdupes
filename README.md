@@ -180,15 +180,34 @@ option is specified (delete, summarize, link, dedupe, etc.)
  -v --version           display jdupes version and license information
  -x --xsize=SIZE        exclude files of size < SIZE bytes from consideration
     --xsize=+SIZE       '+' specified before SIZE, exclude size > SIZE
- -X --extfilter=spec:x  filter files based on specified criteria
-                        specs: size+-=
-                        Filters are cumulative: -X spec:ab -X spec:cd
- -X --exclude=spec:info exclude files based on specified criteria
-                        specs: size+-=
-                        Exclusions are cumulative: -X dir:abc -X dir:efg
+ -X --extfilter=x:y     filter files based on specified criteria
+                        Use '-X help' for detailed extfilter help
  -z --zeromatch         consider zero-length files to be duplicates
  -Z --softabort         If the user aborts (i.e. CTRL-C) act on matches so far
                         You can send SIGUSR1 to the program to toggle this
+
+
+Detailed help for jdupes -X/--extfilter options
+General format: jdupes -X filter[:value][size_suffix]
+
+noext:ext1[,ext2,...]           Exclude files with certain extension(s)
+
+onlyext:ext1[,ext2,...]         Only include files with certain extension(s)
+
+size[+-=]:size[suffix]          Exclude files meeting certain size criteria
+                                Size specs: + larger, - smaller, = equal to
+                                Specs can be mixed, i.e. size+=:100k will
+                                exclude files 100KiB or larger in size.
+
+
+Some filters take no value or multiple values. Filters that can take
+a numeric option generally support the size multipliers K/M/G/T/P/E
+with or without an added iB or B. Multipliers are binary-style unless
+the B is used, which will use decimal multipliers. For example,
+10k or 10kib = 10240; 10kb = 10000. Multipliers are case-insensitive.
+
+Filters have cumulative effects: jdupes -X size+:100 -X size-:100 will
+cause only files of exactly 100 bytes in size to be included.
 ```
 
 For sizes, K/M/G/T/P/E[B|iB] suffixes can be used (case-insensitive)
