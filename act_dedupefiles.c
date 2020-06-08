@@ -27,7 +27,6 @@
 #endif
 
 #include <sys/ioctl.h>
-#include <sys/utsname.h>
 #else
 #error "Filesystem-managed deduplication only available for Linux."
 #endif
@@ -57,7 +56,6 @@ static char *dedupeerrstr(int err) {
 
 extern void dedupefiles(file_t * restrict files)
 {
-  struct utsname utsname;
   struct file_dedupe_range *same;
   char **dupe_filenames; /* maps to same->info indices */
 
@@ -70,17 +68,6 @@ extern void dedupefiles(file_t * restrict files)
   int64_t cur_offset;
 
   LOUD(fprintf(stderr, "\nRunning dedupefiles()\n");)
-
-  /* Refuse to dedupe on 2.x kernels; they could damage user data */
-  if (uname(&utsname)) {
-    fprintf(stderr, "Failed to get kernel version! Aborting.\n");
-    exit(EXIT_FAILURE);
-  }
-  LOUD(fprintf(stderr, "dedupefiles: uname got release '%s'\n", utsname.release));
-  if (*(utsname.release) == '2' && *(utsname.release + 1) == '.') {
-    fprintf(stderr, "Refusing to dedupe on a 2.x kernel; data loss could occur. Aborting.\n");
-    exit(EXIT_FAILURE);
-  }
 
   /* Find the largest dupe set, alloc space to hold structs for it */
   get_max_dupes(files, &max_dupes, &max_files);

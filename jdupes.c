@@ -46,6 +46,9 @@
 #include "jody_win_unicode.h"
 #include "jody_cacheinfo.h"
 #include "version.h"
+#ifdef ENABLE_DEDUPE
+#include <sys/utsname.h>
+#endif
 
 /* Headers for post-scanning actions */
 #include "act_deletefiles.h"
@@ -1711,6 +1714,9 @@ int main(int argc, char **argv)
 #ifndef ON_WINDOWS
   static struct proc_cacheinfo pci;
 #endif
+#ifdef ENABLE_DEDUPE
+  static struct utsname utsname;
+#endif
 
 #ifndef OMIT_GETOPT_LONG
   static const struct option long_options[] =
@@ -2027,6 +2033,16 @@ int main(int argc, char **argv)
       break;
     case 'B':
 #ifdef ENABLE_DEDUPE
+      /* Refuse to dedupe on 2.x kernels; they could damage user data */
+      if (uname(&utsname)) {
+        fprintf(stderr, "Failed to get kernel version! Aborting.\n");
+        exit(EXIT_FAILURE);
+      }
+      LOUD(fprintf(stderr, "dedupefiles: uname got release '%s'\n", utsname.release));
+      if (*(utsname.release) == '2' && *(utsname.release + 1) == '.') {
+        fprintf(stderr, "Refusing to dedupe on a 2.x kernel; data loss could occur. Aborting.\n");
+        exit(EXIT_FAILURE);
+      }
       SETFLAG(flags, F_DEDUPEFILES);
       /* btrfs will do the byte-for-byte check itself */
       SETFLAG(flags, F_QUICKCOMPARE);
