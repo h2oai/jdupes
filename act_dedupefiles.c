@@ -72,6 +72,12 @@ extern void dedupefiles(file_t * restrict files)
       off_t remain;
       int err;
 
+      /* Don't pass hard links to dedupe (GitHub issue #25) */
+      if (dupefile->device == curfile->device && dupefile->inode == curfile->inode) {
+        printf("  -==-> %s\n", dupefile->d_name);
+        continue;
+      }
+
       /* Open destination file, skipping any that fail */
       fdri->dest_fd = open(dupefile->d_name, O_RDWR);
       if (fdri->dest_fd == -1) {
@@ -96,11 +102,11 @@ extern void dedupefiles(file_t * restrict files)
       /* Handle any errors */
       err = fdri->status;
       if (err != FILE_DEDUPE_RANGE_SAME || errno != 0) {
-        printf("  =XX=> %s\n", dupefile->d_name);
+        printf("  -XX-> %s\n", dupefile->d_name);
         fprintf(stderr, "error: ");
         if (err == FILE_DEDUPE_RANGE_DIFFERS)
           fprintf(stderr, "not identical (files modified between scan and dedupe?)\n");
-        else if (err != 0) fprintf(stderr, "%s (%d)\n", strerror(err), err);
+        else if (err != 0) fprintf(stderr, "%s (%d)\n", strerror(-err), err);
 	else if (errno != 0) fprintf(stderr, "%s (%d)\n", strerror(errno), errno);
       } else {
         /* Dedupe OK; report to the user and add to file count */
