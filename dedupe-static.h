@@ -25,7 +25,9 @@
 
 #define BTRFS_DEVICE_PATH_NAME_MAX 1024
 
-#define FILE_DEDUPE_RANGE_DIFFERS	1
+#define FILE_DEDUPE_RANGE_SAME    0
+#define FILE_DEDUPE_RANGE_DIFFERS 1
+
 /* For extent-same ioctl */
 struct file_dedupe_range_info {
 	__s64 dest_fd;		/* in - destination file */
