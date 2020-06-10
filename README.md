@@ -199,6 +199,10 @@ size[+-=]:size[suffix]          Exclude files meeting certain size criteria
                                 Specs can be mixed, i.e. size+=:100k will
                                 exclude files 100KiB or larger in size.
 
+nostr:text_string               Exclude all paths containing the string
+onlystr:text_string             Only allow paths containing the string
+                                HINT: you can use these for directories:
+                                -X nostr:/dir_x/  or  -X onlystr:/dir_x/
 
 Some filters take no value or multiple values. Filters that can take
 a numeric option generally support the size multipliers K/M/G/T/P/E
