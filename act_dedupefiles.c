@@ -121,6 +121,7 @@ extern void dedupefiles(file_t * restrict files)
   }
 
   if (!ISFLAG(flags, F_HIDEPROGRESS)) fprintf(stderr, "Deduplication done (%lu files processed)\n", total_files);
+  free(fdr);
   return;
 }
 #endif /* ENABLE_DEDUPE */
