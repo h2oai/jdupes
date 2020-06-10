@@ -21,11 +21,10 @@
 #endif
 
 /* If the Linux headers are too old, automatically use the static one */
-#ifndef FILE_DEDUPE_RANGE_DIFFERS
+#ifndef FILE_DEDUPE_RANGE_SAME
 #warning Automatically enabled STATIC_DEDUPE_H due to insufficient header support
 #include "dedupe-static.h"
 #endif
-
 #include <sys/ioctl.h>
 #else
 #error "Filesystem-managed deduplication only available for Linux."
@@ -35,167 +34,87 @@
 
 #define KERNEL_DEDUP_MAX_SIZE 16777216
 
-/* Message to append to BTRFS warnings based on write permissions */
-static const char *readonly_msg[] = {
-   "",
-   " (no write permission)"
-};
-
-static char *dedupeerrstr(int err) {
-  tempname[sizeof(tempname)-1] = '\0';
-  if (err == FILE_DEDUPE_RANGE_DIFFERS) {
-    snprintf(tempname, sizeof(tempname), "FILE_DEDUPE_RANGE_DIFFERS (data modified in the meantime?)");
-    return tempname;
-  } else if (err < 0) {
-    return strerror(-err);
-  } else {
-    snprintf(tempname, sizeof(tempname), "Unknown error %d", err);
-    return tempname;
-  }
-}
-
 extern void dedupefiles(file_t * restrict files)
 {
-  struct file_dedupe_range *same;
-  char **dupe_filenames; /* maps to same->info indices */
+  struct file_dedupe_range *fdr;
+  struct file_dedupe_range_info *fdri;
+  file_t *curfile, *curfile2, *dupefile;
+  int src_fd;
+  uint64_t total_files = 0;
 
-  file_t *curfile;
-  unsigned int n_dupes, max_dupes, cur_info;
-  unsigned int cur_file = 0, max_files, total_files = 0;
+  LOUD(fprintf(stderr, "\ndedupefiles() running\n");)
+  if (!files) nullptr("dedupefiles()");
 
-  int fd;
-  int ret, status, readonly;
-  int64_t cur_offset;
+  fdr = (struct file_dedupe_range *)calloc(1,
+        sizeof(struct file_dedupe_range)
+      + sizeof(struct file_dedupe_range_info) + 1);
+  fdr->dest_count = 1;
+  fdri = &fdr->info[0];
+  for (curfile = files; curfile; curfile = curfile->next) {
+    /* Skip all files that have no duplicates */
+    if (!ISFLAG(curfile->flags, F_HAS_DUPES)) continue;
+    CLEARFLAG(curfile->flags, F_HAS_DUPES);
 
-  LOUD(fprintf(stderr, "\nRunning dedupefiles()\n");)
+    /* For each duplicate list head, handle the duplicates in the list */
+    curfile2 = curfile;
+    src_fd = open(curfile->d_name, O_RDWR);
+    /* If an open fails, keep going down the dupe list until it is exhausted */
+    while (src_fd == -1 && curfile2->duplicates && curfile2->duplicates->duplicates) {
+      fprintf(stderr, "dedupe: open failed (skipping): %s\n", curfile2->d_name);
+      curfile2 = curfile2->duplicates;
+      src_fd = open(curfile2->d_name, O_RDWR);
+    }
+    if (src_fd == -1) continue;
+    printf("  [SRC] %s\n", curfile2->d_name);
 
-  /* Find the largest dupe set, alloc space to hold structs for it */
-  get_max_dupes(files, &max_dupes, &max_files);
-  /* Kernel dupe count is a uint16_t so exit if the type's limit is exceeded */
-  if (max_dupes > 65535) {
-    fprintf(stderr, "Largest duplicate set (%d) exceeds the 65535-file dedupe limit.\n", max_dupes);
-    fprintf(stderr, "Ask the program author to add this feature if you really need it. Exiting!\n");
-    exit(EXIT_FAILURE);
-  }
-  same = calloc(sizeof(struct file_dedupe_range) +
-                sizeof(struct file_dedupe_range_info) * max_dupes, 1);
-  dupe_filenames = malloc(max_dupes * sizeof(char *));
-  LOUD(fprintf(stderr, "dedupefiles structs: alloc1 size %lu => %p, alloc2 size %lu => %p\n",
-        sizeof(struct file_dedupe_range) + sizeof(struct file_dedupe_range_info) * max_dupes,
-        (void *)same, max_dupes * sizeof(char *), (void *)dupe_filenames);)
-  if (!same || !dupe_filenames) oom("dedupefiles() structures");
+    /* Run dedupe for each set */
+    for (dupefile = curfile->duplicates; dupefile; dupefile = dupefile->duplicates) {
+      off_t remain;
+      int err;
 
-  /* Main dedupe loop */
-  while (files) {
-    if (ISFLAG(files->flags, F_HAS_DUPES) && files->size) {
-      cur_file++;
-      if (!ISFLAG(flags, F_HIDEPROGRESS)) {
-        fprintf(stderr, "Dedupe [%u/%u] %u%% \r", cur_file, max_files,
-            cur_file * 100 / max_files);
+      /* Open destination file, skipping any that fail */
+      fdri->dest_fd = open(dupefile->d_name, O_RDWR);
+      if (fdri->dest_fd == -1) {
+        fprintf(stderr, "dedupe: open failed (skipping): %s\n", dupefile->d_name);
+        continue;
       }
 
-      /* Open each file to be deduplicated */
-      cur_info = 0;
-      for (curfile = files->duplicates; curfile; curfile = curfile->duplicates) {
-        int errno2;
+      /* Dedupe src <--> dest, 16 MiB or less at a time */
+      remain = dupefile->size;
+      fdri->status = FILE_DEDUPE_RANGE_SAME;
+      /* Consume data blocks until no data remains */
+      while (remain) {
+        errno = 0;
+        fdr->src_offset = (uint64_t)(dupefile->size - remain);
+        fdri->dest_offset = fdr->src_offset;
+        fdr->src_length = (uint64_t)(remain <= KERNEL_DEDUP_MAX_SIZE ? remain : KERNEL_DEDUP_MAX_SIZE);
+        ioctl(src_fd, FIDEDUPERANGE, fdr);
+        if (fdri->status < 0) break;
+        remain -= (off_t)fdr->src_length;
+      }
 
-        /* Never allow hard links to be passed to dedupe */
-        if (curfile->device == files->device && curfile->inode == files->inode) {
-          LOUD(fprintf(stderr, "skipping hard linked file pair: '%s' = '%s'\n", curfile->d_name, files->d_name);)
-          continue;
-        }
-
-        dupe_filenames[cur_info] = curfile->d_name;
-        readonly = 0;
-        if (access(curfile->d_name, W_OK) != 0) readonly = 1;
-        fd = open(curfile->d_name, O_RDWR);
-        LOUD(fprintf(stderr, "opening loop: open('%s', O_RDWR) [%d]\n", curfile->d_name, fd);)
-
-        /* If read-write open fails, privileged users can dedupe in read-only mode */
-        if (fd == -1) {
-          /* Preserve errno in case read-only fallback fails */
-          LOUD(fprintf(stderr, "opening loop: open('%s', O_RDWR) failed: %s\n", curfile->d_name, strerror(errno));)
-          errno2 = errno;
-          fd = open(curfile->d_name, O_RDONLY);
-          if (fd == -1) {
-            LOUD(fprintf(stderr, "opening loop: fallback open('%s', O_RDONLY) failed: %s\n", curfile->d_name, strerror(errno));)
-            fprintf(stderr, "Unable to open '%s': %s%s\n", curfile->d_name,
-                strerror(errno2), readonly_msg[readonly]);
-            continue;
-          }
-          LOUD(fprintf(stderr, "opening loop: fallback open('%s', O_RDONLY) succeeded\n", curfile->d_name);)
-        }
-
-        same->info[cur_info].dest_fd = fd;
-        cur_info++;
+      /* Handle any errors */
+      err = fdri->status;
+      if (err != FILE_DEDUPE_RANGE_SAME || errno != 0) {
+        printf("  =XX=> %s\n", dupefile->d_name);
+        fprintf(stderr, "error: ");
+        if (err == FILE_DEDUPE_RANGE_DIFFERS)
+          fprintf(stderr, "not identical (files modified between scan and dedupe?)\n");
+        else if (err != 0) fprintf(stderr, "%s (%d)\n", strerror(err), err);
+	else if (errno != 0) fprintf(stderr, "%s (%d)\n", strerror(errno), errno);
+      } else {
+        /* Dedupe OK; report to the user and add to file count */
+        printf("  ====> %s\n", dupefile->d_name);
         total_files++;
       }
-      n_dupes = cur_info;
-      same->dest_count = (uint16_t)n_dupes;  /* kernel type is __u16 */
-
-      fd = open(files->d_name, O_RDONLY);
-      LOUD(fprintf(stderr, "source: open('%s', O_RDONLY) [%d]\n", files->d_name, fd);)
-      if (fd == -1) {
-        fprintf(stderr, "unable to open(\"%s\", O_RDONLY): %s\n", files->d_name, strerror(errno));
-        goto cleanup;
-      }
-
-      /* Call dedupe ioctl to pass the files to the kernel */
-      ret = 0;
-      same->src_length = (uint64_t)KERNEL_DEDUP_MAX_SIZE;
-      for (cur_offset = 0; cur_offset < files->size; cur_offset += KERNEL_DEDUP_MAX_SIZE) {
-        same->src_offset = (uint64_t)cur_offset;
-        for (cur_info = 0; cur_info < n_dupes; cur_info++) {
-          same->info[cur_info].dest_offset = (uint64_t)cur_offset;
-        }
-        if (KERNEL_DEDUP_MAX_SIZE + cur_offset < files->size)
-          same->src_length = (uint64_t)KERNEL_DEDUP_MAX_SIZE;
-        else
-          same->src_length = (uint64_t)(files->size - cur_offset);
-
-        ret = ioctl(fd, FIDEDUPERANGE, same);
-        if (ret < 0)
-          break;
-        LOUD(fprintf(stderr, "dedupe: ioctl('%s' [%d], FIDEDUPERANGE, same) => %d\n", files->d_name, fd, ret);)
-      } 
-      if (close(fd) == -1) fprintf(stderr, "Unable to close(\"%s\"): %s\n", files->d_name, strerror(errno));
-
-      if (ret < 0) {
-        fprintf(stderr, "dedupe failed against file '%s' (%d matches): %s\n", files->d_name, n_dupes, strerror(errno));
-        goto cleanup;
-      }
-
-      for (cur_info = 0; cur_info < n_dupes; cur_info++) {
-        status = same->info[cur_info].status;
-        if (status != 0) {
-          if (same->info[cur_info].bytes_deduped == 0) {
-            fprintf(stderr, "warning: dedupe failed: %s => %s: %s [%d]%s\n",
-              files->d_name, dupe_filenames[cur_info], dedupeerrstr(status),
-              status, readonly_msg[readonly]);
-          } else {
-            fprintf(stderr, "warning: dedupe only did %" PRIdMAX " bytes: %s => %s: %s [%d]%s\n",
-              (intmax_t)same->info[cur_info].bytes_deduped, files->d_name,
-              dupe_filenames[cur_info], dedupeerrstr(status), status, readonly_msg[readonly]);
-          }
-        }
-      }
-
-cleanup:
-      for (cur_info = 0; cur_info < n_dupes; cur_info++) {
-        if (close((int)same->info[cur_info].dest_fd) == -1) {
-          fprintf(stderr, "unable to close(\"%s\"): %s", dupe_filenames[cur_info],
-            strerror(errno));
-        }
-      }
-
-    } /* has dupes */
-
-    files = files->next;
+      close((int)fdri->dest_fd);
+    }
+    printf("\n");
+    close(src_fd);
+    total_files++;
   }
 
-  if (!ISFLAG(flags, F_HIDEPROGRESS)) fprintf(stderr, "Deduplication done (%d files processed)\n", total_files);
-  free(same);
-  free(dupe_filenames);
+  if (!ISFLAG(flags, F_HIDEPROGRESS)) fprintf(stderr, "Deduplication done (%lu files processed)\n", total_files);
   return;
 }
 #endif /* ENABLE_DEDUPE */
