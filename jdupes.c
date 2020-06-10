@@ -214,6 +214,8 @@ const struct extfilter_tags extfilter_tags[] = {
   { "size+=",	XF_SIZE_GTEQ },
   { "size-=",	XF_SIZE_LTEQ },
   { "size=",	XF_SIZE_EQ },
+  { "nostr",	XF_EXCL_STR },
+  { "onlystr",	XF_ONLY_STR },
   { NULL, 0 },
 };
 
@@ -732,7 +734,9 @@ static int check_singlefile(file_t * const restrict newfile)
            ((sflag == XF_SIZE_GT) && (newfile->size > extf->size)) ||
            ((sflag == XF_SIZE_LT) && (newfile->size < extf->size)) ||
 	   ((sflag == XF_EXCL_EXT) && match_extensions(newfile->d_name, extf->param)) ||
-	   ((sflag == XF_ONLY_EXT) && !match_extensions(newfile->d_name, extf->param))
+	   ((sflag == XF_ONLY_EXT) && !match_extensions(newfile->d_name, extf->param)) ||
+	   ((sflag == XF_EXCL_STR) && strstr(newfile->d_name, extf->param)) ||
+	   ((sflag == XF_ONLY_STR) && !strstr(newfile->d_name, extf->param))
       ) excluded = 1;
     }
     if (excluded) {
@@ -1684,6 +1688,10 @@ static void help_text_extfilter(void)
   printf("                        \tSize specs: + larger, - smaller, = equal to\n");
   printf("                        \tSpecs can be mixed, i.e. size+=:100k will\n");
   printf("                        \texclude files 100KiB or larger in size.\n\n");
+  printf("nostr:text_string       \tExclude all paths containing the string\n");
+  printf("onlystr:text_string     \tOnly allow paths containing the string\n");
+  printf("                        \tHINT: you can use these for directories:\n");
+  printf("                        \t-X nostr:/dir_x/  or  -X onlystr:/dir_x/\n");
 //  printf("\t\n");
   printf("\nSome filters take no value or multiple values. Filters that can take\n");
   printf("a numeric option generally support the size multipliers K/M/G/T/P/E\n");

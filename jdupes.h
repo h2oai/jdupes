@@ -232,6 +232,8 @@ struct extfilter {
 #define XF_SIZE_GT		0x00000004U
 #define XF_SIZE_LT		0x00000008U
 #define XF_ONLY_EXT		0x00000010U
+#define XF_EXCL_STR		0x00000020U
+#define XF_ONLY_STR		0x00000040U
 /* The X-than-or-equal are combination flags */
 #define XF_SIZE_GTEQ		0x00000006U
 #define XF_SIZE_LTEQ		0x0000000aU
