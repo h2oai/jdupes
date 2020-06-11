@@ -1786,7 +1786,7 @@ int main(int argc, char **argv)
 #ifdef UNICODE
   /* Create a UTF-8 **argv from the wide version */
   static char **argv;
-  argv = (char **)string_malloc(sizeof(char *) * argc);
+  argv = (char **)string_malloc(sizeof(char *) * (size_t)argc);
   if (!argv) oom("main() unicode argv");
   widearg_to_argv(argc, wargv, argv);
   /* fix up __argv so getopt etc. don't crash */
