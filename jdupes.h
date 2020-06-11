@@ -138,6 +138,7 @@ extern uint_fast32_t flags;
 #define F_NOCHANGECHECK		(1U << 26)
 #define F_PRINTJSON		(1U << 27)
 #define F_SKIPHASH		(1U << 28)
+#define F_PRINTUNIQUE		(1U << 29)
 
 #define F_LOUD			(1U << 30)
 #define F_DEBUG			(1U << 31)
@@ -148,6 +149,7 @@ extern uint_fast32_t flags;
 #define F_HASH_FULL		(1U << 2)
 #define F_HAS_DUPES		(1U << 3)
 #define F_IS_SYMLINK		(1U << 4)
+#define F_NOT_UNIQUE		(1U << 5)
 
 /* Extra print flags */
 #define P_PARTIAL		(1U << 0)

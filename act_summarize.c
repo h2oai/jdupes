@@ -13,6 +13,8 @@ extern void summarizematches(const file_t * restrict files)
   off_t numbytes = 0;
   int numfiles = 0;
 
+  LOUD(fprintf(stderr, "summarizematches: %p\n", files));
+
   while (files != NULL) {
     file_t *tmpfile;
 

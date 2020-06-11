@@ -36,7 +36,7 @@ extern void linkfiles(file_t *files, const int hard)
   static char rel_path[PATHBUF_SIZE];
 #endif
 
-  LOUD(fprintf(stderr, "Running linkfiles(%d)\n", hard);)
+  LOUD(fprintf(stderr, "linkfiles(%d): %p\n", hard, files);)
   curfile = files;
 
   while (curfile) {

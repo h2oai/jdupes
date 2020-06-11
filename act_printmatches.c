@@ -14,7 +14,7 @@ extern void printmatches(file_t * restrict files)
   int printed = 0;
   int cr = 1;
 
-  LOUD(fprintf(stderr, "act_printmatches: %p\n", files));
+  LOUD(fprintf(stderr, "printmatches: %p\n", files));
 
   if (ISFLAG(flags, F_PRINTNULL)) cr = 2;
 
@@ -23,7 +23,7 @@ extern void printmatches(file_t * restrict files)
       printed = 1;
       if (!ISFLAG(flags, F_OMITFIRST)) {
         if (ISFLAG(flags, F_SHOWSIZE)) printf("%" PRIdMAX " byte%c each:\n", (intmax_t)files->size,
-         (files->size != 1) ? 's' : ' ');
+            (files->size != 1) ? 's' : ' ');
         fwprint(stdout, files->d_name, cr);
       }
       tmpfile = files->duplicates;
@@ -39,6 +39,45 @@ extern void printmatches(file_t * restrict files)
   }
 
   if (printed == 0) fwprint(stderr, "No duplicates found.", 1);
+
+  return;
+}
+
+
+/* Print files that have no duplicates (unique files) */
+extern void printunique(file_t *files)
+{
+  file_t *chain, *scan;
+  int printed = 0;
+  int cr = 1;
+
+  LOUD(fprintf(stderr, "print_uniques: %p\n", files));
+
+  if (ISFLAG(flags, F_PRINTNULL)) cr = 2;
+
+  scan = files;
+  while (scan != NULL) {
+    if (ISFLAG(scan->flags, F_HAS_DUPES)) {
+      chain = scan;
+      while (chain != NULL) {
+        SETFLAG(chain->flags, F_NOT_UNIQUE);
+	chain = chain->duplicates;
+      }
+    }
+    scan = scan->next;
+  }
+
+  while (files != NULL) {
+    if (!ISFLAG(files->flags, F_NOT_UNIQUE)) {
+      printed = 1;
+      if (ISFLAG(flags, F_SHOWSIZE)) printf("%" PRIdMAX " byte%c each:\n", (intmax_t)files->size,
+          (files->size != 1) ? 's' : ' ');
+      fwprint(stdout, files->d_name, cr);
+    }
+    files = files->next;
+  }
+
+  if (printed == 0) fwprint(stderr, "No unique files found.", 1);
 
   return;
 }

@@ -42,7 +42,7 @@ extern void dedupefiles(file_t * restrict files)
   int src_fd;
   uint64_t total_files = 0;
 
-  LOUD(fprintf(stderr, "\ndedupefiles() running\n");)
+  LOUD(fprintf(stderr, "\ndedupefiles: %p\n", files);)
   if (!files) nullptr("dedupefiles()");
 
   fdr = (struct file_dedupe_range *)calloc(1,

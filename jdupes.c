@@ -1764,6 +1764,7 @@ int main(int argc, char **argv)
     { "size", 0, 0, 'S' },
     { "nochangecheck", 0, 0, 't' },
     { "partial-only", 0, 0, 'T' },
+    { "printunique", 0, 0, 'u' },
     { "version", 0, 0, 'v' },
     { "xsize", 1, 0, 'x' },
     { "exclude", 1, 0, 'X' },
@@ -1822,7 +1823,7 @@ int main(int argc, char **argv)
   oldargv = cloneargs(argc, argv);
 
   while ((opt = GETOPT(argc, argv,
-  "@01ABC:dDfhHiIjKlLmMnNOpP:qQrRsStTvVzZo:x:X:"
+  "@01ABC:DdfHhIijKlLmMnNOPp:QqRrSsTtuVvZzo:x:X:"
 #ifndef OMIT_GETOPT_LONG
           , long_options, NULL
 #endif
@@ -1940,6 +1941,9 @@ int main(int argc, char **argv)
         SETFLAG(flags, F_PARTIALONLY);
       }
       break;
+    case 'u':
+      SETFLAG(flags, F_PRINTUNIQUE);
+      break;
 #ifndef NO_SYMLINKS
     case 'l':
       SETFLAG(flags, F_MAKESYMLINKS);
@@ -1950,12 +1954,6 @@ int main(int argc, char **argv)
 #endif
     case 'S':
       SETFLAG(flags, F_SHOWSIZE);
-      break;
-    case 'z':
-      SETFLAG(flags, F_INCLUDEEMPTY);
-      break;
-    case 'Z':
-      SETFLAG(flags, F_SOFTABORT);
       break;
     case 'x':
       fprintf(stderr, "-x/--xsize is deprecated; use -X size[+-=]:size[suffix] instead\n");
@@ -1974,6 +1972,12 @@ int main(int argc, char **argv)
       break;
     case 'X':
       add_extfilter(optarg);
+      break;
+    case 'z':
+      SETFLAG(flags, F_INCLUDEEMPTY);
+      break;
+    case 'Z':
+      SETFLAG(flags, F_SOFTABORT);
       break;
     case '@':
 #ifdef LOUD_DEBUG
@@ -2111,6 +2115,7 @@ int main(int argc, char **argv)
       !!ISFLAG(flags, F_HARDLINKFILES) +
       !!ISFLAG(flags, F_MAKESYMLINKS) +
       !!ISFLAG(flags, F_PRINTJSON) +
+      !!ISFLAG(flags, F_PRINTUNIQUE) +
       !!ISFLAG(flags, F_DEDUPEFILES);
 
   if (pm > 1) {
@@ -2272,6 +2277,7 @@ skip_file_scan:
   if (ISFLAG(flags, F_DEDUPEFILES)) dedupefiles(files);
 #endif /* ENABLE_DEDUPE */
   if (ISFLAG(flags, F_PRINTMATCHES)) printmatches(files);
+  if (ISFLAG(flags, F_PRINTUNIQUE)) printunique(files);
   if (ISFLAG(flags, F_PRINTJSON)) printjson(files, argc, argv);
   if (ISFLAG(flags, F_SUMMARIZEMATCHES)) {
     if (ISFLAG(flags, F_PRINTMATCHES)) printf("\n\n");
