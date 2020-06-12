@@ -145,6 +145,13 @@ OBJS_CLEAN += jdupes-standalone
 
 all: $(PROGRAM_NAME)
 
+static: $(PROGRAM_NAME)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $(PROGRAM_NAME) $(OBJS) -static
+
+static_stripped: $(PROGRAM_NAME)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $(PROGRAM_NAME) $(OBJS) -static
+	strip $(PROGRAM_NAME)
+
 $(PROGRAM_NAME): $(OBJS)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $(PROGRAM_NAME) $(OBJS)
 
