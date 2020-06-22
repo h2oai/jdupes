@@ -96,8 +96,8 @@ static void json_escape(const char * restrict string, char * restrict const targ
 	    *escaped++ = (char)curr;
 	} else {
 	  curr -= 0x10000;
-	  escape_uni16(0xD800 + ((curr >> 10) & 0x03ff), &escaped);
-	  escape_uni16(0xDC00 + (curr & 0x03ff), &escaped);
+	  escape_uni16((uint16_t)(0xD800 + ((curr >> 10) & 0x03ff)), &escaped);
+	  escape_uni16((uint16_t)(0xDC00 + (curr & 0x03ff)), &escaped);
 	}
         break;
     }
