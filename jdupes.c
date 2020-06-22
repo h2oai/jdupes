@@ -1638,7 +1638,7 @@ static inline void help_text(void)
   printf("                  \teach set of duplicates and delete the rest without\n");
   printf("                  \tprompting the user\n");
   printf(" -o --order=BY    \tselect sort order for output, linking and deleting; by\n");
-  printf("                  \tmtime (BY=time) or filename (BY=name, the default)\n");	
+  printf("                  \tmtime (BY=time) or filename (BY=name, the default)\n");
 #ifndef NO_USER_ORDER
   printf(" -O --paramorder  \tParameter order is more important than selected -o sort\n");
 #endif
