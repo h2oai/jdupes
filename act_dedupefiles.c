@@ -52,8 +52,8 @@ extern void dedupefiles(file_t * restrict files)
   fdri = &fdr->info[0];
   for (curfile = files; curfile; curfile = curfile->next) {
     /* Skip all files that have no duplicates */
-    if (!ISFLAG(curfile->flags, F_HAS_DUPES)) continue;
-    CLEARFLAG(curfile->flags, F_HAS_DUPES);
+    if (!ISFLAG(curfile->flags, FF_HAS_DUPES)) continue;
+    CLEARFLAG(curfile->flags, FF_HAS_DUPES);
 
     /* For each duplicate list head, handle the duplicates in the list */
     curfile2 = curfile;

@@ -456,7 +456,7 @@ extern int file_has_changed(file_t * const restrict file)
   if (file == NULL || file->d_name == NULL) nullptr("file_has_changed()");
   LOUD(fprintf(stderr, "file_has_changed('%s')\n", file->d_name);)
 
-  if (!ISFLAG(file->flags, F_VALID_STAT)) return -66;
+  if (!ISFLAG(file->flags, FF_VALID_STAT)) return -66;
 
   if (STAT(file->d_name, &s) != 0) return -2;
   if (file->inode != s.st_ino) return 1;
@@ -470,7 +470,7 @@ extern int file_has_changed(file_t * const restrict file)
 #endif
 #ifndef NO_SYMLINKS
   if (lstat(file->d_name, &s) != 0) return -3;
-  if ((S_ISLNK(s.st_mode) > 0) ^ ISFLAG(file->flags, F_IS_SYMLINK)) return 1;
+  if ((S_ISLNK(s.st_mode) > 0) ^ ISFLAG(file->flags, FF_IS_SYMLINK)) return 1;
 #endif
 
   return 0;
@@ -483,8 +483,8 @@ extern inline int getfilestats(file_t * const restrict file)
   LOUD(fprintf(stderr, "getfilestats('%s')\n", file->d_name);)
 
   /* Don't stat the same file more than once */
-  if (ISFLAG(file->flags, F_VALID_STAT)) return 0;
-  SETFLAG(file->flags, F_VALID_STAT);
+  if (ISFLAG(file->flags, FF_VALID_STAT)) return 0;
+  SETFLAG(file->flags, FF_VALID_STAT);
 
   if (STAT(file->d_name, &s) != 0) return -1;
   file->inode = s.st_ino;
@@ -501,7 +501,7 @@ extern inline int getfilestats(file_t * const restrict file)
 #endif
 #ifndef NO_SYMLINKS
   if (lstat(file->d_name, &s) != 0) return -1;
-  if (S_ISLNK(s.st_mode) > 0) SETFLAG(file->flags, F_IS_SYMLINK);
+  if (S_ISLNK(s.st_mode) > 0) SETFLAG(file->flags, FF_IS_SYMLINK);
 #endif
   return 0;
 }
@@ -1029,7 +1029,7 @@ static void grokdir(const char * const restrict dir,
           continue;
         }
 #ifndef NO_SYMLINKS
-        else if (ISFLAG(flags, F_FOLLOWLINKS) || !ISFLAG(newfile->flags, F_IS_SYMLINK)) {
+        else if (ISFLAG(flags, F_FOLLOWLINKS) || !ISFLAG(newfile->flags, FF_IS_SYMLINK)) {
           LOUD(fprintf(stderr, "grokdir: directory(symlink): recursing (-r/-R)\n"));
           grokdir(newfile->d_name, filelistp, recurse);
         }
@@ -1047,7 +1047,7 @@ static void grokdir(const char * const restrict dir,
 //add_single_file:
       /* Add regular files to list, including symlink targets if requested */
 #ifndef NO_SYMLINKS
-      if (!ISFLAG(newfile->flags, F_IS_SYMLINK) || (ISFLAG(newfile->flags, F_IS_SYMLINK) && ISFLAG(flags, F_FOLLOWLINKS))) {
+      if (!ISFLAG(newfile->flags, FF_IS_SYMLINK) || (ISFLAG(newfile->flags, FF_IS_SYMLINK) && ISFLAG(flags, F_FOLLOWLINKS))) {
 #else
       if (S_ISREG(newfile->mode)) {
 #endif
@@ -1140,7 +1140,7 @@ static jdupes_hash_t *get_filehash(const file_t * const restrict checkfile,
    */
 
   *hash = 0;
-  if (ISFLAG(checkfile->flags, F_HASH_PARTIAL)) {
+  if (ISFLAG(checkfile->flags, FF_HASH_PARTIAL)) {
     *hash = checkfile->filehash_partial;
     /* Don't bother going further if max_read is already fulfilled */
     if (max_read != 0 && max_read <= PARTIAL_HASH_SIZE) {
@@ -1161,7 +1161,7 @@ static jdupes_hash_t *get_filehash(const file_t * const restrict checkfile,
   }
   /* Actually seek past the first chunk if applicable
    * This is part of the filehash_partial skip optimization */
-  if (ISFLAG(checkfile->flags, F_HASH_PARTIAL)) {
+  if (ISFLAG(checkfile->flags, FF_HASH_PARTIAL)) {
     if (fseeko(file, PARTIAL_HASH_SIZE, SEEK_SET) == -1) {
       fclose(file);
       fprintf(stderr, "\nerror seeking in file "); fwprint(stderr, checkfile->d_name, 1);
@@ -1293,26 +1293,26 @@ static file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict f
   }
 
   /* Print pre-check (early) match candidates if requested */
-  if (ISFLAG(p_flags, P_EARLYMATCH)) printf("Early match check passed:\n   %s\n   %s\n\n", file->d_name, tree->file->d_name);
+  if (ISFLAG(p_flags, PF_EARLYMATCH)) printf("Early match check passed:\n   %s\n   %s\n\n", file->d_name, tree->file->d_name);
 
   /* If preliminary matching succeeded, do main file data checks */
   if (cmpresult == 0) {
     LOUD(fprintf(stderr, "checkmatch: starting file data comparisons\n"));
     /* Attempt to exclude files quickly with partial file hashing */
-    if (!ISFLAG(tree->file->flags, F_HASH_PARTIAL)) {
+    if (!ISFLAG(tree->file->flags, FF_HASH_PARTIAL)) {
       filehash = get_filehash(tree->file, PARTIAL_HASH_SIZE);
       if (filehash == NULL) return NULL;
 
       tree->file->filehash_partial = *filehash;
-      SETFLAG(tree->file->flags, F_HASH_PARTIAL);
+      SETFLAG(tree->file->flags, FF_HASH_PARTIAL);
     }
 
-    if (!ISFLAG(file->flags, F_HASH_PARTIAL)) {
+    if (!ISFLAG(file->flags, FF_HASH_PARTIAL)) {
       filehash = get_filehash(file, PARTIAL_HASH_SIZE);
       if (filehash == NULL) return NULL;
 
       file->filehash_partial = *filehash;
-      SETFLAG(file->flags, F_HASH_PARTIAL);
+      SETFLAG(file->flags, FF_HASH_PARTIAL);
     }
 
     cmpresult = HASH_COMPARE(file->filehash_partial, tree->file->filehash_partial);
@@ -1321,21 +1321,21 @@ static file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict f
     DBG(partial_hash++;)
 
     /* Print partial hash matching pairs if requested */
-    if (cmpresult == 0 && ISFLAG(p_flags, P_PARTIAL))
+    if (cmpresult == 0 && ISFLAG(p_flags, PF_PARTIAL))
       printf("Partial hashes match:\n   %s\n   %s\n\n", file->d_name, tree->file->d_name);
 
     if (file->size <= PARTIAL_HASH_SIZE || ISFLAG(flags, F_PARTIALONLY)) {
       if (ISFLAG(flags, F_PARTIALONLY)) { LOUD(fprintf(stderr, "checkmatch: partial only mode: treating partial hash as full hash\n")); }
       else { LOUD(fprintf(stderr, "checkmatch: small file: copying partial hash to full hash\n")); }
       /* filehash_partial = filehash if file is small enough */
-      if (!ISFLAG(file->flags, F_HASH_FULL)) {
+      if (!ISFLAG(file->flags, FF_HASH_FULL)) {
         file->filehash = file->filehash_partial;
-        SETFLAG(file->flags, F_HASH_FULL);
+        SETFLAG(file->flags, FF_HASH_FULL);
         DBG(small_file++;)
       }
-      if (!ISFLAG(tree->file->flags, F_HASH_FULL)) {
+      if (!ISFLAG(tree->file->flags, FF_HASH_FULL)) {
         tree->file->filehash = tree->file->filehash_partial;
-        SETFLAG(tree->file->flags, F_HASH_FULL);
+        SETFLAG(tree->file->flags, FF_HASH_FULL);
         DBG(small_file++;)
       }
     } else if (cmpresult == 0) {
@@ -1344,20 +1344,20 @@ static file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict f
         LOUD(fprintf(stderr, "checkmatch: skipping full file hashes (F_SKIPMATCH)\n"));
       } else {
         /* If partial match was correct, perform a full file hash match */
-        if (!ISFLAG(tree->file->flags, F_HASH_FULL)) {
+        if (!ISFLAG(tree->file->flags, FF_HASH_FULL)) {
           filehash = get_filehash(tree->file, 0);
           if (filehash == NULL) return NULL;
 
           tree->file->filehash = *filehash;
-          SETFLAG(tree->file->flags, F_HASH_FULL);
+          SETFLAG(tree->file->flags, FF_HASH_FULL);
         }
 
-        if (!ISFLAG(file->flags, F_HASH_FULL)) {
+        if (!ISFLAG(file->flags, FF_HASH_FULL)) {
           filehash = get_filehash(file, 0);
           if (filehash == NULL) return NULL;
 
           file->filehash = *filehash;
-          SETFLAG(file->flags, F_HASH_FULL);
+          SETFLAG(file->flags, FF_HASH_FULL);
         }
 
         /* Full file hash comparison */
@@ -1416,7 +1416,7 @@ static file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict f
     DBG(partial_to_full++;)
     TREE_DEPTH_UPDATE_MAX();
     LOUD(fprintf(stderr, "checkmatch: files appear to match based on hashes\n"));
-    if (ISFLAG(p_flags, P_FULLHASH)) printf("Full hashes match:\n   %s\n   %s\n\n", file->d_name, tree->file->d_name);
+    if (ISFLAG(p_flags, PF_FULLHASH)) printf("Full hashes match:\n   %s\n   %s\n\n", file->d_name, tree->file->d_name);
     return &tree->file;
   }
   /* Fall through - should never be reached */
@@ -1484,7 +1484,7 @@ extern unsigned int get_max_dupes(const file_t *files, unsigned int * const rest
 
   while (files) {
     unsigned int n_dupes;
-    if (ISFLAG(files->flags, F_HAS_DUPES)) {
+    if (ISFLAG(files->flags, FF_HAS_DUPES)) {
       groups++;
       if (n_files && files->size) (*n_files)++;
       n_dupes = 1;
@@ -1548,7 +1548,7 @@ static void registerpair(file_t **matchlist, file_t *newmatch,
   if (matchlist == NULL || newmatch == NULL || comparef == NULL) nullptr("registerpair()");
   LOUD(fprintf(stderr, "registerpair: '%s', '%s'\n", (*matchlist)->d_name, newmatch->d_name);)
 
-  SETFLAG((*matchlist)->flags, F_HAS_DUPES);
+  SETFLAG((*matchlist)->flags, FF_HAS_DUPES);
   back = NULL;
   traverse = *matchlist;
 
@@ -1562,15 +1562,15 @@ static void registerpair(file_t **matchlist, file_t *newmatch,
 
       if (!back) {
         *matchlist = newmatch; /* update pointer to head of list */
-        SETFLAG(newmatch->flags, F_HAS_DUPES);
-        CLEARFLAG(traverse->flags, F_HAS_DUPES); /* flag is only for first file in dupe chain */
+        SETFLAG(newmatch->flags, FF_HAS_DUPES);
+        CLEARFLAG(traverse->flags, FF_HAS_DUPES); /* flag is only for first file in dupe chain */
       } else back->duplicates = newmatch;
 
       break;
     } else {
       if (traverse->duplicates == 0) {
         traverse->duplicates = newmatch;
-        if (!back) SETFLAG(traverse->flags, F_HAS_DUPES);
+        if (!back) SETFLAG(traverse->flags, FF_HAS_DUPES);
 
         break;
       }
@@ -1910,9 +1910,9 @@ int main(int argc, char **argv)
       SETFLAG(flags, F_PERMISSIONS);
       break;
     case 'P':
-      if (strcmp(optarg, "partial") == 0) SETFLAG(p_flags, P_PARTIAL);
-      else if (strcmp(optarg, "early") == 0) SETFLAG(p_flags, P_EARLYMATCH);
-      else if (strcmp(optarg, "fullhash") == 0) SETFLAG(p_flags, P_FULLHASH);
+      if (strcmp(optarg, "partial") == 0) SETFLAG(p_flags, PF_PARTIAL);
+      else if (strcmp(optarg, "early") == 0) SETFLAG(p_flags, PF_EARLYMATCH);
+      else if (strcmp(optarg, "fullhash") == 0) SETFLAG(p_flags, PF_FULLHASH);
       else {
         fprintf(stderr, "Option '%s' is not valid for -P\n", optarg);
         exit(EXIT_FAILURE);

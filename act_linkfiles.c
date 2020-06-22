@@ -40,7 +40,7 @@ extern void linkfiles(file_t *files, const int hard)
   curfile = files;
 
   while (curfile) {
-    if (ISFLAG(curfile->flags, F_HAS_DUPES)) {
+    if (ISFLAG(curfile->flags, FF_HAS_DUPES)) {
       counter = 1;
       tmpfile = curfile->duplicates;
       while (tmpfile) {
@@ -61,7 +61,7 @@ extern void linkfiles(file_t *files, const int hard)
   if (!dupelist) oom("linkfiles() dupelist");
 
   while (files) {
-    if (ISFLAG(files->flags, F_HAS_DUPES)) {
+    if (ISFLAG(files->flags, FF_HAS_DUPES)) {
       counter = 1;
       dupelist[counter] = files;
 
@@ -89,7 +89,7 @@ extern void linkfiles(file_t *files, const int hard)
         /* Symlinks should target a normal file if one exists */
         srcfile = NULL;
         for (symsrc = 1; symsrc <= counter; symsrc++) {
-          if (!ISFLAG(dupelist[symsrc]->flags, F_IS_SYMLINK)) {
+          if (!ISFLAG(dupelist[symsrc]->flags, FF_IS_SYMLINK)) {
             srcfile = dupelist[symsrc];
             break;
           }
@@ -127,8 +127,8 @@ extern void linkfiles(file_t *files, const int hard)
           /* Symlink prerequisite check code can go here */
           /* Do not attempt to symlink a file to itself or to another symlink */
 #ifndef NO_SYMLINKS
-          if (ISFLAG(dupelist[x]->flags, F_IS_SYMLINK) &&
-              ISFLAG(dupelist[symsrc]->flags, F_IS_SYMLINK)) continue;
+          if (ISFLAG(dupelist[x]->flags, FF_IS_SYMLINK) &&
+              ISFLAG(dupelist[symsrc]->flags, FF_IS_SYMLINK)) continue;
           if (x == symsrc) continue;
 #endif
         }
