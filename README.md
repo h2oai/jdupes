@@ -177,6 +177,7 @@ option is specified (delete, summarize, link, dedupe, etc.)
  -T --partial-only      match based on partial hashes only. WARNING:
                         EXTREMELY DANGEROUS paired with destructive actions!
                         -T must be specified twice to work. Read the manual!
+ -u --printunique       print only a list of unique (non-matched) files
  -v --version           display jdupes version and license information
  -x --xsize=SIZE        exclude files of size < SIZE bytes from consideration
     --xsize=+SIZE       '+' specified before SIZE, exclude size > SIZE
