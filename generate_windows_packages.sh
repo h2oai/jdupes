@@ -24,4 +24,5 @@ cp CHANGES README.md LICENSE $PKGNAME/
 make clean && make -j$PM stripped && cp ${NAME}.exe $PKGNAME/${NAME}.exe
 make clean && make -j$PM LOUD=1 stripped && cp ${NAME}.exe $PKGNAME/${NAME}-loud.exe
 make clean && make -j$PM LOW_MEMORY=1 stripped && cp ${NAME}.exe $PKGNAME/${NAME}-lowmem.exe
+zip -9r ${PKGNAME}.zip $PKGNAME/
 echo "Package generation complete."
