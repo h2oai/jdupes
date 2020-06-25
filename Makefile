@@ -185,10 +185,10 @@ stripped: $(PROGRAM_NAME)
 
 clean:
 	$(RM) $(OBJS) $(OBJS_CLEAN) build_date.h $(PROGRAM_NAME) $(PROGRAM_NAME).exe *~ *.gcno *.gcda *.gcov
-	$(RM) -r jdupes-*-win*/ jdupes-*-win*.zip
 
 distclean: clean
 	$(RM) *.pkg.tar.xz
+	$(RM) -r jdupes-*-win*/ jdupes-*-win*.zip
 
 package:
 	+./chroot_build.sh
