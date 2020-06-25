@@ -8,7 +8,7 @@ jdupes \- finds and performs actions upon duplicate files
 [
 .I options
 ]
-.I FILES and/or DIRECTORIES
+.I DIRECTORIES
 \|.\|.\|.
 
 .SH "DESCRIPTION"
@@ -138,6 +138,9 @@ follow symlinked directories
 .B [WARNING: EXTREME RISK OF DATA LOSS, SEE CAVEATS]
 match based on hash of first block of file data, ignoring the rest
 .TP
+.B -u --printunique
+print only a list of unique (non-duplicate, unmatched) files
+.TP
 .B -v --version
 display jdupes version and compilation feature flags
 .TP
@@ -148,17 +151,40 @@ jdupes -x +226 [files]
 then exclude files larger than SIZE. Suffixes K/M/G can be used.
 .TP
 .B -X --extfilter=spec:info
-exclude/filter files based on specified criteria; supported specs are:
+exclude/filter files based on specified criteria; general format:
+
+.B jdupes -X filter[:value][size_suffix]
+
+Some filters take no value or multiple values. Filters that can take
+a numeric option generally support the size multipliers K/M/G/T/P/E
+with or without an added iB or B. Multipliers are binary-style unless
+the B is used, which will use decimal multipliers. For example,
+10k or 10kib = 10240; 10kb = 10000. Multipliers are case-insensitive.
+
+Filters have cumulative effects: jdupes -X size+:100 -X size-:100 will
+cause only files of exactly 100 bytes in size to be included.
+
+Supported filters are:
 .RS
 .IP `size[+-=]:number[suffix]'
-Match only if size is greater (+), less than (-), or equal to (=) the
-specified number, with an optional multiplier suffix. The +/- and =
-specifiers can be combined: "size+=:4K" will match if size is greater
-than or equal to four kilobytes (4096 bytes). Suffixes supported are
-K/M/G/T/P/E with a B or iB extension (all case-insensitive); no extension
-or an iB extension specify binary multipliers while a B extension
-specifies decimal multipliers (ex: 4K or 4KiB = 4096, 4KB = 4000.)
+match only if size is greater (+), less than (-), or equal to (=) the
+specified number. The +/- and = specifiers can be combined, i.e.
+"size+=:4K" will only consider files with a size greater than or equal
+to four kilobytes (4096 bytes).
+.IP `noext:ext1[,ext2,...]'
+exclude files with certain extension(s), specified as a comma-separated
+list. Do not use a leading dot.
+.IP `onlyext:ext1[,ext2,...]'
+only include files with certain extension(s), specified as a comma-separated
+list. Do not use a leading dot.
+.IP `nostr:text_string'
+exclude all paths containing the substring text_string. This scans the full
+file path, so it can be used to match directories: -X nostr:dir_name/
+.IP `onlystr:text_string'
+require all paths to contain the substring text_string. This scans the full
+file path, so it can be used to match directories: -X onlystr:dir_name/
 .RE
+
 .TP
 .B -z --zeromatch
 consider zero-length files to be duplicates; this replaces the old
