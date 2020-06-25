@@ -2013,26 +2013,28 @@ int main(int argc, char **argv)
         }
       } else printf(" none");
       printf("\nCopyright (C) 2015-2020 by Jody Bruchon and contributors\n");
-      printf("Forked from fdupes 1.51, (C) 1999-2014 Adrian Lopez and contributors\n");
-      printf("\nPermission is hereby granted, free of charge, to any person\n");
-      printf("obtaining a copy of this software and associated documentation files\n");
-      printf("(the \"Software\"), to deal in the Software without restriction,\n");
-      printf("including without limitation the rights to use, copy, modify, merge,\n");
-      printf("publish, distribute, sublicense, and/or sell copies of the Software,\n");
-      printf("and to permit persons to whom the Software is furnished to do so,\n");
-      printf("subject to the following conditions:\n\n");
-      printf("The above copyright notice and this permission notice shall be\n");
-      printf("included in all copies or substantial portions of the Software.\n\n");
-      printf("THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS\n");
-      printf("OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF\n");
-      printf("MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.\n");
-      printf("IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY\n");
-      printf("CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,\n");
-      printf("TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE\n");
-      printf("SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.\n");
-      printf("\nIf you find this software useful, please consider financially\n");
-      printf("supporting its continued developemnt by visiting this URL:\n");
-      printf("      https://www.subscribestar.com/JodyBruchon\n");
+      printf("Forked from fdupes 1.51, (C) 1999-2014 Adrian Lopez and contributors\n\n");
+      printf("Permission is hereby granted, free of charge, to any person obtaining a copy of\n");
+      printf("this software and associated documentation files (the \"Software\"), to deal in\n");
+      printf("the Software without restriction, including without limitation the rights to\n");
+      printf("use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies\n");
+      printf("of the Software, and to permit persons to whom the Software is furnished to do\n");
+      printf("so, subject to the following conditions:\n\n");
+
+      printf("The above copyright notice and this permission notice shall be included in all\n");
+      printf("copies or substantial portions of the Software.\n\n");
+      printf("THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n");
+      printf("IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n");
+      printf("FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n");
+      printf("AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n");
+      printf("LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n");
+      printf("OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\n");
+      printf("SOFTWARE.\n");
+      printf("\nIf you find this software useful, please consider financially supporting\n");
+      printf("its continued developemnt by donating to the author's SubscribeStar:\n");
+      printf("          https://SubscribeStar.com/JodyBruchon\n");
+      printf("\nNew releases, bug fixes, and more at the jdupes GitHub project page:\n");
+      printf("             https://github.com/jbruchon/jdupes\n");
       exit(EXIT_SUCCESS);
     case 'o':
       if (!strncasecmp("name", optarg, 5)) {
