@@ -1,3 +1,12 @@
+jdupes 1.17.0
+
+- Rewrite dedupe code from scratch, probably fixing all dedupe bugs
+- extfilter: add substring match filter for file paths
+- Add -u/--printunique option to print all non-duplicates (unmatched files)
+- Dedupe-blacklisted kernel version check now happens before work is done
+- Build warnings fixed; report any you get (except ENABLE_DEDUPE=1 #warning)
+- New build targets static and static_stripped (for static binary builds)
+
 jdupes 1.16.0
 
 - Add -X noext/onlyext filters to exclude/requite specific file extension(s)
