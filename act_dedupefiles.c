@@ -1,4 +1,4 @@
-/* BTRFS deduplication of file blocks
+/* Deduplication of files with OS-specific copy-on-write mechanisms
  * This file is part of jdupes; see jdupes.c for license information */
 
 #include "jdupes.h"
@@ -15,7 +15,7 @@
 #ifdef __linux__
 /* Use built-in static dedupe header if requested */
 #ifdef STATIC_DEDUPE_H
-#include "dedupe-static.h"
+#include "linux-dedupe-static.h"
 #else
 #include <linux/fs.h>
 #endif /* STATIC_DEDUPE_H */
