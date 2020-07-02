@@ -1,3 +1,7 @@
+jdupes 1.17.1
+
+- Add basic APFS clonefile() support to -B dedupe
+
 jdupes 1.17.0
 
 - Rewrite dedupe code from scratch, probably fixing all dedupe bugs
