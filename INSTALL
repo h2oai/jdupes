@@ -82,3 +82,9 @@ and you understand that this is NOT SUPPORTED and YOU'RE 100% ON YOUR OWN,
 you can compile it with this make command and it'll even partially work:
 
 make standalone NO_UNICODE=1 CFLAGS_EXTRA='-DNO_PERMS -DNO_SYMLINKS -DNO_HARDLINKS'
+
+There are some crude "package" generators included as make targets:
+
+package     Uses chroots under /chroot to build Linux packages
+winpackage  Makes Windows MinGW 32-bit and 64-bit packages (zip)
+macpackage  Makes macOS 64-bit packages (zip)
