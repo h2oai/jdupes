@@ -23,7 +23,7 @@
 /* If the Linux headers are too old, automatically use the static one */
 #ifndef FILE_DEDUPE_RANGE_SAME
 #warning Automatically enabled STATIC_DEDUPE_H due to insufficient header support
-#include "dedupe-static.h"
+#include "linux-dedupe-static.h"
 #endif /* FILE_DEDUPE_RANGE_SAME */
 #include <sys/ioctl.h>
 #define JDUPES_DEDUPE_SUPPORTED 1
