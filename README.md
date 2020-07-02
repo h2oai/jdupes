@@ -131,7 +131,7 @@ option is specified (delete, summarize, link, dedupe, etc.)
  -0 --printnull         output nulls instead of CR/LF (like 'find -print0')
  -1 --one-file-system   do not match files on different filesystems/devices
  -A --nohidden          exclude hidden files from consideration
- -B --dedupe            Send matches to filesystem for block-level deduplication
+ -B --dedupe            do a copy-on-write (reflink/clone) deduplication
  -C --chunksize=#       override I/O chunk size (min 4096, max 16777216)
  -d --delete            prompt user for files to preserve and delete all
                         others; important: under particular circumstances,

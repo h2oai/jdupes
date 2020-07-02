@@ -733,10 +733,10 @@ static int check_singlefile(file_t * const restrict newfile)
            ((sflag == XF_SIZE_GTEQ) && (newfile->size >= extf->size)) ||
            ((sflag == XF_SIZE_GT) && (newfile->size > extf->size)) ||
            ((sflag == XF_SIZE_LT) && (newfile->size < extf->size)) ||
-	   ((sflag == XF_EXCL_EXT) && match_extensions(newfile->d_name, extf->param)) ||
-	   ((sflag == XF_ONLY_EXT) && !match_extensions(newfile->d_name, extf->param)) ||
-	   ((sflag == XF_EXCL_STR) && strstr(newfile->d_name, extf->param)) ||
-	   ((sflag == XF_ONLY_STR) && !strstr(newfile->d_name, extf->param))
+           ((sflag == XF_EXCL_EXT) && match_extensions(newfile->d_name, extf->param)) ||
+           ((sflag == XF_ONLY_EXT) && !match_extensions(newfile->d_name, extf->param)) ||
+           ((sflag == XF_EXCL_STR) && strstr(newfile->d_name, extf->param)) ||
+           ((sflag == XF_ONLY_STR) && !strstr(newfile->d_name, extf->param))
       ) excluded = 1;
     }
     if (excluded) {
@@ -1340,7 +1340,7 @@ static file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict f
       }
     } else if (cmpresult == 0) {
       if (ISFLAG(flags, F_SKIPHASH)) {
-	/* Skip full file hashing if requested by the user */
+        /* Skip full file hashing if requested by the user */
         LOUD(fprintf(stderr, "checkmatch: skipping full file hashes (F_SKIPMATCH)\n"));
       } else {
         /* If partial match was correct, perform a full file hash match */
@@ -1596,7 +1596,7 @@ static inline void help_text(void)
   printf(" -1 --one-file-system \tdo not match files on different filesystems/devices\n");
   printf(" -A --nohidden    \texclude hidden files from consideration\n");
 #ifdef ENABLE_DEDUPE
-  printf(" -B --dedupe      \tsend matches to filesystem for block-level deduplication\n");
+  printf(" -B --dedupe      \tdo a copy-on-write (reflink/clone) deduplication\n");
 #endif
   printf(" -C --chunksize=# \toverride I/O chunk size (min %d, max %d)\n", MIN_CHUNK_SIZE, MAX_CHUNK_SIZE);
   printf(" -d --delete      \tprompt user for files to preserve and delete all\n");
