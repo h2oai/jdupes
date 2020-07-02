@@ -12,7 +12,7 @@ PREFIX = /usr/local
 # To disable long options, uncomment the following line.
 #CFLAGS += -DOMIT_GETOPT_LONG
 
-# Uncomment for Linux for -B/--dedupe.
+# Uncomment for -B/--dedupe.
 # This can also be enabled at build time: 'make ENABLE_DEDUPE=1'
 #CFLAGS += -DENABLE_DEDUPE
 

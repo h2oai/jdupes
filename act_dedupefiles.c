@@ -18,16 +18,27 @@
 #include "dedupe-static.h"
 #else
 #include <linux/fs.h>
-#endif
+#endif /* STATIC_DEDUPE_H */
 
 /* If the Linux headers are too old, automatically use the static one */
 #ifndef FILE_DEDUPE_RANGE_SAME
 #warning Automatically enabled STATIC_DEDUPE_H due to insufficient header support
 #include "dedupe-static.h"
-#endif
+#endif /* FILE_DEDUPE_RANGE_SAME */
 #include <sys/ioctl.h>
-#else
-#error "Filesystem-managed deduplication only available for Linux."
+#define JDUPES_DEDUPE_SUPPORTED 1
+#endif /* __linux__ */
+
+#ifdef __APPLE__
+ #ifdef NO_HARDLINKS
+ #error Hard link support is required for dedupe on macOS but NO_HARDLINKS was set
+ #endif
+#include "act_linkfiles.h"
+#define JDUPES_DEDUPE_SUPPORTED 1
+#endif
+
+#ifndef JDUPES_DEDUPE_SUPPORTED
+#error Dedupe is only supported on Linux and macOS
 #endif
 
 #include "act_dedupefiles.h"
@@ -36,6 +47,7 @@
 
 extern void dedupefiles(file_t * restrict files)
 {
+#ifdef __linux__
   struct file_dedupe_range *fdr;
   struct file_dedupe_range_info *fdri;
   file_t *curfile, *curfile2, *dupefile;
@@ -122,6 +134,12 @@ extern void dedupefiles(file_t * restrict files)
 
   if (!ISFLAG(flags, F_HIDEPROGRESS)) fprintf(stderr, "Deduplication done (%lu files processed)\n", total_files);
   free(fdr);
+#endif /* __linux__ */
+
+/* On macOS, clonefile() is basically a "hard link" function, so linkfiles will do the work. */
+#ifdef __APPLE__
+  linkfiles(files, 2);
+#endif /* __APPLE__ */
   return;
 }
 #endif /* ENABLE_DEDUPE */
