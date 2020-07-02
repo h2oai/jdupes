@@ -33,8 +33,8 @@
  #ifdef NO_HARDLINKS
  #error Hard link support is required for dedupe on macOS but NO_HARDLINKS was set
  #endif
-#include "act_linkfiles.h"
-#define JDUPES_DEDUPE_SUPPORTED 1
+ #include "act_linkfiles.h"
+ #define JDUPES_DEDUPE_SUPPORTED 1
 #endif
 
 #ifndef JDUPES_DEDUPE_SUPPORTED

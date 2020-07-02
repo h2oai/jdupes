@@ -21,13 +21,16 @@
 #endif
 
 /* Apple clonefile() is basically a hard link */
-#ifdef __APPLE__
- #ifdef NO_HARDLINKS
- #error Hard link support is required for dedupe on macOS
- #endif
-#include <sys/attr.h>
-#include <sys/clonefile.h>
-#endif
+#ifdef ENABLE_DEDUPE
+ #ifdef __APPLE__
+  #ifdef NO_HARDLINKS
+   #error Hard link support is required for dedupe on macOS
+  #endif
+  #include <sys/attr.h>
+  #include <sys/clonefile.h>
+  #define ENABLE_CLONEFILE_LINK 1
+ #endif /* __APPLE__ */
+#endif /* ENABLE_DEDUPE */
 
 /* linktype: 0=symlink, 1=hardlink, 2=clonefile() */
 extern void linkfiles(file_t *files, const int linktype)
@@ -241,13 +244,13 @@ extern void linkfiles(file_t *files, const int linktype)
 #else /* ON_WINDOWS */
         if (linktype == 1) {
           if (link(srcfile->d_name, dupelist[x]->d_name) == 0) success = 1;
-#ifdef __APPLE__
+#ifdef ENABLE_CLONEFILE_LINK
         } else if (linktype == 2) {
           if (clonefile(srcfile->d_name, dupelist[x]->d_name, 0) == 0) success = 1;
-#endif /* __APPLE__ */
+#endif /* ENABLE_CLONEFILE_LINK */
         }
  #ifndef NO_SYMLINKS
-	else {
+        else {
           i = make_relative_link_name(srcfile->d_name, dupelist[x]->d_name, rel_path);
           LOUD(fprintf(stderr, "symlink GRN: %s to %s = %s\n", srcfile->d_name, dupelist[x]->d_name, rel_path));
           if (i < 0) {
@@ -264,12 +267,15 @@ extern void linkfiles(file_t *files, const int linktype)
               case 0: /* symlink */
                 printf("-@@-> ");
                 break;
+              default:
               case 1: /* hardlink */
                 printf("---->");
                 break;
+#ifdef ENABLE_CLONEFILE_LINK
               case 2: /* clonefile */
                 printf("-##-> ");
                 break;
+#endif
             }
             fwprint(stdout, dupelist[x]->d_name, 1);
           }
@@ -289,7 +295,7 @@ extern void linkfiles(file_t *files, const int linktype)
           i = MoveFileW(wname2, wname) ? 0 : 1;
 #else
           i = rename(tempname, dupelist[x]->d_name);
-#endif
+#endif /* UNICODE */
           if (i != 0) {
             fprintf(stderr, "error: cannot rename temp file back to original\n");
             fprintf(stderr, "original: "); fwprint(stderr, dupelist[x]->d_name, 1);
@@ -307,7 +313,7 @@ extern void linkfiles(file_t *files, const int linktype)
         i = DeleteFileW(wname2) ? 0 : 1;
 #else
         i = remove(tempname);
-#endif
+#endif /* UNICODE */
         if (i != 0) {
           /* If the temp file can't be deleted, there may be a permissions problem
            * so reverse the process and warn the user */
