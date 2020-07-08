@@ -1,3 +1,7 @@
+jdupes 1.18.0
+
+- Add -X newer/older extfilters to reject files by modification date
+
 jdupes 1.17.1
 
 - Add basic APFS clonefile() support to -B dedupe
