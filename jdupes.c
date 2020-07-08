@@ -755,7 +755,7 @@ static int check_singlefile(file_t * const restrict newfile)
            ((sflag == XF_ONLY_EXT) && !match_extensions(newfile->d_name, extf->param)) ||
            ((sflag == XF_EXCL_STR) && strstr(newfile->d_name, extf->param)) ||
            ((sflag == XF_ONLY_STR) && !strstr(newfile->d_name, extf->param)) ||
-           ((sflag == XF_DATE_NEWER) && (newfile->mtime >= extf->size)) ||
+           ((sflag == XF_DATE_NEWER) && (newfile->mtime > extf->size)) ||
            ((sflag == XF_DATE_OLDER) && (newfile->mtime < extf->size))
       ) excluded = 1;
     }
