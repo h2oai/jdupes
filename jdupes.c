@@ -20,7 +20,6 @@
    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. */
 
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
@@ -43,15 +42,18 @@
 #include <time.h>
 #include <sys/time.h>
 #include "jdupes.h"
-#include "string_malloc.h"
 #include "xxhash.h"
-#include "jody_sort.h"
-#include "jody_win_unicode.h"
-#include "jody_cacheinfo.h"
-#include "version.h"
 #ifdef ENABLE_DEDUPE
 #include <sys/utsname.h>
 #endif
+
+/* Jody Bruchon's helpful functions */
+#include "string_malloc.h"
+#include "jody_sort.h"
+#include "jody_win_unicode.h"
+#include "jody_cacheinfo.h"
+#include "jody_strtoepoch.h"
+#include "version.h"
 
 /* Headers for post-scanning actions */
 #include "act_deletefiles.h"
@@ -219,10 +221,8 @@ const struct extfilter_tags extfilter_tags[] = {
   { "size=",	XF_SIZE_EQ },
   { "nostr",	XF_EXCL_STR },
   { "onlystr",	XF_ONLY_STR },
-#ifndef ON_WINDOWS
   { "newer",	XF_DATE_NEWER },
   { "older",	XF_DATE_OLDER },
-#endif
   { NULL, 0 },
 };
 
@@ -517,11 +517,7 @@ extern inline int getfilestats(file_t * const restrict file)
 static void add_extfilter(const char *option)
 {
   char *opt, *p;
-#ifndef ON_WINDOWS
-  char *q;
-  struct tm tm;
   time_t tt;
-#endif
   struct extfilter *extf = extfilter_head;
   const struct extfilter_tags *tags = extfilter_tags;
   const struct size_suffix *ss = size_suffix;
@@ -584,22 +580,12 @@ static void add_extfilter(const char *option)
       if (ss->suffix == NULL) goto error_bad_size_suffix;
       extf->size *= ss->multiplier;
     }
-#ifndef ON_WINDOWS  /* Windows does not have strptime() */
   } else if (extf->flags & XF_REQ_DATE) {
     *(extf->param) = '\0';
-    memset(&tm, 0, sizeof(struct tm));
-    /* Convert date to broken-down time... */
-    q = strptime(p, "%Y-%m-%d", &tm);
-    if (q == NULL) goto error_bad_time;
-    /* ...or convert date-time to broken-down time... */
-    if (*q != '\0') q = strptime(p, "%Y-%m-%d %H:%M:%S", &tm);
-    if (q == NULL || *q != '\0') goto error_bad_time;
-    /* ...and convert broken-down time to time_t */
-    tt = mktime(&tm);
-    LOUD(fprintf(stderr, "extfilter: date conv: '%s' -> %d-%d-%d %d:%d:%d -> %ld\n", p, tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, tt);)
+    tt = strtoepoch(p);
+    LOUD(fprintf(stderr, "extfilter: jody_strtoepoch: '%s' -> %ld\n", p, tt);)
     if (tt == -1) goto error_bad_time;
     extf->size = tt;
-#endif /* ON_WINDOWS */
   } else {
     /* Exclude uses string data; just copy it */
     extf->size = 0;
@@ -611,12 +597,10 @@ static void add_extfilter(const char *option)
   string_free(opt);
   return;
 
-#ifndef ON_WINDOWS
 error_bad_time:
   fprintf(stderr, "Invalid extfilter date[time] was specified: -X filter:datetime\n");
   help_text_extfilter();
   exit(EXIT_FAILURE);
-#endif
 error_value_missing:
   fprintf(stderr, "extfilter value missing or invalid: -X filter:value\n");
   help_text_extfilter();
@@ -770,11 +754,9 @@ static int check_singlefile(file_t * const restrict newfile)
            ((sflag == XF_EXCL_EXT) && match_extensions(newfile->d_name, extf->param)) ||
            ((sflag == XF_ONLY_EXT) && !match_extensions(newfile->d_name, extf->param)) ||
            ((sflag == XF_EXCL_STR) && strstr(newfile->d_name, extf->param)) ||
-           ((sflag == XF_ONLY_STR) && !strstr(newfile->d_name, extf->param))
-#ifndef ON_WINDOWS
-           || ((sflag == XF_DATE_NEWER) && (newfile->mtime >= extf->size)) ||
+           ((sflag == XF_ONLY_STR) && !strstr(newfile->d_name, extf->param)) ||
+           ((sflag == XF_DATE_NEWER) && (newfile->mtime >= extf->size)) ||
            ((sflag == XF_DATE_OLDER) && (newfile->mtime < extf->size))
-#endif
       ) excluded = 1;
     }
     if (excluded) {
@@ -1731,12 +1713,10 @@ static void help_text_extfilter(void)
   printf("onlystr:text_string     \tOnly allow paths containing the string\n");
   printf("                        \tHINT: you can use these for directories:\n");
   printf("                        \t-X nostr:/dir_x/  or  -X onlystr:/dir_x/\n");
-#ifndef ON_WINDOWS
   printf("newer:datetime          \tReject files newer than the specified date\n");
   printf("older:datetime          \tReject files newer than the specified date\n");
   printf("                        \tDate/time format: \"YYYY-MM-DD HH:MM:SS\"\n");
   printf("                        \tTime is optional (remember to escape spaces!)\n");
-#endif /* ON_WINDOWS */
 //  printf("\t\n");
   printf("\nSome filters take no value or multiple values. Filters that can take\n");
   printf("a numeric option generally support the size multipliers K/M/G/T/P/E\n");
