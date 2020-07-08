@@ -147,7 +147,7 @@ option is specified (delete, summarize, link, dedupe, etc.)
  -i --reverse           reverse (invert) the match sort order
  -I --isolate           files in the same specified directory won't match
  -j --json              produce JSON (machine-readable) output
- -K --skiphash    	skip full file hashing (may be faster; 100% safe)
+ -K --skiphash            skip full file hashing (may be faster; 100% safe)
  -l --linksoft          make relative symlinks for duplicates w/o prompting
  -L --linkhard          hard link all duplicate files without prompting
                         Windows allows a maximum of 1023 hard links per file
@@ -160,7 +160,7 @@ option is specified (delete, summarize, link, dedupe, etc.)
                         by mtime (BY=time) or filename (BY=name, the default)
  -O --paramorder        sort output files in order of command line parameter sequence
                         Parameter order is more important than selected -o sort
-			which applies should several files share the same parameter order
+                        which applies should several files share the same parameter order
  -p --permissions       don't consider files with different owner/group or
                         permission bits as duplicates
  -P --print=type        print extra info (partial, early, fullhash)
@@ -204,6 +204,10 @@ nostr:text_string               Exclude all paths containing the string
 onlystr:text_string             Only allow paths containing the string
                                 HINT: you can use these for directories:
                                 -X nostr:/dir_x/  or  -X onlystr:/dir_x/
+newer:datetime                  Reject files newer than the specified date
+older:datetime                  Reject files newer than the specified date
+                                Date/time format: "YYYY-MM-DD HH:MM:SS"
+                                Time is optional (remember to escape spaces!)
 
 Some filters take no value or multiple values. Filters that can take
 a numeric option generally support the size multipliers K/M/G/T/P/E
@@ -386,13 +390,13 @@ a/file3
 and `a/file1` is linked to `a/file3`. Here's how `jdupes a/` sees them:
 
 ---
-	Are 'a/file1' and 'a/file2' matches? Yes
-	[point a/file1->duplicates to a/file2]
+        Are 'a/file1' and 'a/file2' matches? Yes
+        [point a/file1->duplicates to a/file2]
 
-	Are 'a/file1' and 'a/file3' matches? No (hard linked already, `-H` off)
+        Are 'a/file1' and 'a/file3' matches? No (hard linked already, `-H` off)
 
-	Are 'a/file2' and 'a/file3' matches? Yes
-	[point a/file2->duplicates to a/file3]
+        Are 'a/file2' and 'a/file3' matches? Yes
+        [point a/file2->duplicates to a/file3]
 ---
 
 Now you have the following duplicate list:

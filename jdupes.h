@@ -223,7 +223,7 @@ typedef struct _filetree {
 struct extfilter {
   struct extfilter *next;
   unsigned int flags;
-  int64_t size;
+  int64_t size;  /* also used for other large integers */
   char param[];
 };
 
@@ -235,6 +235,8 @@ struct extfilter {
 #define XF_ONLY_EXT		0x00000010U
 #define XF_EXCL_STR		0x00000020U
 #define XF_ONLY_STR		0x00000040U
+#define XF_DATE_NEWER		0x00000080U
+#define XF_DATE_OLDER		0x00000100U
 /* The X-than-or-equal are combination flags */
 #define XF_SIZE_GTEQ		0x00000006U
 #define XF_SIZE_LTEQ		0x0000000aU
@@ -243,6 +245,8 @@ struct extfilter {
 #define XF_REQ_NUMBER		0x0000000eU
 /* Flags that require a data parameter (after a colon) */
 #define XF_REQ_VALUE		0x0000001fU
+/* Flags that take a date that needs to be converted to time_t seconds */
+#define XF_REQ_DATE		0x00000180U
 
 /* Exclude definition array */
 struct extfilter_tags {
