@@ -1744,7 +1744,7 @@ int main(int argc, char **argv)
   static int partialonly_spec = 0;
   static ordertype_t ordertype = ORDER_NAME;
   static long manual_chunk_size = 0;
-#ifndef ON_WINDOWS
+#ifdef __linux__
   static struct proc_cacheinfo pci;
 #endif
 #ifdef ENABLE_DEDUPE
@@ -1824,7 +1824,7 @@ int main(int argc, char **argv)
   else err_mode = _O_U16TEXT;
 #endif /* UNICODE */
 
-#ifndef ON_WINDOWS
+#ifdef __linux__
   /* Auto-tune chunk size to be half of L1 data cache if possible */
   get_proc_cacheinfo(&pci);
   if (pci.l1 != 0) auto_chunk_size = (pci.l1 / 2);
@@ -1834,7 +1834,7 @@ int main(int argc, char **argv)
   /* Force to a multiple of 4096 if it isn't already */
   if ((auto_chunk_size & 0x00000fffUL) != 0)
     auto_chunk_size = (auto_chunk_size + 0x00000fffUL) & 0x000ff000;
-#endif /* ON_WINDOWS */
+#endif /* __linux__ */
 
   /* Is stderr a terminal? If not, we won't write progress to it */
 #ifdef ON_WINDOWS

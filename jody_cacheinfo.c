@@ -12,8 +12,8 @@
 #include <string.h>
 #include "jody_cacheinfo.h"
 
-/* None of this code is useful on Windows, don't build anything there */
-#ifndef ON_WINDOWS
+/* None of this code is useful outside of Linux */
+#ifdef __linux__
 
 static char *pathidx;
 static char buf[16];
@@ -113,7 +113,7 @@ void get_proc_cacheinfo(struct proc_cacheinfo *pci)
 	return;
 }
 
-#endif /* ON_WINDOWS */
+#endif /* __linux__ */
 
 
 /* This is for testing only */
