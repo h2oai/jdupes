@@ -127,7 +127,8 @@ extern uint_fast32_t flags, a_flags;
 #define F_ONEFS			(1U << 15)
 #define F_PARTIALONLY		(1U << 16)
 #define F_NOCHANGECHECK		(1U << 17)
-#define F_SKIPHASH		(1U << 18)
+#define F_NOTRAVCHECK		(1U << 18)
+#define F_SKIPHASH		(1U << 19)
 #define F_LOUD			(1U << 30)
 #define F_DEBUG			(1U << 31)
 
