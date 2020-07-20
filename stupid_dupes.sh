@@ -5,22 +5,60 @@
 #
 # The MIT License (MIT)
 #
-# Permission is hereby granted, free of charge, to any person obtaining a copy of
-# this software and associated documentation files (the "Software"), to deal in
-# the Software without restriction, including without limitation the rights to
-# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
-# the Software, and to permit persons to whom the Software is furnished to do so,
-# subject to the following conditions:
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
 #
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
-# FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
-# COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
-# IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-# CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+#########################################
+#             HOW IT WORKS              #
+#########################################
+#
+# This script loads each file into an array of file paths, then compares every
+# file against every other file, using various tricks to discard candidates as
+# quickly as possible without reading and comparing entire files. These include
+# skipping pairs with mismatched file sizes and hashing only the first 4K block
+# of each file and comparing the partial hashes.
+#
+# Every file is referred to by its index number. Since GNU Bash can use arrays
+# but doesn't have anything remotely like a C structure to conveniently pack
+# a bunch of related variables together within, C structures are simulated with
+# the array index number used as a "pointer." For example, a doubly-linked list
+# in C is pretty easy to declare:
+#
+# struct match { struct match *left; struct match *right; }
+#
+# And then an array of these matches: struct match matchlist[MAX_MATCHES];
+#
+# Using arrays, we simulate this (e.g. with file index 15, match 2):
+#
+# MLEFT[2]  = index number of "left" file in match chain
+# MRIGHT[2] = index number of "right" file in match chain
+#
+# FILES[15] = file path for file #15, referenced by one of the above items
+# SIZES[15] = file size for file #15
+# PHASH[15] = the 4K partial file hash for file #15
+# FHASH[15] = the full file hash for file #15
+#
+# The basic algorithm is: verify size match, verify partial hash match, verify
+# full hash match, verify files match byte-for-byte to be sure.
+#
+# There is some extra code to check for match pairing that is doubled up, and
+# a "processed" flag to prevent double processing of files.
+
 
 PROGNAME=stupid_dupes.sh
 VER=1.0
@@ -129,6 +167,7 @@ check_match () {
 	return 1  # should never be reached
 }
 
+# Link a pair of matched file numbers
 add_to_matches () {
 	test $V -gt 1 && echo "add_to_matches: adding: '${FILES[$1]}','${FILES[$2]}'" >&2
 	MSCNT=$((MSCNT + 1))
@@ -139,6 +178,7 @@ add_to_matches () {
 	return 0
 }
 
+# Print all matched files
 print_matches () {
 	test $V -gt 1 && echo "print_matches: running" >&2
 	FIRST=1
@@ -210,11 +250,11 @@ print_matches () {
 }
 
 show_help () {
-	COPYTEXT="Copyright (C) 2020 by Jody Bruchon <jody@jodybruchon.com>"
+	COPYTEXT="Copyright (C) 2020 by Jody Bruchon <jody@jodybruchon.com>\n"
 	echo "$PROGNAME $VER ($VERDATE)"
 	if [ "$2" = "full" ]
 		then
-		echo "$COPYTEXT"
+		echo -e "$COPYTEXT"
 		echo -e "\nUsage: $PROGNAME [options] file_or_dir1 [more_files ...]\n"
 		echo -e "Options:\n"
 		echo "-r|--recurse     Recurse into any subdirectories"
@@ -228,7 +268,7 @@ show_help () {
 	fi
 	if [ "$2" = "license" ]
 		then
-		echo "$COPYTEXT"
+		echo -e "$COPYTEXT"
 		echo -e "\nThe MIT License (MIT)\n"
 		echo "Permission is hereby granted, free of charge, to any person obtaining a copy of"
 		echo "this software and associated documentation files (the \"Software\"), to deal in"
