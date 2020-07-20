@@ -57,10 +57,12 @@ echo "Generating package for: $PKGNAME"
 mkdir -p "$PKGNAME"
 test ! -d "$PKGNAME" && echo "Can't create directory for package" && exit 1
 cp CHANGES README.md LICENSE $PKGNAME/
-make clean && make -j$PM ENABLE_DEDUPE=1 stripped && cp $NAME$EXT $PKGNAME/$NAME$EXT
-make clean && make -j$PM ENABLE_DEDUPE=1 LOUD=1 stripped && cp $NAME$EXT $PKGNAME/${NAME}-loud$EXT
-make clean && make -j$PM LOW_MEMORY=1 stripped && cp $NAME$EXT $PKGNAME/${NAME}-lowmem$EXT
+E1=1; E2=1; E3=1
+make clean && make -j$PM ENABLE_DEDUPE=1 stripped && cp $NAME$EXT $PKGNAME/$NAME$EXT && E1=0
+make clean && make -j$PM ENABLE_DEDUPE=1 LOUD=1 stripped && cp $NAME$EXT $PKGNAME/${NAME}-loud$EXT && E2=0
+make clean && make -j$PM LOW_MEMORY=1 stripped && cp $NAME$EXT $PKGNAME/${NAME}-lowmem$EXT && E3=0
 make clean
+test $((E1 + E2 + E3)) -gt 0 && echo "Error building packages; aborting." && exit 1
 test "$PKGTYPE" = "zip" && zip -9r $PKGNAME.zip $PKGNAME/
 test "$PKGTYPE" = "gz"  && tar -c $PKGNAME/ | xz -e > $PKGNAME.tar.xz
 test "$PKGTYPE" = "xz"  && tar -c $PKGNAME/ | xz -e > $PKGNAME.tar.xz
