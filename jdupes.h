@@ -135,6 +135,7 @@ extern uint_fast32_t flags, a_flags;
 /* Action-related flags */
 #define FA_PRINTMATCHES		(1U << 0)
 #define FA_PRINTUNIQUE		(1U << 1)
+#define FA_OMITFIRST		(1U << 2)
 #define FA_SUMMARIZEMATCHES	(1U << 3)
 #define FA_DELETEFILES		(1U << 4)
 #define FA_SHOWSIZE		(1U << 5)
@@ -143,7 +144,6 @@ extern uint_fast32_t flags, a_flags;
 #define FA_MAKESYMLINKS		(1U << 8)
 #define FA_PRINTNULL		(1U << 9)
 #define FA_PRINTJSON		(1U << 10)
-#define FA_OMITFIRST		(1U << 11)
 
 /* Per-file true/false flags */
 #define FF_VALID_STAT		(1U << 0)
