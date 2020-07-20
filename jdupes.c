@@ -92,8 +92,8 @@ int err_mode = _O_TEXT;
 #include "jody_paths.h"
 #endif
 
-/* Behavior modification flags */
-uint_fast32_t flags = 0, p_flags = 0;
+/* Behavior modification flags (a=action, p=-P) */
+uint_fast32_t flags = 0, a_flags = 0, p_flags = 0;
 
 static const char *program_name;
 
@@ -769,7 +769,7 @@ static int check_singlefile(file_t * const restrict newfile)
   /* Windows has a 1023 (+1) hard link limit. If we're hard linking,
    * ignore all files that have hit this limit */
  #ifndef NO_HARDLINKS
-  if (ISFLAG(flags, F_HARDLINKFILES) && newfile->nlink >= 1024) {
+  if (ISFLAG(a_flags, FA_HARDLINKFILES) && newfile->nlink >= 1024) {
   #ifdef DEBUG
     hll_exclude++;
   #endif
@@ -1856,7 +1856,7 @@ int main(int argc, char **argv)
     if ((uintptr_t)optarg == 0x20) goto error_optarg;
     switch (opt) {
     case '0':
-      SETFLAG(flags, F_PRINTNULL);
+      SETFLAG(a_flags, FA_PRINTNULL);
       break;
     case '1':
       SETFLAG(flags, F_ONEFS);
@@ -1874,7 +1874,7 @@ int main(int argc, char **argv)
       LOUD(fprintf(stderr, "Manual chunk size is %ld\n", manual_chunk_size));
       break;
     case 'd':
-      SETFLAG(flags, F_DELETEFILES);
+      SETFLAG(a_flags, FA_DELETEFILES);
       break;
     case 'D':
 #ifdef DEBUG
@@ -1882,7 +1882,7 @@ int main(int argc, char **argv)
 #endif
       break;
     case 'f':
-      SETFLAG(flags, F_OMITFIRST);
+      SETFLAG(a_flags, FA_OMITFIRST);
       break;
     case 'h':
       help_text();
@@ -1893,7 +1893,7 @@ int main(int argc, char **argv)
       SETFLAG(flags, F_CONSIDERHARDLINKS);
       break;
     case 'L':
-      SETFLAG(flags, F_HARDLINKFILES);
+      SETFLAG(a_flags, FA_HARDLINKFILES);
       break;
 #endif
     case 'i':
@@ -1913,17 +1913,17 @@ int main(int argc, char **argv)
       break;
 #endif
     case 'j':
-      SETFLAG(flags, F_PRINTJSON);
+      SETFLAG(a_flags, FA_PRINTJSON);
       break;
     case 'K':
       SETFLAG(flags, F_SKIPHASH);
       break;
     case 'm':
-      SETFLAG(flags, F_SUMMARIZEMATCHES);
+      SETFLAG(a_flags, FA_SUMMARIZEMATCHES);
       break;
     case 'M':
-      SETFLAG(flags, F_SUMMARIZEMATCHES);
-      SETFLAG(flags, F_PRINTMATCHES);
+      SETFLAG(a_flags, FA_SUMMARIZEMATCHES);
+      SETFLAG(a_flags, FA_PRINTMATCHES);
       break;
     case 'n':
       //fprintf(stderr, "note: -n/--noempty is the default behavior now and is deprecated.\n");
@@ -1967,18 +1967,18 @@ int main(int argc, char **argv)
       }
       break;
     case 'u':
-      SETFLAG(flags, F_PRINTUNIQUE);
+      SETFLAG(a_flags, FA_PRINTUNIQUE);
       break;
 #ifndef NO_SYMLINKS
     case 'l':
-      SETFLAG(flags, F_MAKESYMLINKS);
+      SETFLAG(a_flags, FA_MAKESYMLINKS);
       break;
     case 's':
       SETFLAG(flags, F_FOLLOWLINKS);
       break;
 #endif
     case 'S':
-      SETFLAG(flags, F_SHOWSIZE);
+      SETFLAG(a_flags, FA_SHOWSIZE);
       break;
     case 'x':
       fprintf(stderr, "-x/--xsize is deprecated; use -X size[+-=]:size[suffix] instead\n");
@@ -2082,7 +2082,7 @@ int main(int argc, char **argv)
         fprintf(stderr, "Refusing to dedupe on a 2.x kernel; data loss could occur. Aborting.\n");
         exit(EXIT_FAILURE);
       }
-      SETFLAG(flags, F_DEDUPEFILES);
+      SETFLAG(a_flags, FA_DEDUPEFILES);
       /* btrfs will do the byte-for-byte check itself */
       SETFLAG(flags, F_QUICKCOMPARE);
       /* It is completely useless to dedupe zero-length extents */
@@ -2125,32 +2125,32 @@ int main(int argc, char **argv)
     exit(EXIT_FAILURE);
   }
 
-  if (ISFLAG(flags, F_SUMMARIZEMATCHES) && ISFLAG(flags, F_DELETEFILES)) {
+  if (ISFLAG(a_flags, FA_SUMMARIZEMATCHES) && ISFLAG(a_flags, FA_DELETEFILES)) {
     fprintf(stderr, "options --summarize and --delete are not compatible\n");
     string_malloc_destroy();
     exit(EXIT_FAILURE);
   }
 
 #ifdef ENABLE_DEDUPE
-  if (ISFLAG(flags, F_CONSIDERHARDLINKS) && ISFLAG(flags, F_DEDUPEFILES))
+  if (ISFLAG(flags, F_CONSIDERHARDLINKS) && ISFLAG(a_flags, FA_DEDUPEFILES))
     fprintf(stderr, "warning: option --dedupe overrides the behavior of --hardlinks\n");
 #endif
 
   /* If pm == 0, call printmatches() */
-  pm = !!ISFLAG(flags, F_SUMMARIZEMATCHES) +
-      !!ISFLAG(flags, F_DELETEFILES) +
-      !!ISFLAG(flags, F_HARDLINKFILES) +
-      !!ISFLAG(flags, F_MAKESYMLINKS) +
-      !!ISFLAG(flags, F_PRINTJSON) +
-      !!ISFLAG(flags, F_PRINTUNIQUE) +
-      !!ISFLAG(flags, F_DEDUPEFILES);
+  pm = !!ISFLAG(a_flags, FA_SUMMARIZEMATCHES) +
+      !!ISFLAG(a_flags, FA_DELETEFILES) +
+      !!ISFLAG(a_flags, FA_HARDLINKFILES) +
+      !!ISFLAG(a_flags, FA_MAKESYMLINKS) +
+      !!ISFLAG(a_flags, FA_PRINTJSON) +
+      !!ISFLAG(a_flags, FA_PRINTUNIQUE) +
+      !!ISFLAG(a_flags, FA_DEDUPEFILES);
 
   if (pm > 1) {
       fprintf(stderr, "Only one of --summarize, --printwithsummary, --delete, --linkhard,\n--linksoft, --json, or --dedupe may be used\n");
       string_malloc_destroy();
       exit(EXIT_FAILURE);
   }
-  if (pm == 0) SETFLAG(flags, F_PRINTMATCHES);
+  if (pm == 0) SETFLAG(a_flags, FA_PRINTMATCHES);
 
   if (ISFLAG(flags, F_RECURSEAFTER)) {
     firstrecurse = nonoptafter("--recurse:", argc, oldargv, argv);
@@ -2290,24 +2290,24 @@ skip_full_check:
 skip_file_scan:
   /* Stop catching CTRL+C */
   signal(SIGINT, SIG_DFL);
-  if (ISFLAG(flags, F_DELETEFILES)) {
+  if (ISFLAG(a_flags, FA_DELETEFILES)) {
     if (ISFLAG(flags, F_NOPROMPT)) deletefiles(files, 0, 0);
     else deletefiles(files, 1, stdin);
   }
 #ifndef NO_SYMLINKS
-  if (ISFLAG(flags, F_MAKESYMLINKS)) linkfiles(files, 0);
+  if (ISFLAG(a_flags, FA_MAKESYMLINKS)) linkfiles(files, 0);
 #endif
 #ifndef NO_HARDLINKS
-  if (ISFLAG(flags, F_HARDLINKFILES)) linkfiles(files, 1);
+  if (ISFLAG(a_flags, FA_HARDLINKFILES)) linkfiles(files, 1);
 #endif /* NO_HARDLINKS */
 #ifdef ENABLE_DEDUPE
-  if (ISFLAG(flags, F_DEDUPEFILES)) dedupefiles(files);
+  if (ISFLAG(a_flags, FA_DEDUPEFILES)) dedupefiles(files);
 #endif /* ENABLE_DEDUPE */
-  if (ISFLAG(flags, F_PRINTMATCHES)) printmatches(files);
-  if (ISFLAG(flags, F_PRINTUNIQUE)) printunique(files);
-  if (ISFLAG(flags, F_PRINTJSON)) printjson(files, argc, argv);
-  if (ISFLAG(flags, F_SUMMARIZEMATCHES)) {
-    if (ISFLAG(flags, F_PRINTMATCHES)) printf("\n\n");
+  if (ISFLAG(a_flags, FA_PRINTMATCHES)) printmatches(files);
+  if (ISFLAG(a_flags, FA_PRINTUNIQUE)) printunique(files);
+  if (ISFLAG(a_flags, FA_PRINTJSON)) printjson(files, argc, argv);
+  if (ISFLAG(a_flags, FA_SUMMARIZEMATCHES)) {
+    if (ISFLAG(a_flags, FA_PRINTMATCHES)) printf("\n\n");
     summarizematches(files);
   }
 
@@ -2335,7 +2335,7 @@ skip_file_scan:
     }
 #ifdef ON_WINDOWS
  #ifndef NO_HARDLINKS
-    if (ISFLAG(flags, F_HARDLINKFILES))
+    if (ISFLAG(a_flags, FA_HARDLINKFILES))
       fprintf(stderr, "Exclusions based on Windows hard link limit: %u\n", hll_exclude);
  #endif
 #endif
