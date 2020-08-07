@@ -46,6 +46,7 @@ if [ "$TA" = "__NONE__" ]
 	TGT=$(gcc -v 2>&1 | grep Target | cut -d\  -f2- | cut -d- -f1)
 	test "$TGT" = "i686" && TA=win32
 	test "$TGT" = "x86_64" && TA=win64
+	test "$UNAME_S" = "MINGW32_NT-5.1" && TA=winxp
 	EXT=".exe"
 fi
 

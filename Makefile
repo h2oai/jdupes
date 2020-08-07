@@ -98,7 +98,13 @@ ifndef NO_UNICODE
 	PROGRAM_SUFFIX=.exe
 endif
 	COMPILER_OPTIONS += -D__USE_MINGW_ANSI_STDIO=1 -DON_WINDOWS=1
-	OBJS += win_stat.o winres.o
+	OBJS += win_stat.o
+	UNAME_S=$(shell uname -s)
+	ifeq ($(UNAME_S), MINGW32_NT-5.1)
+		OBJS += winres_xp.o
+	else
+		OBJS += winres.o
+	endif
 	override undefine ENABLE_DEDUPE
 endif
 
@@ -155,9 +161,13 @@ static_stripped: $(PROGRAM_NAME)
 $(PROGRAM_NAME): $(OBJS)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $(PROGRAM_NAME) $(OBJS)
 
-winres.o : winres.rc winres.manifest.xml
+winres.o: winres.rc winres.manifest.xml
 	./tune_winres.sh
 	windres winres.rc winres.o
+
+winres_xp.o: winres_xp.rc
+	./tune_winres.sh
+	windres winres_xp.rc winres_xp.o
 
 standalone: jdupes-standalone
 
