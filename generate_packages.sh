@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Generate Windows package folders with variant builds
+# Generate package folders with variant builds
 
 # Number of parallel make processes
 test -z "$PM" && PM=12
@@ -13,12 +13,12 @@ echo "Program version: $VER"
 TA=__NONE__
 PKGTYPE=gz
 
-UNAME_S="$(uname -s)"
+UNAME_S="$(uname -s | tr '[:upper:]' '[:lower:]')"
 UNAME_P="$(uname -p)"
 UNAME_M="$(uname -m)"
 
 # Detect macOS
-if [ "$UNAME_S" = "Darwin" ]
+if [ "$UNAME_S" = "darwin" ]
 	then
 	PKGTYPE=zip
 	TA=mac32
@@ -65,6 +65,6 @@ make clean && make -j$PM LOW_MEMORY=1 stripped && cp $NAME$EXT $PKGNAME/${NAME}-
 make clean
 test $((E1 + E2 + E3)) -gt 0 && echo "Error building packages; aborting." && exit 1
 test "$PKGTYPE" = "zip" && zip -9r $PKGNAME.zip $PKGNAME/
-test "$PKGTYPE" = "gz"  && tar -c $PKGNAME/ | xz -e > $PKGNAME.tar.xz
-test "$PKGTYPE" = "xz"  && tar -c $PKGNAME/ | xz -e > $PKGNAME.tar.xz
+test "$PKGTYPE" = "gz"  && tar -c $PKGNAME/ | gzip -9 > $PKGNAME.pkg.tar.gz
+test "$PKGTYPE" = "xz"  && tar -c $PKGNAME/ | xz -e > $PKGNAME.pkg.tar.xz
 echo "Package generation complete."
