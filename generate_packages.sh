@@ -65,6 +65,6 @@ make clean && make -j$PM LOW_MEMORY=1 stripped && cp $NAME$EXT $PKGNAME/${NAME}-
 make clean
 test $((E1 + E2 + E3)) -gt 0 && echo "Error building packages; aborting." && exit 1
 test "$PKGTYPE" = "zip" && zip -9r $PKGNAME.zip $PKGNAME/
-test "$PKGTYPE" = "gz"  && tar -c $PKGNAME/ | xz -e > $PKGNAME.pkg.tar.xz
+test "$PKGTYPE" = "gz"  && tar -c $PKGNAME/ | gzip -9 > $PKGNAME.pkg.tar.gz
 test "$PKGTYPE" = "xz"  && tar -c $PKGNAME/ | xz -e > $PKGNAME.pkg.tar.xz
 echo "Package generation complete."
