@@ -197,7 +197,7 @@ clean:
 	$(RM) $(OBJS) $(OBJS_CLEAN) build_date.h $(PROGRAM_NAME) $(PROGRAM_NAME).exe *~ *.gcno *.gcda *.gcov
 
 distclean: clean
-	$(RM) *.pkg.tar.xz
+	$(RM) *.pkg.tar.*
 	$(RM) -r jdupes-*-*/ jdupes-*-*.zip
 
 chrootpackage:

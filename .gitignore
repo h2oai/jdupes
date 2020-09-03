@@ -23,7 +23,7 @@
 /jdupes-standalone
 /jdupes-*-*/
 /jdupes-*-*.zip
-/*.pkg.tar.xz
+/*.pkg.tar.*
 test_temp
 output.log
 
