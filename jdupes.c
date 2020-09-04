@@ -303,6 +303,14 @@ void sigusr1(const int signum)
 #endif
 
 
+/* De-allocate everything on exit */
+void clean_exit(void)
+{
+  string_malloc_destroy();
+  return;
+}
+
+
 /* Out of memory */
 extern void oom(const char * const restrict msg)
 {
@@ -1851,8 +1859,9 @@ int main(int argc, char **argv)
 #endif
 
   program_name = argv[0];
-
   oldargv = cloneargs(argc, argv);
+  /* Clean up string_malloc on any exit */
+  atexit(clean_exit);
 
   while ((opt = GETOPT(argc, argv, GETOPT_STRING
 #ifndef OMIT_GETOPT_LONG
