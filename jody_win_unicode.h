@@ -8,7 +8,6 @@
 extern "C" {
 #endif
 
-#include "jdupes.h"
 #include <stdio.h>
 
 extern int fwprint(FILE * const restrict stream, const char * const restrict str, const int cr);

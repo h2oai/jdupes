@@ -4,15 +4,26 @@
  * Released under The MIT License
  */
 #include "jody_win_unicode.h"
-#include "jdupes.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
 
-#ifdef UNICODE
+#include "oom.h"
 
-static wpath_t wstr;
+#ifdef UNICODE
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include <io.h>
+extern int out_mode;
+extern int err_mode;
+#ifndef PATHBUF_SIZE
+ #define PATHBUF_SIZE 8196
+#endif
+#define WPATH_MAX 8192
+ #define M2W(a,b) MultiByteToWideChar(CP_UTF8, 0, a, -1, (LPWSTR)b, WPATH_MAX)
+ #define W2M(a,b) WideCharToMultiByte(CP_UTF8, 0, a, -1, (LPSTR)b, WPATH_MAX, NULL, NULL)
+static wchar_t wstr[PATHBUF_SIZE];
 
 /* Convert slashes to backslashes in a file path */
 extern void slash_convert(char *path)
@@ -36,7 +47,7 @@ extern void widearg_to_argv(int argc, wchar_t **wargv, char **argv)
     len = W2M(wargv[counter], &temp);
     if (len < 1) goto error_wc2mb;
 
-    argv[counter] = (char *)string_malloc((size_t)len + 1);
+    argv[counter] = (char *)malloc((size_t)len + 1);
     if (!argv[counter]) oom("widearg_to_argv()");
     strncpy(argv[counter], temp, (size_t)len + 1);
   }
