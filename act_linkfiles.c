@@ -10,8 +10,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+
 #include "act_linkfiles.h"
 #include "jody_win_unicode.h"
+#include "oom.h"
 #ifdef ON_WINDOWS
  #include "win_stat.h"
 #endif

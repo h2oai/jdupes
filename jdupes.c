@@ -43,6 +43,7 @@
 #include <sys/time.h>
 #include "jdupes.h"
 #include "xxhash.h"
+#include "oom.h"
 #ifdef ENABLE_DEDUPE
 #include <sys/utsname.h>
 #endif
@@ -310,15 +311,6 @@ void clean_exit(void)
   string_malloc_destroy();
 #endif
   return;
-}
-
-
-/* Out of memory */
-extern void oom(const char * const restrict msg)
-{
-  fprintf(stderr, "\nout of memory: %s\n", msg);
-  string_malloc_destroy();
-  exit(EXIT_FAILURE);
 }
 
 

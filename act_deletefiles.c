@@ -6,9 +6,11 @@
 #include <stdint.h>
 #include <inttypes.h>
 #include <string.h>
+
 #include "jdupes.h"
 #include "jody_win_unicode.h"
 #include "act_deletefiles.h"
+#include "oom.h"
 
 /* For interactive deletion input */
 #define INPUT_SIZE 512

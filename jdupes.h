@@ -272,7 +272,6 @@ extern char tempname[PATHBUF_SIZE * 2];
 
 extern const char *extensions[];
 
-extern void oom(const char * const restrict msg);
 extern void nullptr(const char * restrict func);
 extern int file_has_changed(file_t * const restrict file);
 extern int getfilestats(file_t * const restrict file);

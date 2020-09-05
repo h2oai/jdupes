@@ -141,7 +141,7 @@ INSTALL_DATA    = $(INSTALL) -m 0644
 # to support features not supplied by their vendor. Eg: GNU getopt()
 #ADDITIONAL_OBJECTS += getopt.o
 
-OBJS += jdupes.o jody_paths.o jody_sort.o jody_win_unicode.o jody_strtoepoch.o string_malloc.o
+OBJS += jdupes.o jody_paths.o jody_sort.o jody_win_unicode.o jody_strtoepoch.o string_malloc.o oom.o
 OBJS += jody_cacheinfo.o
 OBJS += act_deletefiles.o act_linkfiles.o act_printmatches.o act_summarize.o act_printjson.o
 OBJS += xxhash.o
