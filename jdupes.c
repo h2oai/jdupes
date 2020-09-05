@@ -303,10 +303,12 @@ void sigusr1(const int signum)
 #endif
 
 
-/* De-allocate everything on exit */
+/* De-allocate on exit */
 void clean_exit(void)
 {
+#ifndef SMA_PASSTHROUGH
   string_malloc_destroy();
+#endif
   return;
 }
 
