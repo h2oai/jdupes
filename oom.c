@@ -5,11 +5,12 @@
  * (as if anything so trivial will serve my ego)
  */
 
+#include <stdio.h>
+#include <stdlib.h>
 #include "oom.h"
 
 extern void oom(const char * const restrict msg)
 {
   fprintf(stderr, "\nout of memory: %s\n", msg);
-  string_malloc_destroy();
   exit(EXIT_FAILURE);
 }
