@@ -2093,7 +2093,7 @@ int main(int argc, char **argv)
       printf("OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\n");
       printf("SOFTWARE.\n");
       printf("\nIf you find this software useful, please consider financially supporting\n");
-      printf("its continued developemnt by donating to the author's SubscribeStar:\n");
+      printf("its continued development by donating to the author's SubscribeStar:\n");
       printf("          https://SubscribeStar.com/JodyBruchon\n");
       printf("\nNew releases, bug fixes, and more at the jdupes GitHub project page:\n");
       printf("             https://github.com/jbruchon/jdupes\n");
