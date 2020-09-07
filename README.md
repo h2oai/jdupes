@@ -10,7 +10,7 @@ between the two programs. For example, the `-I` switch in jdupes means
 "isolate" and blocks intra-argument matching, while in fdupes it means
 "immediately delete files during scanning without prompting the user."
 
-Please consider financially supporting continued developemnt of jdupes:
+Please consider financially supporting continued development of jdupes:
 
 https://www.subscribestar.com/JodyBruchon
 
