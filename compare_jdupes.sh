@@ -22,10 +22,10 @@ test ! -e ./jdupes && echo "Build jdupes first, silly" && exit 1
 
 echo -n "Installed $ORIG_DUPE:"
 sync
-time $ORIG_DUPE -nrq "$@" > installed_output.txt || ERR=1
+time $ORIG_DUPE -nq "$@" > installed_output.txt || ERR=1
 echo -en "\nBuilt jdupes:"
 sync
-time ./jdupes -nrq "$@" > built_output.txt || ERR=1
+time ./jdupes -nq "$@" > built_output.txt || ERR=1
 diff -Nau installed_output.txt built_output.txt
 if [ -e jdupes-standalone ]
 	then
