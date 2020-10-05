@@ -219,6 +219,8 @@ the B is used, which will use decimal multipliers. For example,
 
 Filters have cumulative effects: jdupes -X size+:100 -X size-:100 will
 cause only files of exactly 100 bytes in size to be included.
+
+Extension matching is case-insensitive.
 ```
 
 For sizes, K/M/G/T/P/E[B|iB] suffixes can be used (case-insensitive)

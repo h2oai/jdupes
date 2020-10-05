@@ -412,7 +412,7 @@ int match_extensions(char *path, const char *extlist)
 {
   char *dot;
   const char *ext;
-  size_t len;
+  size_t len, extlen;
 
   LOUD(fprintf(stderr, "match_extensions('%s', '%s')\n", path, extlist);)
   if (path == NULL || extlist == NULL) nullptr("match_extensions");
@@ -430,26 +430,35 @@ int match_extensions(char *path, const char *extlist)
   /* Handle a dot at the end of a file name */
   if (*dot == '\0') return 0;
 
+  /* Get the length of the file's extension for later checking */
+  extlen = strlen(dot);
+  LOUD(fprintf(stderr, "match_extensions: file has extension '%s' with length %ld\n", dot, extlen);)
+
   /* dot is now at the location of the last file extension; check the list */
+  /* Skip any commas at the start of the list */
   while (*extlist == ',') extlist++;
   ext = extlist;
   len = 0;
   while (1) {
+    /* Reject upon hitting the end with no more extensions to process */
     if (*extlist == '\0' && len == 0) return 0;
+    /* Process extension once a comma or EOL is hit */
     if (*extlist == ',' || *extlist == '\0') {
+      /* Skip serial commas */
       while (*extlist == ',') extlist++;
       if (extlist == ext)  goto skip_empty;
-      if (strncmp(dot, ext, len) == 0) {
-        LOUD(fprintf(stderr, "match_extensions: matched on extension '%s'\n", dot);)
+      if (strncasecmp(dot, ext, len) == 0 && extlen == len) {
+        LOUD(fprintf(stderr, "match_extensions: matched on extension '%s' (len %ld)\n", dot, len);)
         return 1;
       }
+      LOUD(fprintf(stderr, "match_extensions: no match: '%s' (%ld), '%s' (%ld)\n", dot, len, ext, extlen);)
 skip_empty:
       ext = extlist;
-      if (*extlist != '\0') extlist++;
       len = 0;
       continue;
     }
     extlist++; len++;
+    /* LOUD(fprintf(stderr, "match_extensions: DEBUG: '%s' : '%s' (%ld), '%s' (%ld)\n", extlist, dot, len, ext, extlen);) */
   }
   return 0;
 }
@@ -1730,7 +1739,8 @@ static void help_text_extfilter(void)
   printf("the B is used, which will use decimal multipliers. For example,\n");
   printf("10k or 10kib = 10240; 10kb = 10000. Multipliers are case-insensitive.\n\n");
   printf("Filters have cumulative effects: jdupes -X size+:100 -X size-:100 will\n");
-  printf("cause only files of exactly 100 bytes in size to be included.\n");
+  printf("cause only files of exactly 100 bytes in size to be included.\n\n");
+  printf("Extension matching is case-insensitive.\n");
 }
 
 
