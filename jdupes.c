@@ -1806,7 +1806,6 @@ int main(int argc, char **argv)
     { "notravcheck", 0, 0, 'U' },
     { "printunique", 0, 0, 'u' },
     { "version", 0, 0, 'v' },
-    { "exclude", 1, 0, 'X' },
     { "extfilter", 1, 0, 'X' },
     { "xsize", 1, 0, 'x' },
     { "softabort", 0, 0, 'Z' },
