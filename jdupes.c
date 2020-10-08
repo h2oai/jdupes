@@ -1820,7 +1820,7 @@ int main(int argc, char **argv)
 #define GETOPT getopt
 #endif
 
-#define GETOPT_STRING "@01ABC:DdfHhIijKlLmMnNOPp:QqRrSsTtUuVvZzo:x:X:"
+#define GETOPT_STRING "@01ABC:DdfHhIijKLlMmNnOo:Pp:QqRrSsTtUuVvX:x:Zz"
 
 /* Windows buffers our stderr output; don't let it do that */
 #ifdef ON_WINDOWS
