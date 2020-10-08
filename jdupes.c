@@ -1372,10 +1372,9 @@ static file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict f
         DBG(small_file++;)
       }
     } else if (cmpresult == 0) {
-      if (ISFLAG(flags, F_SKIPHASH)) {
-        /* Skip full file hashing if requested by the user */
-        LOUD(fprintf(stderr, "checkmatch: skipping full file hashes (F_SKIPMATCH)\n"));
-      } else {
+//      if (ISFLAG(flags, F_SKIPHASH)) {
+//        LOUD(fprintf(stderr, "checkmatch: skipping full file hashes (F_SKIPMATCH)\n"));
+//      } else {
         /* If partial match was correct, perform a full file hash match */
         if (!ISFLAG(tree->file->flags, FF_HASH_FULL)) {
           filehash = get_filehash(tree->file, 0);
@@ -1398,7 +1397,7 @@ static file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict f
         LOUD(if (!cmpresult) fprintf(stderr, "checkmatch: full hashes match\n"));
         LOUD(if (cmpresult) fprintf(stderr, "checkmatch: full hashes do not match\n"));
         DBG(full_hash++);
-      }
+//      }
     } else {
       DBG(partial_elim++);
     }
@@ -1652,7 +1651,7 @@ static inline void help_text(void)
   printf(" -I --isolate     \tfiles in the same specified directory won't match\n");
 #endif
   printf(" -j --json        \tproduce JSON (machine-readable) output\n");
-  printf(" -K --skiphash    \tskip full file hashing (may be faster; 100%% safe)\n");
+/*  printf(" -K --skiphash    \tskip full file hashing (may be faster; 100%% safe)\n"); */
   printf("                  \tWARNING: in development, not fully working yet!\n");
 #ifndef NO_SYMLINKS
   printf(" -l --linksoft    \tmake relative symlinks for duplicates w/o prompting\n");
@@ -1978,6 +1977,7 @@ int main(int argc, char **argv)
       break;
     case 'Q':
       SETFLAG(flags, F_QUICKCOMPARE);
+      fprintf(stderr, "\nBIG FAT WARNING: -Q/--quick MAY BE DANGEROUS! Read the manual!\n\n");
       LOUD(fprintf(stderr, "opt: byte-for-byte safety check disabled (--quick)\n");)
       break;
     case 'r':
@@ -1997,6 +1997,7 @@ int main(int argc, char **argv)
         partialonly_spec = 1;
       else {
         partialonly_spec = 2;
+        fprintf(stderr, "\nBIG FAT WARNING: -T/--partialonly is EXTREMELY DANGEROUS! Read the manual!\n\n");
         SETFLAG(flags, F_PARTIALONLY);
       }
       break;
