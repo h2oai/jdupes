@@ -57,20 +57,13 @@ COMPILER_OPTIONS += -Wshadow -Wfloat-equal -Waggregate-return -Wcast-qual -Wswit
 COMPILER_OPTIONS += -std=gnu99 -O2 -g -D_FILE_OFFSET_BITS=64 -fstrict-aliasing -pipe
 COMPILER_OPTIONS += -DSMA_MAX_FREE=11
 
-# Don't use unsupported compiler options on gcc 3/4 (OS X 10.5.8 Xcode)
-GCCVERSION = $(shell gcc -v 2>&1 | grep 'gcc version ' | cut -d\  -f3 | cut -d. -f1)
-test $(GCCVERSION) -gt 4 && COMPILER_OPTIONS += -Wextra -Wstrict-overflow=5 -Winit-self
-
 #####################################################################
 # no need to modify anything beyond this point                      #
 #####################################################################
 
-# Set built-on date for display in program version info screen
-ifdef EMBED_BUILD_DATE
-BD=$(shell date +"\"%Y-%m-%d %H:%M:%S %z\"")
-$(shell echo "#define BUILT_ON_DATE \"$(BD)\"" > build_date.h)
-COMPILER_OPTIONS += -DBUILD_DATE
-endif
+# Don't use unsupported compiler options on gcc 3/4 (OS X 10.5.8 Xcode)
+GCCVERSION = $(shell gcc -v 2>&1 | grep 'gcc version ' | cut -d\  -f3 | cut -d. -f1)
+test $(GCCVERSION) -gt 4 && COMPILER_OPTIONS += -Wextra -Wstrict-overflow=5 -Winit-self
 
 # Debugging code inclusion
 ifdef LOUD
