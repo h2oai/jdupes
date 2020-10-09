@@ -87,22 +87,31 @@ ifneq (,$(findstring DENABLE_DEDUPE,$(CFLAGS) $(CFLAGS_EXTRA)))
 	ENABLE_DEDUPE=1
 endif
 
+UNAME_S=$(shell uname -s)
+
 # MinGW needs this for printf() conversions to work
 ifeq ($(OS), Windows_NT)
-ifndef NO_UNICODE
-	UNICODE=1
-	COMPILER_OPTIONS += -municode
-	PROGRAM_SUFFIX=.exe
-endif
+	ifndef NO_UNICODE
+		UNICODE=1
+		COMPILER_OPTIONS += -municode
+		PROGRAM_SUFFIX=.exe
+	endif
 	COMPILER_OPTIONS += -D__USE_MINGW_ANSI_STDIO=1 -DON_WINDOWS=1
 	OBJS += win_stat.o
-	UNAME_S=$(shell uname -s)
 	ifeq ($(UNAME_S), MINGW32_NT-5.1)
 		OBJS += winres_xp.o
 	else
 		OBJS += winres.o
 	endif
 	override undefine ENABLE_DEDUPE
+endif
+
+# Don't do clonefile on Mac OS X < 10.13 (High Sierra)
+ifeq ($(UNAME_S), Darwin)
+	DARWINVER := $(shell expr `uname -r | cut -d. -f1` \< 17)
+	ifeq "$(DARWINVER)" "1"
+		COMPILER_OPTIONS += -DNO_CLONEFILE=1
+	endif
 endif
 
 # Compatibility mappings for dedupe feature

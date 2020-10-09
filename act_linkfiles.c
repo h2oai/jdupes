@@ -29,9 +29,11 @@
    #error Hard link support is required for dedupe on macOS
   #endif
   #include <sys/attr.h>
-  #include <sys/clonefile.h>
   #include <copyfile.h>
-  #define ENABLE_CLONEFILE_LINK 1
+  #ifndef NO_CLONEFILE
+   #include <sys/clonefile.h>
+   #define ENABLE_CLONEFILE_LINK 1
+  #endif /* NO_CLONEFILE */
  #endif /* __APPLE__ */
 #endif /* ENABLE_DEDUPE */
 
