@@ -26,7 +26,7 @@ if [ "$UNAME_S" = "darwin" ]
 fi
 
 # Detect Power Macs under macOS
-if [ "$UNAME_P" = "Power Macintosh" ]
+if [[ "$UNAME_P" = "Power Macintosh" || "$UNAME_P" = "powerpc" ]]
 	then
 	PKGTYPE=zip
 	TA=macppc32
