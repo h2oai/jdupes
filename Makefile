@@ -52,10 +52,14 @@ MKDIR   = mkdir -p
 
 # Make Configuration
 CC ?= gcc
-COMPILER_OPTIONS = -Wall -Wextra -Wwrite-strings -Wcast-align -Wstrict-aliasing -Wstrict-overflow -Wstrict-prototypes -Wpointer-arith -Wundef
-COMPILER_OPTIONS += -Wshadow -Wfloat-equal -Wstrict-overflow=5 -Waggregate-return -Wcast-qual -Wswitch-default -Wswitch-enum -Wconversion -Wunreachable-code -Wformat=2 -Winit-self
+COMPILER_OPTIONS = -Wall -Wwrite-strings -Wcast-align -Wstrict-aliasing -Wstrict-prototypes -Wpointer-arith -Wundef
+COMPILER_OPTIONS += -Wshadow -Wfloat-equal -Waggregate-return -Wcast-qual -Wswitch-default -Wswitch-enum -Wconversion -Wunreachable-code -Wformat=2
 COMPILER_OPTIONS += -std=gnu99 -O2 -g -D_FILE_OFFSET_BITS=64 -fstrict-aliasing -pipe
 COMPILER_OPTIONS += -DSMA_MAX_FREE=11
+
+# Don't use unsupported compiler options on gcc 3/4 (OS X 10.5.8 Xcode)
+GCCVERSION = $(shell gcc -v 2>&1 | grep 'gcc version ' | cut -d\  -f3 | cut -d. -f1)
+test $(GCCVERSION) -gt 4 && COMPILER_OPTIONS += -Wextra -Wstrict-overflow=5 -Winit-self
 
 #####################################################################
 # no need to modify anything beyond this point                      #
