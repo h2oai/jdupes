@@ -8,7 +8,7 @@
 #include "jody_sort.h"
 
 #define IS_NUM(a) (((a >= '0') && (a <= '9')) ? 1 : 0)
-#define IS_LOWER(a) ((a >= 'a') && (a <= 'z') ? 1 : 0)
+#define IS_LOWER(a) (((a >= 'a') && (a <= 'z')) ? 1 : 0)
 
 extern int numeric_sort(const char * restrict c1,
                 const char * restrict c2, int sort_direction)
@@ -79,8 +79,8 @@ extern int numeric_sort(const char * restrict c1,
     else {
       char s1 = *c1, s2 = *c2;
       /* Convert lowercase into uppercase */
-      if (IS_LOWER(s1)) s1 -= 32;
-      if (IS_LOWER(s2)) s2 -= 32;
+      if (IS_LOWER(s1)) s1 = (char)(s1 - 32);
+      if (IS_LOWER(s2)) s2 = (char)(s2 - 32);
       if (s1 > s2) return sort_direction;
       else return -sort_direction;
     }
