@@ -1553,7 +1553,8 @@ static int sort_pairs_by_mtime(file_t *f1, file_t *f2)
   if (f1->mtime < f2->mtime) return -sort_direction;
   else if (f1->mtime > f2->mtime) return sort_direction;
 
-  return 0;
+  /* If the mtimes match, use the names to break the tie */
+  return numeric_sort(f1->d_name, f2->d_name, sort_direction);
 }
 
 
