@@ -36,20 +36,12 @@ NO_HARDLINKS           Disable hard linking options and code
 NO_SYMLINKS            Disable symbolic linking options and code
 NO_USER_ORDER          Disable -I/-O options and code
 NO_UNICODE             [Windows only] disable all Unicode support
-EMBED_BUILD_DATE       Hard-code the build date into the binary
 
 The LOW_MEMORY option tweaks various knobs in the program to lower total
 memory usage. It also disables some features to reduce the size of certain
 data structures. The improvements in memory usage are not very large, but if
 you're running in a very RAM-limited environment or have a CPU with very small
 caches it may be a good choice.
-
-If you are building binaries that will have the same version number and still
-need a way to differentiate the binaries, you can use EMBED_BUILD_DATE to add
-the date of the build to the version info in 'jdupes -v'. Note that you must
-have a build that will rebuild jdupes.c (such as after a 'make clean') for
-the shown build date to actually update. This option also makes it impossible
-to create reproducible builds if that's important to you.
 
 A test directory is included so that you may familiarize yourself with the way
 jdupes operates. You may test the program before installing it by issuing a

@@ -2071,11 +2071,6 @@ int main(int argc, char **argv)
       } else printf("%u-bit i%u\n", (unsigned int)(sizeof(uintptr_t) * 8),
           (unsigned int)(sizeof(long) * 8));
 
-#ifdef BUILD_DATE
-#include "build_date.h"
-      printf("Built on %s\n", BUILT_ON_DATE);
-#endif
-
       printf("Compile-time extensions:");
       if (*extensions != NULL) {
         int c = 0;
