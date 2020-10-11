@@ -540,6 +540,17 @@ static void add_extfilter(const char *option)
   /* Invoke help text if requested */
   if (strcasecmp(option, "help") == 0) { help_text_extfilter(); exit(EXIT_SUCCESS); }
 
+  /* FIXME: v1.19.0 warning that -X meanings have changed - remove after v1.19.0 */
+  static int stupid_warning = 1;
+  if (stupid_warning) {
+    fprintf(stderr, "\n==============================================================\n");
+    fprintf(stderr, "| WARNING: -X/--extfilter meanings have changed in v1.19.0!  |\n");
+    fprintf(stderr, "|          Run `jdupes -X help` and read very carefully!     |\n");
+    fprintf(stderr, "|          This warning will be removed in the next release. |\n");
+    fprintf(stderr, "==============================================================\n\n");
+    stupid_warning = 0;
+  }
+
   opt = string_malloc(strlen(option) + 1);
   if (opt == NULL) oom("add_extfilter option");
   strcpy(opt, option);
@@ -757,17 +768,18 @@ static int check_singlefile(file_t * const restrict newfile)
       uint32_t sflag = extf->flags;
       LOUD(fprintf(stderr, "check_singlefile: extfilter check: %08x %ld %ld %s\n", sflag, newfile->size, extf->size, newfile->d_name);)
       if (
+           /* Any line that passes will result in file exclusion */
            ((sflag == XF_SIZE_EQ) && (newfile->size != extf->size)) ||
-           ((sflag == XF_SIZE_LTEQ) && (newfile->size <= extf->size)) ||
-           ((sflag == XF_SIZE_GTEQ) && (newfile->size >= extf->size)) ||
-           ((sflag == XF_SIZE_GT) && (newfile->size > extf->size)) ||
-           ((sflag == XF_SIZE_LT) && (newfile->size < extf->size)) ||
+           ((sflag == XF_SIZE_LTEQ) && (newfile->size > extf->size)) ||
+           ((sflag == XF_SIZE_GTEQ) && (newfile->size < extf->size)) ||
+           ((sflag == XF_SIZE_GT) && (newfile->size <= extf->size)) ||
+           ((sflag == XF_SIZE_LT) && (newfile->size >= extf->size)) ||
            ((sflag == XF_EXCL_EXT) && match_extensions(newfile->d_name, extf->param)) ||
            ((sflag == XF_ONLY_EXT) && !match_extensions(newfile->d_name, extf->param)) ||
            ((sflag == XF_EXCL_STR) && strstr(newfile->d_name, extf->param)) ||
            ((sflag == XF_ONLY_STR) && !strstr(newfile->d_name, extf->param)) ||
-           ((sflag == XF_DATE_NEWER) && (newfile->mtime >= extf->size)) ||
-           ((sflag == XF_DATE_OLDER) && (newfile->mtime < extf->size))
+           ((sflag == XF_DATE_NEWER) && (newfile->mtime < extf->size)) ||
+           ((sflag == XF_DATE_OLDER) && (newfile->mtime >= extf->size))
       ) excluded = 1;
     }
     if (excluded) {
@@ -1718,29 +1730,37 @@ static void help_text_extfilter(void)
 {
   printf("Detailed help for jdupes -X/--extfilter options\n");
   printf("General format: jdupes -X filter[:value][size_suffix]\n\n");
+
+  /* FIXME: Remove after v1.19.0 */
+  printf("****** WARNING: THE MEANINGS HAVE CHANGED IN v1.19.0 - READ CAREFULLY ******\n\n");
+
   printf("noext:ext1[,ext2,...]   \tExclude files with certain extension(s)\n\n");
   printf("onlyext:ext1[,ext2,...] \tOnly include files with certain extension(s)\n\n");
-  printf("size[+-=]:size[suffix]  \tExclude files meeting certain size criteria\n");
+  printf("size[+-=]:size[suffix]  \tOnly Include files matching size criteria\n");
   printf("                        \tSize specs: + larger, - smaller, = equal to\n");
   printf("                        \tSpecs can be mixed, i.e. size+=:100k will\n");
-  printf("                        \texclude files 100KiB or larger in size.\n\n");
+  printf("                        \tonly include files 100KiB or more in size.\n\n");
   printf("nostr:text_string       \tExclude all paths containing the string\n");
   printf("onlystr:text_string     \tOnly allow paths containing the string\n");
   printf("                        \tHINT: you can use these for directories:\n");
   printf("                        \t-X nostr:/dir_x/  or  -X onlystr:/dir_x/\n");
-  printf("newer:datetime          \tReject files newer than the specified date\n");
-  printf("older:datetime          \tReject files newer than the specified date\n");
+  printf("newer:datetime          \tOnly include files newer than specified date\n");
+  printf("older:datetime          \tOnly include files older than specified date\n");
   printf("                        \tDate/time format: \"YYYY-MM-DD HH:MM:SS\"\n");
   printf("                        \tTime is optional (remember to escape spaces!)\n");
-//  printf("\t\n");
+/*  printf("\t\n"); */
+
   printf("\nSome filters take no value or multiple values. Filters that can take\n");
-  printf("a numeric option generally support the size multipliers K/M/G/T/P/E\n");
-  printf("with or without an added iB or B. Multipliers are binary-style unless\n");
-  printf("the B is used, which will use decimal multipliers. For example,\n");
-  printf("10k or 10kib = 10240; 10kb = 10000. Multipliers are case-insensitive.\n\n");
-  printf("Filters have cumulative effects: jdupes -X size+:100 -X size-:100 will\n");
-  printf("cause only files of exactly 100 bytes in size to be included.\n\n");
-  printf("Extension matching is case-insensitive.\n");
+  printf(  "a numeric option generally support the size multipliers K/M/G/T/P/E\n");
+  printf(  "with or without an added iB or B. Multipliers are binary-style unless\n");
+  printf(  "the -B suffix is used, which will use decimal multipliers. For example,\n");
+  printf(  "16k or 16kib = 16384; 16kb = 16000. Multipliers are case-insensitive.\n\n");
+
+  printf(  "Filters have cumulative effects: jdupes -X size+:99 -X size-:101 will\n");
+  printf(  "cause only files of exactly 100 bytes in size to be included.\n\n");
+
+  printf(  "Extension matching is case-insensitive.\n");
+  printf(  "Path substring matching is case-sensitive.\n");
 }
 
 

@@ -158,11 +158,14 @@ exclude/filter files based on specified criteria; general format:
 Some filters take no value or multiple values. Filters that can take
 a numeric option generally support the size multipliers K/M/G/T/P/E
 with or without an added iB or B. Multipliers are binary-style unless
-the B is used, which will use decimal multipliers. For example,
-10k or 10kib = 10240; 10kb = 10000. Multipliers are case-insensitive.
+the -B suffix is used, which will use decimal multipliers. For example,
+16k or 16kib = 16384; 16kb = 16000. Multipliers are case-insensitive.
 
-Filters have cumulative effects: jdupes -X size+:100 -X size-:100 will
+Filters have cumulative effects: jdupes -X size+:99 -X size-:101 will
 cause only files of exactly 100 bytes in size to be included.
+
+Extension matching is case-insensitive.
+Path substring matching is case-sensitive.
 
 Supported filters are:
 .RS
@@ -183,6 +186,12 @@ file path, so it can be used to match directories: -X nostr:dir_name/
 .IP `onlystr:text_string'
 require all paths to contain the substring text_string. This scans the full
 file path, so it can be used to match directories: -X onlystr:dir_name/
+.IP `newer:datetime`
+only include files newer than specified date.
+Date/time format: "YYYY-MM-DD HH:MM:SS" (time is optional).
+.IP `older:datetime`
+only include files older than specified date.
+Date/time format: "YYYY-MM-DD HH:MM:SS" (time is optional).
 .RE
 
 .TP
