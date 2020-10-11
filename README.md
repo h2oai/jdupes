@@ -191,8 +191,6 @@ parameter order
  -U --notravcheck       disable double-traversal safety check (BE VERY CAREFUL)
                         This fixes a Google Drive File Stream recursion issue
  -v --version           display jdupes version and license information
- -x --xsize=SIZE        exclude files of size < SIZE bytes from consideration
-    --xsize=+SIZE       '+' specified before SIZE, exclude size > SIZE
  -X --extfilter=x:y     filter files based on specified criteria
                         Use '-X help' for detailed extfilter help
  -z --zeromatch         consider zero-length files to be duplicates

@@ -1711,8 +1711,6 @@ static inline void help_text(void)
   printf(" -U --notravcheck \tdisable double-traversal safety check (BE VERY CAREFUL)\n");
   printf("                  \tThis fixes a Google Drive File Stream recursion issue\n");
   printf(" -v --version     \tdisplay jdupes version and license information\n");
-  printf(" -x --xsize=SIZE  \texclude files of size < SIZE bytes from consideration\n");
-  printf("    --xsize=+SIZE \t'+' specified before SIZE, exclude size > SIZE\n");
   printf(" -X --extfilter=x:y\tfilter files based on specified criteria\n");
   printf("                  \tUse '-X help' for detailed extfilter help\n");
   printf(" -z --zeromatch   \tconsider zero-length files to be duplicates\n");
@@ -1773,7 +1771,6 @@ int main(int argc, char **argv)
   static file_t *files = NULL;
   static file_t *curfile;
   static char **oldargv;
-  static char *xs;
   static int firstrecurse;
   static int opt;
   static int pm = 1;
@@ -1827,7 +1824,6 @@ int main(int argc, char **argv)
     { "printunique", 0, 0, 'u' },
     { "version", 0, 0, 'v' },
     { "extfilter", 1, 0, 'X' },
-    { "xsize", 1, 0, 'x' },
     { "softabort", 0, 0, 'Z' },
     { "zeromatch", 0, 0, 'z' },
     { NULL, 0, 0, 0 }
@@ -1837,7 +1833,7 @@ int main(int argc, char **argv)
 #define GETOPT getopt
 #endif
 
-#define GETOPT_STRING "@01ABC:DdfHhIijKLlMmNnOo:Pp:QqRrSsTtUuVvX:x:Zz"
+#define GETOPT_STRING "@01ABC:DdfHhIijKLlMmNnOo:Pp:QqRrSsTtUuVvX:Zz"
 
 /* Windows buffers our stderr output; don't let it do that */
 #ifdef ON_WINDOWS
@@ -2043,21 +2039,6 @@ int main(int argc, char **argv)
     case 'S':
       SETFLAG(a_flags, FA_SHOWSIZE);
       LOUD(fprintf(stderr, "opt: show size of files enabled (--size)\n");)
-      break;
-    case 'x':
-      fprintf(stderr, "-x/--xsize is deprecated; use -X size[+-=]:size[suffix] instead\n");
-      xs = string_malloc(8 + strlen(optarg));
-      if (xs == NULL) oom("xsize temp string");
-      strcpy(xs, "size");
-      if (*optarg == '+') {
-        strcat(xs, "+:");
-        optarg++;
-      } else {
-        strcat(xs, "-=:");
-      }
-      strcat(xs, optarg);
-      add_extfilter(xs);
-      string_free(xs);
       break;
     case 'X':
       add_extfilter(optarg);
