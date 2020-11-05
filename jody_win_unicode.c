@@ -20,9 +20,6 @@ extern int err_mode;
 #ifndef PATHBUF_SIZE
  #define PATHBUF_SIZE 8196
 #endif
-#define WPATH_MAX 8192
- #define M2W(a,b) MultiByteToWideChar(CP_UTF8, 0, a, -1, (LPWSTR)b, WPATH_MAX)
- #define W2M(a,b) WideCharToMultiByte(CP_UTF8, 0, a, -1, (LPSTR)b, WPATH_MAX, NULL, NULL)
 static wchar_t wstr[PATHBUF_SIZE];
 
 /* Convert slashes to backslashes in a file path */
