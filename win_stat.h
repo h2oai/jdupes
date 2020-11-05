@@ -38,6 +38,13 @@ struct winstat {
 #define S_ISTEMP(st_mode) ((st_mode & FILE_ATTRIBUTE_TEMPORARY) ? 1 : 0)
 #define S_ISREG(st_mode) ((st_mode & FILE_ATTRIBUTE_DIRECTORY) ? 0 : 1)
 
+#ifndef WPATH_MAX
+ #define WPATH_MAX 8192
+#endif
+#ifndef M2W
+ #define M2W(a,b) MultiByteToWideChar(CP_UTF8, 0, a, -1, (LPWSTR)b, WPATH_MAX)
+#endif
+
 extern int win_stat(const char * const filename, struct winstat * const restrict buf);
 
 #ifdef __cplusplus

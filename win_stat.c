@@ -13,9 +13,6 @@
 #include "win_stat.h"
 #include <stdint.h>
 
-#define WPATH_MAX 8192
-#define M2W(a,b) MultiByteToWideChar(CP_UTF8, 0, a, -1, (LPWSTR)b, WPATH_MAX)
-
 /* Convert NT epoch to UNIX epoch */
 static time_t nttime_to_unixtime(const uint64_t * const restrict timestamp)
 {
