@@ -853,6 +853,7 @@ static struct travdone *travdone_alloc(const dev_t device, const jdupes_ino_t in
 /* De-allocate the travdone tree */
 static void travdone_free(struct travdone * const restrict cur)
 {
+  LOUD(fprintf(stderr, "travdone_free(%p)\n", cur);)
   if (cur == NULL) return;
   if (cur->left != NULL) travdone_free(cur->left);
   if (cur->right != NULL) travdone_free(cur->right);
