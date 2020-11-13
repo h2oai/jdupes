@@ -6,6 +6,7 @@
  * Released under The MIT License
  */
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include "string_malloc.h"
@@ -98,6 +99,7 @@ static inline void *scan_freelist(const size_t size)
 	/* Return smallest object found and delete from free list */
 	if (min_i != -1) {
 		min_p = sma_freelist[min_i].addr;
+		*min_p = sma_freelist[min_i].size;
 		sma_freelist[min_i].addr = NULL;
 		sma_freelist_cnt--;
 		min_p++;
@@ -224,6 +226,11 @@ void string_free(void * const addr)
 	/* Get address to real start of object and the object size */
 	sizeptr = (size_t *)addr - 1;
 	size = *(size_t *)sizeptr;
+	if (size == 0) goto sf_double_free;
+
+	/* Mark the freed object to catch double free attempts */
+	*(size_t *)sizeptr = 0;
+
 	/* Calculate after-block pointer for merge checks */
 	after = (uintptr_t)addr + size;
 
@@ -271,6 +278,10 @@ void string_free(void * const addr)
 	/* Fall through */
 sf_failed:
 	DBG(sma_free_ignored++;)
+	return;
+
+sf_double_free:
+	fprintf(stderr, "string_malloc: ERROR: attempt to string_free() already freed object at %p\n", addr);
 	return;
 }
 
