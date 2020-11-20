@@ -276,7 +276,7 @@ extern void linkfiles(file_t *files, const int linktype)
                 break;
               default:
               case 1: /* hardlink */
-                printf("---->");
+                printf("----> ");
                 break;
 #ifdef ENABLE_CLONEFILE_LINK
               case 2: /* clonefile */
