@@ -540,17 +540,6 @@ static void add_extfilter(const char *option)
   /* Invoke help text if requested */
   if (strcasecmp(option, "help") == 0) { help_text_extfilter(); exit(EXIT_SUCCESS); }
 
-  /* FIXME: v1.19.0 warning that -X meanings have changed - remove after v1.19.0 */
-  static int stupid_warning = 1;
-  if (stupid_warning) {
-    fprintf(stderr, "\n==============================================================\n");
-    fprintf(stderr, "| WARNING: -X/--extfilter meanings have changed in v1.19.0!  |\n");
-    fprintf(stderr, "|          Run `jdupes -X help` and read very carefully!     |\n");
-    fprintf(stderr, "|          This warning will be removed in the next release. |\n");
-    fprintf(stderr, "==============================================================\n\n");
-    stupid_warning = 0;
-  }
-
   opt = string_malloc(strlen(option) + 1);
   if (opt == NULL) oom("add_extfilter option");
   strcpy(opt, option);
