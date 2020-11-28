@@ -4,7 +4,7 @@
 #ifndef JDUPES_VERSION_H
 #define JDUPES_VERSION_H
 
-#define VER "1.19.0"
-#define VERDATE "2020-10-11"
+#define VER "1.19.1"
+#define VERDATE "2020-11-28"
 
 #endif /* JDUPES_VERSION_H */

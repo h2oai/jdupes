@@ -1,3 +1,9 @@
+jdupes 1.19.1
+
+- Fix missing space in ----> hard link inidcator
+- Fix -P/--print and -p/--permissions options
+- Remove temporary warning when using -X
+
 jdupes 1.19.0
 
 - Make -X size[+-=] an inclusion filter instead (CHECK YOUR SHELL SCRIPTS)
