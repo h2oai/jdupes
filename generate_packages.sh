@@ -67,6 +67,7 @@ test $((E1 + E2 + E3)) -gt 0 && echo "Error building packages; aborting." && exi
 # Make a fat binary on macOS x86_64 if possible
 if [ "$TA" = "mac64" ] && ld -v 2>&1 | grep -q 'archs:.*i386'
 	then
+	E1=1; E2=1; E3=1
 	BITS=32
 	make clean && make -j$PM CFLAGS_EXTRA=-m32 stripped && cp $NAME$EXT $PKGNAME/$NAME$EXT$BITS && E1=0
 	make clean && make -j$PM CFLAGS_EXTRA=-m32 LOUD=1 stripped && cp $NAME$EXT $PKGNAME/$NAME-loud$EXT$BITS && E2=0
