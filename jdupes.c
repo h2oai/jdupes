@@ -408,7 +408,7 @@ static void update_progress(const char * const restrict msg, const int file_perc
 #ifndef ON_WINDOWS
   /* Notify of change to soft abort status if SIGUSR1 received */
   if (usr1_toggle != 0) {
-    fprintf(stderr, "\njdupes received a USR1 signal; soft abort (-Z) is now %s\n", usr1_toggle == 1 ? "OFF" : "ON" );
+    fprintf(stderr, "\njdupes received a USR1 signal; soft abort (-Z) is now %s\n", usr1_toggle == 1 ? "ON" : "OFF" );
     usr1_toggle = 0;
   }
 #endif
@@ -2200,6 +2200,11 @@ int main(int argc, char **argv)
   }
   if (pm == 0) SETFLAG(a_flags, FA_PRINTMATCHES);
 
+#ifndef ON_WINDOWS
+  /* Catch SIGUSR1 and use it to enable -Z */
+  signal(SIGUSR1, sigusr1);
+#endif
+
   if (ISFLAG(flags, F_RECURSEAFTER)) {
     firstrecurse = nonoptafter("--recurse:", argc, oldargv, argv);
 
@@ -2251,10 +2256,6 @@ int main(int argc, char **argv)
 
   /* Catch CTRL-C */
   signal(SIGINT, sighandler);
-#ifndef ON_WINDOWS
-  /* Catch SIGUSR1 and use it to enable -Z */
-  signal(SIGUSR1, sigusr1);
-#endif
 
   while (curfile) {
     static file_t **match = NULL;
