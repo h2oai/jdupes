@@ -98,11 +98,12 @@ uint_fast32_t flags = 0, a_flags = 0, p_flags = 0;
 
 static const char *program_name;
 
-/* This gets used in many functions */
+/* Stat and SIGUSR */
 #ifdef ON_WINDOWS
  struct winstat s;
 #else
  struct stat s;
+ static int usr1_toggle = 0;
 #endif
 
 /* Larger chunk size makes large files process faster but uses more RAM */
@@ -297,8 +298,13 @@ void sighandler(const int signum)
 void sigusr1(const int signum)
 {
   (void)signum;
-  if (!ISFLAG(flags, F_SOFTABORT)) SETFLAG(flags, F_SOFTABORT);
-  else CLEARFLAG(flags, F_SOFTABORT);
+  if (!ISFLAG(flags, F_SOFTABORT)) {
+    SETFLAG(flags, F_SOFTABORT);
+    usr1_toggle = 1;
+  } else {
+    CLEARFLAG(flags, F_SOFTABORT);
+    usr1_toggle = 2;
+  }
   return;
 }
 #endif
@@ -399,6 +405,13 @@ static void update_progress(const char * const restrict msg, const int file_perc
     fflush(stderr);
   }
   time1.tv_sec = time2.tv_sec;
+#ifndef ON_WINDOWS
+  /* Notify of change to soft abort status if SIGUSR1 received */
+  if (usr1_toggle != 0) {
+    fprintf(stderr, "\njdupes received a USR1 signal; soft abort (-Z) is now %s\n", usr1_toggle == 1 ? "OFF" : "ON" );
+    usr1_toggle = 0;
+  }
+#endif
   return;
 }
 
