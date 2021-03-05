@@ -471,7 +471,7 @@ earlier. Files are renamed to a temporary name before any linking is done and
 if the link operation fails they are renamed back to the original name.
 
 ### "Collision Robustness"
-jdupes uses jodyhash for file data hashing. This hash is extremely fast with a
+jdupes uses xxHash for file data hashing. This hash is extremely fast with a
 low collision rate, but it still encounters collisions as any hash function
 will ("secure" or otherwise) due to the pigeonhole principle. This is why
 jdupes performs a full-file verification before declaring a match.  It's slower
@@ -480,7 +480,7 @@ larger than the hash at risk of collision, meaning a false duplicate detection
 and data loss. The slower completion time is not as important as data
 integrity. Checking for a match based on hashes alone is irresponsible, and
 using secure hashes like MD5 or the SHA families is orders of magnitude slower
-than jodyhash while still suffering from the risk brought about by the
+than xxHash while still suffering from the risk brought about by the
 pigeonholing. An example of this problem is as follows: if you have 365 days in
 a year and 366 people, the chance of having at least two birthdays on the same
 day is guaranteed; likewise, even though SHA512 is a 512-bit (64-byte) wide
