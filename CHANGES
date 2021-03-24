@@ -1,3 +1,10 @@
+jdupes 1.19.2
+
+- SIGUSR1 to toggle -Z now shows an indication of the -Z status change
+- Fix for error in JSON handling of extended ASCII range (0x80-0xff)
+- Fix sort when zeroes in names aren't followed by a non-zero digit
+- Mac builds now output i386+x86_64 fat binaries (if possible)
+
 jdupes 1.19.1
 
 - Fix missing space in ----> hard link indicator
