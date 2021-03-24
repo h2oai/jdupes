@@ -8,8 +8,8 @@
 extern "C" {
 #endif
 
-extern int numeric_sort(const char * restrict c1,
-                const char * restrict c2, int sort_direction);
+extern int numeric_sort(char * restrict c1,
+                char * restrict c2, int sort_direction);
 
 #ifdef __cplusplus
 }
