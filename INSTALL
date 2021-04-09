@@ -29,7 +29,7 @@ DEBUG                  Turn on algorithm statistic reporting with '-D'
 LOUD                   '-@' for low-level debugging; enables DEBUG
 ENABLE_DEDUPE          Enable '-B/--dedupe' deduplication features
 STATIC_DEDUPE_H        Build dedupe support with included minimal header file
-LOW_MEMORY             Build for lower memory usage instead of speed
+LOW_MEMORY             Build for extremely low-RAM environments (CAUTION!)
 NO_PERMS               Disable permission options and code
 NO_HARDLINKS           Disable hard linking options and code
 NO_SYMLINKS            Disable symbolic linking options and code
@@ -40,7 +40,8 @@ The LOW_MEMORY option tweaks various knobs in the program to lower total
 memory usage. It also disables some features to reduce the size of certain
 data structures. The improvements in memory usage are not very large, but if
 you're running in a very RAM-limited environment or have a CPU with very small
-caches it may be a good choice.
+caches it may be a good choice. This is primarily meant for use in embedded
+systems and should not be used unless you know what you are doing.
 
 A test directory is included so that you may familiarize yourself with the way
 jdupes operates. You may test the program before installing it by issuing a
