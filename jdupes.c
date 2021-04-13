@@ -1370,7 +1370,7 @@ static file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict f
 
     /* Print partial hash matching pairs if requested */
     if (cmpresult == 0 && ISFLAG(p_flags, PF_PARTIAL))
-      printf("Partial hashes match:\n   %s\n   %s\n\n", file->d_name, tree->file->d_name);
+      printf("\nPartial hashes match:\n   %s\n   %s\n\n", file->d_name, tree->file->d_name);
 
     if (file->size <= PARTIAL_HASH_SIZE || ISFLAG(flags, F_PARTIALONLY)) {
       if (ISFLAG(flags, F_PARTIALONLY)) { LOUD(fprintf(stderr, "checkmatch: partial only mode: treating partial hash as full hash\n")); }
