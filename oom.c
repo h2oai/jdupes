@@ -1,6 +1,10 @@
-/* Out of memory error message
- * Distributed under The MIT License
- * (as if anything so trivial deserves a license)
+/* Out of memory error message, the most complex C fragment in existence
+ * Licensed either under the Creative Commons 0 license (CC0) or, for countries
+ * that are sane enough to actually recognize a public domain, this is in the
+ * public domain.
+ *
+ * (It was under The MIT License, as if anything so trivial deserves a license)
+ *
  * By Jody Bruchon <jody@jodybruchon.com>
  * (as if anything so trivial will serve my ego)
  */
