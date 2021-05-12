@@ -1,3 +1,10 @@
+jdupes 1.20.0
+
+- Normalize long option hyphenation (CHECK YOUR SHELL SCRIPTS)
+- Remove long-deprecated -n/--noempty option (CHECK YOUR SHELL SCRIPTS)
+- Fix printout for -P/--partial when progress indicator is active
+- Miscellaneous documentation cleanups/updates
+
 jdupes 1.19.2
 
 - SIGUSR1 to toggle -Z now shows an indication of the -Z status change
