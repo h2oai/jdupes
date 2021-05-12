@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # stupid_dupes: find duplicates like jdupes but more slowly with a shell script
-# Copyright (C) 2020 by Jody Bruchon <jody@jodybruchon.com>
+# Copyright (C)2021 by Jody Bruchon <jody@jodybruchon.com>
 #
 # The MIT License (MIT)
 #
@@ -61,8 +61,8 @@
 
 
 PROGNAME=stupid_dupes.sh
-VER=1.0
-VERDATE=2020-02-18
+VER=1.1
+VERDATE=2021-01-21
 
 V=1		# Verbosity
 AC=0		# Argument count
@@ -245,7 +245,7 @@ print_matches () {
 }
 
 show_help () {
-	COPYTEXT="Copyright (C) 2020 by Jody Bruchon <jody@jodybruchon.com>\n"
+	COPYTEXT="Copyright (C) 2021 by Jody Bruchon <jody@jodybruchon.com> and contributors\n"
 	echo "$PROGNAME $VER ($VERDATE)"
 	if [ "$2" = "full" ]
 		then
