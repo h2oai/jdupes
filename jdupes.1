@@ -23,7 +23,7 @@ sets of matching files.
 .B -@ --loud
 output annoying low-level debug info while running
 .TP
-.B -0 --printnull
+.B -0 --print-null
 when printing matches, use null bytes instead of CR/LF bytes, just
 like 'find -print0' does. This has no effect with any action mode other
 than the default "print matches" (delete, link, etc. will still print
@@ -32,7 +32,7 @@ normal line endings in the output.)
 .B -1 --one-file-system
 do not match files that are on different filesystems or devices
 .TP
-.B -A --nohidden
+.B -A --no-hidden
 exclude hidden files from consideration
 .TP
 .B -B --dedupe
@@ -40,7 +40,7 @@ issue the btrfs same-extents ioctl to trigger a deduplication on
 disk. The program must be built with btrfs support for this option
 to be available
 .TP
-.B -C --chunksize=\fIBYTES\fR
+.B -C --chunk-size=\fIBYTES\fR
 set the I/O chunk size manually; larger values may improve performance
 on rotating media by reducing the number of head seeks required, but
 also increases memory usage and can reduce performance in some cases
@@ -54,10 +54,10 @@ prompt user for files to preserve, deleting all others (see
 .B CAVEATS
 below)
 .TP
-.B -f --omitfirst
+.B -f --omit-first
 omit the first file in each set of matches
 .TP
-.B -H --hardlinks
+.B -H --hard-links
 normally, when two or more files point to the same disk area they are
 treated as non-duplicates; this option will change this behavior
 .TP
@@ -71,25 +71,21 @@ reverse (invert) the sort order of matches
 isolate each command-line parameter from one another; only match if the
 files are under different parameter specifications
 .TP
-.B -L --linkhard
+.B -L --link-hard
 replace all duplicate files with hardlinks to the first file in each set
 of duplicates
 .TP
 .B -m --summarize
 summarize duplicate file information
 .TP
-.B -M --printwithsummary
+.B -M --print-summarize
 print matches and summarize the duplicate file information at the end
 .TP
-.B -N --noprompt
+.B -N --no-prompt
 when used together with \-\-delete, preserve the first file in each set of
 duplicates and delete the others without prompting the user
 .TP
-.B -n --noempty
-exclude zero-length files from consideration; this option is the default
-behavior and does nothing (also see \fB\-z/--zeromatch\fP)
-.TP
-.B -O --paramorder
+.B -O --param-order
 parameter order preservation is more important than the chosen sort; this
 is particularly useful with the \fB\-N\fP option to ensure that automatic
 deletion behaves in a controllable way
@@ -124,7 +120,7 @@ Examples section below for further explanation)
 .B -r --recurse
 for every directory given follow subdirectories encountered within
 .TP
-.B -l --linksoft
+.B -l --link-soft
 replace all duplicate files with symlinks to the first file in each set
 of duplicates
 .TP
@@ -138,13 +134,13 @@ follow symlinked directories
 .B [WARNING: EXTREME RISK OF DATA LOSS, SEE CAVEATS]
 match based on hash of first block of file data, ignoring the rest
 .TP
-.B -u --printunique
+.B -u --print-unique
 print only a list of unique (non-duplicate, unmatched) files
 .TP
 .B -v --version
 display jdupes version and compilation feature flags
 .TP
-.B -X --extfilter=spec:info
+.B -X --ext-filter=spec:info
 exclude/filter files based on specified criteria; general format:
 
 .B jdupes -X filter[:value][size_suffix]
@@ -189,11 +185,11 @@ Date/time format: "YYYY-MM-DD HH:MM:SS" (time is optional).
 .RE
 
 .TP
-.B -z --zeromatch
+.B -z --zero-match
 consider zero-length files to be duplicates; this replaces the old
 default behavior when \fB\-n\fP was not specified
 .TP
-.B -Z --softabort
+.B -Z --soft-abort
 if the user aborts the program (as with CTRL-C) act on the matches that
 were found before the abort was received. For example, if -L and -Z are
 specified, all matches found prior to the abort will be hard linked. The
@@ -250,7 +246,7 @@ care should be taken to insure against accidental data loss.
 
 .B \-Z
 or
-.BR \-\-softabort
+.BR \-\-soft\-abort
 used to be --hardabort in jdupes prior to v1.5 and had the opposite behavior.
 Defaulting to taking action on abort is probably not what most users would
 expect. The decision to invert rather than reassign to a different option
@@ -259,7 +255,7 @@ was made because this feature was still fairly new at the time of the change.
 The
 .B \-O
 or
-.BR \-\-paramorder
+.BR \-\-param\-order
 option allows the user greater control over what appears in the first
 position of a match set, specifically for keeping the \fB\-N\fP option
 from deleting all but one file in a set in a seemingly random way. All
@@ -314,7 +310,7 @@ to take effect and will error out if it is only specified once.
 Using the
 .B \-C
 or
-.BR \-\-chunksize
+.BR \-\-chunk\-size
 option to override I/O chunk size can increase performance on rotating
 storage media by reducing "head thrashing," reading larger amounts of
 data sequentially from each file. This tunable size can have bad side
@@ -333,10 +329,10 @@ http://github.com/jbruchon/jdupes/issues
 
 .SH SUPPORTING DEVELOPMENT
 
-If you find this program useful, please consider financially supporting
-its continued development by visiting the following URL:
+If you find this software useful, please consider financially supporting
+its development through the author's home page:
 
-https://www.subscribestar.com/JodyBruchon
+https://www.jodybruchon.com/
 
 .SH AUTHOR
 jdupes is created and maintained by Jody Bruchon <jody@jodybruchon.com>
@@ -344,10 +340,9 @@ and was forked from fdupes 1.51 by Adrian Lopez <adrian2@caribe.net>
 
 .SH LICENSE
 
-
 The MIT License (MIT)
 
-Copyright (C) 2015-2020 Jody Lee Bruchon and contributors
+Copyright (C) 2015-2021 Jody Lee Bruchon and contributors
 Forked from fdupes 1.51, Copyright (C) 1999-2014 Adrian Lopez and contributors
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of

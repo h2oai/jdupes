@@ -9,9 +9,20 @@ programs. For example, the `-I` switch in jdupes means "isolate" and blocks
 intra-argument matching, while in fdupes it means "immediately delete files
 during scanning without prompting the user."
 
-Please consider financially supporting continued development of jdupes:
+Please consider financially supporting continued development of jdupes using
+the links on my home page (Ko-fi, PayPal, SubscribeStar, Flattr, etc.):
 
-https://www.subscribestar.com/JodyBruchon
+https://www.jodybruchon.com/
+
+
+v1.20.0 specific: most long options have changed and -n has been removed
+-------------------------------------------------------------------------------
+Long options now have consistent hyphenation to separate the words used in the
+option names. Run `jdupes -h` to see the correct usage. Legacy options will
+remain in place until the next major or minor release (v2.0 or v1.21.0) for
+compatibility purposes. Users should change any scripts using the old options
+to use the new ones...or better yet, stop using long options in your scripts
+in the first place, because it's unnecessarily verbose and wasteful to do so.
 
 
 v1.19.0 specific: extfilter behavior has changed, check your scripts!
@@ -137,11 +148,11 @@ option is specified (delete, summarize, link, dedupe, etc.)
 
 ```
  -@ --loud              output annoying low-level debug info while running
- -0 --printnull         output nulls instead of CR/LF (like 'find -print0')
+ -0 --print-null        output nulls instead of CR/LF (like 'find -print0')
  -1 --one-file-system   do not match files on different filesystems/devices
- -A --nohidden          exclude hidden files from consideration
+ -A --no-hidden         exclude hidden files from consideration
  -B --dedupe            do a copy-on-write (reflink/clone) deduplication
- -C --chunksize=#       override I/O chunk size (min 4096, max 16777216)
+ -C --chunk-size=#      override I/O chunk size (min 4096, max 16777216)
  -d --delete            prompt user for files to preserve and delete all
                         others; important: under particular circumstances,
                         data may be lost when using this option together
@@ -149,24 +160,24 @@ option is specified (delete, summarize, link, dedupe, etc.)
                         particular directory more than once; refer to the
                         documentation for additional information
  -D --debug             output debug statistics after completion
- -f --omitfirst         omit the first file in each set of matches
+ -f --omit-first        omit the first file in each set of matches
  -h --help              display this help message
- -H --hardlinks         treat any linked files as duplicate files. Normally
+ -H --hard-links        treat any linked files as duplicate files. Normally
                         linked files are treated as non-duplicates for safety
  -i --reverse           reverse (invert) the match sort order
  -I --isolate           files in the same specified directory won't match
  -j --json              produce JSON (machine-readable) output
- -l --linksoft          make relative symlinks for duplicates w/o prompting
- -L --linkhard          hard link all duplicate files without prompting
+ -l --link-soft         make relative symlinks for duplicates w/o prompting
+ -L --link-hard         hard link all duplicate files without prompting
                         Windows allows a maximum of 1023 hard links per file
  -m --summarize         summarize dupe information
- -M --printwithsummary  will print matches and --summarize at the end
- -N --noprompt          together with --delete, preserve the first file in
+ -M --print-summarize   will print matches and --summarize at the end
+ -N --no-prompt         together with --delete, preserve the first file in
                         each set of duplicates and delete the rest without
                         prompting the user
  -o --order=BY          select sort order for output, linking and deleting:
                         by mtime (BY=time) or filename (BY=name, the default)
- -O --paramorder        sort output files in order of command line parameter
+ -O --param-order       sort output files in order of command line parameter
 sequence
                         Parameter order is more important than selected -o sort
                         which applies should several files share the same
@@ -183,18 +194,18 @@ parameter order
                         the end of the option, manpage for more details)
  -s --symlinks          follow symlinks
  -S --size              show size of duplicate files
- -t --nochangecheck     disable security check for file changes (aka TOCTTOU)
+ -t --no-change-check   disable security check for file changes (aka TOCTTOU)
  -T --partial-only      match based on partial hashes only. WARNING:
                         EXTREMELY DANGEROUS paired with destructive actions!
                         -T must be specified twice to work. Read the manual!
- -u --printunique       print only a list of unique (non-matched) files
- -U --notravcheck       disable double-traversal safety check (BE VERY CAREFUL)
+ -u --print-unique      print only a list of unique (non-matched) files
+ -U --no-trav-check     disable double-traversal safety check (BE VERY CAREFUL)
                         This fixes a Google Drive File Stream recursion issue
  -v --version           display jdupes version and license information
- -X --extfilter=x:y     filter files based on specified criteria
+ -X --ext-filter=x:y    filter files based on specified criteria
                         Use '-X help' for detailed extfilter help
- -z --zeromatch         consider zero-length files to be duplicates
- -Z --softabort         If the user aborts (i.e. CTRL-C) act on matches so far
+ -z --zero-match        consider zero-length files to be duplicates
+ -Z --soft-abort        If the user aborts (i.e. CTRL-C) act on matches so far
                         You can send SIGUSR1 to the program to toggle this
 
 
@@ -232,7 +243,7 @@ Extension matching is case-insensitive.
 Path substring matching is case-sensitive.
 ```
 
-The `-U`/`--notravcheck` option disables the double-traversal prevention tree.
+The `-U`/`--no-trav-check` option disables the double-traversal protection.
 In the VAST MAJORITY of circumstances, this SHOULD NOT BE DONE, as it protects
 against several dangerous user errors, including specifying the same files or
 directories twice causing them to match themselves and potentially be lost or
@@ -246,7 +257,7 @@ reduce safety, but will allow duplicate scanning inside Google Drive File
 Stream drives. This also results in a very minor speed boost during recursion,
 but the boost is unlikely to be noticeable.
 
-The `-t`/`--nochangecheck` option disables file change checks during/after
+The `-t`/`--no-change-check` option disables file change checks during/after
 scanning. This opens a security vulnerability that is called a TOCTTOU (time of
 check to time of use) vulnerability. The program normally runs checks
 immediately before scanning or taking action upon a file to see if the file has
@@ -263,8 +274,8 @@ filesystems (particularly network filesystems) changing the reported file
 information inappropriately, rendering the entire program unusable on such
 filesystems.
 
-The `-n`/`--noempty` option was removed for safety. Matching zero-length files
-as duplicates now requires explicit use of the `-z`/`--zeromatch` option
+The `-n`/`--no-empty` option was removed for safety. Matching zero-length files
+as duplicates now requires explicit use of the `-z`/`--zero-match` option
 instead.
 
 Duplicate files are listed together in groups with each file displayed on a
@@ -272,7 +283,7 @@ separate line. The groups are then separated from each other by blank lines.
 
 The `-s`/`--symlinks` option will treat symlinked files as regular files, but
 direct symlinks will be treated as if they are hard linked files and the
--H/--hardlinks option will apply to them in the same manner.
+-H/--hard-links option will apply to them in the same manner.
 
 When using `-d` or `--delete`, care should be taken to insure against
 accidental data loss. While no information will be immediately lost, using this
@@ -288,7 +299,7 @@ Using `-1` or `--one-file-system` prevents matches that cross filesystems, but
 a more relaxed form of this option may be added that allows cross-matching for
 all filesystems that each parameter is present on.
 
-`-Z` or `--softabort` used to be `--hardabort` in jdupes prior to v1.5 and had
+`-Z` or `--soft-abort` used to be `--hard-abort` in jdupes prior to v1.5 and had
 the opposite behavior. Defaulting to taking action on abort is probably not
 what most users would expect. The decision to invert rather than reassign to a
 different option was made because this feature was still fairly new at the time
@@ -305,7 +316,7 @@ but it's there if you want it for some reason. Sending the signal twice while
 the program is stopped will behave as if it was only sent once, as per normal
 POSIX signal behavior.
 
-The `-O` or `--paramorder` option allows the user greater control over what
+The `-O` or `--param-order` option allows the user greater control over what
 appears in the first position of a match set, specifically for keeping the `-N`
 option from deleting all but one file in a set in a seemingly random way. All
 directories specified on the command line will be used as the sorting order of
@@ -317,7 +328,7 @@ option is specified.
 When used together with options `-s` or `--symlink`, a user could accidentally
 preserve a symlink while deleting the file it points to.
 
-The `-Q` or `--quick option` only reads each file once, hashes it, and performs
+The `-Q` or `--quick` option only reads each file once, hashes it, and performs
 comparisons based solely on the hashes. There is a small but significant risk
 of a hash collision which is the purpose of the failsafe byte-for-byte
 comparison that this option explicitly bypasses. Do not use it on ANY data set
@@ -345,7 +356,7 @@ same specified directory parameter on the command line. Due to the underlying
 nature of the jdupes algorithm, a lot of matches will be blocked by this option
 that probably should not be. This code could use improvement.
 
-The `-C`/`--chunksize` option overrides the size of the I/O "chunk" used for
+The `-C`/`--chunk-size` option overrides the size of the I/O "chunk" used for
 all file operations. Larger numbers will increase the amount of data read at
 once from each file and may improve performance when scanning lots of files
 that are larger than the default chunk size by reducing "thrashing" of the hard
@@ -399,7 +410,7 @@ actually 1024, but they're ignoring the first file.)
 The current jdupes algorithm's "triangle problem"
 -------------------------------------------------------------------------------
 Pairs of files are excluded individually based on how the two files compare.
-For example, if `--hardlinks` is not specified then two files which are hard
+For example, if `--hard-links` is not specified then two files which are hard
 linked will not match one another for duplicate scanning purposes. The problem
 with only examining files in pairs is that certain circumstances will lead to
 the exclusion being overridden.
@@ -522,9 +533,9 @@ Please DO NOT contact Adrian Lopez about issues with jdupes.
 
 Legal information and software license
 -------------------------------------------------------------------------------
-jdupes is Copyright (C) 2015-2020 by Jody Bruchon <jody@jodybruchon.com>
+jdupes is Copyright (C) 2015-2021 by Jody Bruchon <jody@jodybruchon.com>
 Derived from the original 'fdupes' 1.51 (C) 1999-2014 by Adrian Lopez
-Includes other code libraries which are (C) 2015-2020 by Jody Bruchon
+Includes other code libraries which are (C) 2015-2021 by Jody Bruchon
 
 The MIT License
 
