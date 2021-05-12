@@ -1640,13 +1640,13 @@ static inline void help_text(void)
 #ifdef LOUD
   printf(" -@ --loud        \toutput annoying low-level debug info while running\n");
 #endif
-  printf(" -0 --printnull   \toutput nulls instead of CR/LF (like 'find -print0')\n");
-  printf(" -1 --one-file-system \tdo not match files on different filesystems/devices\n");
-  printf(" -A --nohidden    \texclude hidden files from consideration\n");
+  printf(" -0 --print-null  \toutput nulls instead of CR/LF (like 'find -print0')\n");
+  printf(" -1 --one-file-system\tdo not match files on different filesystems/devices\n");
+  printf(" -A --no-hidden    \texclude hidden files from consideration\n");
 #ifdef ENABLE_DEDUPE
   printf(" -B --dedupe      \tdo a copy-on-write (reflink/clone) deduplication\n");
 #endif
-  printf(" -C --chunksize=# \toverride I/O chunk size (min %d, max %d)\n", MIN_CHUNK_SIZE, MAX_CHUNK_SIZE);
+  printf(" -C --chunk-size=#\toverride I/O chunk size (min %d, max %d)\n", MIN_CHUNK_SIZE, MAX_CHUNK_SIZE);
   printf(" -d --delete      \tprompt user for files to preserve and delete all\n");
   printf("                  \tothers; important: under particular circumstances,\n");
   printf("                  \tdata may be lost when using this option together\n");
@@ -1656,10 +1656,10 @@ static inline void help_text(void)
 #ifdef DEBUG
   printf(" -D --debug       \toutput debug statistics after completion\n");
 #endif
-  printf(" -f --omitfirst   \tomit the first file in each set of matches\n");
+  printf(" -f --omit-first  \tomit the first file in each set of matches\n");
   printf(" -h --help        \tdisplay this help message\n");
 #ifndef NO_HARDLINKS
-  printf(" -H --hardlinks   \ttreat any linked files as duplicate files. Normally\n");
+  printf(" -H --hard-links  \ttreat any linked files as duplicate files. Normally\n");
   printf("                  \tlinked files are treated as non-duplicates for safety\n");
 #endif
   printf(" -i --reverse     \treverse (invert) the match sort order\n");
@@ -1667,13 +1667,13 @@ static inline void help_text(void)
   printf(" -I --isolate     \tfiles in the same specified directory won't match\n");
 #endif
   printf(" -j --json        \tproduce JSON (machine-readable) output\n");
-/*  printf(" -K --skiphash    \tskip full file hashing (may be faster; 100%% safe)\n");
+/*  printf(" -K --skip-hash   \tskip full file hashing (may be faster; 100%% safe)\n");
     printf("                  \tWARNING: in development, not fully working yet!\n"); */
 #ifndef NO_SYMLINKS
-  printf(" -l --linksoft    \tmake relative symlinks for duplicates w/o prompting\n");
+  printf(" -l --link-soft    \tmake relative symlinks for duplicates w/o prompting\n");
 #endif
 #ifndef NO_HARDLINKS
-  printf(" -L --linkhard    \thard link all duplicate files without prompting\n");
+  printf(" -L --link-hard    \thard link all duplicate files without prompting\n");
  #ifdef ON_WINDOWS
   printf("                  \tWindows allows a maximum of 1023 hard links per file;\n");
   printf("                  \tlinking large match sets will result in multiple sets\n");
@@ -1681,14 +1681,14 @@ static inline void help_text(void)
  #endif /* ON_WINDOWS */
 #endif /* NO_HARDLINKS */
   printf(" -m --summarize   \tsummarize dupe information\n");
-  printf(" -M --printwithsummary\twill print matches and --summarize at the end\n");
-  printf(" -N --noprompt    \ttogether with --delete, preserve the first file in\n");
+  printf(" -M --print-summarize\tprint match sets and --summarize at the end\n");
+  printf(" -N --no-prompt   \ttogether with --delete, preserve the first file in\n");
   printf("                  \teach set of duplicates and delete the rest without\n");
   printf("                  \tprompting the user\n");
   printf(" -o --order=BY    \tselect sort order for output, linking and deleting; by\n");
   printf("                  \tmtime (BY=time) or filename (BY=name, the default)\n");
 #ifndef NO_USER_ORDER
-  printf(" -O --paramorder  \tParameter order is more important than selected -o sort\n");
+  printf(" -O --param-order  \tParameter order is more important than selected -o sort\n");
 #endif
 #ifndef NO_PERMS
   printf(" -p --permissions \tdon't consider files with different owner/group or\n");
@@ -1706,18 +1706,18 @@ static inline void help_text(void)
   printf(" -s --symlinks    \tfollow symlinks\n");
 #endif
   printf(" -S --size        \tshow size of duplicate files\n");
-  printf(" -t --nochangecheck\tdisable security check for file changes (aka TOCTTOU)\n");
+  printf(" -t --no-change-check\tdisable security check for file changes (aka TOCTTOU)\n");
   printf(" -T --partial-only \tmatch based on partial hashes only. WARNING:\n");
   printf("                  \tEXTREMELY DANGEROUS paired with destructive actions!\n");
   printf("                  \t-T must be specified twice to work. Read the manual!\n");
-  printf(" -u --printunique \tprint only a list of unique (non-matched) files\n");
-  printf(" -U --notravcheck \tdisable double-traversal safety check (BE VERY CAREFUL)\n");
+  printf(" -u --print-unique\tprint only a list of unique (non-matched) files\n");
+  printf(" -U --no-trav-check\tdisable double-traversal safety check (BE VERY CAREFUL)\n");
   printf("                  \tThis fixes a Google Drive File Stream recursion issue\n");
   printf(" -v --version     \tdisplay jdupes version and license information\n");
-  printf(" -X --extfilter=x:y\tfilter files based on specified criteria\n");
+  printf(" -X --ext-filter=x:y\tfilter files based on specified criteria\n");
   printf("                  \tUse '-X help' for detailed extfilter help\n");
-  printf(" -z --zeromatch   \tconsider zero-length files to be duplicates\n");
-  printf(" -Z --softabort   \tIf the user aborts (i.e. CTRL-C) act on matches so far\n");
+  printf(" -z --zero-match  \tconsider zero-length files to be duplicates\n");
+  printf(" -Z --soft-abort  \tIf the user aborts (i.e. CTRL-C) act on matches so far\n");
 #ifndef ON_WINDOWS
   printf("                  \tYou can send SIGUSR1 to the program to toggle this\n");
 #endif
@@ -1791,27 +1791,36 @@ int main(int argc, char **argv)
   static const struct option long_options[] =
   {
     { "loud", 0, 0, '@' },
-    { "printnull", 0, 0, '0' },
+    { "printnull", 0, 0, '0' }, //LEGACY
+    { "print-null", 0, 0, '0' },
     { "one-file-system", 0, 0, '1' },
-    { "nohidden", 0, 0, 'A' },
+    { "nohidden", 0, 0, 'A' }, //LEGACY
+    { "no-hidden", 0, 0, 'A' },
     { "dedupe", 0, 0, 'B' },
-    { "chunksize", 1, 0, 'C' },
+    { "chunksize", 1, 0, 'C' }, //LEGACY
+    { "chunk-size", 1, 0, 'C' },
     { "debug", 0, 0, 'D' },
     { "delete", 0, 0, 'd' },
-    { "omitfirst", 0, 0, 'f' },
-    { "hardlinks", 0, 0, 'H' },
+    { "omitfirst", 0, 0, 'f' }, //LEGACY
+    { "omit-first", 0, 0, 'f' },
+    { "hardlinks", 0, 0, 'H' }, //LEGACY
+    { "hard-links", 0, 0, 'H' },
     { "help", 0, 0, 'h' },
     { "isolate", 0, 0, 'I' },
     { "reverse", 0, 0, 'i' },
     { "json", 0, 0, 'j' },
-    { "skiphash", 0, 0, 'K' },
-    { "linkhard", 0, 0, 'L' },
-    { "linksoft", 0, 0, 'l' },
-    { "printwithsummary", 0, 0, 'M'},
+/*    { "skip-hash", 0, 0, 'K' }, */
+    { "linkhard", 0, 0, 'L' }, //LEGACY
+    { "link-hard", 0, 0, 'L' },
+    { "linksoft", 0, 0, 'l' }, //LEGACY
+    { "link-soft", 0, 0, 'l' },
+    { "printwithsummary", 0, 0, 'M'}, //LEGACY
+    { "print-summarize", 0, 0, 'M'},
     { "summarize", 0, 0, 'm'},
-    { "noprompt", 0, 0, 'N' },
-    { "noempty", 0, 0, 'n' },
-    { "paramorder", 0, 0, 'O' },
+    { "noprompt", 0, 0, 'N' }, //LEGACY
+    { "no-prompt", 0, 0, 'N' },
+    { "paramorder", 0, 0, 'O' }, //LEGACY
+    { "param-order", 0, 0, 'O' },
     { "order", 1, 0, 'o' },
     { "print", 1, 0, 'P' },
     { "permissions", 0, 0, 'p' },
@@ -1822,13 +1831,19 @@ int main(int argc, char **argv)
     { "size", 0, 0, 'S' },
     { "symlinks", 0, 0, 's' },
     { "partial-only", 0, 0, 'T' },
-    { "nochangecheck", 0, 0, 't' },
-    { "notravcheck", 0, 0, 'U' },
-    { "printunique", 0, 0, 'u' },
+    { "nochangecheck", 0, 0, 't' }, //LEGACY
+    { "no-change-check", 0, 0, 't' },
+    { "notravcheck", 0, 0, 'U' }, //LEGACY
+    { "no-trav-check", 0, 0, 'U' },
+    { "printunique", 0, 0, 'u' }, //LEGACY
+    { "print-unique", 0, 0, 'u' },
     { "version", 0, 0, 'v' },
-    { "extfilter", 1, 0, 'X' },
-    { "softabort", 0, 0, 'Z' },
-    { "zeromatch", 0, 0, 'z' },
+    { "extfilter", 1, 0, 'X' }, //LEGACY
+    { "ext-filter", 1, 0, 'X' },
+    { "softabort", 0, 0, 'Z' }, //LEGACY
+    { "soft-abort", 0, 0, 'Z' },
+    { "zeromatch", 0, 0, 'z' }, //LEGACY
+    { "zero-match", 0, 0, 'z' },
     { NULL, 0, 0, 0 }
   };
 #define GETOPT getopt_long
@@ -1971,9 +1986,6 @@ int main(int argc, char **argv)
       SETFLAG(a_flags, FA_SUMMARIZEMATCHES);
       SETFLAG(a_flags, FA_PRINTMATCHES);
       LOUD(fprintf(stderr, "opt: print matches with a summary (--printwithsummary)\n");)
-      break;
-    case 'n':
-      //fprintf(stderr, "note: -n/--noempty is the default behavior now and is deprecated.\n");
       break;
     case 'N':
       SETFLAG(flags, F_NOPROMPT);
