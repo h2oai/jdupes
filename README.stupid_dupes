@@ -1,5 +1,5 @@
 Introduction
---------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 stupid_dupes is a shell script that copies the most basic capabilities of
 jdupes. It is inefficient. It barely has enough features to be worthy of
 using the word "features" at all. Despite all of that, it's pretty safe
@@ -28,14 +28,14 @@ https://www.subscribestar.com/JodyBruchon
 
 
 Contact information
---------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 For stupid_dupes inquiries, contact Jody Bruchon <jody@jodybruchon.com>
 and be sure to say something really stupid when you do.
 
 
 Legal information and software license
---------------------------------------------------------------------------
-stupid_dupes is Copyright (C) 2020 by Jody Bruchon <jody@jodybruchon.com>
+-------------------------------------------------------------------------------
+Copyright (C) 2020-2021 by Jody Bruchon <jody@jodybruchon.com> and contributors
 and for some reason Jody is willing to admit to writing it.
 
 The MIT License

@@ -1,4 +1,4 @@
-/* jdupes (C) 2015-2020 Jody Bruchon <jody@jodybruchon.com>
+/* jdupes (C) 2015-2021 Jody Bruchon <jody@jodybruchon.com>
    Forked from fdupes 1.51 (C) 1999-2014 Adrian Lopez
 
    Permission is hereby granted, free of charge, to any person
@@ -2095,7 +2095,7 @@ int main(int argc, char **argv)
           c++;
         }
       } else printf(" none");
-      printf("\nCopyright (C) 2015-2020 by Jody Bruchon and contributors\n");
+      printf("\nCopyright (C) 2015-2021 by Jody Bruchon and contributors\n");
       printf("Forked from fdupes 1.51, (C) 1999-2014 Adrian Lopez and contributors\n\n");
       printf("Permission is hereby granted, free of charge, to any person obtaining a copy of\n");
       printf("this software and associated documentation files (the \"Software\"), to deal in\n");
@@ -2114,10 +2114,8 @@ int main(int argc, char **argv)
       printf("OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\n");
       printf("SOFTWARE.\n");
       printf("\nIf you find this software useful, please consider financially supporting\n");
-      printf("its continued development by donating to the author's SubscribeStar:\n");
-      printf("          https://SubscribeStar.com/JodyBruchon\n");
-      printf("\nNew releases, bug fixes, and more at the jdupes GitHub project page:\n");
-      printf("             https://github.com/jbruchon/jdupes\n");
+      printf("its development through the author's home page: https://www.jodybruchon.com/\n");
+      printf("\nReport bugs and get the latest releases: https://github.com/jbruchon/jdupes\n");
       exit(EXIT_SUCCESS);
     case 'o':
       if (!strncasecmp("name", optarg, 5)) {
