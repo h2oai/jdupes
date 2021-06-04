@@ -481,7 +481,7 @@ skip_empty:
  * Returns 1 if changed, 0 if not changed, negative if error */
 extern int file_has_changed(file_t * const restrict file)
 {
-  /* If -t/--nochangecheck specified then completely bypass this code */
+  /* If -t/--no-change-check specified then completely bypass this code */
   if (ISFLAG(flags, F_NOCHANGECHECK)) return 0;
 
   if (file == NULL || file->d_name == NULL) nullptr("file_has_changed()");
@@ -1907,11 +1907,11 @@ int main(int argc, char **argv)
     switch (opt) {
     case '0':
       SETFLAG(a_flags, FA_PRINTNULL);
-      LOUD(fprintf(stderr, "opt: print null instead of newline (--printnull)\n");)
+      LOUD(fprintf(stderr, "opt: print null instead of newline (--print-null)\n");)
       break;
     case '1':
       SETFLAG(flags, F_ONEFS);
-      LOUD(fprintf(stderr, "opt: recursion across filesystems disabled (--onefs)\n");)
+      LOUD(fprintf(stderr, "opt: recursion across filesystems disabled (--one-file-system)\n");)
       break;
     case 'A':
       SETFLAG(flags, F_EXCLUDEHIDDEN);
@@ -1927,7 +1927,7 @@ int main(int argc, char **argv)
       break;
     case 'd':
       SETFLAG(a_flags, FA_DELETEFILES);
-      LOUD(fprintf(stderr, "opt: delete files after matching (--deletefiles)\n");)
+      LOUD(fprintf(stderr, "opt: delete files after matching (--delete)\n");)
       break;
     case 'D':
 #ifdef DEBUG
@@ -1936,7 +1936,7 @@ int main(int argc, char **argv)
       break;
     case 'f':
       SETFLAG(a_flags, FA_OMITFIRST);
-      LOUD(fprintf(stderr, "opt: omit first match from each match set (--omitfirst)\n");)
+      LOUD(fprintf(stderr, "opt: omit first match from each match set (--omit-first)\n");)
       break;
     case 'h':
       help_text();
@@ -1945,11 +1945,11 @@ int main(int argc, char **argv)
 #ifndef NO_HARDLINKS
     case 'H':
       SETFLAG(flags, F_CONSIDERHARDLINKS);
-      LOUD(fprintf(stderr, "opt: hard links count as matches (--hardlinks)\n");)
+      LOUD(fprintf(stderr, "opt: hard links count as matches (--hard-links)\n");)
       break;
     case 'L':
       SETFLAG(a_flags, FA_HARDLINKFILES);
-      LOUD(fprintf(stderr, "opt: convert duplicates to hard links (--linkhard)\n");)
+      LOUD(fprintf(stderr, "opt: convert duplicates to hard links (--link-hard)\n");)
       break;
 #endif
     case 'i':
@@ -1963,7 +1963,7 @@ int main(int argc, char **argv)
       break;
     case 'O':
       SETFLAG(flags, F_USEPARAMORDER);
-      LOUD(fprintf(stderr, "opt: parameter order takes precedence (--paramorder)\n");)
+      LOUD(fprintf(stderr, "opt: parameter order takes precedence (--param-order)\n");)
       break;
 #else
     case 'I':
@@ -1973,7 +1973,7 @@ int main(int argc, char **argv)
 #endif
     case 'j':
       SETFLAG(a_flags, FA_PRINTJSON);
-      LOUD(fprintf(stderr, "opt: print output in JSON format (--printjson)\n");)
+      LOUD(fprintf(stderr, "opt: print output in JSON format (--print-json)\n");)
       break;
     case 'K':
       SETFLAG(flags, F_SKIPHASH);
@@ -1985,7 +1985,7 @@ int main(int argc, char **argv)
     case 'M':
       SETFLAG(a_flags, FA_SUMMARIZEMATCHES);
       SETFLAG(a_flags, FA_PRINTMATCHES);
-      LOUD(fprintf(stderr, "opt: print matches with a summary (--printwithsummary)\n");)
+      LOUD(fprintf(stderr, "opt: print matches with a summary (--print-summarize)\n");)
       break;
     case 'N':
       SETFLAG(flags, F_NOPROMPT);
@@ -2019,33 +2019,33 @@ int main(int argc, char **argv)
       break;
     case 'R':
       SETFLAG(flags, F_RECURSEAFTER);
-      LOUD(fprintf(stderr, "opt: partial recursion enabled (--recurseafter)\n");)
+      LOUD(fprintf(stderr, "opt: partial recursion enabled (--recurse-after)\n");)
       break;
     case 't':
       SETFLAG(flags, F_NOCHANGECHECK);
-      LOUD(fprintf(stderr, "opt: TOCTTOU safety check disabled (--nochangecheck)\n");)
+      LOUD(fprintf(stderr, "opt: TOCTTOU safety check disabled (--no-change-check)\n");)
       break;
     case 'T':
       if (partialonly_spec == 0)
         partialonly_spec = 1;
       else {
         partialonly_spec = 2;
-        fprintf(stderr, "\nBIG FAT WARNING: -T/--partialonly is EXTREMELY DANGEROUS! Read the manual!\n\n");
+        fprintf(stderr, "\nBIG FAT WARNING: -T/--partial-only is EXTREMELY DANGEROUS! Read the manual!\n\n");
         SETFLAG(flags, F_PARTIALONLY);
       }
       break;
     case 'u':
       SETFLAG(a_flags, FA_PRINTUNIQUE);
-      LOUD(fprintf(stderr, "opt: print only non-matched (unique) files (--printunique)\n");)
+      LOUD(fprintf(stderr, "opt: print only non-matched (unique) files (--print-unique)\n");)
       break;
     case 'U':
       SETFLAG(flags, F_NOTRAVCHECK);
-      LOUD(fprintf(stderr, "opt: double-traversal safety check disabled (--notravcheck)\n");)
+      LOUD(fprintf(stderr, "opt: double-traversal safety check disabled (--no-trav-check)\n");)
       break;
 #ifndef NO_SYMLINKS
     case 'l':
       SETFLAG(a_flags, FA_MAKESYMLINKS);
-      LOUD(fprintf(stderr, "opt: convert duplicates to symbolic links (--linksoft)\n");)
+      LOUD(fprintf(stderr, "opt: convert duplicates to symbolic links (--link-soft)\n");)
       break;
     case 's':
       SETFLAG(flags, F_FOLLOWLINKS);
@@ -2061,11 +2061,11 @@ int main(int argc, char **argv)
       break;
     case 'z':
       SETFLAG(flags, F_INCLUDEEMPTY);
-      LOUD(fprintf(stderr, "opt: zero-length files count as matches (--zeromatch)\n");)
+      LOUD(fprintf(stderr, "opt: zero-length files count as matches (--zero-match)\n");)
       break;
     case 'Z':
       SETFLAG(flags, F_SOFTABORT);
-      LOUD(fprintf(stderr, "opt: soft-abort mode enabled (--softabort)\n");)
+      LOUD(fprintf(stderr, "opt: soft-abort mode enabled (--soft-abort)\n");)
       break;
     case '@':
 #ifdef LOUD_DEBUG
@@ -2204,7 +2204,7 @@ int main(int argc, char **argv)
       !!ISFLAG(a_flags, FA_DEDUPEFILES);
 
   if (pm > 1) {
-      fprintf(stderr, "Only one of --summarize, --printwithsummary, --delete, --linkhard,\n--linksoft, --json, or --dedupe may be used\n");
+      fprintf(stderr, "Only one of --summarize, --print-summarize, --delete, --link-hard,\n--link-soft, --json, or --dedupe may be used\n");
       string_malloc_destroy();
       exit(EXIT_FAILURE);
   }
