@@ -66,12 +66,12 @@ extern void deletefiles(file_t *files, int prompt, FILE *tty)
 
       if (prompt) printf("\n");
 
-      /* preserve only the first file */
+      /* Preserve only the first file */
       if (!prompt) {
         preserve[1] = 1;
         for (x = 2; x <= counter; x++) preserve[x] = 0;
       } else do {
-        /* prompt for files to preserve */
+        /* Prompt for files to preserve */
         printf("Set %u of %u: keep which files? (1 - %u, [a]ll, [n]one)",
           curgroup, groups, counter);
         if (ISFLAG(a_flags, FA_SHOWSIZE)) printf(" (%" PRIuMAX " byte%c each)", (uintmax_t)files->size,
@@ -79,8 +79,11 @@ extern void deletefiles(file_t *files, int prompt, FILE *tty)
         printf(": ");
         fflush(stdout);
 
-        /* treat fgets() failure as if nothing was entered */
+        /* Treat fgets() failure as if nothing was entered */
         if (!fgets(preservestr, INPUT_SIZE, tty)) preservestr[0] = '\n';
+
+	/* If nothing is entered, treat it as if 'a' was entered */
+        if (preservestr[0] == '\n') strcpy(preservestr, "a\n");
 
         i = strlen(preservestr) - 1;
 
@@ -101,7 +104,7 @@ extern void deletefiles(file_t *files, int prompt, FILE *tty)
         for (x = 1; x <= counter; x++) preserve[x] = 0;
 
         token = strtok(preservestr, " ,\n");
-        if (token != NULL && (*token == 'n' || *token == 'N')) goto preserve_none;
+        if (token != NULL && (*token == 'n' || *token == 'N')) goto stop_scanning;
 
         while (token != NULL) {
           if (*token == 'a' || *token == 'A')
@@ -116,7 +119,7 @@ extern void deletefiles(file_t *files, int prompt, FILE *tty)
 
         for (sum = 0, x = 1; x <= counter; x++) sum += preserve[x];
       } while (sum < 1); /* save at least one file */
-preserve_none:
+stop_scanning:
 
       printf("\n");
 
