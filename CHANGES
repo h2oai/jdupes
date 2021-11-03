@@ -1,3 +1,11 @@
+jdupes 1.20.2
+
+- Interactive deletion now offers "link set" options too
+
+jdupes 1.20.1
+
+- Interactive deletion now assumes 'a' when you just hit [ENTER]
+
 jdupes 1.20.0
 
 - Normalize long option hyphenation (CHECK YOUR SHELL SCRIPTS)
