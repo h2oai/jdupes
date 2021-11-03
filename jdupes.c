@@ -2354,10 +2354,10 @@ skip_file_scan:
     else deletefiles(files, 1, stdin);
   }
 #ifndef NO_SYMLINKS
-  if (ISFLAG(a_flags, FA_MAKESYMLINKS)) linkfiles(files, 0);
+  if (ISFLAG(a_flags, FA_MAKESYMLINKS)) linkfiles(files, 0, 0);
 #endif
 #ifndef NO_HARDLINKS
-  if (ISFLAG(a_flags, FA_HARDLINKFILES)) linkfiles(files, 1);
+  if (ISFLAG(a_flags, FA_HARDLINKFILES)) linkfiles(files, 1, 0);
 #endif /* NO_HARDLINKS */
 #ifdef ENABLE_DEDUPE
   if (ISFLAG(a_flags, FA_DEDUPEFILES)) dedupefiles(files);

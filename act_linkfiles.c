@@ -38,7 +38,7 @@
 #endif /* ENABLE_DEDUPE */
 
 /* linktype: 0=symlink, 1=hardlink, 2=clonefile() */
-extern void linkfiles(file_t *files, const int linktype)
+extern void linkfiles(file_t *files, const int linktype, const int only_current)
 {
   static file_t *tmpfile;
   static file_t *srcfile;
@@ -68,7 +68,6 @@ extern void linkfiles(file_t *files, const int linktype)
 
       if (counter > max) max = counter;
     }
-
     curfile = curfile->next;
   }
 
@@ -349,6 +348,7 @@ extern void linkfiles(file_t *files, const int linktype)
       }
       if (!ISFLAG(flags, F_HIDEPROGRESS)) printf("\n");
     }
+    if (only_current == 1) break;
     files = files->next;
   }
 

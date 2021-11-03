@@ -10,6 +10,7 @@
 #include "jdupes.h"
 #include "jody_win_unicode.h"
 #include "act_deletefiles.h"
+#include "act_linkfiles.h"
 #include "oom.h"
 
 /* For interactive deletion input */
@@ -72,8 +73,15 @@ extern void deletefiles(file_t *files, int prompt, FILE *tty)
         for (x = 2; x <= counter; x++) preserve[x] = 0;
       } else do {
         /* Prompt for files to preserve */
-        printf("Set %u of %u: keep which files? (1 - %u, [a]ll, [n]one)",
+        printf("Set %u of %u: keep which files? (1 - %u, [a]ll, [n]one",
           curgroup, groups, counter);
+#ifndef NO_HARDLINKS
+       printf(", [l]ink all");
+#endif
+#ifndef NO_SYMLINKS
+       printf(", [s]ymlink all");
+#endif
+       printf(")");
         if (ISFLAG(a_flags, FA_SHOWSIZE)) printf(" (%" PRIuMAX " byte%c each)", (uintmax_t)files->size,
           (files->size != 1) ? 's' : ' ');
         printf(": ");
@@ -82,7 +90,7 @@ extern void deletefiles(file_t *files, int prompt, FILE *tty)
         /* Treat fgets() failure as if nothing was entered */
         if (!fgets(preservestr, INPUT_SIZE, tty)) preservestr[0] = '\n';
 
-	/* If nothing is entered, treat it as if 'a' was entered */
+        /* If nothing is entered, treat it as if 'a' was entered */
         if (preservestr[0] == '\n') strcpy(preservestr, "a\n");
 
         i = strlen(preservestr) - 1;
@@ -104,7 +112,22 @@ extern void deletefiles(file_t *files, int prompt, FILE *tty)
         for (x = 1; x <= counter; x++) preserve[x] = 0;
 
         token = strtok(preservestr, " ,\n");
-        if (token != NULL && (*token == 'n' || *token == 'N')) goto stop_scanning;
+        if (token != NULL) {
+          int linktype = -1;
+          /* "Delete none" = stop parsing string */
+          if (*token == 'n' || *token == 'N') goto stop_scanning;
+          /* If requested, link this set instead */
+#ifndef NO_HARDLINKS
+          if (*token == 'l' || *token == 'L') linktype = 1; /* hard link */
+#endif
+#ifndef NO_SYMLINKS
+          if (*token == 's' || *token == 'S') linktype = 0; /* symlink */
+#endif
+          if (linktype != -1) {
+            linkfiles(files, linktype, 1);
+            goto skip_deletion;
+          }
+        }
 
         while (token != NULL) {
           if (*token == 'a' || *token == 'A')
@@ -149,6 +172,7 @@ stop_scanning:
           }
         }
       }
+skip_deletion:
       printf("\n");
     }
   }

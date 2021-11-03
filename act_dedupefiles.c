@@ -138,7 +138,7 @@ extern void dedupefiles(file_t * restrict files)
 
 /* On macOS, clonefile() is basically a "hard link" function, so linkfiles will do the work. */
 #ifdef __APPLE__
-  linkfiles(files, 2);
+  linkfiles(files, 2, 0);
 #endif /* __APPLE__ */
   return;
 }
