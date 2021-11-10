@@ -387,6 +387,8 @@ link candidate. These arrows are as follows:
 
 `-@@->` File was symlinked to the first file in the chain
 
+`-##->` File was cloned from the first file in the chain
+
 `-==->` Already a hard link to the first file in the chain
 
 `-//->` File linking failed due to an error during the linking process
