@@ -46,6 +46,7 @@ struct winstat {
 #endif
 
 extern time_t nttime_to_unixtime(const uint64_t * const restrict timestamp);
+extern time_t unixtime_to_nttime(const uint64_t * const restrict timestamp);
 extern int win_stat(const char * const filename, struct winstat * const restrict buf);
 
 #ifdef __cplusplus

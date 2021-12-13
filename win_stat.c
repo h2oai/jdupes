@@ -25,6 +25,18 @@ time_t nttime_to_unixtime(const uint64_t * const restrict timestamp)
 	return (time_t)newstamp;
 }
 
+/* Convert UNIX epoch to NT epoch */
+time_t unixtime_to_nttime(const uint64_t * const restrict timestamp)
+{
+	uint64_t newstamp;
+
+	memcpy(&newstamp, timestamp, sizeof(uint64_t));
+	newstamp += 11644473600LL;
+	newstamp *= 10000000LL;
+	if (newstamp <= 11644473600LL) return 0;
+	return (time_t)newstamp;
+}
+
 /* Get stat()-like extra information for a file on Windows */
 int win_stat(const char * const filename, struct winstat * const restrict buf)
 {
