@@ -14,7 +14,7 @@
 #include <stdint.h>
 
 /* Convert NT epoch to UNIX epoch */
-static time_t nttime_to_unixtime(const uint64_t * const restrict timestamp)
+time_t nttime_to_unixtime(const uint64_t * const restrict timestamp)
 {
 	uint64_t newstamp;
 

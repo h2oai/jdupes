@@ -45,6 +45,7 @@ struct winstat {
  #define M2W(a,b) MultiByteToWideChar(CP_UTF8, 0, a, -1, (LPWSTR)b, WPATH_MAX)
 #endif
 
+extern time_t nttime_to_unixtime(const uint64_t * const restrict timestamp);
 extern int win_stat(const char * const filename, struct winstat * const restrict buf);
 
 #ifdef __cplusplus
