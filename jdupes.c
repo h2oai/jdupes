@@ -493,8 +493,10 @@ extern int file_has_changed(file_t * const restrict file)
   if (file->inode != s.st_ino) return 1;
   if (file->size != s.st_size) return 1;
   if (file->device != s.st_dev) return 1;
-  if (file->mtime != s.st_mtime) return 1;
   if (file->mode != s.st_mode) return 1;
+#ifndef NO_MTIME
+  if (file->mtime != s.st_mtime) return 1;
+#endif
 #ifndef NO_PERMS
   if (file->uid != s.st_uid) return 1;
   if (file->gid != s.st_gid) return 1;
@@ -508,7 +510,7 @@ extern int file_has_changed(file_t * const restrict file)
 }
 
 
-extern inline int getfilestats(file_t * const restrict file)
+int getfilestats(file_t * const restrict file)
 {
   if (file == NULL || file->d_name == NULL) nullptr("getfilestats()");
   LOUD(fprintf(stderr, "getfilestats('%s')\n", file->d_name);)
@@ -518,10 +520,15 @@ extern inline int getfilestats(file_t * const restrict file)
   SETFLAG(file->flags, FF_VALID_STAT);
 
   if (STAT(file->d_name, &s) != 0) return -1;
-  file->inode = s.st_ino;
   file->size = s.st_size;
+  file->inode = s.st_ino;
   file->device = s.st_dev;
+#ifndef NO_MTIME
   file->mtime = s.st_mtime;
+#endif
+#ifndef NO_ATIME
+  file->atime = s.st_atime;
+#endif
   file->mode = s.st_mode;
 #ifndef NO_HARDLINKS
   file->nlink = s.st_nlink;
@@ -771,17 +778,19 @@ static int check_singlefile(file_t * const restrict newfile)
       LOUD(fprintf(stderr, "check_singlefile: extfilter check: %08x %ld %ld %s\n", sflag, newfile->size, extf->size, newfile->d_name);)
       if (
            /* Any line that passes will result in file exclusion */
-           ((sflag == XF_SIZE_EQ) && (newfile->size != extf->size)) ||
-           ((sflag == XF_SIZE_LTEQ) && (newfile->size > extf->size)) ||
-           ((sflag == XF_SIZE_GTEQ) && (newfile->size < extf->size)) ||
-           ((sflag == XF_SIZE_GT) && (newfile->size <= extf->size)) ||
-           ((sflag == XF_SIZE_LT) && (newfile->size >= extf->size)) ||
-           ((sflag == XF_EXCL_EXT) && match_extensions(newfile->d_name, extf->param)) ||
-           ((sflag == XF_ONLY_EXT) && !match_extensions(newfile->d_name, extf->param)) ||
-           ((sflag == XF_EXCL_STR) && strstr(newfile->d_name, extf->param)) ||
-           ((sflag == XF_ONLY_STR) && !strstr(newfile->d_name, extf->param)) ||
-           ((sflag == XF_DATE_NEWER) && (newfile->mtime < extf->size)) ||
-           ((sflag == XF_DATE_OLDER) && (newfile->mtime >= extf->size))
+           ((sflag == XF_SIZE_EQ) && (newfile->size != extf->size))
+           || ((sflag == XF_SIZE_LTEQ) && (newfile->size > extf->size))
+           || ((sflag == XF_SIZE_GTEQ) && (newfile->size < extf->size))
+           || ((sflag == XF_SIZE_GT) && (newfile->size <= extf->size))
+           || ((sflag == XF_SIZE_LT) && (newfile->size >= extf->size))
+           || ((sflag == XF_EXCL_EXT) && match_extensions(newfile->d_name, extf->param))
+           || ((sflag == XF_ONLY_EXT) && !match_extensions(newfile->d_name, extf->param))
+           || ((sflag == XF_EXCL_STR) && strstr(newfile->d_name, extf->param))
+           || ((sflag == XF_ONLY_STR) && !strstr(newfile->d_name, extf->param))
+#ifndef NO_MTIME
+           || ((sflag == XF_DATE_NEWER) && (newfile->mtime < extf->size))
+           || ((sflag == XF_DATE_OLDER) && (newfile->mtime >= extf->size))
+#endif
       ) excluded = 1;
     }
     if (excluded) {
@@ -1556,6 +1565,7 @@ static int sort_pairs_by_param_order(file_t *f1, file_t *f2)
 #endif
 
 
+#ifndef NO_MTIME
 static int sort_pairs_by_mtime(file_t *f1, file_t *f2)
 {
   if (f1 == NULL || f2 == NULL) nullptr("sort_pairs_by_mtime()");
@@ -1571,6 +1581,7 @@ static int sort_pairs_by_mtime(file_t *f1, file_t *f2)
   /* If the mtimes match, use the names to break the tie */
   return numeric_sort(f1->d_name, f2->d_name, sort_direction);
 }
+#endif
 
 
 static int sort_pairs_by_filename(file_t *f1, file_t *f2)
@@ -1685,8 +1696,10 @@ static inline void help_text(void)
   printf(" -N --no-prompt   \ttogether with --delete, preserve the first file in\n");
   printf("                  \teach set of duplicates and delete the rest without\n");
   printf("                  \tprompting the user\n");
+#ifndef NO_MTIME
   printf(" -o --order=BY    \tselect sort order for output, linking and deleting; by\n");
   printf("                  \tmtime (BY=time) or filename (BY=name, the default)\n");
+#endif
 #ifndef NO_USER_ORDER
   printf(" -O --param-order  \tParameter order is more important than selected -o sort\n");
 #endif
@@ -1778,7 +1791,9 @@ int main(int argc, char **argv)
   static int opt;
   static int pm = 1;
   static int partialonly_spec = 0;
+#ifndef NO_MTIME  /* Remove if new order types are added! */
   static ordertype_t ordertype = ORDER_NAME;
+#endif
   static long manual_chunk_size = 0;
 #ifdef __linux__
   static struct proc_cacheinfo pci;
@@ -2118,6 +2133,7 @@ int main(int argc, char **argv)
       printf("\nReport bugs and get the latest releases: https://github.com/jbruchon/jdupes\n");
       exit(EXIT_SUCCESS);
     case 'o':
+#ifndef NO_MTIME  /* Remove if new order types are added! */
       if (!strncasecmp("name", optarg, 5)) {
         ordertype = ORDER_NAME;
       } else if (!strncasecmp("time", optarg, 5)) {
@@ -2126,6 +2142,7 @@ int main(int argc, char **argv)
         fprintf(stderr, "invalid value for --order: '%s'\n", optarg);
         exit(EXIT_FAILURE);
       }
+#endif /* NO_MTIME */
       break;
     case 'B':
 #ifdef ENABLE_DEDUPE
@@ -2295,8 +2312,11 @@ int main(int argc, char **argv)
            (curfile->device == (*match)->device))
          ) {
         LOUD(fprintf(stderr, "MAIN: notice: hard linked, quick, or partial-only match (-H/-Q/-T)\n"));
-        registerpair(match, curfile,
-            (ordertype == ORDER_TIME) ? sort_pairs_by_mtime : sort_pairs_by_filename);
+#ifndef NO_MTIME
+        registerpair(match, curfile, (ordertype == ORDER_TIME) ? sort_pairs_by_mtime : sort_pairs_by_filename);
+#else
+        registerpair(match, curfile, sort_pairs_by_filename);
+#endif
         dupecount++;
         goto skip_full_check;
       }
@@ -2328,8 +2348,11 @@ int main(int argc, char **argv)
 
       if (confirmmatch(file1, file2, curfile->size)) {
         LOUD(fprintf(stderr, "MAIN: registering matched file pair\n"));
-        registerpair(match, curfile,
-            (ordertype == ORDER_TIME) ? sort_pairs_by_mtime : sort_pairs_by_filename);
+#ifndef NO_MTIME
+        registerpair(match, curfile, (ordertype == ORDER_TIME) ? sort_pairs_by_mtime : sort_pairs_by_filename);
+#else
+        registerpair(match, curfile, sort_pairs_by_filename);
+#endif
         dupecount++;
       } DBG(else hash_fail++;)
 

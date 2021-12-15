@@ -182,14 +182,19 @@ typedef struct _file {
   struct _file *duplicates;
   struct _file *next;
   char *d_name;
-  dev_t device;
+  uint32_t flags;  /* Status flags */
   jdupes_mode_t mode;
   off_t size;
+  dev_t device;
   jdupes_ino_t inode;
   jdupes_hash_t filehash_partial;
   jdupes_hash_t filehash;
+#ifndef NO_MTIME
   time_t mtime;
-  uint32_t flags;  /* Status flags */
+#endif
+#ifndef NO_ATIME
+  time_t atime;
+#endif
 #ifndef NO_USER_ORDER
   unsigned int user_order; /* Order of the originating command-line parameter */
 #endif
@@ -274,7 +279,6 @@ extern const char *extensions[];
 
 extern void nullptr(const char * restrict func);
 extern int file_has_changed(file_t * const restrict file);
-extern int getfilestats(file_t * const restrict file);
 extern int getdirstats(const char * const restrict name,
         jdupes_ino_t * const restrict inode, dev_t * const restrict dev,
 	jdupes_mode_t * const restrict mode);
