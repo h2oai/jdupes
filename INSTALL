@@ -11,6 +11,15 @@ This installs all jdupes files under /usr/local by default. You may change this
 to a different location by editing the Makefile or specifying a PREFIX on the
 command line: make PREFIX=/usr install
 
+On Windows, you need to use MSYS2 with MinGW-w64 installed. Use this guide to
+install the build environment:
+
+https://stackoverflow.com/a/30071634/1906641
+
+Running "make" as usual under the MSYS2 mingw32/mingw64 terminal will build a
+Windows binary for the bitness of the terminal you're using. The Makefile will
+detect a Windows environment and automatically make the needed build changes.
+
 Various build options are available and can be turned on at compile time by
 setting CFLAGS_EXTRA or by passing it to 'make':
 
@@ -63,3 +72,14 @@ There are some package generators included as make targets:
 
 chrootpackage  Uses chroots under /chroot to build Linux packages
 package        Makes auto-detected macOS/Linux/Windows packages
+
+Windows builds do not support dedupe or symbolic links. Dedupe would only work
+in ReFS which was removed from all non-enterprise Windows 10 editions, so it
+will likely never be supported for Windows builds of jdupes. Symbolic linking
+is supported on Windows, but on all versions of Windows before Windows 10 1703
+(the "Creators Update"), creating symlinks required administrative escalation.
+Symlinks can be dangerous on Windows because most Windows software is symlink-
+unaware. Support can be added in the future, but it is not a priority. If you
+are interested in seeing symlink support added, leave a +1 comment here:
+
+https://github.com/jbruchon/jdupes/issues/194
