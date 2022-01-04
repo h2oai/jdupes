@@ -99,10 +99,6 @@ ifeq ($(OS), Windows_NT)
 		PROGRAM_SUFFIX=.exe
 	endif
 	COMPILER_OPTIONS += -D__USE_MINGW_ANSI_STDIO=1 -DON_WINDOWS=1
-	# On Windows, the stack size limit is too small for deep directory trees
-	ifndef LOW_MEMORY
-		COMPILER_OPTIONS += -Wl,--stack,16777216
-	endif
 	OBJS += win_stat.o
 	ifeq ($(UNAME_S), MINGW32_NT-5.1)
 		OBJS += winres_xp.o
@@ -111,6 +107,9 @@ ifeq ($(OS), Windows_NT)
 	endif
 	override undefine ENABLE_DEDUPE
 endif
+
+# Stack size limit can be too small for deep directory trees, so set to 16 MiB
+COMPILER_OPTIONS += -Wl,--stack,16777216
 
 # Don't do clonefile on Mac OS X < 10.13 (High Sierra)
 ifeq ($(UNAME_S), Darwin)
