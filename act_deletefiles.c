@@ -113,7 +113,11 @@ extern void deletefiles(file_t *files, int prompt, FILE *tty)
 
         token = strtok(preservestr, " ,\n");
         if (token != NULL) {
+#if defined NO_HARDLINKS && defined NO_SYMLINKS
+          /* no linktype needed */
+#else
           int linktype = -1;
+#endif /* defined NO_HARDLINKS && defined NO_SYMLINKS */
           /* "Delete none" = stop parsing string */
           if (*token == 'n' || *token == 'N') goto stop_scanning;
           /* If requested, link this set instead */
@@ -123,10 +127,14 @@ extern void deletefiles(file_t *files, int prompt, FILE *tty)
 #ifndef NO_SYMLINKS
           if (*token == 's' || *token == 'S') linktype = 0; /* symlink */
 #endif
+#if defined NO_HARDLINKS && defined NO_SYMLINKS
+	  /* no linking calls */
+#else
           if (linktype != -1) {
             linkfiles(files, linktype, 1);
             goto skip_deletion;
           }
+#endif /* defined NO_HARDLINKS && defined NO_SYMLINKS */
         }
 
         while (token != NULL) {
@@ -172,7 +180,11 @@ stop_scanning:
           }
         }
       }
+#if defined NO_HARDLINKS && defined NO_SYMLINKS
+      /* label not needed */
+#else
 skip_deletion:
+#endif /* defined NO_HARDLINKS && defined NO_SYMLINKS */
       printf("\n");
     }
   }
