@@ -109,7 +109,11 @@ ifeq ($(OS), Windows_NT)
 endif
 
 # Stack size limit can be too small for deep directory trees, so set to 16 MiB
-COMPILER_OPTIONS += -Wl,--stack,16777216
+#ifdef ON_WINDOWS
+COMPILER_OPTIONS += -Wl,--stack=16777216
+#else
+COMPILER_OPTIONS += -Wl,-z,stack-size=16777216
+#endif
 
 # Don't do clonefile on Mac OS X < 10.13 (High Sierra)
 ifeq ($(UNAME_S), Darwin)
