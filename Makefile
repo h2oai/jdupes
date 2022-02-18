@@ -109,7 +109,7 @@ ifeq ($(OS), Windows_NT)
 endif
 
 # Stack size limit can be too small for deep directory trees, so set to 16 MiB
-ifdef ON_WINDOWS
+ifeq ($(OS), Windows_NT)
 COMPILER_OPTIONS += -Wl,--stack=16777216
 else
 COMPILER_OPTIONS += -Wl,-z,stack-size=16777216
