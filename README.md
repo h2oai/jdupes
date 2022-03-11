@@ -144,7 +144,7 @@ Usage: jdupes [options] DIRECTORY...
 ```
 ### Or with Docker
 ```
-docker run -it -v /path/to/dir:/data ghcr.io/jbruchon/jdupes:latest [options] /data
+docker run -it --init -v /path/to/dir:/data ghcr.io/jbruchon/jdupes:latest [options] /data
 ```
 
 Duplicate file sets will be printed by default unless a different action
