@@ -30,6 +30,7 @@ This is a list of options that can be "turned on" this way:
 
 OMIT_GETOPT_LONG       Do not use getopt_long() C library call
 ON_WINDOWS             Modify code to compile with MinGW on Windows
+NO_WINDOWS             Disable Windows MinGW special cases (mainly for Cygwin)
 NO_PERMS               Disable permission options and code
 NO_HARDLINKS           Disable hard linking options and code
 NO_SYMLINKS            Disable symbolic linking options and code
