@@ -67,6 +67,13 @@ ifeq "$(GCCVERSION)" "1"
 	COMPILER_OPTIONS += -Wextra -Wstrict-overflow=5 -Winit-self
 endif
 
+# Are we running on a Windows OS?
+ifeq ($(OS), Windows_NT)
+	ifndef NO_WINDOWS
+		ON_WINDOWS=1
+	endif
+endif
+
 # Debugging code inclusion
 ifdef LOUD
 DEBUG=1
@@ -92,7 +99,7 @@ endif
 UNAME_S=$(shell uname -s)
 
 # MinGW needs this for printf() conversions to work
-ifeq ($(OS), Windows_NT)
+ifdef ON_WINDOWS
 	ifndef NO_UNICODE
 		UNICODE=1
 		COMPILER_OPTIONS += -municode
@@ -109,7 +116,7 @@ ifeq ($(OS), Windows_NT)
 endif
 
 # Stack size limit can be too small for deep directory trees, so set to 16 MiB
-ifeq ($(OS), Windows_NT)
+ifdef ON_WINDOWS
 COMPILER_OPTIONS += -Wl,--stack=16777216
 else
 COMPILER_OPTIONS += -Wl,-z,stack-size=16777216

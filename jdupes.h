@@ -9,7 +9,7 @@ extern "C" {
 #endif
 
 /* Detect Windows and modify as needed */
-#if defined _WIN32 || defined __CYGWIN__
+#if defined _WIN32 || defined __MINGW32__
  #ifndef ON_WINDOWS
   #define ON_WINDOWS 1
  #endif
@@ -58,7 +58,7 @@ extern "C" {
   #error Do not define UNICODE on non-Windows platforms.
   #undef UNICODE
  #endif
-#endif /* _WIN32 || __CYGWIN__ */
+#endif /* _WIN32 || __MINGW32__ */
 
 /* Windows + Unicode compilation */
 #ifdef UNICODE

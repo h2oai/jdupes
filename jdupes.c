@@ -65,7 +65,7 @@
 #include "act_summarize.h"
 
 /* Detect Windows and modify as needed */
-#if defined _WIN32 || defined __CYGWIN__
+#if defined _WIN32 || defined __MINGW32__
  const char dir_sep = '\\';
  #ifdef UNICODE
   const wchar_t *FILE_MODE_RO = L"rbS";
@@ -80,7 +80,7 @@
   #error Do not define UNICODE on non-Windows platforms.
   #undef UNICODE
  #endif
-#endif /* _WIN32 || __CYGWIN__ */
+#endif /* _WIN32 || __MINGW32__ */
 
 /* Windows + Unicode compilation */
 #ifdef UNICODE
