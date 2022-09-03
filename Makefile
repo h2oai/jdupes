@@ -213,7 +213,7 @@ stripped: $(PROGRAM_NAME)
 	strip $(PROGRAM_NAME)$(PROGRAM_SUFFIX)
 
 clean:
-	$(RM) $(OBJS) $(OBJS_CLEAN) build_date.h $(PROGRAM_NAME) $(PROGRAM_NAME).exe *~ *.gcno *.gcda *.gcov
+	$(RM) $(OBJS) $(OBJS_CLEAN) build_date.h $(PROGRAM_NAME) $(PROGRAM_NAME).exe *~ .*.un~ *.gcno *.gcda *.gcov
 
 distclean: clean
 	$(RM) *.pkg.tar.*
