@@ -1745,9 +1745,6 @@ static void help_text_extfilter(void)
   printf("Detailed help for jdupes -X/--ext-filter options\n");
   printf("General format: jdupes -X filter[:value][size_suffix]\n\n");
 
-  /* FIXME: Remove after v1.19.0 */
-  printf("****** WARNING: THE MEANINGS HAVE CHANGED IN v1.19.0 - READ CAREFULLY ******\n\n");
-
   printf("noext:ext1[,ext2,...]   \tExclude files with certain extension(s)\n\n");
   printf("onlyext:ext1[,ext2,...] \tOnly include files with certain extension(s)\n\n");
   printf("size[+-=]:size[suffix]  \tOnly Include files matching size criteria\n");
