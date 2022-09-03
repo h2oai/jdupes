@@ -24,20 +24,24 @@ clean_exit () {
 do_build () {
 	test -z "$WD" && echo "WD not set, aborting" && exit 1
 	test -z "$PKG" && echo "PKG not set, aborting" && exit 1
-	make clean
-	PN="${NAME}_$VER-$ARCH.pkg.tar.xz"
-	if ! make -j$JOBS all
-		then echo "Build failed"; exit 1
+	if [ -e ./generate_packages.sh ]
+		then ./generate_packages.sh
 		else
-		echo "WD/PKG: $WD/$PKG"
-		test -d $WD/$PKG && rm -rf $WD/$PKG
-		mkdir $WD/$PKG
-		make DESTDIR=$WD/$PKG install && \
-			tar -C pkg -c usr | xz -e > "$PN"
-		# Set ownership to current directory ownership
-		chown "$(stat -c '%u:%g' .)" "$PN"
-		echo "Built $PN"
 		make clean
+		PN="${NAME}_$VER-$ARCH.pkg.tar.xz"
+		if ! make -j$JOBS all
+			then echo "Build failed"; exit 1
+			else
+			echo "WD/PKG: $WD/$PKG"
+			test -d $WD/$PKG && rm -rf $WD/$PKG
+			mkdir $WD/$PKG
+			make DESTDIR=$WD/$PKG install && \
+				tar -C pkg -c usr | xz -e > "$PN"
+			# Set ownership to current directory ownership
+			chown "$(stat -c '%u:%g' .)" "$PN"
+			echo "Built $PN"
+			make clean
+		fi
 	fi
 }
 

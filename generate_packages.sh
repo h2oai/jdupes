@@ -35,7 +35,9 @@ fi
 
 # Detect Linux
 if [ "$UNAME_S" = "linux" ]
-	then TA="linux-$UNAME_M"
+	then
+	TA="linux-$UNAME_M"
+	[ ! -z "$ARCH" ] && TA="linux-$ARCH"
 	PKGTYPE=xz
 fi
 
