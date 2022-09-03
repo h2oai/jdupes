@@ -3,7 +3,7 @@ jdupes 1.21.0
 - Remove '-I/--isolate' which has never worked correctly
 - Fix compiling when NO_HARDLINKS and NO_SYMLINKS are both defined
 - Increased stack size limits to enable deeper recursion without crashing
-- Fixes to make compilation under Cygwin (insted of MSYS2 MinWG) work
+- Fixes to make compilation under Cygwin (instead of MSYS2 MinGW) work
 - Remove the temporary '-X help' warning about changes in functionality
 - Some minor under-the-hood changes for future enhancements
 
