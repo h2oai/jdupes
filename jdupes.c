@@ -691,14 +691,6 @@ extern int check_conditions(const file_t * const restrict file1, const file_t * 
     return 1;
   }
 
-#ifndef NO_USER_ORDER
-  /* Exclude based on -I/--isolate */
-  if (ISFLAG(flags, F_ISOLATE) && (file1->user_order == file2->user_order)) {
-    LOUD(fprintf(stderr, "check_conditions: files ignored: parameter isolation\n"));
-    return -3;
-  }
-#endif /* NO_USER_ORDER */
-
   /* Exclude based on -1/--one-file-system */
   if (ISFLAG(flags, F_ONEFS) && (file1->device != file2->device)) {
     LOUD(fprintf(stderr, "check_conditions: files ignored: not on same filesystem\n"));
@@ -1674,9 +1666,6 @@ static inline void help_text(void)
   printf("                  \tlinked files are treated as non-duplicates for safety\n");
 #endif
   printf(" -i --reverse     \treverse (invert) the match sort order\n");
-#ifndef NO_USER_ORDER
-  printf(" -I --isolate     \tfiles in the same specified directory won't match\n");
-#endif
   printf(" -j --json        \tproduce JSON (machine-readable) output\n");
 /*  printf(" -K --skip-hash   \tskip full file hashing (may be faster; 100%% safe)\n");
     printf("                  \tWARNING: in development, not fully working yet!\n"); */
@@ -1818,7 +1807,6 @@ int main(int argc, char **argv)
     { "hardlinks", 0, 0, 'H' }, //LEGACY
     { "hard-links", 0, 0, 'H' },
     { "help", 0, 0, 'h' },
-    { "isolate", 0, 0, 'I' },
     { "reverse", 0, 0, 'i' },
     { "json", 0, 0, 'j' },
 /*    { "skip-hash", 0, 0, 'K' }, */
@@ -1863,7 +1851,7 @@ int main(int argc, char **argv)
 #define GETOPT getopt
 #endif
 
-#define GETOPT_STRING "@01ABC:DdfHhIijKLlMmNnOo:P:pQqRrSsTtUuVvX:Zz"
+#define GETOPT_STRING "@01ABC:DdfHhijKLlMmNnOo:P:pQqRrSsTtUuVvX:Zz"
 
 /* Windows buffers our stderr output; don't let it do that */
 #ifdef ON_WINDOWS
@@ -1969,10 +1957,6 @@ int main(int argc, char **argv)
       LOUD(fprintf(stderr, "opt: sort order reversal enabled (--reverse)\n");)
       break;
 #ifndef NO_USER_ORDER
-    case 'I':
-      SETFLAG(flags, F_ISOLATE);
-      LOUD(fprintf(stderr, "opt: intra-parameter match isolation enabled (--isolate)\n");)
-      break;
     case 'O':
       SETFLAG(flags, F_USEPARAMORDER);
       LOUD(fprintf(stderr, "opt: parameter order takes precedence (--param-order)\n");)
