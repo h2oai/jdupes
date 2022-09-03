@@ -1,4 +1,4 @@
-/* jdupes (C) 2015-2021 Jody Bruchon <jody@jodybruchon.com>
+/* jdupes (C) 2015-2022 Jody Bruchon <jody@jodybruchon.com>
    Forked from fdupes 1.51 (C) 1999-2014 Adrian Lopez
 
    Permission is hereby granted, free of charge, to any person
@@ -2091,7 +2091,7 @@ int main(int argc, char **argv)
           c++;
         }
       } else printf(" none");
-      printf("\nCopyright (C) 2015-2021 by Jody Bruchon and contributors\n");
+      printf("\nCopyright (C) 2015-2022 by Jody Bruchon and contributors\n");
       printf("Forked from fdupes 1.51, (C) 1999-2014 Adrian Lopez and contributors\n\n");
       printf("Permission is hereby granted, free of charge, to any person obtaining a copy of\n");
       printf("this software and associated documentation files (the \"Software\"), to deal in\n");
