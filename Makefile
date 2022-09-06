@@ -119,6 +119,8 @@ endif
 # The ld syntax for Windows is the same for both Cygwin and MinGW
 ifeq ($(OS), Windows_NT)
 COMPILER_OPTIONS += -Wl,--stack=16777216
+else ifeq ($(UNAME_S), Darwin)
+COMPILER_OPTIONS += -Wl,-stack_size -Wl,0x1000000
 else
 COMPILER_OPTIONS += -Wl,-z,stack-size=16777216
 endif
