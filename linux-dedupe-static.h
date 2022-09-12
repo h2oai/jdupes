@@ -20,5 +20,5 @@ struct file_dedupe_range {
 	__u32 reserved2;
 	struct file_dedupe_range_info info[0];
 };
-#define FIDEDUPERANGE _IOWR(94, 54, struct file_dedupe_range)
+#define FIDEDUPERANGE _IOWR(0x94, 54, struct file_dedupe_range)
 #endif /* JDUPES_DEDUPESTATIC_H */
