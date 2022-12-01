@@ -42,7 +42,11 @@
 #include <time.h>
 #include <sys/time.h>
 #include "jdupes.h"
-#include "xxhash.h"
+#ifndef USE_JODY_HASH
+ #include "xxhash.h"
+#else
+ #include "jody_hash.h"
+#endif
 #include "oom.h"
 #ifdef ENABLE_DEDUPE
 #include <sys/utsname.h>
@@ -1189,7 +1193,10 @@ static jdupes_hash_t *get_filehash(const file_t * const restrict checkfile,
   static jdupes_hash_t *chunk = NULL;
   FILE *file;
   int check = 0;
+#ifndef USE_JODY_HASH
   XXH64_state_t *xxhstate;
+#else
+#endif
 
   if (checkfile == NULL || checkfile->d_name == NULL) nullptr("get_filehash()");
   LOUD(fprintf(stderr, "get_filehash('%s', %" PRIdMAX ")\n", checkfile->d_name, (intmax_t)max_read);)
@@ -1249,9 +1256,12 @@ static jdupes_hash_t *get_filehash(const file_t * const restrict checkfile,
     fsize -= PARTIAL_HASH_SIZE;
   }
 
+#ifndef USE_JODY_HASH
   xxhstate = XXH64_createState();
   if (xxhstate == NULL) nullptr("xxhstate");
   XXH64_reset(xxhstate, 0);
+#else
+#endif
 
   /* Read the file in chunks until we've read it all. */
   while (fsize > 0) {
@@ -1265,7 +1275,10 @@ static jdupes_hash_t *get_filehash(const file_t * const restrict checkfile,
       return NULL;
     }
 
+#ifndef USE_JODY_HASH
     XXH64_update(xxhstate, chunk, bytes_to_read);
+#else
+#endif
 
     if ((off_t)bytes_to_read > fsize) break;
     else fsize -= (off_t)bytes_to_read;
@@ -1281,8 +1294,11 @@ static jdupes_hash_t *get_filehash(const file_t * const restrict checkfile,
 
   fclose(file);
 
+#ifndef USE_JODY_HASH
   *hash = XXH64_digest(xxhstate);
   XXH64_freeState(xxhstate);
+#else
+#endif
 
   LOUD(fprintf(stderr, "get_filehash: returning hash: 0x%016jx\n", (uintmax_t)*hash));
   return hash;
