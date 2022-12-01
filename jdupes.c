@@ -1260,7 +1260,6 @@ static jdupes_hash_t *get_filehash(const file_t * const restrict checkfile,
   xxhstate = XXH64_createState();
   if (xxhstate == NULL) nullptr("xxhstate");
   XXH64_reset(xxhstate, 0);
-#else
 #endif
 
   /* Read the file in chunks until we've read it all. */
@@ -1278,6 +1277,7 @@ static jdupes_hash_t *get_filehash(const file_t * const restrict checkfile,
 #ifndef USE_JODY_HASH
     XXH64_update(xxhstate, chunk, bytes_to_read);
 #else
+    *hash = jody_block_hash(chunk, *hash, bytes_to_read);
 #endif
 
     if ((off_t)bytes_to_read > fsize) break;
@@ -1297,7 +1297,6 @@ static jdupes_hash_t *get_filehash(const file_t * const restrict checkfile,
 #ifndef USE_JODY_HASH
   *hash = XXH64_digest(xxhstate);
   XXH64_freeState(xxhstate);
-#else
 #endif
 
   LOUD(fprintf(stderr, "get_filehash: returning hash: 0x%016jx\n", (uintmax_t)*hash));

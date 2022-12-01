@@ -9,6 +9,8 @@
  * Released under The MIT License
  */
 
+#ifdef USE_JODY_HASH
+
 #include <stdio.h>
 #include <stdlib.h>
 #include "jody_hash.h"
@@ -112,3 +114,5 @@ extern jodyhash_t jody_block_hash(const jodyhash_t * restrict data,
 
 	return hash;
 }
+
+#endif /* USE_JODY_HASH */

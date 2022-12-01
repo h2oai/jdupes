@@ -32,6 +32,7 @@
 *  - xxHash source repository : https://github.com/Cyan4973/xxHash
 */
 
+#ifndef USE_JODY_HASH
 
 /* *************************************
 *  Tuning parameters
@@ -627,3 +628,5 @@ XXH_PUBLIC_API XXH64_hash_t XXH64_hashFromCanonical(const XXH64_canonical_t* src
 }
 
 #endif  /* XXH_NO_LONG_LONG */
+
+#endif /* USE_JODY_HASH */

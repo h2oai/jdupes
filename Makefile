@@ -130,6 +130,7 @@ ifdef LOW_MEMORY
 COMPILER_OPTIONS += -DLOW_MEMORY -DSMA_PAGE_SIZE=32768 -DCHUNK_SIZE=16384
 COMPILER_OPTIONS += -DNO_HARDLINKS -DNO_SYMLINKS -DNO_USER_ORDER -DNO_PERMS
 COMPILER_OPTIONS += -DNO_ATIME -DNO_JSON -DNO_EXTFILTER -DNO_CHUNKSIZE
+COMPILER_OPTIONS += -DUSE_JODY_HASH
 endif
 
 # Don't do clonefile on Mac OS X < 10.13 (High Sierra)
@@ -171,7 +172,7 @@ INSTALL_DATA    = $(INSTALL) -m 0644
 OBJS += jdupes.o jody_paths.o jody_sort.o jody_win_unicode.o jody_strtoepoch.o string_malloc.o oom.o
 OBJS += jody_cacheinfo.o
 OBJS += act_deletefiles.o act_linkfiles.o act_printmatches.o act_summarize.o act_printjson.o
-OBJS += xxhash.o
+OBJS += xxhash.o jody_hash.o
 OBJS += $(ADDITIONAL_OBJECTS)
 
 all: $(PROGRAM_NAME)
