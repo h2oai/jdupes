@@ -61,7 +61,9 @@
 #include "act_dedupefiles.h"
 #include "act_linkfiles.h"
 #include "act_printmatches.h"
-#include "act_printjson.h"
+#ifndef NO_JSON
+ #include "act_printjson.h"
+#endif /* NO_JSON */
 #include "act_summarize.h"
 
 /* Detect Windows and modify as needed */
@@ -1677,7 +1679,9 @@ static inline void help_text(void)
 #ifndef NO_USER_ORDER
   printf(" -I --isolate     \tfiles in the same specified directory won't match\n");
 #endif
+#ifndef NO_JSON
   printf(" -j --json        \tproduce JSON (machine-readable) output\n");
+#endif /* NO_JSON */
 /*  printf(" -K --skip-hash   \tskip full file hashing (may be faster; 100%% safe)\n");
     printf("                  \tWARNING: in development, not fully working yet!\n"); */
 #ifndef NO_SYMLINKS
@@ -1983,10 +1987,12 @@ int main(int argc, char **argv)
       fprintf(stderr, "warning: -I and -O are disabled and ignored in this build\n");
       break;
 #endif
+#ifndef NO_JSON
     case 'j':
       SETFLAG(a_flags, FA_PRINTJSON);
       LOUD(fprintf(stderr, "opt: print output in JSON format (--print-json)\n");)
       break;
+#endif /* NO_JSON */
     case 'K':
       SETFLAG(flags, F_SKIPHASH);
       break;
@@ -2384,7 +2390,9 @@ skip_file_scan:
 #endif /* ENABLE_DEDUPE */
   if (ISFLAG(a_flags, FA_PRINTMATCHES)) printmatches(files);
   if (ISFLAG(a_flags, FA_PRINTUNIQUE)) printunique(files);
+#ifndef NO_JSON
   if (ISFLAG(a_flags, FA_PRINTJSON)) printjson(files, argc, argv);
+#endif /* NO_JSON */
   if (ISFLAG(a_flags, FA_SUMMARIZEMATCHES)) {
     if (ISFLAG(a_flags, FA_PRINTMATCHES)) printf("\n\n");
     summarizematches(files);

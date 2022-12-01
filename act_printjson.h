@@ -8,8 +8,10 @@
 extern "C" {
 #endif
 
+#ifndef NO_JSON
 #include "jdupes.h"
 extern void printjson(file_t * restrict files, const int argc, char ** const restrict argv);
+#endif /* NO_JSON */
 
 #ifdef __cplusplus
 }

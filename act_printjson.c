@@ -1,6 +1,8 @@
 /* Print comprehensive information to stdout in JSON format
  * This file is part of jdupes; see jdupes.c for license information */
 
+#ifndef NO_JSON
+
 #include <assert.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -162,3 +164,5 @@ extern void printjson(file_t * restrict files, const int argc, char **argv)
   string_free(temp); string_free(temp2);
   return;
 }
+
+#endif /* NO_JSON */

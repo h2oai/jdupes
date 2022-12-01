@@ -8,9 +8,8 @@
 extern "C" {
 #endif
 
-#include "jdupes.h"
-/* Don't define the function if it's just empty anyway */
 #if !(defined NO_HARDLINKS && defined NO_SYMLINKS)
+#include "jdupes.h"
 extern void linkfiles(file_t *files, const int linktype, const int only_current);
 #endif
 

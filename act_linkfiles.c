@@ -417,4 +417,4 @@ extern void linkfiles(file_t *files, const int linktype, const int only_current)
   free(dupelist);
   return;
 }
-#endif /* NO_HARDLINKS */
+#endif /* both NO_HARDLINKS and NO_SYMLINKS */
