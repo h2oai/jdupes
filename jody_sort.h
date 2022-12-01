@@ -1,6 +1,8 @@
 /* Jody Bruchon's sorting code library
  * See jody_sort.c for license information */
 
+#ifndef NO_NUMSORT
+
 #ifndef JODY_SORT_H
 #define JODY_SORT_H
 
@@ -16,3 +18,5 @@ extern int numeric_sort(char * restrict c1,
 #endif
 
 #endif /* JODY_SORT_H */
+
+#endif /* NO_NUMSORT */

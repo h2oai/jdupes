@@ -43,6 +43,7 @@ NO_EXTFILTER           Disable extended filter -X
 NO_DELETE              Disable deletion -d, -N
 NO_CHUNKSIZE           Disable auto I/O chunk sizing code and -C option
 NO_TRAVCHECK           Disable double-traversal safety code (-U always on)
+NO_NUMSORT             Disable numerically-correct sort (use "naive" name sort)
 
 Certain options can be turned on by setting a variable passed to make instead
 of using CFLAGS_EXTRA, i.e. 'make DEBUG=1':

@@ -4,6 +4,8 @@
  * Released under The MIT License
  */
 
+#ifndef NO_NUMSORT
+
 #include <stdlib.h>
 #include "jody_sort.h"
 
@@ -102,3 +104,5 @@ extern int numeric_sort(char * restrict c1,
   /* Fall through: the strings are equal */
   return 0;
 }
+
+#endif /* NO_NUMSORT */
