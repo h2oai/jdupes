@@ -108,17 +108,22 @@ static const char *program_name;
  static int usr1_toggle = 0;
 #endif
 
-/* Larger chunk size makes large files process faster but uses more RAM */
-#define MIN_CHUNK_SIZE 4096
-#define MAX_CHUNK_SIZE 16777216
-#ifndef CHUNK_SIZE
- #define CHUNK_SIZE 65536
-#endif
 #ifndef PARTIAL_HASH_SIZE
  #define PARTIAL_HASH_SIZE 4096
 #endif
+#ifndef CHUNK_SIZE
+ #define CHUNK_SIZE 65536
+#endif
 
-static size_t auto_chunk_size = CHUNK_SIZE;
+#ifndef NO_CHUNKSIZE
+ /* Larger chunk size makes large files process faster but uses more RAM */
+ #define MIN_CHUNK_SIZE 4096
+ #define MAX_CHUNK_SIZE 16777216
+ static size_t auto_chunk_size = CHUNK_SIZE;
+#else
+ /* If automatic chunk sizing is disabled, just use a fixed value */
+ #define auto_chunk_size CHUNK_SIZE
+#endif /* NO_CHUNKSIZE */
 
 /* Maximum path buffer size to use; must be large enough for a path plus
  * any work that might be done to the array it's stored in. PATH_MAX is
@@ -1240,7 +1245,7 @@ static jdupes_hash_t *get_filehash(const file_t * const restrict checkfile,
   if (xxhstate == NULL) nullptr("xxhstate");
   XXH64_reset(xxhstate, 0);
 
-  /* Read the file in CHUNK_SIZE chunks until we've read it all. */
+  /* Read the file in chunks until we've read it all. */
   while (fsize > 0) {
     size_t bytes_to_read;
 
@@ -1666,7 +1671,9 @@ static inline void help_text(void)
 #ifdef ENABLE_DEDUPE
   printf(" -B --dedupe      \tdo a copy-on-write (reflink/clone) deduplication\n");
 #endif
+#ifndef NO_CHUNKSIZE
   printf(" -C --chunk-size=#\toverride I/O chunk size (min %d, max %d)\n", MIN_CHUNK_SIZE, MAX_CHUNK_SIZE);
+#endif /* NO_CHUNKSIZE */
 #ifndef NO_DELETE
   printf(" -d --delete      \tprompt user for files to preserve and delete all\n");
   printf("                  \tothers; important: under particular circumstances,\n");
@@ -1810,7 +1817,9 @@ int main(int argc, char **argv)
 #ifndef NO_MTIME  /* Remove if new order types are added! */
   static ordertype_t ordertype = ORDER_NAME;
 #endif
+#ifndef NO_CHUNKSIZE
   static long manual_chunk_size = 0;
+#endif /* NO_CHUNKSIZE */
 #ifdef __linux__
   static struct proc_cacheinfo pci;
 #endif
@@ -1905,6 +1914,7 @@ int main(int argc, char **argv)
   else err_mode = _O_U16TEXT;
 #endif /* UNICODE */
 
+#ifndef NO_CHUNKSIZE
 #ifdef __linux__
   /* Auto-tune chunk size to be half of L1 data cache if possible */
   get_proc_cacheinfo(&pci);
@@ -1916,6 +1926,7 @@ int main(int argc, char **argv)
   if ((auto_chunk_size & 0x00000fffUL) != 0)
     auto_chunk_size = (auto_chunk_size + 0x00000fffUL) & 0x000ff000;
 #endif /* __linux__ */
+#endif /* NO_CHUNKSIZE */
 
   /* Is stderr a terminal? If not, we won't write progress to it */
 #ifdef ON_WINDOWS
@@ -1947,6 +1958,7 @@ int main(int argc, char **argv)
     case 'A':
       SETFLAG(flags, F_EXCLUDEHIDDEN);
       break;
+#ifndef NO_CHUNKSIZE
     case 'C':
       manual_chunk_size = strtol(optarg, NULL, 10) & 0x0ffff000L;  /* Align to 4K sizes */
       if (manual_chunk_size < MIN_CHUNK_SIZE || manual_chunk_size > MAX_CHUNK_SIZE) {
@@ -1956,6 +1968,7 @@ int main(int argc, char **argv)
       } else auto_chunk_size = (size_t)manual_chunk_size;
       LOUD(fprintf(stderr, "Manual chunk size is %ld\n", manual_chunk_size));
       break;
+#endif /* NO_CHUNKSIZE */
 #ifndef NO_DELETE
     case 'd':
       SETFLAG(a_flags, FA_DELETEFILES);
@@ -2435,6 +2448,7 @@ skip_file_scan:
         sma_allocs, sma_free_good, sma_free_merged, sma_free_replaced,
         sma_free_ignored, sma_free_reclaimed,
         sma_free_scanned, sma_free_tails);
+#ifndef NO_CHUNKSIZE
     if (manual_chunk_size > 0) fprintf(stderr, "I/O chunk size: %ld KiB (manually set)\n", manual_chunk_size >> 10);
     else {
 #ifdef __linux__
@@ -2442,6 +2456,7 @@ skip_file_scan:
 #else
       fprintf(stderr, "I/O chunk size: %" PRIuMAX " KiB (default size)\n", (uintmax_t)(auto_chunk_size >> 10));
 #endif /* __linux__ */
+#endif /* NO_CHUNKSIZE */
     }
 #ifdef ON_WINDOWS
  #ifndef NO_HARDLINKS

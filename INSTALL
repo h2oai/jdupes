@@ -40,6 +40,7 @@ NO_ATIME               Disable all access time features
 NO_JSON                Disable JSON output -j
 NO_EXTFILTER           Disable extended filter -X
 NO_DELETE              Disable deletion -d, -N
+NO_CHUNKSIZE           Disable auto I/O chunk sizing code and -C option
 
 Certain options can be turned on by setting a variable passed to make instead
 of using CFLAGS_EXTRA, i.e. 'make DEBUG=1':
