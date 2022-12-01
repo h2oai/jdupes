@@ -1,6 +1,8 @@
 /* jdupes action for deleting duplicate files
  * This file is part of jdupes; see jdupes.c for license information */
 
+#ifndef NO_DELETE
+
 #ifndef ACT_DELETEFILES_H
 #define ACT_DELETEFILES_H
 
@@ -16,3 +18,5 @@ extern void deletefiles(file_t *files, int prompt, FILE *tty);
 #endif
 
 #endif /* ACT_DELETEFILES_H */
+
+#endif /* NO_DELETE */

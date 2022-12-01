@@ -1667,12 +1667,14 @@ static inline void help_text(void)
   printf(" -B --dedupe      \tdo a copy-on-write (reflink/clone) deduplication\n");
 #endif
   printf(" -C --chunk-size=#\toverride I/O chunk size (min %d, max %d)\n", MIN_CHUNK_SIZE, MAX_CHUNK_SIZE);
+#ifndef NO_DELETE
   printf(" -d --delete      \tprompt user for files to preserve and delete all\n");
   printf("                  \tothers; important: under particular circumstances,\n");
   printf("                  \tdata may be lost when using this option together\n");
   printf("                  \twith -s or --symlinks, or when specifying a\n");
   printf("                  \tparticular directory more than once; refer to the\n");
   printf("                  \tdocumentation for additional information\n");
+#endif /* NO_DELETE */
 #ifdef DEBUG
   printf(" -D --debug       \toutput debug statistics after completion\n");
 #endif
@@ -1704,9 +1706,11 @@ static inline void help_text(void)
 #endif /* NO_HARDLINKS */
   printf(" -m --summarize   \tsummarize dupe information\n");
   printf(" -M --print-summarize\tprint match sets and --summarize at the end\n");
+#ifndef NO_DELETE
   printf(" -N --no-prompt   \ttogether with --delete, preserve the first file in\n");
   printf("                  \teach set of duplicates and delete the rest without\n");
   printf("                  \tprompting the user\n");
+#endif /* NO_DELETE */
 #ifndef NO_MTIME
   printf(" -o --order=BY    \tselect sort order for output, linking and deleting; by\n");
   printf("                  \tmtime (BY=time) or filename (BY=name, the default)\n");
@@ -1952,10 +1956,12 @@ int main(int argc, char **argv)
       } else auto_chunk_size = (size_t)manual_chunk_size;
       LOUD(fprintf(stderr, "Manual chunk size is %ld\n", manual_chunk_size));
       break;
+#ifndef NO_DELETE
     case 'd':
       SETFLAG(a_flags, FA_DELETEFILES);
       LOUD(fprintf(stderr, "opt: delete files after matching (--delete)\n");)
       break;
+#endif /* NO_DELETE */
     case 'D':
 #ifdef DEBUG
       SETFLAG(flags, F_DEBUG);
@@ -2016,10 +2022,12 @@ int main(int argc, char **argv)
       SETFLAG(a_flags, FA_PRINTMATCHES);
       LOUD(fprintf(stderr, "opt: print matches with a summary (--print-summarize)\n");)
       break;
+#ifndef NO_DELETE
     case 'N':
       SETFLAG(flags, F_NOPROMPT);
       LOUD(fprintf(stderr, "opt: delete files without prompting (--noprompt)\n");)
       break;
+#endif /* NO_DELETE */
     case 'p':
       SETFLAG(flags, F_PERMISSIONS);
       LOUD(fprintf(stderr, "opt: permissions must also match (--permissions)\n");)
@@ -2388,13 +2396,15 @@ skip_full_check:
 skip_file_scan:
   /* Stop catching CTRL+C */
   signal(SIGINT, SIG_DFL);
+#ifndef NO_DELETE
   if (ISFLAG(a_flags, FA_DELETEFILES)) {
     if (ISFLAG(flags, F_NOPROMPT)) deletefiles(files, 0, 0);
     else deletefiles(files, 1, stdin);
   }
+#endif /* NO_DELETE */
 #ifndef NO_SYMLINKS
   if (ISFLAG(a_flags, FA_MAKESYMLINKS)) linkfiles(files, 0, 0);
-#endif
+#endif /* NO_SYMLINKS */
 #ifndef NO_HARDLINKS
   if (ISFLAG(a_flags, FA_HARDLINKFILES)) linkfiles(files, 1, 0);
 #endif /* NO_HARDLINKS */

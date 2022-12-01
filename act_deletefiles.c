@@ -1,6 +1,8 @@
 /* Delete duplicate files automatically or interactively
  * This file is part of jdupes; see jdupes.c for license information */
 
+#ifndef NO_DELETE
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -193,3 +195,5 @@ skip_deletion:
   free(preservestr);
   return;
 }
+
+#endif /* NO_DELETE */
