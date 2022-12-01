@@ -429,6 +429,7 @@ static void update_progress(const char * const restrict msg, const int file_perc
 /***** Add new functions here *****/
 
 
+#ifndef NO_EXTFILTER
 /* Does a file have one of these comma-separated extensions?
  * Returns 1 after any match, 0 if no matches */
 int match_extensions(char *path, const char *extlist)
@@ -485,6 +486,7 @@ skip_empty:
   }
   return 0;
 }
+#endif /* NO_EXTFILTER */
 
 
 /* Check file's stat() info to make sure nothing has changed
