@@ -4,6 +4,10 @@
  * Released under The MIT License
  */
 
+/* The NO_EXTFILTER exclusion is jdupes-specific and
+ * can be removed for other projects */
+#ifndef NO_EXTFILTER
+
 #include <string.h>
 #include <sys/time.h>
 #include <time.h>
@@ -73,3 +77,5 @@ skip_time:
 	secs = mktime(&tm);
 	return secs;
 }
+
+#endif /* NO_EXTFILTER */

@@ -213,6 +213,7 @@ struct travdone {
 };
 static struct travdone *travdone_head = NULL;
 
+#ifndef NO_EXTFILTER
 /* Extended filter tree head and static tag list */
 struct extfilter *extfilter_head = NULL;
 const struct extfilter_tags extfilter_tags[] = {
@@ -229,6 +230,8 @@ const struct extfilter_tags extfilter_tags[] = {
   { "older",	XF_DATE_OLDER },
   { NULL, 0 },
 };
+static void help_text_extfilter(void);
+#endif /* NO_EXTFILTER */
 
 /* Required for progress indicator code */
 static uintmax_t filecount = 0;
@@ -277,8 +280,6 @@ char tempname[PATHBUF_SIZE * 2];
 
 /* Compare two hashes like memcmp() */
 #define HASH_COMPARE(a,b) ((a > b) ? 1:((a == b) ? 0:-1))
-
-static void help_text_extfilter(void);
 
 /***** End definitions, begin code *****/
 
@@ -546,7 +547,7 @@ int getfilestats(file_t * const restrict file)
   return 0;
 }
 
-
+#ifndef NO_EXTFILTER
 static void add_extfilter(const char *option)
 {
   char *opt, *p;
@@ -614,6 +615,7 @@ static void add_extfilter(const char *option)
       extf->size *= ss->multiplier;
     }
   } else if (extf->flags & XF_REQ_DATE) {
+    /* Exclude uses a date; convert it to seconds since the epoch */
     *(extf->param) = '\0';
     tt = strtoepoch(p);
     LOUD(fprintf(stderr, "extfilter: jody_strtoepoch: '%s' -> %ld\n", p, tt);)
@@ -647,6 +649,7 @@ error_bad_size_suffix:
   help_text_extfilter();
   exit(EXIT_FAILURE);
 }
+#endif /* NO_EXTFILTER */
 
 
 /* Returns -1 if stat() fails, 0 if it's a directory, 1 if it's not */
@@ -742,7 +745,9 @@ extern int check_conditions(const file_t * const restrict file1, const file_t * 
 static int check_singlefile(file_t * const restrict newfile)
 {
   char * restrict tp = tempname;
+#ifndef NO_EXTFILTER
   int excluded;
+#endif /* NO_EXTFILTER */
 
   if (newfile == NULL) nullptr("check_singlefile()");
 
@@ -773,7 +778,8 @@ static int check_singlefile(file_t * const restrict newfile)
     return 1;
   }
 
-    /* Exclude files based on exclusion stack size specs */
+#ifndef NO_EXTFILTER
+    /* Exclude files based on extended filter stack */
     excluded = 0;
     for (struct extfilter *extf = extfilter_head; extf != NULL; extf = extf->next) {
       uint32_t sflag = extf->flags;
@@ -799,6 +805,7 @@ static int check_singlefile(file_t * const restrict newfile)
       LOUD(fprintf(stderr, "check_singlefile: excluding based on an extfilter option\n"));
       return 1;
     }
+#endif /* NO_EXTFILTER */
   }
 
 #ifdef ON_WINDOWS
@@ -1731,8 +1738,10 @@ static inline void help_text(void)
   printf(" -U --no-trav-check\tdisable double-traversal safety check (BE VERY CAREFUL)\n");
   printf("                  \tThis fixes a Google Drive File Stream recursion issue\n");
   printf(" -v --version     \tdisplay jdupes version and license information\n");
+#ifndef NO_EXTFILTER
   printf(" -X --ext-filter=x:y\tfilter files based on specified criteria\n");
   printf("                  \tUse '-X help' for detailed extfilter help\n");
+#endif /* NO_EXTFILTER */
   printf(" -z --zero-match  \tconsider zero-length files to be duplicates\n");
   printf(" -Z --soft-abort  \tIf the user aborts (i.e. CTRL-C) act on matches so far\n");
 #ifndef ON_WINDOWS
@@ -1744,6 +1753,7 @@ static inline void help_text(void)
 }
 
 
+#ifndef NO_EXTFILTER
 static void help_text_extfilter(void)
 {
   printf("Detailed help for jdupes -X/--ext-filter options\n");
@@ -1777,6 +1787,7 @@ static void help_text_extfilter(void)
   printf(  "Extension matching is case-insensitive.\n");
   printf(  "Path substring matching is case-sensitive.\n");
 }
+#endif /* NO_EXTFILTER */
 
 
 #ifdef UNICODE
@@ -2074,9 +2085,11 @@ int main(int argc, char **argv)
       SETFLAG(a_flags, FA_SHOWSIZE);
       LOUD(fprintf(stderr, "opt: show size of files enabled (--size)\n");)
       break;
+#ifndef NO_EXTFILTER
     case 'X':
       add_extfilter(optarg);
       break;
+#endif /* NO_EXTFILTER */
     case 'z':
       SETFLAG(flags, F_INCLUDEEMPTY);
       LOUD(fprintf(stderr, "opt: zero-length files count as matches (--zero-match)\n");)

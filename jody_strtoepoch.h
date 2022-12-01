@@ -11,7 +11,10 @@
 extern "C" {
 #endif
 
+/* See note in jody_strtoepoch.c about NO_EXTFILTER */
+#ifndef NO_EXTFILTER
 time_t strtoepoch(const char * const datetime);
+#endif /* NO_EXTFILTER */
 
 #ifdef __cplusplus
 }

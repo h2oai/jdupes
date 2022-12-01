@@ -227,6 +227,7 @@ typedef struct _filetree {
 #endif
 
 
+#ifndef NO_EXTFILTER
 /* -X extended filter parameter stack */
 struct extfilter {
   struct extfilter *next;
@@ -264,6 +265,7 @@ struct extfilter_tags {
 
 extern const struct extfilter_tags extfilter_tags[];
 extern struct extfilter *extfilter_head;
+#endif /* NO_EXTFILTER */
 
 
 /* Suffix definitions (treat as case-insensitive) */

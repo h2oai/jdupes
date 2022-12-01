@@ -38,6 +38,7 @@ NO_USER_ORDER          Disable -I/-O options and code
 NO_MTIME               Disable all modify time features and code
 NO_ATIME               Disable all access time features and code
 NO_JSON                Disable JSON output code
+NO_EXTFILTER           Disable extended filter features and code
 
 Certain options can be turned on by setting a variable passed to make instead
 of using CFLAGS_EXTRA, i.e. 'make DEBUG=1':
