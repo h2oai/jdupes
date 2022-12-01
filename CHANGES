@@ -1,3 +1,7 @@
+jdupes 1.21.1
+
+- Reinstate '-I/--isolate' by popular demand; use at your own risk!
+
 jdupes 1.21.0
 
 - Remove '-I/--isolate' which has never worked correctly
