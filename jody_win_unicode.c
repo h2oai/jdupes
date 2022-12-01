@@ -58,8 +58,6 @@ error_wc2mb:
   exit(EXIT_FAILURE);
 }
 
-#else
- #define slash_convert(a)
 #endif /* UNICODE */
 
 /* Print a string that is wide on Windows but normal on POSIX */
