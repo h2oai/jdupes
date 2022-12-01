@@ -209,6 +209,7 @@ const char *extensions[] = {
     NULL
 };
 
+#ifndef NO_TRAVCHECK
 /* Tree to track each directory traversed */
 struct travdone {
   struct travdone *left;
@@ -217,6 +218,7 @@ struct travdone {
   dev_t device;
 };
 static struct travdone *travdone_head = NULL;
+#endif /* NO_TRAVCHECK */
 
 #ifndef NO_EXTFILTER
 /* Extended filter tree head and static tag list */
@@ -854,6 +856,7 @@ static file_t *init_newfile(const size_t len, file_t * restrict * const restrict
 }
 
 
+#ifndef NO_TRAVCHECK
 /* Create a new traversal check object and initialize its values */
 static struct travdone *travdone_alloc(const dev_t device, const jdupes_ino_t inode)
 {
@@ -928,6 +931,7 @@ static int traverse_check(const dev_t device, const jdupes_ino_t inode)
   }
   return 0;
 }
+#endif /* NO_TRAVCHECK */
 
 
 /* This is disabled until a check is in place to make it safe */
@@ -1005,12 +1009,14 @@ static void grokdir(const char * const restrict dir,
     return; /* Remove when single file is restored */
   }
 
+#ifndef NO_TRAVCHECK
   /* Double traversal prevention tree */
   if (!ISFLAG(flags, F_NOTRAVCHECK)) {
     i = traverse_check(device, inode);
     if (i == 1) return;
     if (i == 2) goto error_travdone;
   }
+#endif /* NO_TRAVCHECK */
 
   item_progress++;
   grokdir_level++;
@@ -2304,8 +2310,10 @@ int main(int argc, char **argv)
     }
   }
 
+#ifndef NO_TRAVCHECK
   /* We don't need the double traversal check tree anymore */
   travdone_free(travdone_head);
+#endif /* NO_TRAVCHECK */
 
   if (ISFLAG(flags, F_REVERSESORT)) sort_direction = -1;
   if (!ISFLAG(flags, F_HIDEPROGRESS)) fprintf(stderr, "\n");
