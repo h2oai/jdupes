@@ -1,6 +1,9 @@
 /* Jody Bruchon's path manipulation code library
  * See jody_paths.c for license information */
 
+/* See jody_paths.c for info about this exclusion */
+#ifndef NO_SYMLINKS
+
 #ifndef JODY_PATHS_H
 #define JODY_PATHS_H
 
@@ -21,3 +24,5 @@ extern int make_relative_link_name(const char * const src,
 #endif
 
 #endif /* JODY_PATHS_H */
+
+#endif /* NO_SYMLINKS */

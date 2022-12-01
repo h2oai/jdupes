@@ -4,6 +4,10 @@
  * Released under The MIT License
  */
 
+/* This NO_SYMLINKS exclusion is jdupes-specific and can be removed
+ * for use in other projects. */
+#ifndef NO_SYMLINKS
+
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -150,3 +154,5 @@ error_dir_end:
     fprintf(stderr, "internal error: get_relative_name() result has directory at end\n");
     return -3;
 }
+
+#endif /* NO_SYMLINKS */
