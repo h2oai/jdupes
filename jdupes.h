@@ -123,7 +123,7 @@ extern uint_fast32_t flags, a_flags;
 #define F_QUICKCOMPARE		(1U << 11)
 #define F_USEPARAMORDER		(1U << 12)
 #define F_REVERSESORT		(1U << 13)
-/* #define F_ISOLATE		(1U << 14)  removed, may be re-added one day */
+#define F_ISOLATE		(1U << 14)
 #define F_ONEFS			(1U << 15)
 #define F_PARTIALONLY		(1U << 16)
 #define F_NOCHANGECHECK		(1U << 17)

@@ -5,10 +5,12 @@ jdupes is a program for identifying and taking actions upon duplicate files.
 A WORD OF WARNING: jdupes IS NOT a drop-in compatible replacement for fdupes!
 Do not blindly replace fdupes with jdupes in scripts and expect everything to
 work the same way. Option availability and meanings differ between the two
-programs.
+programs. For example, the `-I` switch in jdupes means "isolate" and blocks
+intra-argument matching, while in fdupes it means "immediately delete files
+during scanning without prompting the user."
 
-**Please consider financially supporting continued development of jdupes**
-using the links on my home page (Ko-fi, PayPal, SubscribeStar, Flattr, etc.):
+Please consider financially supporting continued development of jdupes using
+the links on my home page (Ko-fi, PayPal, SubscribeStar, Flattr, etc.):
 
 https://www.jodybruchon.com/
 
@@ -167,6 +169,7 @@ option is specified (delete, summarize, link, dedupe, etc.)
  -H --hard-links        treat any linked files as duplicate files. Normally
                         linked files are treated as non-duplicates for safety
  -i --reverse           reverse (invert) the match sort order
+ -I --isolate           files in the same specified directory won't match
  -j --json              produce JSON (machine-readable) output
  -l --link-soft         make relative symlinks for duplicates w/o prompting
  -L --link-hard         hard link all duplicate files without prompting
@@ -351,6 +354,11 @@ create hard links, or perform other destructive actions on data based on the
 matching output. Because of the potential for massive data destruction, this
 option MUST BE SPECIFIED TWICE to take effect and will error out if it is only
 specified once.
+
+The `-I`/`--isolate` option attempts to block matches that are contained in the
+same specified directory parameter on the command line. Due to the underlying
+nature of the jdupes algorithm, a lot of matches will be blocked by this option
+that probably should not be. This code could use improvement.
 
 The `-C`/`--chunk-size` option overrides the size of the I/O "chunk" used for
 all file operations. Larger numbers will increase the amount of data read at
