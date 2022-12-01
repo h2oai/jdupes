@@ -48,12 +48,13 @@ NO_NUMSORT             Disable numerically-correct sort (use "naive" name sort)
 Certain options can be turned on by setting a variable passed to make instead
 of using CFLAGS_EXTRA, i.e. 'make DEBUG=1':
 
+NO_UNICODE             [Windows only] disable all Unicode support
 DEBUG                  Turn on algorithm statistic reporting with '-D'
 LOUD                   '-@' for low-level debugging; enables DEBUG
 ENABLE_DEDUPE          Enable '-B/--dedupe' deduplication features
 STATIC_DEDUPE_H        Build dedupe support with included minimal header file
 LOW_MEMORY             Build for extremely low-RAM environments (CAUTION!)
-NO_UNICODE             [Windows only] disable all Unicode support
+BARE_BONES             Build LOW_MEMORY with very aggressive code removal
 
 The LOW_MEMORY option tweaks various knobs in the program to lower total
 memory usage. It also disables some features to reduce the size of certain
@@ -61,6 +62,13 @@ data structures. The improvements in memory usage are not very large, but if
 you're running in a very RAM-limited environment or have a CPU with very small
 caches it may be a good choice. This is primarily meant for use in embedded
 systems and should not be used unless you know what you are doing.
+
+The BARE_BONES option sets LOW_MEMORY and also enables code removals that are
+extremely aggressive, to the point that what some might consider fundamental
+capabilities and safety features are completely stripped out, inclduing the
+NO_DELETE and NO_TRAVCHECK options. It is intended to reduce the program to
+the most basic functionality expected of a simple duplicate finder and may
+be suitable for embedded systems with extremely limited storage and memory.
 
 A test directory is included so that you may familiarize yourself with the way
 jdupes operates. You may test the program before installing it by issuing a

@@ -21,7 +21,6 @@ extern "C" {
  #endif
  #include <windows.h>
  #include <io.h>
- #include "win_stat.h"
 #endif /* Win32 */
 
 #include <limits.h>
@@ -62,14 +61,22 @@ extern "C" {
 
 /* Windows + Unicode compilation */
 #ifdef UNICODE
- #define WPATH_MAX 8192
- #define PATHBUF_SIZE WPATH_MAX
+ #ifndef PATHBUF_SIZE
+  #define WPATH_MAX 8192
+  #define PATHBUF_SIZE WPATH_MAX
+ #else
+  #define WPATH_MAX PATHBUF_SIZE
+ #endif /* PATHBUF_SIZE */
   typedef wchar_t wpath_t[WPATH_MAX];
   extern int out_mode;
   extern int err_mode;
  #define M2W(a,b) MultiByteToWideChar(CP_UTF8, 0, a, -1, (LPWSTR)b, WPATH_MAX)
  #define W2M(a,b) WideCharToMultiByte(CP_UTF8, 0, a, -1, (LPSTR)b, WPATH_MAX, NULL, NULL)
 #endif /* UNICODE */
+
+#ifdef ON_WINDOWS
+ #include "win_stat.h"
+#endif
 
 #ifndef NO_SYMLINKS
 #include "jody_paths.h"
