@@ -36,9 +36,10 @@ do not match files that are on different filesystems or devices
 exclude hidden files from consideration
 .TP
 .B -B --dedupe
-issue the btrfs same-extents ioctl to trigger a deduplication on
-disk. The program must be built with btrfs support for this option
-to be available
+call same-extents ioctl or clonefile() to trigger a filesystem-level
+data deduplication on disk (known as copy-on-write, CoW, cloning, or
+reflink); only a few filesystems support this (BTRFS; XFS when mkfs.xfs
+was used with -m crc=1,reflink=1; Apple APFS)
 .TP
 .B -C --chunk-size=\fIBYTES\fR
 set the I/O chunk size manually; larger values may improve performance
