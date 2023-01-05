@@ -1,7 +1,7 @@
 /*
  * Windows-native code for getting stat()-like information
  *
- * Copyright (C) 2016-2022 by Jody Bruchon <jody@jodybruchon.com>
+ * Copyright (C) 2016-2023 by Jody Bruchon <jody@jodybruchon.com>
  * Released under The MIT License
  */
 

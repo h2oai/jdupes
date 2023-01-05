@@ -2,7 +2,7 @@
  * String table allocator
  * A replacement for malloc() for tables of fixed strings
  *
- * Copyright (C) 2015-2022 by Jody Bruchon <jody@jodybruchon.com>
+ * Copyright (C) 2015-2023 by Jody Bruchon <jody@jodybruchon.com>
  * Released under The MIT License
  */
 

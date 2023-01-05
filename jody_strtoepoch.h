@@ -1,6 +1,6 @@
 /* Jody Bruchon's datetime-to-epoch conversion function
  *
- * Copyright (C) 2020-2022 by Jody Bruchon <jody@jodybruchon.com>
+ * Copyright (C) 2020-2023 by Jody Bruchon <jody@jodybruchon.com>
  * Released under The MIT License
  */
 
