@@ -2014,7 +2014,6 @@ int main(int argc, char **argv)
       break;
     case '9':
       SETFLAG(flags, F_BENCHMARKSTOP);
-      goto skip_all_scan_code;
       break;
     case 'A':
       SETFLAG(flags, F_EXCLUDEHIDDEN);
