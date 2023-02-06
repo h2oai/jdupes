@@ -214,10 +214,13 @@ const char *extensions[] = {
 };
 
 #ifndef NO_TRAVCHECK
+/* Simple traversal balancing hash - scrambles inode number */
+#define TRAVHASH(device,inode) (((inode << 55 | (inode >> 9)) + (device << 13)))
 /* Tree to track each directory traversed */
 struct travdone {
   struct travdone *left;
   struct travdone *right;
+  uintmax_t hash;
   jdupes_ino_t inode;
   dev_t device;
 };
@@ -250,22 +253,25 @@ static uintmax_t progress = 0, item_progress = 0, dupecount = 0;
 /* Number of read loops before checking progress indicator */
 #define CHECK_MINIMUM 256
 
-/* Hash/compare performance statistics (debug mode) */
+/* Performance and behavioral statistics (debug mode) */
 #ifdef DEBUG
 static unsigned int small_file = 0, partial_hash = 0, partial_elim = 0;
 static unsigned int full_hash = 0, partial_to_full = 0, hash_fail = 0;
 static uintmax_t comparisons = 0;
-static unsigned int left_branch = 0, right_branch = 0;
+static unsigned int filetree_lefts = 0, filetree_rights = 0;
  #ifdef ON_WINDOWS
   #ifndef NO_HARDLINKS
-static unsigned int hll_exclude = 0;
+  static unsigned int hll_exclude = 0;
   #endif
+ #endif
+ #ifndef NO_TRAVCHECK
+ static uintmax_t travdone_lefts = 0, travdone_rights = 0;
  #endif
 #endif /* DEBUG */
 
 #ifdef TREE_DEPTH_STATS
-static unsigned int tree_depth = 0;
-static unsigned int max_depth = 0;
+static unsigned int filetree_depth = 0;
+static unsigned int filetree_max_depth = 0;
 #endif
 
 /* File tree head */
@@ -460,7 +466,7 @@ int match_extensions(char *path, const char *extlist)
 
   /* Get the length of the file's extension for later checking */
   extlen = strlen(dot);
-  LOUD(fprintf(stderr, "match_extensions: file has extension '%s' with length %ld\n", dot, extlen);)
+  LOUD(fprintf(stderr, "match_extensions: file has extension '%s' with length %" PRIdMAX "\n", dot, (intmax_t)extlen);)
 
   /* dot is now at the location of the last file extension; check the list */
   /* Skip any commas at the start of the list */
@@ -476,10 +482,10 @@ int match_extensions(char *path, const char *extlist)
       while (*extlist == ',') extlist++;
       if (extlist == ext)  goto skip_empty;
       if (strncasecmp(dot, ext, len) == 0 && extlen == len) {
-        LOUD(fprintf(stderr, "match_extensions: matched on extension '%s' (len %ld)\n", dot, len);)
+        LOUD(fprintf(stderr, "match_extensions: matched on extension '%s' (len %" PRIdMAX ")\n", dot, (intmax_t)len);)
         return 1;
       }
-      LOUD(fprintf(stderr, "match_extensions: no match: '%s' (%ld), '%s' (%ld)\n", dot, len, ext, extlen);)
+      LOUD(fprintf(stderr, "match_extensions: no match: '%s' (%" PRIdMAX "), '%s' (%" PRIdMAX ")\n", dot, (intmax_t)len, ext, (intmax_t)extlen);)
 skip_empty:
       ext = extlist;
       len = 0;
@@ -631,7 +637,7 @@ static void add_extfilter(const char *option)
     /* Exclude uses a date; convert it to seconds since the epoch */
     *(extf->param) = '\0';
     tt = strtoepoch(p);
-    LOUD(fprintf(stderr, "extfilter: jody_strtoepoch: '%s' -> %ld\n", p, tt);)
+    LOUD(fprintf(stderr, "extfilter: jody_strtoepoch: '%s' -> %" PRIdMAX "\n", p, (intmax_t)tt);)
     if (tt == -1) goto error_bad_time;
     extf->size = tt;
   } else {
@@ -796,7 +802,7 @@ static int check_singlefile(file_t * const restrict newfile)
     excluded = 0;
     for (struct extfilter *extf = extfilter_head; extf != NULL; extf = extf->next) {
       uint32_t sflag = extf->flags;
-      LOUD(fprintf(stderr, "check_singlefile: extfilter check: %08x %ld %ld %s\n", sflag, newfile->size, extf->size, newfile->d_name);)
+      LOUD(fprintf(stderr, "check_singlefile: extfilter check: %08x %" PRIdMAX " %" PRIdMAX " %s\n", sflag, (intmax_t)newfile->size, (intmax_t)extf->size, newfile->d_name);)
       if (
            /* Any line that passes will result in file exclusion */
            ((sflag == XF_SIZE_EQ) && (newfile->size != extf->size))
@@ -846,7 +852,7 @@ static file_t *init_newfile(const size_t len, file_t * restrict * const restrict
   if (!newfile) oom("init_newfile() file structure");
   if (!filelistp) nullptr("init_newfile() filelistp");
 
-  LOUD(fprintf(stderr, "init_newfile(len %lu, filelistp %p)\n", len, filelistp));
+  LOUD(fprintf(stderr, "init_newfile(len %" PRIuMAX", filelistp %p)\n", (uintmax_t)len, filelistp));
 
   memset(newfile, 0, sizeof(file_t));
   newfile->d_name = (char *)string_malloc(len);
@@ -864,11 +870,11 @@ static file_t *init_newfile(const size_t len, file_t * restrict * const restrict
 
 #ifndef NO_TRAVCHECK
 /* Create a new traversal check object and initialize its values */
-static struct travdone *travdone_alloc(const dev_t device, const jdupes_ino_t inode)
+static struct travdone *travdone_alloc(const dev_t device, const jdupes_ino_t inode, uintmax_t hash)
 {
   struct travdone *trav;
 
-  LOUD(fprintf(stderr, "travdone_alloc(%" PRIdMAX ", %" PRIdMAX ")\n", (intmax_t)inode, (intmax_t)device);)
+  LOUD(fprintf(stderr, "travdone_alloc(dev %" PRIdMAX ", ino %" PRIdMAX ", hash %" PRIuMAX ")\n", (intmax_t)device, (intmax_t)inode, hash);)
 
   trav = (struct travdone *)string_malloc(sizeof(struct travdone));
   if (trav == NULL) {
@@ -877,8 +883,9 @@ static struct travdone *travdone_alloc(const dev_t device, const jdupes_ino_t in
   }
   trav->left = NULL;
   trav->right = NULL;
-  trav->inode = inode;
+  trav->hash = hash;
   trav->device = device;
+  trav->inode = inode;
   LOUD(fprintf(stderr, "travdone_alloc returned %p\n", (void *)trav);)
   return trav;
 }
@@ -911,9 +918,12 @@ error_travdone_right:
 static int traverse_check(const dev_t device, const jdupes_ino_t inode)
 {
   struct travdone *traverse = travdone_head;
+  uintmax_t travhash;
 
+  LOUD(fprintf(stderr, "traverse_check(dev %" PRIuMAX ", ino %" PRIuMAX "\n", (uintmax_t)device, (uintmax_t)inode);)
+  travhash = TRAVHASH(device, inode);
   if (travdone_head == NULL) {
-    travdone_head = travdone_alloc(device, inode);
+    travdone_head = travdone_alloc(device, inode, TRAVHASH(device, inode));
     if (travdone_head == NULL) return 2;
   } else {
     traverse = travdone_head;
@@ -921,28 +931,32 @@ static int traverse_check(const dev_t device, const jdupes_ino_t inode)
       if (traverse == NULL) nullptr("traverse_check()");
       /* Don't re-traverse directories we've already seen */
       if (inode == traverse->inode && device == traverse->device) {
-        LOUD(fprintf(stderr, "traverse_check: already seen: %ld:%ld\n", device,inode);)
+        LOUD(fprintf(stderr, "traverse_check: already seen: %" PRIuMAX ":%" PRIuMAX "\n", (uintmax_t)device, (uintmax_t)inode);)
         return 1;
-      } else if (inode > traverse->inode || (inode == traverse->inode && device > traverse->device)) {
-        /* Traverse right */
-        if (traverse->right == NULL) {
-          LOUD(fprintf(stderr, "traverse item right: %ld:%ld\n", device, inode);)
-          traverse->right = travdone_alloc(device, inode);
-          if (traverse->right == NULL) return 2;
-          break;
-        }
-        traverse = traverse->right;
-        continue;
       } else {
-        /* Traverse left */
-        if (traverse->left == NULL) {
-          LOUD(fprintf(stderr, "traverse item left %ld,%ld\n", device, inode);)
-          traverse->left = travdone_alloc(device, inode);
-          if (traverse->left == NULL) return 2;
-          break;
+        if (travhash > traverse->hash) {
+          /* Traverse right */
+          if (traverse->right == NULL) {
+            LOUD(fprintf(stderr, "traverse_check add right: %" PRIuMAX ", %" PRIuMAX"\n", (uintmax_t)device, (uintmax_t)inode);)
+            DBG(travdone_rights++);
+            traverse->right = travdone_alloc(device, inode, travhash);
+            if (traverse->right == NULL) return 2;
+            break;
+          }
+          traverse = traverse->right;
+          continue;
+        } else {
+          /* Traverse left */
+          if (traverse->left == NULL) {
+            LOUD(fprintf(stderr, "traverse_check add left: %" PRIuMAX ", %" PRIuMAX "\n", (uintmax_t)device, (uintmax_t)inode);)
+            DBG(travdone_lefts++);
+            traverse->left = travdone_alloc(device, inode, travhash);
+            if (traverse->left == NULL) return 2;
+            break;
+          }
+          traverse = traverse->left;
+          continue;
         }
-        traverse = traverse->left;
-        continue;
       }
     }
   }
@@ -1355,7 +1369,7 @@ static inline void registerfile(filetree_t * restrict * const restrict nodeptr,
 
 
 #ifdef TREE_DEPTH_STATS
-#define TREE_DEPTH_UPDATE_MAX() { if (max_depth < tree_depth) max_depth = tree_depth; tree_depth = 0; }
+#define TREE_DEPTH_UPDATE_MAX() { if (filetree_max_depth < filetree_depth) filetree_max_depth = filetree_depth; filetree_depth = 0; }
 #else
 #define TREE_DEPTH_UPDATE_MAX()
 #endif
@@ -1496,7 +1510,7 @@ static file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict f
   if (cmpresult < 0) {
     if (tree->left != NULL) {
       LOUD(fprintf(stderr, "checkmatch: recursing tree: left\n"));
-      DBG(left_branch++; tree_depth++;)
+      DBG(filetree_lefts++; filetree_depth++;)
       return checkmatch(tree->left, file);
     } else {
       LOUD(fprintf(stderr, "checkmatch: registering file: left\n"));
@@ -1507,7 +1521,7 @@ static file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict f
   } else if (cmpresult > 0) {
     if (tree->right != NULL) {
       LOUD(fprintf(stderr, "checkmatch: recursing tree: right\n"));
-      DBG(right_branch++; tree_depth++;)
+      DBG(filetree_rights++; filetree_depth++;)
       return checkmatch(tree->right, file);
     } else {
       LOUD(fprintf(stderr, "checkmatch: registering file: right\n"));
@@ -2486,8 +2500,11 @@ skip_file_scan:
         partial_hash, small_file, full_hash, partial_to_full,
         partial_elim, hash_fail, (unsigned int)sizeof(jdupes_hash_t)*8);
     fprintf(stderr, "%" PRIuMAX " total files, %" PRIuMAX " comparisons, branch L %u, R %u, both %u, max tree depth %u\n",
-        filecount, comparisons, left_branch, right_branch,
-        left_branch + right_branch, max_depth);
+        filecount, comparisons, filetree_lefts, filetree_rights,
+        filetree_lefts + filetree_rights, filetree_max_depth);
+#ifndef NO_TRAVCHECK
+    fprintf(stderr, "travdone allocs: left %" PRIuMAX ", right %" PRIuMAX " = heaviness %" PRIdMAX "\n", travdone_lefts, travdone_rights, (uintmax_t)(travdone_rights - travdone_lefts));
+#endif
     fprintf(stderr, "SMA: allocs %" PRIuMAX ", free %" PRIuMAX " (merge %" PRIuMAX ", repl %" PRIuMAX "), fail %" PRIuMAX ", reuse %" PRIuMAX ", scan %" PRIuMAX ", tails %" PRIuMAX "\n",
         sma_allocs, sma_free_good, sma_free_merged, sma_free_replaced,
         sma_free_ignored, sma_free_reclaimed,
