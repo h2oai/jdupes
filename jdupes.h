@@ -136,6 +136,7 @@ extern uint_fast32_t flags, a_flags;
 #define F_NOCHANGECHECK		(1U << 17)
 #define F_NOTRAVCHECK		(1U << 18)
 #define F_SKIPHASH		(1U << 19)
+#define F_BENCHMARKSTOP		(1U << 29)
 #define F_LOUD			(1U << 30)
 #define F_DEBUG			(1U << 31)
 

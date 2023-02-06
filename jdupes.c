@@ -1890,6 +1890,7 @@ int main(int argc, char **argv)
     { "printnull", 0, 0, '0' }, //LEGACY
     { "print-null", 0, 0, '0' },
     { "one-file-system", 0, 0, '1' },
+    { "benchmark-stop", 0, 0, '9' },
     { "nohidden", 0, 0, 'A' }, //LEGACY
     { "no-hidden", 0, 0, 'A' },
     { "dedupe", 0, 0, 'B' },
@@ -1947,7 +1948,7 @@ int main(int argc, char **argv)
 #define GETOPT getopt
 #endif
 
-#define GETOPT_STRING "@01ABC:DdfHhIijKLlMmNnOo:P:pQqRrSsTtUuVvX:Zz"
+#define GETOPT_STRING "@019ABC:DdfHhIijKLlMmNnOo:P:pQqRrSsTtUuVvX:Zz"
 
 /* Windows buffers our stderr output; don't let it do that */
 #ifdef ON_WINDOWS
@@ -2010,6 +2011,9 @@ int main(int argc, char **argv)
     case '1':
       SETFLAG(flags, F_ONEFS);
       LOUD(fprintf(stderr, "opt: recursion across filesystems disabled (--one-file-system)\n");)
+      break;
+    case '9':
+      SETFLAG(flags, F_BENCHMARKSTOP);
       break;
     case 'A':
       SETFLAG(flags, F_EXCLUDEHIDDEN);
@@ -2358,6 +2362,12 @@ int main(int argc, char **argv)
       grokdir(argv[x], &files, ISFLAG(flags, F_RECURSE));
       user_item_count++;
     }
+  }
+
+  /* Pass -9 option to exit after traversal/loading code */
+  if (ISFLAG(flags, F_BENCHMARKSTOP)) {
+    fprintf(stderr, "\nBenchmarking stop requested; exiting.\n");
+    exit(EXIT_FAILURE);
   }
 
 #ifndef NO_TRAVCHECK
