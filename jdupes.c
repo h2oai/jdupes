@@ -140,7 +140,7 @@ static const char *program_name;
 #endif
 /* Refuse to build if PATHBUF_SIZE is too small */
 #if PATHBUF_SIZE < PATH_MAX
-#error "PATHBUF_SIZE can't be less than PATH_MAX"
+#warning "PATHBUF_SIZE is less than PATH_MAX"
 #endif
 
 /* Size suffixes - this gets exported */
