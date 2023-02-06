@@ -888,11 +888,22 @@ static struct travdone *travdone_alloc(const dev_t device, const jdupes_ino_t in
 static void travdone_free(struct travdone * const restrict cur)
 {
   LOUD(fprintf(stderr, "travdone_free(%p)\n", cur);)
-  if (cur == NULL) return;
+  if (cur == NULL) goto error_travdone_null;
+  if (cur->left == cur) goto error_travdone_left;
+  if (cur->right == cur) goto error_travdone_right;
   if (cur->left != NULL) travdone_free(cur->left);
   if (cur->right != NULL) travdone_free(cur->right);
   string_free(cur);
   return;
+error_travdone_null:
+  fprintf(stderr, "internal error: travdone_free() was passed NULL which should never happen\n");
+  exit(EXIT_FAILURE);
+error_travdone_left:
+  fprintf(stderr, "internal error: travdone_free() was passed NULL which should never happen\n");
+  exit(EXIT_FAILURE);
+error_travdone_right:
+  fprintf(stderr, "internal error: travdone_free() was passed NULL which should never happen\n");
+  exit(EXIT_FAILURE);
 }
 
 
