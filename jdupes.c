@@ -1,5 +1,4 @@
 /* jdupes (C) 2015-2023 Jody Bruchon <jody@jodybruchon.com>
-   Forked from fdupes 1.51 (C) 1999-2014 Adrian Lopez
 
    Permission is hereby granted, free of charge, to any person
    obtaining a copy of this software and associated documentation files
@@ -1012,6 +1011,7 @@ static void grokdir(const char * const restrict dir,
 #else
   DIR *cd;
 #endif
+  static int sf_warning = 0; /* single file warning should only appear once */
 
   if (dir == NULL || filelistp == NULL) nullptr("grokdir()");
   LOUD(fprintf(stderr, "grokdir: scanning '%s' (order %d, recurse %d)\n", dir, user_item_count, recurse));
@@ -1034,9 +1034,12 @@ static void grokdir(const char * const restrict dir,
     single = 1;
     goto add_single_file;
 #endif
-    fprintf(stderr, "\nFile specs on command line disabled in this version for safety\n");
-    fprintf(stderr, "This should be restored (and safe) in a future release\n");
-    fprintf(stderr, "See https://github.com/jbruchon/jdupes or email jody@jodybruchon.com\n");
+    if (sf_warning == 0) {
+      fprintf(stderr, "\nFile specs on command line disabled in this version for safety\n");
+      fprintf(stderr, "This should be restored (and safe) in a future release\n");
+      fprintf(stderr, "See https://github.com/jbruchon/jdupes or email jody@jodybruchon.com\n");
+      sf_warning = 1;
+    }
     return; /* Remove when single file is restored */
   }
 
@@ -2208,7 +2211,6 @@ int main(int argc, char **argv)
         }
       } else printf(" none");
       printf("\nCopyright (C) 2015-2023 by Jody Bruchon and contributors\n");
-      printf("Forked from fdupes 1.51, (C) 1999-2014 Adrian Lopez and contributors\n\n");
       printf("Permission is hereby granted, free of charge, to any person obtaining a copy of\n");
       printf("this software and associated documentation files (the \"Software\"), to deal in\n");
       printf("the Software without restriction, including without limitation the rights to\n");
@@ -2366,7 +2368,7 @@ int main(int argc, char **argv)
 
 #ifndef NO_TRAVCHECK
   /* We don't need the double traversal check tree anymore */
-  travdone_free(travdone_head);
+  if (travdone_head != NULL) travdone_free(travdone_head);
 #endif /* NO_TRAVCHECK */
 
   /* Pass -9 option to exit after traversal/loading code */
