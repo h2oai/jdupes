@@ -25,18 +25,6 @@ to use the new ones...or better yet, stop using long options in your scripts
 in the first place, because it's unnecessarily verbose and wasteful to do so.
 
 
-v1.19.0 specific: extfilter behavior has changed, check your scripts!
--------------------------------------------------------------------------------
-There were some inconsistencies in the behavior of the extfilter framework that
-stemmed from its origins in the exclusion option `-x`. These inconsistencies
-have been resolved and extfilters now work correctly. Unfortunately, this also
-means that the meaning of several filters has changed, particularly the size
-filters. The `-X size[+-=]` option now includes by the specified size criteria,
-rather than excluding, which will cause problems with existing shell scripts.
-It is extremely important that any shell scripts currently using the size
-extfilter be revised to take the new meaning into account. Use `jdupes -v`
-output in your script to do a version check if needed.
-
 v1.15+ specific: Why is the addition of single files not working?
 -------------------------------------------------------------------------------
 If a file was added through recursion and also added explicitly, that file
@@ -533,9 +521,8 @@ small performance penalty.
 
 Contact information
 -------------------------------------------------------------------------------
-For all jdupes inquiries, contact Jody Bruchon <jody@jodybruchon.com>
-Please DO NOT contact Adrian Lopez about issues with jdupes.
-
+To post bug reports/feature requests: https://github.com/jbruchon/jdupes/issues
+For all other jdupes inquiries, contact Jody Bruchon <jody@jodybruchon.com>
 
 Legal information and software license
 -------------------------------------------------------------------------------
