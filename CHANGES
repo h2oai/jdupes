@@ -1,3 +1,15 @@
+jdupes 1.21.2
+
+- Work around macOS data corruption (clonefile may wreck compressed files)
+- Major performance fix in the double traversal prevention tree code
+- Added undocumented '-9' benchmark option for testing traversal code
+- Extra error checks to try to finally solve a very rare crash bug
+- Tiny code size reduction by discarding unused xxHash code
+- Build system can now build native M1 + x86_64 fat binares on macOS
+- jody_hash re-added as a build-time option (mainly for old/embedded systems)
+- Many options/features/safety checks can now be selectively compiled out
+- New 'make BARE_BONES=1' option builds the most minimal jdupes possible
+
 jdupes 1.21.1
 
 - Reinstate '-I/--isolate' by popular demand; use at your own risk!
