@@ -2364,16 +2364,16 @@ int main(int argc, char **argv)
     }
   }
 
-  /* Pass -9 option to exit after traversal/loading code */
-  if (ISFLAG(flags, F_BENCHMARKSTOP)) {
-    fprintf(stderr, "\nBenchmarking stop requested; exiting.\n");
-    exit(EXIT_FAILURE);
-  }
-
 #ifndef NO_TRAVCHECK
   /* We don't need the double traversal check tree anymore */
   travdone_free(travdone_head);
 #endif /* NO_TRAVCHECK */
+
+  /* Pass -9 option to exit after traversal/loading code */
+  if (ISFLAG(flags, F_BENCHMARKSTOP)) {
+    fprintf(stderr, "\nBenchmarking stop requested; exiting.\n");
+    goto skip_all_scan_code;
+  }
 
   if (ISFLAG(flags, F_REVERSESORT)) sort_direction = -1;
   if (!ISFLAG(flags, F_HIDEPROGRESS)) fprintf(stderr, "\n");
@@ -2502,6 +2502,7 @@ skip_file_scan:
     summarizematches(files);
   }
 
+skip_all_scan_code:
   string_malloc_destroy();
 
 #ifdef DEBUG
