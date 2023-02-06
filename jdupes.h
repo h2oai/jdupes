@@ -31,10 +31,18 @@ extern "C" {
 #include "jody_sort.h"
 #include "version.h"
 
+#ifndef USE_JODY_HASH
 #include "xxhash.h"
+#else
+#include "jody_hash.h"
+#endif /* USE_JODY_HASH */
 
 /* Set hash type (change this if swapping in a different hash function) */
+#ifndef USE_JODY_HASH
  typedef XXH64_hash_t jdupes_hash_t;
+#else
+ typedef jodyhash_t jdupes_hash_t;
+#endif /* USE_JODY_HASH */
 
 /* Some types are different on Windows */
 #ifdef ON_WINDOWS

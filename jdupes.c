@@ -1875,10 +1875,10 @@ int main(int argc, char **argv)
 #endif
 #ifndef NO_CHUNKSIZE
   static long manual_chunk_size = 0;
-#endif /* NO_CHUNKSIZE */
 #ifdef __linux__
   static struct proc_cacheinfo pci;
 #endif
+#endif /* NO_CHUNKSIZE */
 #ifdef ENABLE_DEDUPE
   static struct utsname utsname;
 #endif
