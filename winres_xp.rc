@@ -1,5 +1,7 @@
 #include "winver.h"
 
+2 ICON icon/icon_jdupes_all.ico
+
 VS_VERSION_INFO VERSIONINFO
  FILEVERSION 1,21,2,0
  PRODUCTVERSION 1,21,2,0
