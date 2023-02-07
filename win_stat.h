@@ -36,7 +36,7 @@ struct winstat {
 #define S_ISREPARSE(st_mode) ((st_mode & FILE_ATTRIBUTE_REPARSE) ? 1 : 0)
 #define S_ISSPARSE(st_mode) ((st_mode & FILE_ATTRIBUTE_SPARSE) ? 1 : 0)
 #define S_ISTEMP(st_mode) ((st_mode & FILE_ATTRIBUTE_TEMPORARY) ? 1 : 0)
-#define S_ISREG(st_mode) ((st_mode & FILE_ATTRIBUTE_DIRECTORY) ? 0 : 1)
+#define S_ISREG(st_mode) ((st_mode & (FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_REPARSE)) ? 0 : 1)
 
 #ifndef WPATH_MAX
  #define WPATH_MAX 8192
