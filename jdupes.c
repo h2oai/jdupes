@@ -1893,7 +1893,7 @@ int main(int argc, char **argv)
     { "printnull", 0, 0, '0' }, //LEGACY
     { "print-null", 0, 0, '0' },
     { "one-file-system", 0, 0, '1' },
-    { "benchmark-stop", 0, 0, '9' },
+    { "", 0, 0, '9' },
     { "nohidden", 0, 0, 'A' }, //LEGACY
     { "no-hidden", 0, 0, 'A' },
     { "dedupe", 0, 0, 'B' },
@@ -2015,9 +2015,11 @@ int main(int argc, char **argv)
       SETFLAG(flags, F_ONEFS);
       LOUD(fprintf(stderr, "opt: recursion across filesystems disabled (--one-file-system)\n");)
       break;
+#ifdef DEBUG
     case '9':
       SETFLAG(flags, F_BENCHMARKSTOP);
       break;
+#endif
     case 'A':
       SETFLAG(flags, F_EXCLUDEHIDDEN);
       break;
@@ -2371,11 +2373,13 @@ int main(int argc, char **argv)
   if (travdone_head != NULL) travdone_free(travdone_head);
 #endif /* NO_TRAVCHECK */
 
+#ifdef DEBUG
   /* Pass -9 option to exit after traversal/loading code */
   if (ISFLAG(flags, F_BENCHMARKSTOP)) {
     fprintf(stderr, "\nBenchmarking stop requested; exiting.\n");
     goto skip_all_scan_code;
   }
+#endif
 
   if (ISFLAG(flags, F_REVERSESORT)) sort_direction = -1;
   if (!ISFLAG(flags, F_HIDEPROGRESS)) fprintf(stderr, "\n");
@@ -2504,7 +2508,10 @@ skip_file_scan:
     summarizematches(files);
   }
 
+#ifdef DEBUG
 skip_all_scan_code:
+#endif
+
   string_malloc_destroy();
 
 #ifdef DEBUG
