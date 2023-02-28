@@ -112,7 +112,7 @@ and the extreme danger of the `-T` option is safeguarded by a requirement to
 specify it twice so it can't be used accidentally.
 
 
-How can I do stuff with jdupes that isn't supported by jdupes?
+How can I do stuff with jdupes that isn't supported by fdupes?
 -------------------------------------------------------------------------------
 The standard output format of jdupes is extremely simple. Match sets are
 presented with one file path per line, and match sets are separated by a blank
