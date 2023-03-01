@@ -55,6 +55,12 @@ STATIC_DEDUPE_H        Build dedupe support with included minimal header file
 LOW_MEMORY             Build for extremely low-RAM environments (CAUTION!)
 BARE_BONES             Build LOW_MEMORY with very aggressive code removal
 USE_JODY_HASH          Use jody_hash instead of xxHash64 (smaller, slower)
+EXTENRAL_HASH_LIB      Force hash code to be linked in externally (no build)
+
+EXTERNAL_HASH_LIB will build jdupes with the interface code for the chosen hash
+type (xxhash vs jody_hash) but will suppress building the actual code. This is
+intended for use by OS distributions to use a shared library. You will need to
+link against the shared library on your own (i.e. LDFLAGS=-lxxhash make).
 
 The LOW_MEMORY option tweaks various knobs in the program to lower total
 memory usage. It also disables some features to reduce the size of certain

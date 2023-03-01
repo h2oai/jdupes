@@ -128,12 +128,16 @@ endif
 # Use jody_hash instead of xxHash if requested
 ifdef USE_JODY_HASH
 COMPILER_OPTIONS += -DUSE_JODY_HASH
+ifndef EXTERNAL_HASH_LIB
 OBJS += jody_hash.o
+endif
 OBJS_CLEAN += xxhash.o
 else
+ifndef EXTERNAL_HASH_LIB
 OBJS += xxhash.o
-OBJS_CLEAN += jody_hash.o
 endif
+OBJS_CLEAN += jody_hash.o
+endif  # USE_JODY_HASH
 
 # Stack size limit can be too small for deep directory trees, so set to 16 MiB
 # The ld syntax for Windows is the same for both Cygwin and MinGW
