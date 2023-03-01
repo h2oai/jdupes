@@ -119,16 +119,6 @@ ifdef ON_WINDOWS
 	override undefine ENABLE_DEDUPE
 endif
 
-# Stack size limit can be too small for deep directory trees, so set to 16 MiB
-# The ld syntax for Windows is the same for both Cygwin and MinGW
-ifeq ($(OS), Windows_NT)
-COMPILER_OPTIONS += -Wl,--stack=16777216
-else ifeq ($(UNAME_S), Darwin)
-COMPILER_OPTIONS += -Wl,-stack_size -Wl,0x1000000
-else
-COMPILER_OPTIONS += -Wl,-z,stack-size=16777216
-endif
-
 # Bare-bones mode (for the adventurous lunatic) - includes all LOW_MEMORY options
 ifdef BARE_BONES
 LOW_MEMORY=1
@@ -138,21 +128,44 @@ endif
 
 # Low memory mode
 ifdef LOW_MEMORY
+USE_JODY_HASH = 1
 COMPILER_OPTIONS += -DLOW_MEMORY -DSMA_PAGE_SIZE=32768
 COMPILER_OPTIONS += -DNO_HARDLINKS -DNO_SYMLINKS -DNO_USER_ORDER -DNO_PERMS
 COMPILER_OPTIONS += -DNO_ATIME -DNO_JSON -DNO_EXTFILTER -DNO_CHUNKSIZE
-COMPILER_OPTIONS += -DUSE_JODY_HASH -DNO_NUMSORT
+COMPILER_OPTIONS += -DNO_NUMSORT
 ifndef BARE_BONES
 COMPILER_OPTIONS += -DCHUNK_SIZE=16384
 endif
 endif
 
+# Use jody_hash instead of xxHash if requested
+ifdef USE_JODY_HASH
+COMPILER_OPTIONS += -DUSE_JODY_HASH
+OBJS += jody_hash.o
+OBJS_CLEAN += xxhash.o
+else
+OBJS += xxhash.o
+OBJS_CLEAN += jody_hash.o
+endif
+
+# Stack size limit can be too small for deep directory trees, so set to 16 MiB
+# The ld syntax for Windows is the same for both Cygwin and MinGW
+ifndef LOW_MEMORY
+ifeq ($(OS), Windows_NT)
+COMPILER_OPTIONS += -Wl,--stack=16777216
+else ifeq ($(UNAME_S), Darwin)
+COMPILER_OPTIONS += -Wl,-stack_size -Wl,0x1000000
+else
+COMPILER_OPTIONS += -Wl,-z,stack-size=16777216
+endif
+endif
+
 # Don't do clonefile on Mac OS X < 10.13 (High Sierra)
 ifeq ($(UNAME_S), Darwin)
-	DARWINVER := $(shell expr `uname -r | cut -d. -f1` \< 17)
-	ifeq "$(DARWINVER)" "1"
-		COMPILER_OPTIONS += -DNO_CLONEFILE=1
-	endif
+DARWINVER := $(shell expr `uname -r | cut -d. -f1` \< 17)
+ifeq "$(DARWINVER)" "1"
+COMPILER_OPTIONS += -DNO_CLONEFILE=1
+endif
 endif
 
 # Compatibility mappings for dedupe feature
@@ -186,7 +199,6 @@ INSTALL_DATA    = $(INSTALL) -m 0644
 OBJS += jdupes.o jody_paths.o jody_sort.o jody_win_unicode.o jody_strtoepoch.o string_malloc.o oom.o
 OBJS += jody_cacheinfo.o
 OBJS += act_deletefiles.o act_linkfiles.o act_printmatches.o act_summarize.o act_printjson.o
-OBJS += xxhash.o jody_hash.o
 OBJS += $(ADDITIONAL_OBJECTS)
 
 all: $(PROGRAM_NAME)
