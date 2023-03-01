@@ -42,6 +42,7 @@ MAN_DIR = $(MAN_BASE_DIR)/man1
 MAN_EXT = 1
 
 # Required External Tools
+CC ?= gcc
 INSTALL = install	# install : UCB/GNU Install compatible
 #INSTALL = ginstall
 RM      = rm -f
@@ -51,7 +52,6 @@ MKDIR   = mkdir -p
 #MKDIR   = mkinstalldirs
 
 # Make Configuration
-CC ?= gcc
 COMPILER_OPTIONS = -Wall -Wwrite-strings -Wcast-align -Wstrict-aliasing -Wstrict-prototypes -Wpointer-arith -Wundef
 COMPILER_OPTIONS += -Wshadow -Wfloat-equal -Waggregate-return -Wcast-qual -Wswitch-default -Wswitch-enum -Wconversion -Wunreachable-code -Wformat=2
 COMPILER_OPTIONS += -std=gnu99 -O2 -g -D_FILE_OFFSET_BITS=64 -fstrict-aliasing -pipe
@@ -61,9 +61,15 @@ COMPILER_OPTIONS += -DSMA_MAX_FREE=11 -DNO_ATIME
 # no need to modify anything beyond this point                      #
 #####################################################################
 
-# Don't use unsupported compiler options on gcc 3/4 (OS X 10.5.8 Xcode)
-GCCVERSION = $(shell expr `LC_ALL=C gcc -v 2>&1 | grep 'gcc version ' | cut -d\  -f3 | cut -d. -f1` \>= 5)
-ifeq "$(GCCVERSION)" "1"
+UNAME_S=$(shell uname -s)
+
+# Don't use unsupported compiler options on gcc 3/4 (Mac OS X 10.5.8 Xcode)
+ifneq ($(UNAME_S), Darwin)
+	GCCVERSION = $(shell expr `LC_ALL=C gcc -v 2>&1 | grep 'gcc version ' | cut -d\  -f3 | cut -d. -f1` \>= 5)
+else
+	GCCVERSION = 1
+endif
+ifeq ($(GCCVERSION), 1)
 	COMPILER_OPTIONS += -Wextra -Wstrict-overflow=5 -Winit-self
 endif
 
@@ -95,8 +101,6 @@ endif
 ifneq (,$(findstring DENABLE_DEDUPE,$(CFLAGS) $(CFLAGS_EXTRA)))
 	ENABLE_DEDUPE=1
 endif
-
-UNAME_S=$(shell uname -s)
 
 # MinGW needs this for printf() conversions to work
 ifdef ON_WINDOWS
