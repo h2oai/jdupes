@@ -1,8 +1,6 @@
 # jdupes Makefile
 
-#####################################################################
-# Standand User Configuration Section                               #
-#####################################################################
+CFLAGS ?= -O2 -g
 
 # PREFIX determines where files will be installed. Common examples
 # include "/usr" or "/usr/local".
@@ -24,10 +22,6 @@ PREFIX = /usr/local
 # This can be enabled at build time: 'make HARDEN=1'
 #HARDEN=1
 
-#####################################################################
-# Developer Configuration Section                                   #
-#####################################################################
-
 # PROGRAM_NAME determines the installation name and manual page name
 PROGRAM_NAME = jdupes
 
@@ -43,23 +37,16 @@ MAN_EXT = 1
 
 # Required External Tools
 CC ?= gcc
-INSTALL = install	# install : UCB/GNU Install compatible
-#INSTALL = ginstall
+INSTALL = install
 RM      = rm -f
 RMDIR	= rmdir -p
 MKDIR   = mkdir -p
-#MKDIR   = mkdirhier
-#MKDIR   = mkinstalldirs
 
 # Make Configuration
 COMPILER_OPTIONS = -Wall -Wwrite-strings -Wcast-align -Wstrict-aliasing -Wstrict-prototypes -Wpointer-arith -Wundef
 COMPILER_OPTIONS += -Wshadow -Wfloat-equal -Waggregate-return -Wcast-qual -Wswitch-default -Wswitch-enum -Wconversion -Wunreachable-code -Wformat=2
-COMPILER_OPTIONS += -std=gnu99 -O2 -g -D_FILE_OFFSET_BITS=64 -fstrict-aliasing -pipe
+COMPILER_OPTIONS += -std=gnu99 -D_FILE_OFFSET_BITS=64 -fstrict-aliasing -pipe
 COMPILER_OPTIONS += -DSMA_MAX_FREE=11 -DNO_ATIME
-
-#####################################################################
-# no need to modify anything beyond this point                      #
-#####################################################################
 
 UNAME_S=$(shell uname -s)
 
