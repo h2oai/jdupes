@@ -1,3 +1,8 @@
+jdupes 1.21.3
+
+- Fix exit behavior when no valid directories are given
+- Only act on "normal" files and directories
+
 jdupes 1.21.2
 
 - Work around macOS data corruption (clonefile may wreck compressed files)
