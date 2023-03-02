@@ -51,7 +51,7 @@ COMPILER_OPTIONS += -DSMA_MAX_FREE=11 -DNO_ATIME
 UNAME_S=$(shell uname -s)
 
 # Don't use unsupported compiler options on gcc 3/4 (Mac OS X 10.5.8 Xcode)
-ifneq ($(UNAME_S), Darwin)
+ifeq ($(UNAME_S), Darwin)
 	GCCVERSION = $(shell expr `LC_ALL=C gcc -v 2>&1 | grep 'gcc version ' | cut -d\  -f3 | cut -d. -f1` \>= 5)
 else
 	GCCVERSION = 1
