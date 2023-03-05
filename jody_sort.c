@@ -4,7 +4,7 @@
  * Released under The MIT License
  */
 
-#ifndef NO_NUMSORT
+#ifndef NO_JODY_SORT
 
 #include <stdlib.h>
 #include "jody_sort.h"
@@ -12,7 +12,9 @@
 #define IS_NUM(a) (((a >= '0') && (a <= '9')) ? 1 : 0)
 #define IS_LOWER(a) (((a >= 'a') && (a <= 'z')) ? 1 : 0)
 
-extern int numeric_sort(char * restrict c1,
+
+/* Sort by logical numeric order (10 comes after 2, not before) */
+extern int jody_numeric_sort(char * restrict c1,
                 char * restrict c2, int sort_direction)
 {
   int len1 = 0, len2 = 0;
@@ -105,4 +107,4 @@ extern int numeric_sort(char * restrict c1,
   return 0;
 }
 
-#endif /* NO_NUMSORT */
+#endif /* NO_JODY_SORT */

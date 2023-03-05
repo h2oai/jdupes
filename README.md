@@ -528,7 +528,7 @@ Legal information and software license
 -------------------------------------------------------------------------------
 jdupes is Copyright (C) 2015-2023 by Jody Bruchon <jody@jodybruchon.com>
 Derived from the original 'fdupes' 1.51 (C) 1999-2014 by Adrian Lopez
-Includes other code libraries which are (C) 2015-2023 by Jody Bruchon
+Includes other code libraries which are (C) 2014-2023 by Jody Bruchon
 
 The MIT License
 

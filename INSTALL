@@ -36,9 +36,9 @@ NO_CHUNKSIZE           Disable auto I/O chunk sizing code and -C option
 NO_DELETE              Disable deletion -d, -N
 NO_EXTFILTER           Disable extended filter -X
 NO_HARDLINKS           Disable hard link code -L, -H
+NO_JODY_SORT           Disable numerically-correct sort (use "naive" name sort)
 NO_JSON                Disable JSON output -j
 NO_MTIME               Disable all modify time features
-NO_NUMSORT             Disable numerically-correct sort (use "naive" name sort)
 NO_PERMS               Disable permission matching -p
 NO_SYMLINKS            Disable symbolic link code -l, -s
 NO_TRAVCHECK           Disable double-traversal safety code (-U always on)
