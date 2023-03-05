@@ -295,7 +295,6 @@ extern char tempname[PATHBUF_SIZE * 2];
 
 extern const char *extensions[];
 
-extern void nullptr(const char * restrict func);
 extern int file_has_changed(file_t * const restrict file);
 extern int getdirstats(const char * const restrict name,
         jdupes_ino_t * const restrict inode, dev_t * const restrict dev,

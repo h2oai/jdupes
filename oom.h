@@ -12,6 +12,7 @@ extern "C" {
 #endif
 
 extern void oom(const char * const restrict msg);
+extern void nullptr(const char * restrict func);
 
 #ifdef __cplusplus
 }

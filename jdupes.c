@@ -339,17 +339,6 @@ void clean_exit(void)
 }
 
 
-/* Null pointer failure */
-extern void nullptr(const char * restrict func)
-{
-  static const char n[] = "(NULL)";
-  if (func == NULL) func = n;
-  fprintf(stderr, "\ninternal error: NULL pointer passed to %s\n", func);
-  string_malloc_destroy();
-  exit(EXIT_FAILURE);
-}
-
-
 static inline char **cloneargs(const int argc, char **argv)
 {
   static int x;
