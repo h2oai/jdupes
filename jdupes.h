@@ -83,7 +83,7 @@ extern "C" {
 #endif /* UNICODE */
 
 #ifdef ON_WINDOWS
- #include "win_stat.h"
+ #include "jody_win_stat.h"
 #endif
 
 #ifndef NO_SYMLINKS

@@ -10,7 +10,7 @@
 #endif
 #include <windows.h>
 #include <limits.h>
-#include "win_stat.h"
+#include "jody_win_stat.h"
 #include <stdint.h>
 
 /* Convert NT epoch to UNIX epoch */
