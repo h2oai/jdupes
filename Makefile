@@ -97,7 +97,7 @@ ifdef ON_WINDOWS
 		PROGRAM_SUFFIX=.exe
 	endif
 	COMPILER_OPTIONS += -D__USE_MINGW_ANSI_STDIO=1 -DON_WINDOWS=1
-	OBJS += win_stat.o
+	OBJS += jody_win_stat.o
 	ifeq ($(UNAME_S), MINGW32_NT-5.1)
 		OBJS += winres_xp.o
 	else
