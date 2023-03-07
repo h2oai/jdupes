@@ -522,13 +522,16 @@ small performance penalty.
 Contact information
 -------------------------------------------------------------------------------
 To post bug reports/feature requests: https://github.com/jbruchon/jdupes/issues
+
 For all other jdupes inquiries, contact Jody Bruchon <jody@jodybruchon.com>
 
 Legal information and software license
 -------------------------------------------------------------------------------
 jdupes is Copyright (C) 2015-2023 by Jody Bruchon <jody@jodybruchon.com>
-Derived from the original 'fdupes' 1.51 (C) 1999-2014 by Adrian Lopez
+
 Includes other code libraries which are (C) 2014-2023 by Jody Bruchon
+
+Derived from the original 'fdupes' 1.51 (C) 1999-2014 by Adrian Lopez
 
 The MIT License
 
