@@ -525,6 +525,7 @@ To post bug reports/feature requests: https://github.com/jbruchon/jdupes/issues
 
 For all other jdupes inquiries, contact Jody Bruchon <jody@jodybruchon.com>
 
+
 Legal information and software license
 -------------------------------------------------------------------------------
 jdupes is Copyright (C) 2015-2023 by Jody Bruchon <jody@jodybruchon.com>
