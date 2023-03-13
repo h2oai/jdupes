@@ -2194,8 +2194,12 @@ int main(int argc, char **argv)
         if (sizeof(long) == 4) printf("64-bit i32\n");
         else if (sizeof(long) == 8) printf("64-bit\n");
       } else if (sizeof(uintptr_t) == 4) {
-        if (sizeof(long) == 4) printf("32-bit\n");
-        else if (sizeof(long) == 8) printf("32-bit i64\n");
+        if (sizeof(long) == 4) printf("32-bit");
+        else if (sizeof(long) == 8) printf("32-bit i64");
+#if defined(__x86_64__) && SIZE_MAX == 0xffffffff
+	printf(" (x32 ABI)");
+#endif
+	printf("\n");
       } else printf("%u-bit i%u\n", (unsigned int)(sizeof(uintptr_t) * 8),
           (unsigned int)(sizeof(long) * 8));
 
