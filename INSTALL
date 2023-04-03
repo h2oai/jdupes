@@ -34,6 +34,7 @@ NO_WINDOWS             Disable Windows MinGW special cases (mainly for Cygwin)
 NO_ATIME               Disable all access time features
 NO_CHUNKSIZE           Disable auto I/O chunk sizing code and -C option
 NO_DELETE              Disable deletion -d, -N
+NO_ERRORONDUPE         Disable error exit on first dupe found -E
 NO_EXTFILTER           Disable extended filter -X
 NO_HARDLINKS           Disable hard link code -L, -H
 NO_JODY_SORT           Disable numerically-correct sort (use "naive" name sort)

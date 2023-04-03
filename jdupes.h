@@ -123,7 +123,7 @@ extern "C" {
 
 
 /* Behavior modification flags */
-extern uint_fast32_t flags, a_flags;
+extern uint_fast64_t flags, a_flags;
 #define F_RECURSE		(1U << 0)
 #define F_HIDEPROGRESS		(1U << 1)
 #define F_SOFTABORT		(1U << 2)
@@ -145,8 +145,9 @@ extern uint_fast32_t flags, a_flags;
 #define F_NOTRAVCHECK		(1U << 18)
 #define F_SKIPHASH		(1U << 19)
 #define F_BENCHMARKSTOP		(1U << 29)
-#define F_LOUD			(1U << 30)
-#define F_DEBUG			(1U << 31)
+
+#define F_LOUD			(1U << 62)
+#define F_DEBUG			(1U << 63)
 
 /* Action-related flags */
 #define FA_PRINTMATCHES		(1U << 0)
@@ -160,6 +161,7 @@ extern uint_fast32_t flags, a_flags;
 #define FA_MAKESYMLINKS		(1U << 8)
 #define FA_PRINTNULL		(1U << 9)
 #define FA_PRINTJSON		(1U << 10)
+#define FA_ERRORONDUPE		(1U << 11)
 
 /* Per-file true/false flags */
 #define FF_VALID_STAT		(1U << 0)

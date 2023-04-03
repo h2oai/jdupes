@@ -99,7 +99,7 @@ int err_mode = _O_TEXT;
 #endif
 
 /* Behavior modification flags (a=action, p=-P) */
-uint_fast32_t flags = 0, a_flags = 0, p_flags = 0;
+uint_fast64_t flags = 0, a_flags = 0, p_flags = 0;
 
 static const char *program_name;
 
@@ -1675,6 +1675,15 @@ static void registerpair(file_t **matchlist, file_t *newmatch,
   if (matchlist == NULL || newmatch == NULL || comparef == NULL) nullptr("registerpair()");
   LOUD(fprintf(stderr, "registerpair: '%s', '%s'\n", (*matchlist)->d_name, newmatch->d_name);)
 
+#ifndef NO_ERRORONDUPE
+  if (ISFLAG(a_flags, FA_ERRORONDUPE)) {
+    if (!ISFLAG(flags, F_HIDEPROGRESS)) fprintf(stderr, "\r");
+    fprintf(stderr, "Exiting based on user request (-E); duplicates found:\n");
+    printf("%s\n%s\n", (*matchlist)->d_name, newmatch->d_name);
+    exit(255);
+  }
+#endif
+
   SETFLAG((*matchlist)->flags, FF_HAS_DUPES);
   back = NULL;
   traverse = *matchlist;
@@ -1738,6 +1747,9 @@ static inline void help_text(void)
 #endif /* NO_DELETE */
 #ifdef DEBUG
   printf(" -D --debug       \toutput debug statistics after completion\n");
+#endif
+#ifndef NO_ERRORONDUPE
+  printf(" -E --error-on-dupe\texit on any duplicate found with status code 255\n");
 #endif
   printf(" -f --omit-first  \tomit the first file in each set of matches\n");
   printf(" -h --help        \tdisplay this help message\n");
@@ -1896,6 +1908,7 @@ int main(int argc, char **argv)
     { "chunk-size", 1, 0, 'C' },
     { "debug", 0, 0, 'D' },
     { "delete", 0, 0, 'd' },
+    { "error-on-dupe", 0, 0, 'E' },
     { "omitfirst", 0, 0, 'f' }, //LEGACY
     { "omit-first", 0, 0, 'f' },
     { "hardlinks", 0, 0, 'H' }, //LEGACY
@@ -1946,7 +1959,7 @@ int main(int argc, char **argv)
 #define GETOPT getopt
 #endif
 
-#define GETOPT_STRING "@019ABC:DdfHhIijKLlMmNnOo:P:pQqRrSsTtUuVvX:Zz"
+#define GETOPT_STRING "@019ABC:DdEfHhIijKLlMmNnOo:P:pQqRrSsTtUuVvX:Zz"
 
 /* Windows buffers our stderr output; don't let it do that */
 #ifdef ON_WINDOWS
@@ -2039,7 +2052,11 @@ int main(int argc, char **argv)
 #ifdef DEBUG
       SETFLAG(flags, F_DEBUG);
 #endif
+#ifndef NO_ERRORONDUPE
+    case 'E':
+      SETFLAG(a_flags, FA_ERRORONDUPE);
       break;
+#endif /* NO_ERRORONDUPE */
     case 'f':
       SETFLAG(a_flags, FA_OMITFIRST);
       LOUD(fprintf(stderr, "opt: omit first match from each match set (--omit-first)\n");)
@@ -2318,10 +2335,11 @@ int main(int argc, char **argv)
       !!ISFLAG(a_flags, FA_MAKESYMLINKS) +
       !!ISFLAG(a_flags, FA_PRINTJSON) +
       !!ISFLAG(a_flags, FA_PRINTUNIQUE) +
+      !!ISFLAG(a_flags, FA_ERRORONDUPE) +
       !!ISFLAG(a_flags, FA_DEDUPEFILES);
 
   if (pm > 1) {
-      fprintf(stderr, "Only one of --summarize, --print-summarize, --delete, --link-hard,\n--link-soft, --json, or --dedupe may be used\n");
+      fprintf(stderr, "Only one of --summarize, --print-summarize, --delete, --link-hard,\n--link-soft, --json, --error-on-dupe, or --dedupe may be used\n");
       string_malloc_destroy();
       exit(EXIT_FAILURE);
   }

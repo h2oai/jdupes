@@ -152,6 +152,7 @@ option is specified (delete, summarize, link, dedupe, etc.)
                         particular directory more than once; refer to the
                         documentation for additional information
  -D --debug             output debug statistics after completion
+ -E --error-on-dupe     exit on any duplicate found with status code 255
  -f --omit-first        omit the first file in each set of matches
  -h --help              display this help message
  -H --hard-links        treat any linked files as duplicate files. Normally
