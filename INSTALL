@@ -20,6 +20,11 @@ This installs all jdupes files under /usr/local by default. You may change this
 to a different location by editing the Makefile or specifying a PREFIX on the
 command line: make PREFIX=/usr install
 
+To force static or dynamic linking of libjodycode, use the make targets
+static_jc and dynamic_jc respectively. On Windows you must tell Make to use
+the DLL version explicitly: 'make FORCE_JC_DLL=1' (ld on Windows doesn't seem
+to respect -Wl,-Bdynamic properly).
+
 On Windows, you need to use MSYS2 with MinGW-w64 installed. Use this guide to
 install the build environment:
 
