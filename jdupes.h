@@ -225,8 +225,8 @@ typedef struct _filetree {
 
 /* This gets used in many functions */
 #ifdef ON_WINDOWS
- extern struct winstat s;
- #define STAT win_stat
+ extern struct jc_winstat s;
+ #define STAT jc_win_stat
 #else
  extern struct stat s;
  #define STAT stat
