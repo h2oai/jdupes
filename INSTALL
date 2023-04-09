@@ -1,11 +1,19 @@
 Installing jdupes
 -----------------------------------------------------------------------------
+You must have libjodycode to build jdupes. If your distribution doesn't have
+libjodycode, get it here:
+
+https://github.com/jbruchon/libjodycode
+
+If you build libjodycode and copy libjodycode.a to the jdupes directory then
+the Makefile will automatically link that file into the executable, removing
+all external dependencies other than the C library.
+
 To install the program with the default options and flags, just issue the
 following commands (note that btrfs support is off by default):
 
 make
-su root
-make install
+sudo make install
 
 This installs all jdupes files under /usr/local by default. You may change this
 to a different location by editing the Makefile or specifying a PREFIX on the
