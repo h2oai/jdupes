@@ -1,14 +1,19 @@
-Installing jdupes
+Building and Installing jdupes
 -----------------------------------------------------------------------------
-You must have libjodycode to build jdupes. If your distribution doesn't have
-libjodycode, get it here:
+You must have libjodycode to build and run jdupes. Install the libjodycode
+library and development headers from your distribution package manager. These
+will probably be called "libjodycode" and "libjodycode-dev".
+
+If your distribution doesn't have libjodycode, get it here:
 
 https://github.com/jbruchon/libjodycode
 
-If the libjodycode directory is besides jdupes at ../libjodycode/ and you have
-already built libjodycode, the Makefile will automatically link to that build.
-Otherwise, install the libjodycode library and headers from your distribution
-package manager to link to the system default version.
+If you clone and build libjodycode into ../libjodycode/ and pass the option
+USE_NEARBY_JC=1 to make then the build will use the header and library in
+that location instead of the libjodycode already installed on the system.
+You can then test the dynamically linked jdupes by telling it where to look:
+
+LD_LIBRARY_PATH=../libjodycode ./jdupes
 
 To install the program with the default options and flags, just issue the
 following commands (note that btrfs support is off by default):
@@ -18,7 +23,9 @@ sudo make install
 
 This installs all jdupes files under /usr/local by default. You may change this
 to a different location by editing the Makefile or specifying a PREFIX on the
-command line: make PREFIX=/usr install
+command line: 'make PREFIX=/usr install'. DESTDIR is also supported to place
+everything into a different location for i.e. building distribution packages:
+'make DESTDIR=/pkg/jdupes install'.
 
 To force static or dynamic linking of libjodycode, use the make targets
 static_jc and dynamic_jc respectively. On Windows you must tell Make to use
@@ -72,6 +79,7 @@ BARE_BONES             Build LOW_MEMORY with very aggressive code removal
 USE_JODY_HASH          Use jody_hash instead of xxHash64 (smaller, slower)
 EXTENRAL_HASH_LIB      Force hash code to be linked in externally (no build)
 FORCE_JC_DLL           Windows only: force linking to nearby libjodycode.dll
+USE_NEARBY_JC          Use the libjodycode at ../libjodycode if it exists
 GC_SECTIONS            Use gcc/ld section garbage collection to reduce size
 
 EXTERNAL_HASH_LIB will build jdupes with the interface code for the chosen hash
