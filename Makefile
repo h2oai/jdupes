@@ -186,7 +186,11 @@ OBJS += jdupes.o
 OBJS += act_deletefiles.o act_linkfiles.o act_printmatches.o act_summarize.o act_printjson.o
 OBJS += $(ADDITIONAL_OBJECTS)
 
+ifneq ("$(wildcard libjodycode.a)","")
+LDFLAGS += -L. -l:./libjodycode.a
+else
 LDFLAGS += -ljodycode
+endif
 
 all: $(PROGRAM_NAME)
 
