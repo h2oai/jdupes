@@ -457,7 +457,7 @@ int match_extensions(char *path, const char *extlist)
       /* Skip serial commas */
       while (*extlist == ',') extlist++;
       if (extlist == ext)  goto skip_empty;
-      if (strncasecmp(dot, ext, len) == 0 && extlen == len) {
+      if (jc_strncaseeq(dot, ext, len) == 0 && extlen == len) {
         LOUD(fprintf(stderr, "match_extensions: matched on extension '%s' (len %" PRIdMAX ")\n", dot, (intmax_t)len);)
         return 1;
       }
@@ -556,7 +556,7 @@ static void add_extfilter(const char *option)
   LOUD(fprintf(stderr, "add_extfilter '%s'\n", option);)
 
   /* Invoke help text if requested */
-  if (strcasecmp(option, "help") == 0) { help_text_extfilter(); exit(EXIT_SUCCESS); }
+  if (jc_strcaseeq(option, "help") == 0) { help_text_extfilter(); exit(EXIT_SUCCESS); }
 
   opt = jc_string_malloc(strlen(option) + 1);
   if (opt == NULL) jc_oom("add_extfilter option");
@@ -605,7 +605,7 @@ static void add_extfilter(const char *option)
     extf->size = strtoll(p, &p, 10);
     /* Handle suffix, if any */
     if (*p != '\0') {
-      while (ss->suffix != NULL && strcasecmp(ss->suffix, p) != 0) ss++;
+      while (ss->suffix != NULL && jc_strcaseeq(ss->suffix, p) != 0) ss++;
       if (ss->suffix == NULL) goto error_bad_size_suffix;
       extf->size *= ss->multiplier;
     }
@@ -2239,9 +2239,9 @@ int main(int argc, char **argv)
       exit(EXIT_SUCCESS);
     case 'o':
 #ifndef NO_MTIME  /* Remove if new order types are added! */
-      if (!strncasecmp("name", optarg, 5)) {
+      if (!jc_strncaseeq("name", optarg, 5)) {
         ordertype = ORDER_NAME;
-      } else if (!strncasecmp("time", optarg, 5)) {
+      } else if (!jc_strncaseeq("time", optarg, 5)) {
         ordertype = ORDER_TIME;
       } else {
         fprintf(stderr, "invalid value for --order: '%s'\n", optarg);
