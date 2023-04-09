@@ -5,9 +5,10 @@ libjodycode, get it here:
 
 https://github.com/jbruchon/libjodycode
 
-If you build libjodycode and copy libjodycode.a to the jdupes directory then
-the Makefile will automatically link that file into the executable, removing
-all external dependencies other than the C library.
+If the libjodycode directory is besides jdupes at ../libjodycode/ and you have
+already built libjodycode, the Makefile will automatically link to that build.
+Otherwise, install the libjodycode library and headers from your distribution
+package manager to link to the system default version.
 
 To install the program with the default options and flags, just issue the
 following commands (note that btrfs support is off by default):
@@ -65,6 +66,7 @@ LOW_MEMORY             Build for extremely low-RAM environments (CAUTION!)
 BARE_BONES             Build LOW_MEMORY with very aggressive code removal
 USE_JODY_HASH          Use jody_hash instead of xxHash64 (smaller, slower)
 EXTENRAL_HASH_LIB      Force hash code to be linked in externally (no build)
+FORCE_JC_DLL           Windows only: force linking to nearby libjodycode.dll
 
 EXTERNAL_HASH_LIB will build jdupes with the interface code for the chosen hash
 type (xxhash vs jody_hash) but will suppress building the actual code. This is

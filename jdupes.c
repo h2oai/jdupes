@@ -1960,14 +1960,10 @@ int main(int argc, char **argv)
   static char **argv;
   argv = (char **)jc_string_malloc(sizeof(char *) * (size_t)argc);
   if (!argv) jc_oom("main() unicode argv");
-  widearg_to_argv(argc, wargv, argv);
+  jc_widearg_to_argv(argc, wargv, argv);
   /* fix up __argv so getopt etc. don't crash */
   __argv = argv;
-  /* Only use UTF-16 for terminal output, else use UTF-8 */
-  if (!_isatty(_fileno(stdout))) out_mode = _O_BINARY;
-  else out_mode = _O_U16TEXT;
-  if (!_isatty(_fileno(stderr))) err_mode = _O_BINARY;
-  else err_mode = _O_U16TEXT;
+  jc_set_output_modes(0x0c);
 #endif /* UNICODE */
 
 #ifndef NO_CHUNKSIZE

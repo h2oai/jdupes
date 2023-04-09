@@ -186,25 +186,34 @@ OBJS += jdupes.o
 OBJS += act_deletefiles.o act_linkfiles.o act_printmatches.o act_summarize.o act_printjson.o
 OBJS += $(ADDITIONAL_OBJECTS)
 
-ifneq ("$(wildcard libjodycode.a)","")
-LDFLAGS += -L. -l:./libjodycode.a
+### Find nearby libjodycode
+ifneq ("$(wildcard ../libjodycode/libjodycode.h)","")
+COMPILER_OPTIONS += -I../libjodycode -L../libjodycode
+endif
+ifdef FORCE_JC_DLL
+LDFLAGS += -l:../libjodycode/libjodycode.dll
 else
 LDFLAGS += -ljodycode
 endif
 
+
+
 all: $(PROGRAM_NAME)
 
+dynamic_jc: $(PROGRAM_NAME)
+	$(CC) $(CFLAGS) $(OBJS) -Wl,-Bdynamic $(LDFLAGS) -o $(PROGRAM_NAME)
+
 static_jc: $(PROGRAM_NAME)
-	$(CC) $(CFLAGS) -o $(PROGRAM_NAME) $(OBJS) -Wl,-Bstatic $(LDFLAGS) -Wl,-Bdynamic
+	$(CC) $(CFLAGS) $(OBJS) -Wl,-Bstatic $(LDFLAGS) -Wl,-Bdynamic -o $(PROGRAM_NAME)
 
 static: $(PROGRAM_NAME)
-	$(CC) $(CFLAGS) -o $(PROGRAM_NAME) $(OBJS) -static $(LDFLAGS)
+	$(CC) $(CFLAGS) $(OBJS) -static $(LDFLAGS) -o $(PROGRAM_NAME)
 
 static_stripped: $(PROGRAM_NAME) static
 	strip $(PROGRAM_NAME)
 
 $(PROGRAM_NAME): $(OBJS)
-	$(CC) $(CFLAGS) -o $(PROGRAM_NAME) $(OBJS) $(LDFLAGS)
+	$(CC) $(CFLAGS) $(OBJS) $(LDFLAGS) -o $(PROGRAM_NAME)
 
 winres.o: winres.rc winres.manifest.xml
 	./tune_winres.sh

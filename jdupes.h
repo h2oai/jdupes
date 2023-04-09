@@ -66,10 +66,14 @@ extern "C" {
 /* Windows + Unicode compilation */
 #ifdef UNICODE
  #ifndef PATHBUF_SIZE
-  #define WPATH_MAX 8192
+  #ifndef WPATH_MAX
+   #define WPATH_MAX 8192
+  #endif
   #define PATHBUF_SIZE WPATH_MAX
  #else
-  #define WPATH_MAX PATHBUF_SIZE
+  #ifndef WPATH_MAX
+   #define WPATH_MAX PATHBUF_SIZE
+  #endif
  #endif /* PATHBUF_SIZE */
   typedef wchar_t wpath_t[WPATH_MAX];
   extern int out_mode;
