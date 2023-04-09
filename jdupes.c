@@ -48,7 +48,7 @@
 #include <sys/utsname.h>
 #endif
 
-#include "libjodycode.h"
+#include <libjodycode.h>
 #include "version.h"
 
 /* Headers for post-scanning actions */
@@ -351,7 +351,7 @@ static int findarg(const char * const arg, const int start,
   int x;
 
   for (x = start; x < argc; x++)
-    if (strcmp(argv[x], arg) == 0)
+    if (jc_streq(argv[x], arg) == 0)
       return x;
 
   return x;
@@ -571,7 +571,7 @@ static void add_extfilter(const char *option)
     p++;
   }
 
-  while (tags->tag != NULL && strcmp(tags->tag, opt) != 0) tags++;
+  while (tags->tag != NULL && jc_streq(tags->tag, opt) != 0) tags++;
   if (tags->tag == NULL) goto error_bad_filter;
 
   /* Check for a tag that requires a value */
@@ -753,7 +753,7 @@ static int check_singlefile(file_t * const restrict newfile)
     if (newfile->d_name == NULL) jc_nullptr("check_singlefile newfile->d_name");
     strcpy(tp, newfile->d_name);
     tp = basename(tp);
-    if (tp[0] == '.' && strcmp(tp, ".") && strcmp(tp, "..")) {
+    if (tp[0] == '.' && jc_streq(tp, ".") && jc_streq(tp, "..")) {
       LOUD(fprintf(stderr, "check_singlefile: excluding hidden file (-A on)\n"));
       return 1;
     }
@@ -1069,7 +1069,7 @@ static void grokdir(const char * const restrict dir,
 #endif /* UNICODE */
 
     LOUD(fprintf(stderr, "grokdir: readdir: '%s'\n", dirinfo->d_name));
-    if (!strcmp(dirinfo->d_name, ".") || !strcmp(dirinfo->d_name, "..")) continue;
+    if (!jc_streq(dirinfo->d_name, ".") || !jc_streq(dirinfo->d_name, "..")) continue;
     if (!ISFLAG(flags, F_HIDEPROGRESS)) {
       gettimeofday(&time2, NULL);
       if (progress == 0 || time2.tv_sec > time1.tv_sec) {
@@ -2112,9 +2112,9 @@ int main(int argc, char **argv)
       break;
     case 'P':
       LOUD(fprintf(stderr, "opt: print early: '%s' (--print)\n", optarg);)
-      if (strcmp(optarg, "partial") == 0) SETFLAG(p_flags, PF_PARTIAL);
-      else if (strcmp(optarg, "early") == 0) SETFLAG(p_flags, PF_EARLYMATCH);
-      else if (strcmp(optarg, "fullhash") == 0) SETFLAG(p_flags, PF_FULLHASH);
+      if (jc_streq(optarg, "partial") == 0) SETFLAG(p_flags, PF_PARTIAL);
+      else if (jc_streq(optarg, "early") == 0) SETFLAG(p_flags, PF_EARLYMATCH);
+      else if (jc_streq(optarg, "fullhash") == 0) SETFLAG(p_flags, PF_FULLHASH);
       else {
         fprintf(stderr, "Option '%s' is not valid for -P\n", optarg);
         exit(EXIT_FAILURE);
