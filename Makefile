@@ -103,7 +103,7 @@ ifdef ON_WINDOWS
 	ifndef NO_UNICODE
 		UNICODE=1
 		COMPILER_OPTIONS += -municode
-		PROGRAM_SUFFIX=.exe
+		SUFFIX=.exe
 	endif
 	COMPILER_OPTIONS += -D__USE_MINGW_ANSI_STDIO=1 -DON_WINDOWS=1
 	ifeq ($(UNAME_S), MINGW32_NT-5.1)
@@ -205,19 +205,19 @@ OBJS += act_deletefiles.o act_linkfiles.o act_printmatches.o act_summarize.o act
 all: $(PROGRAM_NAME)
 
 dynamic_jc: $(PROGRAM_NAME)
-	$(CC) $(CFLAGS) $(OBJS) -Wl,-Bdynamic $(LDFLAGS) -o $(PROGRAM_NAME)
+	$(CC) $(CFLAGS) $(OBJS) -Wl,-Bdynamic $(LDFLAGS) -o $(PROGRAM_NAME)$(SUFFIX)
 
 static_jc: $(PROGRAM_NAME)
-	$(CC) $(CFLAGS) $(OBJS) -Wl,-Bstatic $(LDFLAGS) -Wl,-Bdynamic -o $(PROGRAM_NAME)
+	$(CC) $(CFLAGS) $(OBJS) -Wl,-Bstatic $(LDFLAGS) -Wl,-Bdynamic -o $(PROGRAM_NAME)$(SUFFIX)
 
 static: $(PROGRAM_NAME)
-	$(CC) $(CFLAGS) $(OBJS) -static $(LDFLAGS) -o $(PROGRAM_NAME)
+	$(CC) $(CFLAGS) $(OBJS) -static $(LDFLAGS) -o $(PROGRAM_NAME)$(SUFFIX)
 
 static_stripped: $(PROGRAM_NAME) static
-	strip $(PROGRAM_NAME)
+	strip $(PROGRAM_NAME)$(SUFFIX)
 
 $(PROGRAM_NAME): $(OBJS)
-	$(CC) $(CFLAGS) $(OBJS) $(LDFLAGS) -o $(PROGRAM_NAME)
+	$(CC) $(CFLAGS) $(OBJS) $(LDFLAGS) -o $(PROGRAM_NAME)$(SUFFIX)
 
 winres.o: winres.rc winres.manifest.xml
 	./tune_winres.sh
@@ -232,7 +232,7 @@ installdirs:
 	test -e $(DESTDIR)$(MAN_DIR) || $(MKDIR) $(DESTDIR)$(MAN_DIR)
 
 install: $(PROGRAM_NAME) installdirs
-	$(INSTALL_PROGRAM)	$(PROGRAM_NAME)   $(DESTDIR)$(BIN_DIR)/$(PROGRAM_NAME)
+	$(INSTALL_PROGRAM)	$(PROGRAM_NAME)$(SUFFIX)   $(DESTDIR)$(BIN_DIR)/$(PROGRAM_NAME)$(SUFFIX)
 	$(INSTALL_DATA)		$(PROGRAM_NAME).1 $(DESTDIR)$(MAN_DIR)/$(PROGRAM_NAME).$(MAN_EXT)
 
 uninstalldirs:
@@ -240,17 +240,17 @@ uninstalldirs:
 	-test -e $(DESTDIR)$(MAN_DIR) && $(RMDIR) $(DESTDIR)$(MAN_DIR)
 
 uninstall: uninstalldirs
-	$(RM)	$(DESTDIR)$(BIN_DIR)/$(PROGRAM_NAME)
+	$(RM)	$(DESTDIR)$(BIN_DIR)/$(PROGRAM_NAME)$(SUFFIX)
 	$(RM)	$(DESTDIR)$(MAN_DIR)/$(PROGRAM_NAME).$(MAN_EXT)
 
 test:
 	./test.sh
 
 stripped: $(PROGRAM_NAME)
-	strip $(PROGRAM_NAME)$(PROGRAM_SUFFIX)
+	strip $(PROGRAM_NAME)$(SUFFIX)
 
 clean:
-	$(RM) $(OBJS) $(OBJS_CLEAN) build_date.h $(PROGRAM_NAME) $(PROGRAM_NAME).exe *~ .*.un~ *.gcno *.gcda *.gcov
+	$(RM) $(OBJS) $(OBJS_CLEAN) build_date.h $(PROGRAM_NAME)$(SUFFIX) *~ .*.un~ *.gcno *.gcda *.gcov
 
 distclean: clean
 	$(RM) *.pkg.tar.*
