@@ -2528,10 +2528,12 @@ skip_all_scan_code:
 #ifndef NO_TRAVCHECK
     fprintf(stderr, "travdone allocs: left %" PRIuMAX ", right %" PRIuMAX " = heaviness %" PRIdMAX "\n", travdone_lefts, travdone_rights, (uintmax_t)(travdone_rights - travdone_lefts));
 #endif
+#ifdef SMA_DEBUG
     fprintf(stderr, "SMA: allocs %" PRIuMAX ", free %" PRIuMAX " (merge %" PRIuMAX ", repl %" PRIuMAX "), fail %" PRIuMAX ", reuse %" PRIuMAX ", scan %" PRIuMAX ", tails %" PRIuMAX "\n",
         sma_allocs, sma_free_good, sma_free_merged, sma_free_replaced,
         sma_free_ignored, sma_free_reclaimed,
         sma_free_scanned, sma_free_tails);
+#endif
 #ifndef NO_CHUNKSIZE
     if (manual_chunk_size > 0) fprintf(stderr, "I/O chunk size: %ld KiB (manually set)\n", manual_chunk_size >> 10);
     else {
