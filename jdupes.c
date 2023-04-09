@@ -2035,6 +2035,7 @@ int main(int argc, char **argv)
     case 'D':
 #ifdef DEBUG
       SETFLAG(flags, F_DEBUG);
+      break;
 #endif
 #ifndef NO_ERRORONDUPE
     case 'E':
