@@ -183,8 +183,10 @@ COMPILER_OPTIONS += -DSTATIC_DEDUPE_H
 endif
 
 ### Find nearby libjodycode
-ifneq ("$(wildcard ../libjodycode/libjodycode.h)","")
-COMPILER_OPTIONS += -I../libjodycode -L../libjodycode
+ifdef USE_NEARBY_JC
+ ifneq ("$(wildcard ../libjodycode/libjodycode.h)","")
+ COMPILER_OPTIONS += -I../libjodycode -L../libjodycode
+ endif
 endif
 ifdef FORCE_JC_DLL
 LINK_OPTIONS += -l:../libjodycode/libjodycode.dll
