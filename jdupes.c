@@ -1288,7 +1288,7 @@ static jdupes_hash_t *get_filehash(const file_t * const restrict checkfile,
 #ifndef USE_JODY_HASH
     XXH64_update(xxhstate, chunk, bytes_to_read);
 #else
-    *hash = jody_block_hash(chunk, *hash, bytes_to_read);
+    *hash = jc_block_hash(chunk, *hash, bytes_to_read);
 #endif
 
     if ((off_t)bytes_to_read > fsize) break;
