@@ -41,12 +41,21 @@ INSTALL = install
 RM      = rm -f
 RMDIR	= rmdir -p
 MKDIR   = mkdir -p
+INSTALL_PROGRAM = $(INSTALL) -m 0755
+INSTALL_DATA    = $(INSTALL) -m 0644
 
 # Make Configuration
 COMPILER_OPTIONS = -Wall -Wwrite-strings -Wcast-align -Wstrict-aliasing -Wstrict-prototypes -Wpointer-arith -Wundef
 COMPILER_OPTIONS += -Wshadow -Wfloat-equal -Waggregate-return -Wcast-qual -Wswitch-default -Wswitch-enum -Wconversion -Wunreachable-code -Wformat=2
 COMPILER_OPTIONS += -std=gnu99 -D_FILE_OFFSET_BITS=64 -fstrict-aliasing -pipe
 COMPILER_OPTIONS += -DSMA_MAX_FREE=11 -DNO_ATIME
+
+# Remove unused code if requested
+ifdef GC_SECTIONS
+COMPILER_OPTIONS += -fdata-sections -ffunction-sections
+LINK_OPTIONS += -Wl,--gc-sections
+endif
+
 
 UNAME_S=$(shell uname -s)
 
@@ -173,29 +182,22 @@ ifdef STATIC_DEDUPE_H
 COMPILER_OPTIONS += -DSTATIC_DEDUPE_H
 endif
 
-CFLAGS += $(COMPILER_OPTIONS) $(CFLAGS_EXTRA)
-
-INSTALL_PROGRAM = $(INSTALL) -m 0755
-INSTALL_DATA    = $(INSTALL) -m 0644
-
-# ADDITIONAL_OBJECTS - some platforms will need additional object files
-# to support features not supplied by their vendor. Eg: GNU getopt()
-#ADDITIONAL_OBJECTS += getopt.o
-
-OBJS += jdupes.o
-OBJS += act_deletefiles.o act_linkfiles.o act_printmatches.o act_summarize.o act_printjson.o
-OBJS += $(ADDITIONAL_OBJECTS)
-
 ### Find nearby libjodycode
 ifneq ("$(wildcard ../libjodycode/libjodycode.h)","")
 COMPILER_OPTIONS += -I../libjodycode -L../libjodycode
 endif
 ifdef FORCE_JC_DLL
-LDFLAGS += -l:../libjodycode/libjodycode.dll
+LINK_OPTIONS += -l:../libjodycode/libjodycode.dll
 else
-LDFLAGS += -ljodycode
+LINK_OPTIONS += -ljodycode
 endif
 
+
+CFLAGS += $(COMPILER_OPTIONS) $(CFLAGS_EXTRA)
+LDFLAGS += $(LINK_OPTIONS) $(LDFLAGS_EXTRA)
+
+OBJS += jdupes.o
+OBJS += act_deletefiles.o act_linkfiles.o act_printmatches.o act_summarize.o act_printjson.o
 
 
 all: $(PROGRAM_NAME)
