@@ -61,10 +61,10 @@ mkdir -p "$PKGNAME"
 test ! -d "$PKGNAME" && echo "Can't create directory for package" && exit 1
 cp CHANGES README.md LICENSE $PKGNAME/
 E1=1; E2=1; E3=1; E4=1
-make clean && make -j$PM ENABLE_DEDUPE=1 stripped && cp $NAME$EXT $PKGNAME/$NAME$EXT && E1=0
-make clean && make -j$PM ENABLE_DEDUPE=1 LOUD=1 stripped && cp $NAME$EXT $PKGNAME/${NAME}-loud$EXT && E2=0
-make clean && make -j$PM LOW_MEMORY=1 stripped && cp $NAME$EXT $PKGNAME/${NAME}-lowmem$EXT && E3=0
-make clean && make -j$PM BARE_BONES=1 stripped && cp $NAME$EXT $PKGNAME/${NAME}-barebones$EXT && E4=0
+make clean && make -j$PM ENABLE_DEDUPE=1 USE_NEARBY_JC=1 static_jc stripped && cp $NAME$EXT $PKGNAME/$NAME$EXT && E1=0
+make clean && make -j$PM ENABLE_DEDUPE=1 LOUD=1 USE_NEARBY_JC=1 static_jc stripped && cp $NAME$EXT $PKGNAME/${NAME}-loud$EXT && E2=0
+make clean && make -j$PM LOW_MEMORY=1 USE_NEARBY_JC=1 static_jc stripped && cp $NAME$EXT $PKGNAME/${NAME}-lowmem$EXT && E3=0
+make clean && make -j$PM BARE_BONES=1 USE_NEARBY_JC=1 static_jc stripped && cp $NAME$EXT $PKGNAME/${NAME}-barebones$EXT && E4=0
 make clean
 test $((E1 + E2 + E3 + E4)) -gt 0 && echo "Error building packages; aborting." && exit 1
 # Make a fat binary on macOS x86_64 if possible
