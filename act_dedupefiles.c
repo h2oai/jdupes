@@ -55,7 +55,7 @@ extern void dedupefiles(file_t * restrict files)
   uint64_t total_files = 0;
 
   LOUD(fprintf(stderr, "\ndedupefiles: %p\n", files);)
-  if (!files) nullptr("dedupefiles()");
+  if (!files) jc_nullptr("dedupefiles()");
 
   fdr = (struct file_dedupe_range *)calloc(1,
         sizeof(struct file_dedupe_range)

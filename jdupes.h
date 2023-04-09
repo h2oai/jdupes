@@ -27,14 +27,10 @@ extern "C" {
 #include <stdint.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include "string_malloc.h"
-#include "jody_sort.h"
-#include "version.h"
+#include <libjodycode.h>
 
 #ifndef USE_JODY_HASH
 #include "xxhash.h"
-#else
-#include "jody_hash.h"
 #endif /* USE_JODY_HASH */
 
 /* Set hash type (change this if swapping in a different hash function) */
@@ -81,14 +77,6 @@ extern "C" {
  #define M2W(a,b) MultiByteToWideChar(CP_UTF8, 0, a, -1, (LPWSTR)b, WPATH_MAX)
  #define W2M(a,b) WideCharToMultiByte(CP_UTF8, 0, a, -1, (LPSTR)b, WPATH_MAX, NULL, NULL)
 #endif /* UNICODE */
-
-#ifdef ON_WINDOWS
- #include "jody_win_stat.h"
-#endif
-
-#ifndef NO_SYMLINKS
-#include "jody_paths.h"
-#endif
 
 #define ISFLAG(a,b) ((a & b) == b)
 #define SETFLAG(a,b) (a |= b)

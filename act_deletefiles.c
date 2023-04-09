@@ -9,11 +9,10 @@
 #include <inttypes.h>
 #include <string.h>
 
+#include <libjodycode.h>
 #include "jdupes.h"
-#include "jody_win_unicode.h"
 #include "act_deletefiles.h"
 #include "act_linkfiles.h"
-#include "oom.h"
 
 /* For interactive deletion input */
 #define INPUT_SIZE 512
@@ -45,7 +44,7 @@ extern void deletefiles(file_t *files, int prompt, FILE *tty)
   preserve = (unsigned int *) malloc(sizeof(int) * max);
   preservestr = (char *) malloc(INPUT_SIZE);
 
-  if (!dupelist || !preserve || !preservestr) oom("deletefiles() structures");
+  if (!dupelist || !preserve || !preservestr) jc_oom("deletefiles() structures");
 
   for (; files; files = files->next) {
     if (ISFLAG(files->flags, FF_HAS_DUPES)) {
@@ -54,7 +53,7 @@ extern void deletefiles(file_t *files, int prompt, FILE *tty)
       dupelist[counter] = files;
 
       if (prompt) {
-        printf("[%u] ", counter); fwprint(stdout, files->d_name, 1);
+        printf("[%u] ", counter); jc_fwprint(stdout, files->d_name, 1);
       }
 
       tmpfile = files->duplicates;
@@ -62,7 +61,7 @@ extern void deletefiles(file_t *files, int prompt, FILE *tty)
       while (tmpfile) {
         dupelist[++counter] = tmpfile;
         if (prompt) {
-          printf("[%u] ", counter); fwprint(stdout, tmpfile->d_name, 1);
+          printf("[%u] ", counter); jc_fwprint(stdout, tmpfile->d_name, 1);
         }
         tmpfile = tmpfile->duplicates;
       }
@@ -100,7 +99,7 @@ extern void deletefiles(file_t *files, int prompt, FILE *tty)
         /* tail of buffer must be a newline */
         while (preservestr[i] != '\n') {
           tstr = (char *)realloc(preservestr, strlen(preservestr) + 1 + INPUT_SIZE);
-          if (!tstr) oom("deletefiles() prompt string");
+          if (!tstr) jc_oom("deletefiles() prompt string");
 
           preservestr = tstr;
           if (!fgets(preservestr + i + 1, INPUT_SIZE, tty))
@@ -158,26 +157,26 @@ stop_scanning:
 
       for (x = 1; x <= counter; x++) {
         if (preserve[x]) {
-          printf("   [+] "); fwprint(stdout, dupelist[x]->d_name, 1);
+          printf("   [+] "); jc_fwprint(stdout, dupelist[x]->d_name, 1);
         } else {
 #ifdef UNICODE
           if (!M2W(dupelist[x]->d_name, wstr)) {
-            printf("   [!] "); fwprint(stdout, dupelist[x]->d_name, 0);
+            printf("   [!] "); jc_fwprint(stdout, dupelist[x]->d_name, 0);
             printf("-- MultiByteToWideChar failed\n");
             continue;
           }
 #endif
           if (file_has_changed(dupelist[x])) {
-            printf("   [!] "); fwprint(stdout, dupelist[x]->d_name, 0);
+            printf("   [!] "); jc_fwprint(stdout, dupelist[x]->d_name, 0);
             printf("-- file changed since being scanned\n");
 #ifdef UNICODE
           } else if (DeleteFileW(wstr) != 0) {
 #else
           } else if (remove(dupelist[x]->d_name) == 0) {
 #endif
-            printf("   [-] "); fwprint(stdout, dupelist[x]->d_name, 1);
+            printf("   [-] "); jc_fwprint(stdout, dupelist[x]->d_name, 1);
           } else {
-            printf("   [!] "); fwprint(stdout, dupelist[x]->d_name, 0);
+            printf("   [!] "); jc_fwprint(stdout, dupelist[x]->d_name, 0);
             printf("-- unable to delete file\n");
           }
         }

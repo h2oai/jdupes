@@ -11,12 +11,8 @@
 #include <string.h>
 #include <errno.h>
 
+#include <libjodycode.h>
 #include "act_linkfiles.h"
-#include "jody_win_unicode.h"
-#include "oom.h"
-#ifdef ON_WINDOWS
- #include "jody_win_stat.h"
-#endif
 
 #ifdef UNICODE
  wpath_t wname, wname2;
@@ -81,7 +77,7 @@ extern void linkfiles(file_t *files, const int linktype, const int only_current)
 
   dupelist = (file_t**) malloc(sizeof(file_t*) * max);
 
-  if (!dupelist) oom("linkfiles() dupelist");
+  if (!dupelist) jc_oom("linkfiles() dupelist");
 
   while (files) {
     if (ISFLAG(files->flags, FF_HAS_DUPES)) {
@@ -125,13 +121,13 @@ extern void linkfiles(file_t *files, const int linktype, const int only_current)
 #endif
       }
       if (!ISFLAG(flags, F_HIDEPROGRESS)) {
-        printf("[SRC] "); fwprint(stdout, srcfile->d_name, 1);
+        printf("[SRC] "); jc_fwprint(stdout, srcfile->d_name, 1);
       }
 #ifdef ENABLE_CLONEFILE_LINK
       if (linktype == 2) {
         if (STAT(srcfile->d_name, &s) != 0) {
           fprintf(stderr, "warning: stat() on source file failed, skipping:\n[SRC] ");
-          fwprint(stderr, srcfile->d_name, 1);
+          jc_fwprint(stderr, srcfile->d_name, 1);
           continue;
         }
 
@@ -146,7 +142,7 @@ extern void linkfiles(file_t *files, const int linktype, const int only_current)
           /* Can't hard link files on different devices */
           if (srcfile->device != dupelist[x]->device) {
             fprintf(stderr, "warning: hard link target on different device, not linking:\n-//-> ");
-            fwprint(stderr, dupelist[x]->d_name, 1);
+            jc_fwprint(stderr, dupelist[x]->d_name, 1);
             continue;
           } else {
             /* The devices for the files are the same, but we still need to skip
@@ -155,7 +151,7 @@ extern void linkfiles(file_t *files, const int linktype, const int only_current)
               /* Don't show == arrows when not matching against other hard links */
               if (ISFLAG(flags, F_CONSIDERHARDLINKS))
                 if (!ISFLAG(flags, F_HIDEPROGRESS)) {
-                  printf("-==-> "); fwprint(stdout, dupelist[x]->d_name, 1);
+                  printf("-==-> "); jc_fwprint(stdout, dupelist[x]->d_name, 1);
                 }
             continue;
             }
@@ -171,7 +167,7 @@ extern void linkfiles(file_t *files, const int linktype, const int only_current)
         }
 #ifdef UNICODE
         if (!M2W(dupelist[x]->d_name, wname)) {
-          fprintf(stderr, "error: MultiByteToWideChar failed: "); fwprint(stderr, dupelist[x]->d_name, 1);
+          fprintf(stderr, "error: MultiByteToWideChar failed: "); jc_fwprint(stderr, dupelist[x]->d_name, 1);
           continue;
         }
 #endif /* UNICODE */
@@ -184,7 +180,7 @@ extern void linkfiles(file_t *files, const int linktype, const int only_current)
 #endif
         {
           fprintf(stderr, "warning: link target is a read-only file, not linking:\n-//-> ");
-          fwprint(stderr, dupelist[x]->d_name, 1);
+          jc_fwprint(stderr, dupelist[x]->d_name, 1);
           continue;
         }
         /* Check file pairs for modification before linking */
@@ -192,14 +188,14 @@ extern void linkfiles(file_t *files, const int linktype, const int only_current)
         i = file_has_changed(srcfile);
         if (i) {
           fprintf(stderr, "warning: source file modified since scanned; changing source file:\n[SRC] ");
-          fwprint(stderr, dupelist[x]->d_name, 1);
+          jc_fwprint(stderr, dupelist[x]->d_name, 1);
           LOUD(fprintf(stderr, "file_has_changed: %d\n", i);)
           srcfile = dupelist[x];
           continue;
         }
         if (file_has_changed(dupelist[x])) {
           fprintf(stderr, "warning: target file modified since scanned, not linking:\n-//-> ");
-          fwprint(stderr, dupelist[x]->d_name, 1);
+          jc_fwprint(stderr, dupelist[x]->d_name, 1);
           continue;
         }
 #ifdef ON_WINDOWS
@@ -207,7 +203,7 @@ extern void linkfiles(file_t *files, const int linktype, const int only_current)
          * by skipping linking or changing the link source file as needed */
         if (STAT(srcfile->d_name, &s) != 0) {
           fprintf(stderr, "warning: win_stat() on source file failed, changing source file:\n[SRC] ");
-          fwprint(stderr, dupelist[x]->d_name, 1);
+          jc_fwprint(stderr, dupelist[x]->d_name, 1);
           srcfile = dupelist[x];
           continue;
         }
@@ -219,7 +215,7 @@ extern void linkfiles(file_t *files, const int linktype, const int only_current)
         if (STAT(dupelist[x]->d_name, &s) != 0) continue;
         if (s.st_nlink >= 1024) {
           fprintf(stderr, "warning: maximum destination link count reached, skipping:\n-//-> ");
-          fwprint(stderr, dupelist[x]->d_name, 1);
+          jc_fwprint(stderr, dupelist[x]->d_name, 1);
           continue;
         }
 #endif
@@ -227,7 +223,7 @@ extern void linkfiles(file_t *files, const int linktype, const int only_current)
         if (linktype == 2) {
           if (STAT(dupelist[x]->d_name, &s) != 0) {
             fprintf(stderr, "warning: stat() on destination file failed, skipping:\n-##-> ");
-            fwprint(stderr, dupelist[x]->d_name, 1);
+            jc_fwprint(stderr, dupelist[x]->d_name, 1);
             continue;
           }
 
@@ -252,7 +248,7 @@ extern void linkfiles(file_t *files, const int linktype, const int only_current)
         /* Rename the destination file to the temporary name */
 #ifdef UNICODE
         if (!M2W(tempname, wname2)) {
-          fprintf(stderr, "error: MultiByteToWideChar failed: "); fwprint(stderr, srcfile->d_name, 1);
+          fprintf(stderr, "error: MultiByteToWideChar failed: "); jc_fwprint(stderr, srcfile->d_name, 1);
           continue;
         }
         i = MoveFileW(wname, wname2) ? 0 : 1;
@@ -261,7 +257,7 @@ extern void linkfiles(file_t *files, const int linktype, const int only_current)
 #endif
         if (i != 0) {
           fprintf(stderr, "warning: cannot move link target to a temporary name, not linking:\n-//-> ");
-          fwprint(stderr, dupelist[x]->d_name, 1);
+          jc_fwprint(stderr, dupelist[x]->d_name, 1);
           /* Just in case the rename succeeded yet still returned an error, roll back the rename */
 #ifdef UNICODE
           MoveFileW(wname2, wname);
@@ -277,7 +273,7 @@ extern void linkfiles(file_t *files, const int linktype, const int only_current)
 #ifdef ON_WINDOWS
  #ifdef UNICODE
         if (!M2W(srcfile->d_name, wname2)) {
-          fprintf(stderr, "error: MultiByteToWideChar failed: "); fwprint(stderr, srcfile->d_name, 1);
+          fprintf(stderr, "error: MultiByteToWideChar failed: "); jc_fwprint(stderr, srcfile->d_name, 1);
           continue;
         }
         if (CreateHardLinkW((LPCWSTR)wname, (LPCWSTR)wname2, NULL) == TRUE) success = 1;
@@ -301,25 +297,25 @@ extern void linkfiles(file_t *files, const int linktype, const int only_current)
                   success = 1;
                 } else {
                   fprintf(stderr, "warning: utimes() failed for destination file, reverting:\n-##-> ");
-                  fwprint(stderr, dupelist[x]->d_name, 1);
+                  jc_fwprint(stderr, dupelist[x]->d_name, 1);
                 }
               } else {
                 fprintf(stderr, "warning: chflags() failed for destination file, reverting:\n-##-> ");
-                fwprint(stderr, dupelist[x]->d_name, 1);
+                jc_fwprint(stderr, dupelist[x]->d_name, 1);
               }
             } else {
               fprintf(stderr, "warning: copyfile() failed for destination file, reverting:\n-##-> ");
-              fwprint(stderr, dupelist[x]->d_name, 1);
+              jc_fwprint(stderr, dupelist[x]->d_name, 1);
             }
           } else {
             fprintf(stderr, "warning: clonefile() failed for destination file, reverting:\n-##-> ");
-            fwprint(stderr, dupelist[x]->d_name, 1);
+            jc_fwprint(stderr, dupelist[x]->d_name, 1);
           }
  #endif /* ENABLE_CLONEFILE_LINK */
         }
  #ifndef NO_SYMLINKS
         else {
-          i = make_relative_link_name(srcfile->d_name, dupelist[x]->d_name, rel_path);
+          i = jc_make_relative_link_name(srcfile->d_name, dupelist[x]->d_name, rel_path);
           LOUD(fprintf(stderr, "symlink GRN: %s to %s = %s\n", srcfile->d_name, dupelist[x]->d_name, rel_path));
           if (i < 0) {
             fprintf(stderr, "warning: make_relative_link_name() failed (%d)\n", i);
@@ -345,19 +341,19 @@ extern void linkfiles(file_t *files, const int linktype, const int only_current)
                 break;
 #endif
             }
-            fwprint(stdout, dupelist[x]->d_name, 1);
+            jc_fwprint(stdout, dupelist[x]->d_name, 1);
           }
         } else {
           /* The link failed. Warn the user and put the link target back */
           if (!ISFLAG(flags, F_HIDEPROGRESS)) {
-            printf("-//-> "); fwprint(stdout, dupelist[x]->d_name, 1);
+            printf("-//-> "); jc_fwprint(stdout, dupelist[x]->d_name, 1);
           }
-          fprintf(stderr, "warning: unable to link '"); fwprint(stderr, dupelist[x]->d_name, 0);
-          fprintf(stderr, "' -> '"); fwprint(stderr, srcfile->d_name, 0);
+          fprintf(stderr, "warning: unable to link '"); jc_fwprint(stderr, dupelist[x]->d_name, 0);
+          fprintf(stderr, "' -> '"); jc_fwprint(stderr, srcfile->d_name, 0);
           fprintf(stderr, "': %s\n", strerror(errno));
 #ifdef UNICODE
           if (!M2W(tempname, wname2)) {
-            fprintf(stderr, "error: MultiByteToWideChar failed: "); fwprint(stderr, tempname, 1);
+            fprintf(stderr, "error: MultiByteToWideChar failed: "); jc_fwprint(stderr, tempname, 1);
             continue;
           }
           i = MoveFileW(wname2, wname) ? 0 : 1;
@@ -366,8 +362,8 @@ extern void linkfiles(file_t *files, const int linktype, const int only_current)
 #endif /* UNICODE */
           if (i != 0) {
             fprintf(stderr, "error: cannot rename temp file back to original\n");
-            fprintf(stderr, "original: "); fwprint(stderr, dupelist[x]->d_name, 1);
-            fprintf(stderr, "current:  "); fwprint(stderr, tempname, 1);
+            fprintf(stderr, "original: "); jc_fwprint(stderr, dupelist[x]->d_name, 1);
+            fprintf(stderr, "current:  "); jc_fwprint(stderr, tempname, 1);
           }
           continue;
         }
@@ -375,7 +371,7 @@ extern void linkfiles(file_t *files, const int linktype, const int only_current)
         /* Remove temporary file to clean up; if we can't, reverse the linking */
 #ifdef UNICODE
           if (!M2W(tempname, wname2)) {
-            fprintf(stderr, "error: MultiByteToWideChar failed: "); fwprint(stderr, tempname, 1);
+            fprintf(stderr, "error: MultiByteToWideChar failed: "); jc_fwprint(stderr, tempname, 1);
             continue;
           }
         i = DeleteFileW(wname2) ? 0 : 1;
@@ -386,7 +382,7 @@ extern void linkfiles(file_t *files, const int linktype, const int only_current)
           /* If the temp file can't be deleted, there may be a permissions problem
            * so reverse the process and warn the user */
           fprintf(stderr, "\nwarning: can't delete temp file, reverting: ");
-          fwprint(stderr, tempname, 1);
+          jc_fwprint(stderr, tempname, 1);
 #ifdef UNICODE
           i = DeleteFileW(wname) ? 0 : 1;
 #else
@@ -402,8 +398,8 @@ extern void linkfiles(file_t *files, const int linktype, const int only_current)
 #endif
             if (i != 0) {
               fprintf(stderr, "\nwarning: couldn't revert the file to its original name\n");
-              fprintf(stderr, "original: "); fwprint(stderr, dupelist[x]->d_name, 1);
-              fprintf(stderr, "current:  "); fwprint(stderr, tempname, 1);
+              fprintf(stderr, "original: "); jc_fwprint(stderr, dupelist[x]->d_name, 1);
+              fprintf(stderr, "current:  "); jc_fwprint(stderr, tempname, 1);
             }
           }
         }

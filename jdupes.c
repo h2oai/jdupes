@@ -43,20 +43,12 @@
 #include "jdupes.h"
 #ifndef USE_JODY_HASH
  #include "xxhash.h"
-#else
- #include "jody_hash.h"
 #endif
-#include "oom.h"
 #ifdef ENABLE_DEDUPE
 #include <sys/utsname.h>
 #endif
 
-/* Jody Bruchon's helpful functions */
-#include "string_malloc.h"
-#include "jody_sort.h"
-#include "jody_win_unicode.h"
-#include "jody_cacheinfo.h"
-#include "jody_strtoepoch.h"
+#include "libjodycode.h"
 #include "version.h"
 
 /* Headers for post-scanning actions */
@@ -93,10 +85,6 @@ static wpath_t wname, wstr;
 int out_mode = _O_TEXT;
 int err_mode = _O_TEXT;
 #endif /* UNICODE */
-
-#ifndef NO_SYMLINKS
-#include "jody_paths.h"
-#endif
 
 /* Behavior modification flags (a=action, p=-P) */
 uint_fast64_t flags = 0, a_flags = 0, p_flags = 0;
@@ -305,7 +293,7 @@ void sighandler(const int signum)
   (void)signum;
   if (interrupt || !ISFLAG(flags, F_SOFTABORT)) {
     fprintf(stderr, "\n");
-    string_malloc_destroy();
+    jc_string_malloc_destroy();
     exit(EXIT_FAILURE);
   }
   interrupt = 1;
@@ -333,7 +321,7 @@ void sigusr1(const int signum)
 void clean_exit(void)
 {
 #ifndef SMA_PASSTHROUGH
-  string_malloc_destroy();
+  jc_string_malloc_destroy();
 #endif
   return;
 }
@@ -344,12 +332,12 @@ static inline char **cloneargs(const int argc, char **argv)
   static int x;
   static char **args;
 
-  args = (char **)string_malloc(sizeof(char *) * (unsigned int)argc);
-  if (args == NULL) oom("cloneargs() start");
+  args = (char **)jc_string_malloc(sizeof(char *) * (unsigned int)argc);
+  if (args == NULL) jc_oom("cloneargs() start");
 
   for (x = 0; x < argc; x++) {
-    args[x] = (char *)string_malloc(strlen(argv[x]) + 1);
-    if (args[x] == NULL) oom("cloneargs() loop");
+    args[x] = (char *)jc_string_malloc(strlen(argv[x]) + 1);
+    if (args[x] == NULL) jc_oom("cloneargs() loop");
     strcpy(args[x], argv[x]);
   }
 
@@ -437,7 +425,7 @@ int match_extensions(char *path, const char *extlist)
   size_t len, extlen;
 
   LOUD(fprintf(stderr, "match_extensions('%s', '%s')\n", path, extlist);)
-  if (path == NULL || extlist == NULL) nullptr("match_extensions");
+  if (path == NULL || extlist == NULL) jc_nullptr("match_extensions");
 
   dot = NULL;
   /* Scan to end of path, save the last dot, reset on path separators */
@@ -494,7 +482,7 @@ extern int file_has_changed(file_t * const restrict file)
   /* If -t/--no-change-check specified then completely bypass this code */
   if (ISFLAG(flags, F_NOCHANGECHECK)) return 0;
 
-  if (file == NULL || file->d_name == NULL) nullptr("file_has_changed()");
+  if (file == NULL || file->d_name == NULL) jc_nullptr("file_has_changed()");
   LOUD(fprintf(stderr, "file_has_changed('%s')\n", file->d_name);)
 
   if (!ISFLAG(file->flags, FF_VALID_STAT)) return -66;
@@ -522,7 +510,7 @@ extern int file_has_changed(file_t * const restrict file)
 
 int getfilestats(file_t * const restrict file)
 {
-  if (file == NULL || file->d_name == NULL) nullptr("getfilestats()");
+  if (file == NULL || file->d_name == NULL) jc_nullptr("getfilestats()");
   LOUD(fprintf(stderr, "getfilestats('%s')\n", file->d_name);)
 
   /* Don't stat the same file more than once */
@@ -563,15 +551,15 @@ static void add_extfilter(const char *option)
   const struct extfilter_tags *tags = extfilter_tags;
   const struct size_suffix *ss = size_suffix;
 
-  if (option == NULL) nullptr("add_extfilter()");
+  if (option == NULL) jc_nullptr("add_extfilter()");
 
   LOUD(fprintf(stderr, "add_extfilter '%s'\n", option);)
 
   /* Invoke help text if requested */
   if (strcasecmp(option, "help") == 0) { help_text_extfilter(); exit(EXIT_SUCCESS); }
 
-  opt = string_malloc(strlen(option) + 1);
-  if (opt == NULL) oom("add_extfilter option");
+  opt = jc_string_malloc(strlen(option) + 1);
+  if (opt == NULL) jc_oom("add_extfilter option");
   strcpy(opt, option);
   p = opt;
 
@@ -594,13 +582,13 @@ static void add_extfilter(const char *option)
   if (extfilter_head != NULL) {
     /* Add to end of exclusion stack if head is present */
     while (extf->next != NULL) extf = extf->next;
-    extf->next = string_malloc(sizeof(struct extfilter) + strlen(p) + 1);
-    if (extf->next == NULL) oom("add_extfilter alloc");
+    extf->next = jc_string_malloc(sizeof(struct extfilter) + strlen(p) + 1);
+    if (extf->next == NULL) jc_oom("add_extfilter alloc");
     extf = extf->next;
   } else {
     /* Allocate extfilter_head if no exclusions exist yet */
-    extfilter_head = string_malloc(sizeof(struct extfilter) + strlen(p) + 1);
-    if (extfilter_head == NULL) oom("add_extfilter alloc");
+    extfilter_head = jc_string_malloc(sizeof(struct extfilter) + strlen(p) + 1);
+    if (extfilter_head == NULL) jc_oom("add_extfilter alloc");
     extf = extfilter_head;
   }
 
@@ -624,7 +612,7 @@ static void add_extfilter(const char *option)
   } else if (extf->flags & XF_REQ_DATE) {
     /* Exclude uses a date; convert it to seconds since the epoch */
     *(extf->param) = '\0';
-    tt = strtoepoch(p);
+    tt = jc_strtoepoch(p);
     LOUD(fprintf(stderr, "extfilter: jody_strtoepoch: '%s' -> %" PRIdMAX "\n", p, (intmax_t)tt);)
     if (tt == -1) goto error_bad_time;
     extf->size = tt;
@@ -636,7 +624,7 @@ static void add_extfilter(const char *option)
   }
 
   LOUD(fprintf(stderr, "Added extfilter: tag '%s', data '%s', size %lld, flags %d\n", opt, extf->param, (long long)extf->size, extf->flags);)
-  string_free(opt);
+  jc_string_free(opt);
   return;
 
 error_bad_time:
@@ -664,7 +652,7 @@ extern int getdirstats(const char * const restrict name,
         jdupes_ino_t * const restrict inode, dev_t * const restrict dev,
         jdupes_mode_t * const restrict mode)
 {
-  if (name == NULL || inode == NULL || dev == NULL) nullptr("getdirstats");
+  if (name == NULL || inode == NULL || dev == NULL) jc_nullptr("getdirstats");
   LOUD(fprintf(stderr, "getdirstats('%s', %p, %p)\n", name, (void *)inode, (void *)dev);)
 
   if (STAT(name, &s) != 0) return -1;
@@ -687,7 +675,7 @@ extern int getdirstats(const char * const restrict name,
  * -5 on exclusion due to permissions */
 extern int check_conditions(const file_t * const restrict file1, const file_t * const restrict file2)
 {
-  if (file1 == NULL || file2 == NULL || file1->d_name == NULL || file2->d_name == NULL) nullptr("check_conditions()");
+  if (file1 == NULL || file2 == NULL || file1->d_name == NULL || file2->d_name == NULL) jc_nullptr("check_conditions()");
 
   LOUD(fprintf(stderr, "check_conditions('%s', '%s')\n", file1->d_name, file2->d_name);)
 
@@ -756,13 +744,13 @@ static int check_singlefile(file_t * const restrict newfile)
   int excluded;
 #endif /* NO_EXTFILTER */
 
-  if (newfile == NULL) nullptr("check_singlefile()");
+  if (newfile == NULL) jc_nullptr("check_singlefile()");
 
   LOUD(fprintf(stderr, "check_singlefile: checking '%s'\n", newfile->d_name));
 
   /* Exclude hidden files if requested */
   if (ISFLAG(flags, F_EXCLUDEHIDDEN)) {
-    if (newfile->d_name == NULL) nullptr("check_singlefile newfile->d_name");
+    if (newfile->d_name == NULL) jc_nullptr("check_singlefile newfile->d_name");
     strcpy(tp, newfile->d_name);
     tp = basename(tp);
     if (tp[0] == '.' && strcmp(tp, ".") && strcmp(tp, "..")) {
@@ -841,16 +829,16 @@ static int check_singlefile(file_t * const restrict newfile)
 
 static file_t *init_newfile(const size_t len, file_t * restrict * const restrict filelistp)
 {
-  file_t * const restrict newfile = (file_t *)string_malloc(sizeof(file_t));
+  file_t * const restrict newfile = (file_t *)jc_string_malloc(sizeof(file_t));
 
-  if (!newfile) oom("init_newfile() file structure");
-  if (!filelistp) nullptr("init_newfile() filelistp");
+  if (!newfile) jc_oom("init_newfile() file structure");
+  if (!filelistp) jc_nullptr("init_newfile() filelistp");
 
   LOUD(fprintf(stderr, "init_newfile(len %" PRIuMAX", filelistp %p)\n", (uintmax_t)len, filelistp));
 
   memset(newfile, 0, sizeof(file_t));
-  newfile->d_name = (char *)string_malloc(len);
-  if (!newfile->d_name) oom("init_newfile() filename");
+  newfile->d_name = (char *)jc_string_malloc(len);
+  if (!newfile->d_name) jc_oom("init_newfile() filename");
 
   newfile->next = *filelistp;
 #ifndef NO_USER_ORDER
@@ -870,7 +858,7 @@ static struct travdone *travdone_alloc(const dev_t device, const jdupes_ino_t in
 
   LOUD(fprintf(stderr, "travdone_alloc(dev %" PRIdMAX ", ino %" PRIdMAX ", hash %" PRIuMAX ")\n", (intmax_t)device, (intmax_t)inode, hash);)
 
-  trav = (struct travdone *)string_malloc(sizeof(struct travdone));
+  trav = (struct travdone *)jc_string_malloc(sizeof(struct travdone));
   if (trav == NULL) {
     LOUD(fprintf(stderr, "travdone_alloc: malloc failed\n");)
     return NULL;
@@ -894,7 +882,7 @@ static void travdone_free(struct travdone * const restrict cur)
   if (cur->right == cur) goto error_travdone_right;
   if (cur->left != NULL) travdone_free(cur->left);
   if (cur->right != NULL) travdone_free(cur->right);
-  string_free(cur);
+  jc_string_free(cur);
   return;
 error_travdone_null:
   fprintf(stderr, "internal error: travdone_free() was passed NULL which should never happen\n");
@@ -922,7 +910,7 @@ static int traverse_check(const dev_t device, const jdupes_ino_t inode)
   } else {
     traverse = travdone_head;
     while (1) {
-      if (traverse == NULL) nullptr("traverse_check()");
+      if (traverse == NULL) jc_nullptr("traverse_check()");
       /* Don't re-traverse directories we've already seen */
       if (inode == traverse->inode && device == traverse->device) {
         LOUD(fprintf(stderr, "traverse_check: already seen: %" PRIuMAX ":%" PRIuMAX "\n", (uintmax_t)device, (uintmax_t)inode);)
@@ -966,7 +954,7 @@ static inline file_t *grokfile(const char * const restrict name, file_t * restri
 {
   file_t * restrict newfile;
 
-  if (!name || !filelistp) nullptr("grokfile()");
+  if (!name || !filelistp) jc_nullptr("grokfile()");
   LOUD(fprintf(stderr, "grokfile: '%s' %p\n", name, filelistp));
 
   /* Allocate the file_t and the d_name entries */
@@ -977,8 +965,8 @@ static inline file_t *grokfile(const char * const restrict name, file_t * restri
   /* Single-file [l]stat() and exclusion condition check */
   if (check_singlefile(newfile) != 0) {
     LOUD(fprintf(stderr, "grokfile: check_singlefile rejected file\n"));
-    string_free(newfile->d_name);
-    string_free(newfile);
+    jc_string_free(newfile->d_name);
+    jc_string_free(newfile);
     return NULL;
   }
   return newfile;
@@ -1008,7 +996,7 @@ static void grokdir(const char * const restrict dir,
 #endif
   static int sf_warning = 0; /* single file warning should only appear once */
 
-  if (dir == NULL || filelistp == NULL) nullptr("grokdir()");
+  if (dir == NULL || filelistp == NULL) jc_nullptr("grokdir()");
   LOUD(fprintf(stderr, "grokdir: scanning '%s' (order %d, recurse %d)\n", dir, user_item_count, recurse));
 
   /* Get directory stats (or file stats if it's a file) */
@@ -1069,7 +1057,7 @@ static void grokdir(const char * const restrict dir,
     size_t d_name_len;
 
     /* Get necessary length and allocate d_name */
-    dirinfo = (struct dirent *)string_malloc(sizeof(struct dirent));
+    dirinfo = (struct dirent *)jc_string_malloc(sizeof(struct dirent));
     if (!W2M(ffd.cFileName, dirinfo->d_name)) continue;
 #else
   cd = opendir(dir);
@@ -1117,8 +1105,8 @@ static void grokdir(const char * const restrict dir,
     /* Single-file [l]stat() and exclusion condition check */
     if (check_singlefile(newfile) != 0) {
       LOUD(fprintf(stderr, "grokdir: check_singlefile rejected file\n"));
-      string_free(newfile->d_name);
-      string_free(newfile);
+      jc_string_free(newfile->d_name);
+      jc_string_free(newfile);
       continue;
     }
 
@@ -1130,8 +1118,8 @@ static void grokdir(const char * const restrict dir,
             && (getdirstats(newfile->d_name, &inode, &n_device, &mode) == 0)
             && (device != n_device)) {
           LOUD(fprintf(stderr, "grokdir: directory: not recursing (--one-file-system)\n"));
-          string_free(newfile->d_name);
-          string_free(newfile);
+          jc_string_free(newfile->d_name);
+          jc_string_free(newfile);
           continue;
         }
 #ifndef NO_SYMLINKS
@@ -1146,8 +1134,8 @@ static void grokdir(const char * const restrict dir,
         }
 #endif
       } else { LOUD(fprintf(stderr, "grokdir: directory: not recursing\n")); }
-      string_free(newfile->d_name);
-      string_free(newfile);
+      jc_string_free(newfile->d_name);
+      jc_string_free(newfile);
       continue;
     } else {
 //add_single_file:
@@ -1163,8 +1151,8 @@ static void grokdir(const char * const restrict dir,
 
       } else {
         LOUD(fprintf(stderr, "grokdir: not a regular file: %s\n", newfile->d_name);)
-        string_free(newfile->d_name);
-        string_free(newfile);
+        jc_string_free(newfile->d_name);
+        jc_string_free(newfile);
         if (single == 1) {
           single = 0;
           goto skip_single;
@@ -1195,10 +1183,10 @@ skip_single:
   return;
 
 error_travdone:
-  fprintf(stderr, "\ncould not stat dir "); fwprint(stderr, dir, 1);
+  fprintf(stderr, "\ncould not stat dir "); jc_fwprint(stderr, dir, 1);
   return;
 error_cd:
-  fprintf(stderr, "\ncould not chdir to "); fwprint(stderr, dir, 1);
+  fprintf(stderr, "\ncould not chdir to "); jc_fwprint(stderr, dir, 1);
   return;
 error_overflow:
   fprintf(stderr, "\nerror: a path buffer overflowed\n");
@@ -1221,13 +1209,13 @@ static jdupes_hash_t *get_filehash(const file_t * const restrict checkfile,
 #else
 #endif
 
-  if (checkfile == NULL || checkfile->d_name == NULL) nullptr("get_filehash()");
+  if (checkfile == NULL || checkfile->d_name == NULL) jc_nullptr("get_filehash()");
   LOUD(fprintf(stderr, "get_filehash('%s', %" PRIdMAX ")\n", checkfile->d_name, (intmax_t)max_read);)
 
   /* Allocate on first use */
   if (chunk == NULL) {
-    chunk = (jdupes_hash_t *)string_malloc(auto_chunk_size);
-    if (!chunk) oom("get_filehash() chunk");
+    chunk = (jdupes_hash_t *)jc_string_malloc(auto_chunk_size);
+    if (!chunk) jc_oom("get_filehash() chunk");
   }
 
   /* Get the file size. If we can't read it, bail out early */
@@ -1265,7 +1253,7 @@ static jdupes_hash_t *get_filehash(const file_t * const restrict checkfile,
   file = fopen(checkfile->d_name, FILE_MODE_RO);
 #endif
   if (file == NULL) {
-    fprintf(stderr, "\n%s error opening file ", strerror(errno)); fwprint(stderr, checkfile->d_name, 1);
+    fprintf(stderr, "\n%s error opening file ", strerror(errno)); jc_fwprint(stderr, checkfile->d_name, 1);
     return NULL;
   }
   /* Actually seek past the first chunk if applicable
@@ -1273,7 +1261,7 @@ static jdupes_hash_t *get_filehash(const file_t * const restrict checkfile,
   if (ISFLAG(checkfile->flags, FF_HASH_PARTIAL)) {
     if (fseeko(file, PARTIAL_HASH_SIZE, SEEK_SET) == -1) {
       fclose(file);
-      fprintf(stderr, "\nerror seeking in file "); fwprint(stderr, checkfile->d_name, 1);
+      fprintf(stderr, "\nerror seeking in file "); jc_fwprint(stderr, checkfile->d_name, 1);
       return NULL;
     }
     fsize -= PARTIAL_HASH_SIZE;
@@ -1281,7 +1269,7 @@ static jdupes_hash_t *get_filehash(const file_t * const restrict checkfile,
 
 #ifndef USE_JODY_HASH
   xxhstate = XXH64_createState();
-  if (xxhstate == NULL) nullptr("xxhstate");
+  if (xxhstate == NULL) jc_nullptr("xxhstate");
   XXH64_reset(xxhstate, 0);
 #endif
 
@@ -1292,7 +1280,7 @@ static jdupes_hash_t *get_filehash(const file_t * const restrict checkfile,
     if (interrupt) return 0;
     bytes_to_read = (fsize >= (off_t)auto_chunk_size) ? auto_chunk_size : (size_t)fsize;
     if (fread((void *)chunk, bytes_to_read, 1, file) != 1) {
-      fprintf(stderr, "\nerror reading from file "); fwprint(stderr, checkfile->d_name, 1);
+      fprintf(stderr, "\nerror reading from file "); jc_fwprint(stderr, checkfile->d_name, 1);
       fclose(file);
       return NULL;
     }
@@ -1332,12 +1320,12 @@ static inline void registerfile(filetree_t * restrict * const restrict nodeptr,
 {
   filetree_t * restrict branch;
 
-  if (nodeptr == NULL || file == NULL || (d != NONE && *nodeptr == NULL)) nullptr("registerfile()");
+  if (nodeptr == NULL || file == NULL || (d != NONE && *nodeptr == NULL)) jc_nullptr("registerfile()");
   LOUD(fprintf(stderr, "registerfile(direction %d)\n", d));
 
   /* Allocate and initialize a new node for the file */
-  branch = (filetree_t *)string_malloc(sizeof(filetree_t));
-  if (branch == NULL) oom("registerfile() branch");
+  branch = (filetree_t *)jc_string_malloc(sizeof(filetree_t));
+  if (branch == NULL) jc_oom("registerfile() branch");
   branch->file = file;
   branch->left = NULL;
   branch->right = NULL;
@@ -1357,7 +1345,7 @@ static inline void registerfile(filetree_t * restrict * const restrict nodeptr,
     default:
       /* This should never ever happen */
       fprintf(stderr, "\ninternal error: invalid direction for registerfile(), report this\n");
-      string_malloc_destroy();
+      jc_string_malloc_destroy();
       exit(EXIT_FAILURE);
       break;
   }
@@ -1380,7 +1368,7 @@ static file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict f
   int cantmatch = 0;
   const jdupes_hash_t * restrict filehash;
 
-  if (tree == NULL || file == NULL || tree->file == NULL || tree->file->d_name == NULL || file->d_name == NULL) nullptr("checkmatch()");
+  if (tree == NULL || file == NULL || tree->file == NULL || tree->file->d_name == NULL || file->d_name == NULL) jc_nullptr("checkmatch()");
   LOUD(fprintf(stderr, "checkmatch ('%s', '%s')\n", tree->file->d_name, file->d_name));
 
   /* If device and inode fields are equal one of the files is a
@@ -1549,15 +1537,15 @@ static inline int confirmmatch(FILE * const restrict file1, FILE * const restric
   off_t bytes = 0;
   int check = 0;
 
-  if (file1 == NULL || file2 == NULL) nullptr("confirmmatch()");
+  if (file1 == NULL || file2 == NULL) jc_nullptr("confirmmatch()");
   LOUD(fprintf(stderr, "confirmmatch running\n"));
 
   /* Allocate on first use; OOM if either is ever NULLed */
   if (!c1) {
-    c1 = (char *)string_malloc(auto_chunk_size);
-    c2 = (char *)string_malloc(auto_chunk_size);
+    c1 = (char *)jc_string_malloc(auto_chunk_size);
+    c2 = (char *)jc_string_malloc(auto_chunk_size);
   }
-  if (!c1 || !c2) oom("confirmmatch() c1/c2");
+  if (!c1 || !c2) jc_oom("confirmmatch() c1/c2");
 
   fseek(file1, 0, SEEK_SET);
   fseek(file2, 0, SEEK_SET);
@@ -1592,7 +1580,7 @@ extern unsigned int get_max_dupes(const file_t *files, unsigned int * const rest
                 unsigned int * const restrict n_files) {
   unsigned int groups = 0;
 
-  if (files == NULL || max == NULL) nullptr("get_max_dupes()");
+  if (files == NULL || max == NULL) jc_nullptr("get_max_dupes()");
   LOUD(fprintf(stderr, "get_max_dupes(%p, %p, %p)\n", (const void *)files, (void *)max, (void *)n_files));
 
   *max = 0;
@@ -1617,7 +1605,7 @@ extern unsigned int get_max_dupes(const file_t *files, unsigned int * const rest
 static int sort_pairs_by_param_order(file_t *f1, file_t *f2)
 {
   if (!ISFLAG(flags, F_USEPARAMORDER)) return 0;
-  if (f1 == NULL || f2 == NULL) nullptr("sort_pairs_by_param_order()");
+  if (f1 == NULL || f2 == NULL) jc_nullptr("sort_pairs_by_param_order()");
   if (f1->user_order < f2->user_order) return -sort_direction;
   if (f1->user_order > f2->user_order) return sort_direction;
   return 0;
@@ -1628,7 +1616,7 @@ static int sort_pairs_by_param_order(file_t *f1, file_t *f2)
 #ifndef NO_MTIME
 static int sort_pairs_by_mtime(file_t *f1, file_t *f2)
 {
-  if (f1 == NULL || f2 == NULL) nullptr("sort_pairs_by_mtime()");
+  if (f1 == NULL || f2 == NULL) jc_nullptr("sort_pairs_by_mtime()");
 
 #ifndef NO_USER_ORDER
   int po = sort_pairs_by_param_order(f1, f2);
@@ -1640,7 +1628,7 @@ static int sort_pairs_by_mtime(file_t *f1, file_t *f2)
 
 #ifndef NO_JODY_SORT
   /* If the mtimes match, use the names to break the tie */
-  return jody_numeric_sort(f1->d_name, f2->d_name, sort_direction);
+  return jc_numeric_sort(f1->d_name, f2->d_name, sort_direction);
 #else
   return strcmp(f1->d_name, f2->d_name) ? -sort_direction : sort_direction;
 #endif /* NO_JODY_SORT */
@@ -1650,7 +1638,7 @@ static int sort_pairs_by_mtime(file_t *f1, file_t *f2)
 
 static int sort_pairs_by_filename(file_t *f1, file_t *f2)
 {
-  if (f1 == NULL || f2 == NULL) nullptr("sort_pairs_by_filename()");
+  if (f1 == NULL || f2 == NULL) jc_nullptr("sort_pairs_by_filename()");
 
 #ifndef NO_USER_ORDER
   int po = sort_pairs_by_param_order(f1, f2);
@@ -1658,7 +1646,7 @@ static int sort_pairs_by_filename(file_t *f1, file_t *f2)
 #endif /* NO_USER_ORDER */
 
 #ifndef NO_JODY_SORT
-  return jody_numeric_sort(f1->d_name, f2->d_name, sort_direction);
+  return jc_numeric_sort(f1->d_name, f2->d_name, sort_direction);
 #else
   return strcmp(f1->d_name, f2->d_name) ? -sort_direction : sort_direction;
 #endif /* NO_JODY_SORT */
@@ -1672,7 +1660,7 @@ static void registerpair(file_t **matchlist, file_t *newmatch,
   file_t *back;
 
   /* NULL pointer sanity checks */
-  if (matchlist == NULL || newmatch == NULL || comparef == NULL) nullptr("registerpair()");
+  if (matchlist == NULL || newmatch == NULL || comparef == NULL) jc_nullptr("registerpair()");
   LOUD(fprintf(stderr, "registerpair: '%s', '%s'\n", (*matchlist)->d_name, newmatch->d_name);)
 
 #ifndef NO_ERRORONDUPE
@@ -1886,7 +1874,7 @@ int main(int argc, char **argv)
 #ifndef NO_CHUNKSIZE
   static long manual_chunk_size = 0;
 #ifdef __linux__
-  static struct proc_cacheinfo pci;
+  static struct jc_proc_cacheinfo pci;
 #endif
 #endif /* NO_CHUNKSIZE */
 #ifdef ENABLE_DEDUPE
@@ -1970,8 +1958,8 @@ int main(int argc, char **argv)
 #ifdef UNICODE
   /* Create a UTF-8 **argv from the wide version */
   static char **argv;
-  argv = (char **)string_malloc(sizeof(char *) * (size_t)argc);
-  if (!argv) oom("main() unicode argv");
+  argv = (char **)jc_string_malloc(sizeof(char *) * (size_t)argc);
+  if (!argv) jc_oom("main() unicode argv");
   widearg_to_argv(argc, wargv, argv);
   /* fix up __argv so getopt etc. don't crash */
   __argv = argv;
@@ -1985,7 +1973,7 @@ int main(int argc, char **argv)
 #ifndef NO_CHUNKSIZE
 #ifdef __linux__
   /* Auto-tune chunk size to be half of L1 data cache if possible */
-  get_proc_cacheinfo(&pci);
+  jc_get_proc_cacheinfo(&pci);
   if (pci.l1 != 0) auto_chunk_size = (pci.l1 / 2);
   else if (pci.l1d != 0) auto_chunk_size = (pci.l1d / 2);
   /* Must be at least 4096 (4 KiB) and cannot exceed CHUNK_SIZE */
@@ -2063,7 +2051,7 @@ int main(int argc, char **argv)
       break;
     case 'h':
       help_text();
-      string_malloc_destroy();
+      jc_string_malloc_destroy();
       exit(EXIT_FAILURE);
 #ifndef NO_HARDLINKS
     case 'H':
@@ -2288,38 +2276,38 @@ int main(int argc, char **argv)
     default:
       if (opt != '?') fprintf(stderr, "Sorry, using '-%c' is not supported in this build.\n", opt);
       fprintf(stderr, "Try `jdupes --help' for more information.\n");
-      string_malloc_destroy();
+      jc_string_malloc_destroy();
       exit(EXIT_FAILURE);
     }
   }
 
   if (optind >= argc) {
     fprintf(stderr, "no files or directories specified (use -h option for help)\n");
-    string_malloc_destroy();
+    jc_string_malloc_destroy();
     exit(EXIT_FAILURE);
   }
 
   if (partialonly_spec == 1) {
     fprintf(stderr, "--partial-only specified only once (it's VERY DANGEROUS, read the manual!)\n");
-    string_malloc_destroy();
+    jc_string_malloc_destroy();
     exit(EXIT_FAILURE);
   }
 
   if (ISFLAG(flags, F_PARTIALONLY) && ISFLAG(flags, F_QUICKCOMPARE)) {
     fprintf(stderr, "--partial-only overrides --quick and is even more dangerous (read the manual!)\n");
-    string_malloc_destroy();
+    jc_string_malloc_destroy();
     exit(EXIT_FAILURE);
   }
 
   if (ISFLAG(flags, F_RECURSE) && ISFLAG(flags, F_RECURSEAFTER)) {
     fprintf(stderr, "options --recurse and --recurse: are not compatible\n");
-    string_malloc_destroy();
+    jc_string_malloc_destroy();
     exit(EXIT_FAILURE);
   }
 
   if (ISFLAG(a_flags, FA_SUMMARIZEMATCHES) && ISFLAG(a_flags, FA_DELETEFILES)) {
     fprintf(stderr, "options --summarize and --delete are not compatible\n");
-    string_malloc_destroy();
+    jc_string_malloc_destroy();
     exit(EXIT_FAILURE);
   }
 
@@ -2340,7 +2328,7 @@ int main(int argc, char **argv)
 
   if (pm > 1) {
       fprintf(stderr, "Only one of --summarize, --print-summarize, --delete, --link-hard,\n--link-soft, --json, --error-on-dupe, or --dedupe may be used\n");
-      string_malloc_destroy();
+      jc_string_malloc_destroy();
       exit(EXIT_FAILURE);
   }
   if (pm == 0) SETFLAG(a_flags, FA_PRINTMATCHES);
@@ -2358,13 +2346,13 @@ int main(int argc, char **argv)
 
     if (firstrecurse == argc) {
       fprintf(stderr, "-R option must be isolated from other options\n");
-      string_malloc_destroy();
+      jc_string_malloc_destroy();
       exit(EXIT_FAILURE);
     }
 
     /* F_RECURSE is not set for directories before --recurse: */
     for (int x = optind; x < firstrecurse; x++) {
-      slash_convert(argv[x]);
+      jc_slash_convert(argv[x]);
       grokdir(argv[x], &files, 0);
       user_item_count++;
     }
@@ -2373,13 +2361,13 @@ int main(int argc, char **argv)
     SETFLAG(flags, F_RECURSE);
 
     for (int x = firstrecurse; x < argc; x++) {
-      slash_convert(argv[x]);
+      jc_slash_convert(argv[x]);
       grokdir(argv[x], &files, 1);
       user_item_count++;
     }
   } else {
     for (int x = optind; x < argc; x++) {
-      slash_convert(argv[x]);
+      jc_slash_convert(argv[x]);
       grokdir(argv[x], &files, ISFLAG(flags, F_RECURSE));
       user_item_count++;
     }
@@ -2401,8 +2389,8 @@ int main(int argc, char **argv)
   if (ISFLAG(flags, F_REVERSESORT)) sort_direction = -1;
   if (!ISFLAG(flags, F_HIDEPROGRESS)) fprintf(stderr, "\n");
   if (!files) {
-    fwprint(stderr, "No duplicates found.", 1);
-    string_malloc_destroy();
+    jc_fwprint(stderr, "No duplicates found.", 1);
+    jc_string_malloc_destroy();
     exit(EXIT_SUCCESS);
   }
 
@@ -2529,7 +2517,7 @@ skip_file_scan:
 skip_all_scan_code:
 #endif
 
-  string_malloc_destroy();
+  jc_string_malloc_destroy();
 
 #ifdef DEBUG
   if (ISFLAG(flags, F_DEBUG)) {

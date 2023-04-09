@@ -10,7 +10,7 @@
 #include <string.h>
 #include "jdupes.h"
 #include "version.h"
-#include "jody_win_unicode.h"
+#include <libjodycode.h>
 #include "act_printjson.h"
 
 #define IS_CONT(a)  ((a & 0xc0) == 0x80)
@@ -112,8 +112,8 @@ extern void printjson(file_t * restrict files, const int argc, char **argv)
 {
   file_t * restrict tmpfile;
   int arg = 0, comma = 0, len = 0;
-  char *temp = string_malloc(PATH_MAX * 2);
-  char *temp2 = string_malloc(PATH_MAX * 2);
+  char *temp = jc_string_malloc(PATH_MAX * 2);
+  char *temp2 = jc_string_malloc(PATH_MAX * 2);
   char *temp_insert = temp;
 
   LOUD(fprintf(stderr, "printjson: %p\n", files));
@@ -142,14 +142,14 @@ extern void printjson(file_t * restrict files, const int argc, char **argv)
       printf("    {\n      \"fileSize\": %" PRIdMAX ",\n      \"fileList\": [\n        { \"filePath\": \"", (intmax_t)files->size);
       sprintf(temp, "%s", files->d_name);
       json_escape(temp, temp2);
-      fwprint(stdout, temp2, 0);
+      jc_fwprint(stdout, temp2, 0);
       printf("\"");
       tmpfile = files->duplicates;
       while (tmpfile != NULL) {
         printf(" },\n        { \"filePath\": \"");
         sprintf(temp, "%s", tmpfile->d_name);
         json_escape(temp, temp2);
-        fwprint(stdout, temp2, 0);
+        jc_fwprint(stdout, temp2, 0);
         printf("\"");
         tmpfile = tmpfile->duplicates;
       }
@@ -161,7 +161,7 @@ extern void printjson(file_t * restrict files, const int argc, char **argv)
 
   printf("\n  ]\n}\n");
 
-  string_free(temp); string_free(temp2);
+  jc_string_free(temp); jc_string_free(temp2);
   return;
 }
 

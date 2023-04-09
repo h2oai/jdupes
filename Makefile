@@ -97,7 +97,6 @@ ifdef ON_WINDOWS
 		PROGRAM_SUFFIX=.exe
 	endif
 	COMPILER_OPTIONS += -D__USE_MINGW_ANSI_STDIO=1 -DON_WINDOWS=1
-	OBJS += jody_win_stat.o
 	ifeq ($(UNAME_S), MINGW32_NT-5.1)
 		OBJS += winres_xp.o
 	else
@@ -128,15 +127,11 @@ endif
 # Use jody_hash instead of xxHash if requested
 ifdef USE_JODY_HASH
 COMPILER_OPTIONS += -DUSE_JODY_HASH
-ifndef EXTERNAL_HASH_LIB
-OBJS += jody_hash.o
-endif
 OBJS_CLEAN += xxhash.o
 else
 ifndef EXTERNAL_HASH_LIB
 OBJS += xxhash.o
 endif
-OBJS_CLEAN += jody_hash.o
 endif  # USE_JODY_HASH
 
 # Stack size limit can be too small for deep directory trees, so set to 16 MiB
@@ -187,22 +182,25 @@ INSTALL_DATA    = $(INSTALL) -m 0644
 # to support features not supplied by their vendor. Eg: GNU getopt()
 #ADDITIONAL_OBJECTS += getopt.o
 
-OBJS += jdupes.o jody_paths.o jody_sort.o jody_win_unicode.o jody_strtoepoch.o string_malloc.o oom.o
-OBJS += jody_cacheinfo.o
+OBJS += jdupes.o
 OBJS += act_deletefiles.o act_linkfiles.o act_printmatches.o act_summarize.o act_printjson.o
 OBJS += $(ADDITIONAL_OBJECTS)
 
+LDFLAGS += -ljodycode
+
 all: $(PROGRAM_NAME)
 
-static: $(PROGRAM_NAME)
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $(PROGRAM_NAME) $(OBJS) -static
+static_jc: $(PROGRAM_NAME)
+	$(CC) $(CFLAGS) -o $(PROGRAM_NAME) $(OBJS) -Wl,-Bstatic $(LDFLAGS) -Wl,-Bdynamic
 
-static_stripped: $(PROGRAM_NAME)
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $(PROGRAM_NAME) $(OBJS) -static
+static: $(PROGRAM_NAME)
+	$(CC) $(CFLAGS) -o $(PROGRAM_NAME) $(OBJS) -static $(LDFLAGS)
+
+static_stripped: $(PROGRAM_NAME) static
 	strip $(PROGRAM_NAME)
 
 $(PROGRAM_NAME): $(OBJS)
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $(PROGRAM_NAME) $(OBJS)
+	$(CC) $(CFLAGS) -o $(PROGRAM_NAME) $(OBJS) $(LDFLAGS)
 
 winres.o: winres.rc winres.manifest.xml
 	./tune_winres.sh
