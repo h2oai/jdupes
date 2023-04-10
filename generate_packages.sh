@@ -57,9 +57,17 @@ test "$TA" = "__NONE__" && echo "Failed to detect system type" && exit 1
 PKGNAME="${NAME}-${VER}-$TA"
 
 echo "Generating package for: $PKGNAME"
-mkdir -p "$PKGNAME"
+mkdir -p "$PKGNAME" || exit 1
 test ! -d "$PKGNAME" && echo "Can't create directory for package" && exit 1
-cp CHANGES README.md LICENSE $PKGNAME/
+cp CHANGES README.md LICENSE $PKGNAME/ || exit 1
+if [ -d "../libjodycode" ]
+	then
+	echo "Rebuilding nearby libjodycode first"
+	WD="$(pwd)"
+	cd ../libjodycode
+	make clean && make -j$PM
+	cd "$WD"
+fi
 E1=1; E2=1; E3=1; E4=1
 make clean && make -j$PM ENABLE_DEDUPE=1 USE_NEARBY_JC=1 static_jc stripped && cp $NAME$EXT $PKGNAME/$NAME$EXT && E1=0
 make clean && make -j$PM ENABLE_DEDUPE=1 LOUD=1 USE_NEARBY_JC=1 static_jc stripped && cp $NAME$EXT $PKGNAME/${NAME}-loud$EXT && E2=0
