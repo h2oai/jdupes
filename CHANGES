@@ -1,3 +1,11 @@
+jdupes 1.22.0
+
+- libjodycode is now required to build and run jdupes (see INSTALL)
+- Move all jody_* code to libjodycode and remove from jdupes
+- Add -E/--error-on-dupe option to terminate immediately if any dupe is found
+- Support showing x32 ABI in version information
+- Several build system improvements for macOS, BSD, and linking in libxxhash
+
 jdupes 1.21.3
 
 - Fix exit behavior when no valid directories are given
