@@ -109,7 +109,7 @@ static const char *program_name;
 #ifndef NO_CHUNKSIZE
  /* Larger chunk size makes large files process faster but uses more RAM */
  #define MIN_CHUNK_SIZE 4096
- #define MAX_CHUNK_SIZE 16777216
+ #define MAX_CHUNK_SIZE 1048576 * 256
  static size_t auto_chunk_size = CHUNK_SIZE;
 #else
  /* If automatic chunk sizing is disabled, just use a fixed value */
