@@ -237,47 +237,6 @@ typedef struct _filetree {
 #endif
 
 
-#ifndef NO_EXTFILTER
-/* -X extended filter parameter stack */
-struct extfilter {
-  struct extfilter *next;
-  unsigned int flags;
-  int64_t size;  /* also used for other large integers */
-  char param[];
-};
-
-/* Extended filter parameter flags */
-#define XF_EXCL_EXT		0x00000001U
-#define XF_SIZE_EQ		0x00000002U
-#define XF_SIZE_GT		0x00000004U
-#define XF_SIZE_LT		0x00000008U
-#define XF_ONLY_EXT		0x00000010U
-#define XF_EXCL_STR		0x00000020U
-#define XF_ONLY_STR		0x00000040U
-#define XF_DATE_NEWER		0x00000080U
-#define XF_DATE_OLDER		0x00000100U
-/* The X-than-or-equal are combination flags */
-#define XF_SIZE_GTEQ		0x00000006U
-#define XF_SIZE_LTEQ		0x0000000aU
-
-/* Flags that use a numeric size with optional suffix */
-#define XF_REQ_NUMBER		0x0000000eU
-/* Flags that require a data parameter (after a colon) */
-#define XF_REQ_VALUE		0x0000001fU
-/* Flags that take a date that needs to be converted to time_t seconds */
-#define XF_REQ_DATE		0x00000180U
-
-/* Exclude definition array */
-struct extfilter_tags {
-  const char * const tag;
-  const uint32_t flags;
-};
-
-extern const struct extfilter_tags extfilter_tags[];
-extern struct extfilter *extfilter_head;
-#endif /* NO_EXTFILTER */
-
-
 /* Suffix definitions (treat as case-insensitive) */
 struct size_suffix {
   const char * const suffix;
