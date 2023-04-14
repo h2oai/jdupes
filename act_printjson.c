@@ -131,9 +131,9 @@ extern void printjson(file_t * restrict files, const int argc, char **argv)
   json_escape(temp + 1, temp2); /* Skip the starting space */
   printf("%s\",\n", temp2);
   printf("  \"extensionFlags\": \"");
-  if (extensions[0] == NULL) printf("none\",\n");
-  else for (int c = 0; extensions[c] != NULL; c++)
-    printf("%s%s", extensions[c], extensions[c+1] == NULL ? "\",\n" : " ");
+  if (feature_flags[0] == NULL) printf("none\",\n");
+  else for (int c = 0; feature_flags[c] != NULL; c++)
+    printf("%s%s", feature_flags[c], feature_flags[c+1] == NULL ? "\",\n" : " ");
 
   printf("  \"matchSets\": [\n");
   while (files != NULL) {

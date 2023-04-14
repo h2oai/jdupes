@@ -46,7 +46,10 @@
 #include "version.h"
 #include "args.h"
 #ifndef NO_EXTFILTER
-#include "extfilter.h"
+ #include "extfilter.h"
+#endif
+#ifndef NO_TRAVCHECK
+ #include "travcheck.h"
 #endif
 
 #ifndef USE_JODY_HASH
@@ -162,8 +165,8 @@ const struct size_suffix size_suffix[] = {
   { NULL, 0 },
 };
 
-/* Assemble extension string from compile-time options */
-const char *extensions[] = {
+/* Assemble feature flag string from compile-time options */
+const char *feature_flags[] = {
   #ifdef ON_WINDOWS
     "windows",
     #endif
@@ -188,37 +191,47 @@ const char *extensions[] = {
     #ifdef LOW_MEMORY
     "lowmem",
     #endif
-    #ifdef SMA_PAGE_SIZE
-    "smapage",
+    #ifdef NO_CHUNKSIZE
+    "nochunksize",
     #endif
-    #ifdef NO_PERMS
-    "noperm",
+    #ifdef NO_DELETE
+    "nodelete",
+    #endif
+    #ifdef NO_ERRORONDUPE
+    "noerrondupe",
+    #endif
+    #ifdef NO_EXTFILTER
+    "noextfilter",
     #endif
     #ifdef NO_HARDLINKS
     "nohardlink",
     #endif
+    #ifdef NO_JODY_SORT
+    "nojodysort",
+    #endif
+    #ifdef NO_JSON
+    "nojson",
+    #endif
+    #ifdef NO_MTIME
+    "nomtime",
+    #endif
+    #ifdef NO_PERMS
+    "noperm",
+    #endif
     #ifdef NO_SYMLINKS
     "nosymlink",
+    #endif
+    #ifdef NO_TRAVCHECK
+    "notravcheck",
     #endif
     #ifdef NO_USER_ORDER
     "nouserorder",
     #endif
+    #ifdef NO_UNICODE
+    "nounicode",
+    #endif
     NULL
 };
-
-#ifndef NO_TRAVCHECK
-/* Simple traversal balancing hash - scrambles inode number */
-#define TRAVHASH(device,inode) (((inode << 55 | (inode >> 9)) + (device << 13)))
-/* Tree to track each directory traversed */
-struct travdone {
-  struct travdone *left;
-  struct travdone *right;
-  uintmax_t hash;
-  jdupes_ino_t inode;
-  dev_t device;
-};
-static struct travdone *travdone_head = NULL;
-#endif /* NO_TRAVCHECK */
 
 /* Required for progress indicator code */
 static uintmax_t filecount = 0;
@@ -593,103 +606,6 @@ static file_t *init_newfile(const size_t len, file_t * restrict * const restrict
 }
 
 
-#ifndef NO_TRAVCHECK
-/* Create a new traversal check object and initialize its values */
-static struct travdone *travdone_alloc(const dev_t device, const jdupes_ino_t inode, uintmax_t hash)
-{
-  struct travdone *trav;
-
-  LOUD(fprintf(stderr, "travdone_alloc(dev %" PRIdMAX ", ino %" PRIdMAX ", hash %" PRIuMAX ")\n", (intmax_t)device, (intmax_t)inode, hash);)
-
-  trav = (struct travdone *)jc_string_malloc(sizeof(struct travdone));
-  if (trav == NULL) {
-    LOUD(fprintf(stderr, "travdone_alloc: malloc failed\n");)
-    return NULL;
-  }
-  trav->left = NULL;
-  trav->right = NULL;
-  trav->hash = hash;
-  trav->device = device;
-  trav->inode = inode;
-  LOUD(fprintf(stderr, "travdone_alloc returned %p\n", (void *)trav);)
-  return trav;
-}
-
-
-/* De-allocate the travdone tree */
-static void travdone_free(struct travdone * const restrict cur)
-{
-  LOUD(fprintf(stderr, "travdone_free(%p)\n", cur);)
-  if (cur == NULL) goto error_travdone_null;
-  if (cur->left == cur) goto error_travdone_left;
-  if (cur->right == cur) goto error_travdone_right;
-  if (cur->left != NULL) travdone_free(cur->left);
-  if (cur->right != NULL) travdone_free(cur->right);
-  jc_string_free(cur);
-  return;
-error_travdone_null:
-  fprintf(stderr, "internal error: travdone_free() was passed NULL which should never happen\n");
-  exit(EXIT_FAILURE);
-error_travdone_left:
-  fprintf(stderr, "internal error: travdone_free() was passed NULL which should never happen\n");
-  exit(EXIT_FAILURE);
-error_travdone_right:
-  fprintf(stderr, "internal error: travdone_free() was passed NULL which should never happen\n");
-  exit(EXIT_FAILURE);
-}
-
-
-/* Check to see if device:inode pair has already been traversed */
-static int traverse_check(const dev_t device, const jdupes_ino_t inode)
-{
-  struct travdone *traverse = travdone_head;
-  uintmax_t travhash;
-
-  LOUD(fprintf(stderr, "traverse_check(dev %" PRIuMAX ", ino %" PRIuMAX "\n", (uintmax_t)device, (uintmax_t)inode);)
-  travhash = TRAVHASH(device, inode);
-  if (travdone_head == NULL) {
-    travdone_head = travdone_alloc(device, inode, TRAVHASH(device, inode));
-    if (travdone_head == NULL) return 2;
-  } else {
-    traverse = travdone_head;
-    while (1) {
-      if (traverse == NULL) jc_nullptr("traverse_check()");
-      /* Don't re-traverse directories we've already seen */
-      if (inode == traverse->inode && device == traverse->device) {
-        LOUD(fprintf(stderr, "traverse_check: already seen: %" PRIuMAX ":%" PRIuMAX "\n", (uintmax_t)device, (uintmax_t)inode);)
-        return 1;
-      } else {
-        if (travhash > traverse->hash) {
-          /* Traverse right */
-          if (traverse->right == NULL) {
-            LOUD(fprintf(stderr, "traverse_check add right: %" PRIuMAX ", %" PRIuMAX"\n", (uintmax_t)device, (uintmax_t)inode);)
-            DBG(travdone_rights++);
-            traverse->right = travdone_alloc(device, inode, travhash);
-            if (traverse->right == NULL) return 2;
-            break;
-          }
-          traverse = traverse->right;
-          continue;
-        } else {
-          /* Traverse left */
-          if (traverse->left == NULL) {
-            LOUD(fprintf(stderr, "traverse_check add left: %" PRIuMAX ", %" PRIuMAX "\n", (uintmax_t)device, (uintmax_t)inode);)
-            DBG(travdone_lefts++);
-            traverse->left = travdone_alloc(device, inode, travhash);
-            if (traverse->left == NULL) return 2;
-            break;
-          }
-          traverse = traverse->left;
-          continue;
-        }
-      }
-    }
-  }
-  return 0;
-}
-#endif /* NO_TRAVCHECK */
-
-
 /* This is disabled until a check is in place to make it safe */
 #if 0
 /* Add a single file to the file tree */
@@ -744,7 +660,7 @@ static void grokdir(const char * const restrict dir,
 
   /* Get directory stats (or file stats if it's a file) */
   i = getdirstats(dir, &inode, &device, &mode);
-  if (i < 0) goto error_travdone;
+  if (i < 0) goto error_stat_dir;
   /* if dir is actually a file, just add it to the file tree */
   if (i == 1) {
 /* Single file addition is disabled for now because there is no safeguard
@@ -769,12 +685,12 @@ static void grokdir(const char * const restrict dir,
     return; /* Remove when single file is restored */
   }
 
+/* Double traversal prevention tree */
 #ifndef NO_TRAVCHECK
-  /* Double traversal prevention tree */
   if (!ISFLAG(flags, F_NOTRAVCHECK)) {
     i = traverse_check(device, inode);
     if (i == 1) return;
-    if (i == 2) goto error_travdone;
+    if (i == 2) goto error_stat_dir;
   }
 #endif /* NO_TRAVCHECK */
 
@@ -925,7 +841,7 @@ skip_single:
   }
   return;
 
-error_travdone:
+error_stat_dir:
   fprintf(stderr, "\ncould not stat dir "); jc_fwprint(stderr, dir, 1);
   return;
 error_cd:
@@ -1911,11 +1827,11 @@ int main(int argc, char **argv)
       } else printf("%u-bit i%u\n", (unsigned int)(sizeof(uintptr_t) * 8),
           (unsigned int)(sizeof(long) * 8));
 
-      printf("Compile-time extensions:");
-      if (*extensions != NULL) {
+      printf("Compile-time feature flags:");
+      if (*feature_flags != NULL) {
         int c = 0;
-        while (extensions[c] != NULL) {
-          printf(" %s", extensions[c]);
+        while (feature_flags[c] != NULL) {
+          printf(" %s", feature_flags[c]);
           c++;
         }
       } else printf(" none");
@@ -2077,9 +1993,9 @@ int main(int argc, char **argv)
     }
   }
 
+/* We don't need the double traversal check tree anymore */
 #ifndef NO_TRAVCHECK
-  /* We don't need the double traversal check tree anymore */
-  if (travdone_head != NULL) travdone_free(travdone_head);
+  travdone_free(NULL);
 #endif /* NO_TRAVCHECK */
 
 #ifdef DEBUG

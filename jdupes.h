@@ -246,7 +246,7 @@ struct size_suffix {
 extern const struct size_suffix size_suffix[];
 extern char tempname[PATHBUF_SIZE * 2];
 
-extern const char *extensions[];
+extern const char *feature_flags[];
 
 extern int file_has_changed(file_t * const restrict file);
 extern int getdirstats(const char * const restrict name,
