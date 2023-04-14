@@ -1,3 +1,6 @@
+/* jdupes extended filters
+ * See jdupes.c for license information */
+
 #ifndef NO_EXTFILTER
 
 #include <stdio.h>
