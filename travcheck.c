@@ -11,18 +11,18 @@
 /* Simple traversal balancing hash - scrambles inode number */
 #define TRAVHASH(device,inode) (((inode << 55 | (inode >> 9)) + (device << 13)))
 
-static struct travdone *travdone_head = NULL;
+static struct travcheck *travcheck_head = NULL;
 
 /* Create a new traversal check object and initialize its values */
-static struct travdone *travdone_alloc(const dev_t device, const jdupes_ino_t inode, uintmax_t hash)
+static struct travcheck *travcheck_alloc(const dev_t device, const jdupes_ino_t inode, uintmax_t hash)
 {
-  struct travdone *trav;
+  struct travcheck *trav;
 
-  LOUD(fprintf(stderr, "travdone_alloc(dev %" PRIdMAX ", ino %" PRIdMAX ", hash %" PRIuMAX ")\n", (intmax_t)device, (intmax_t)inode, hash);)
+  LOUD(fprintf(stderr, "travcheck_alloc(dev %" PRIdMAX ", ino %" PRIdMAX ", hash %" PRIuMAX ")\n", (intmax_t)device, (intmax_t)inode, hash);)
 
-  trav = (struct travdone *)jc_string_malloc(sizeof(struct travdone));
+  trav = (struct travcheck *)jc_string_malloc(sizeof(struct travcheck));
   if (trav == NULL) {
-    LOUD(fprintf(stderr, "travdone_alloc: malloc failed\n");)
+    LOUD(fprintf(stderr, "travcheck_alloc: malloc failed\n");)
     return NULL;
   }
   trav->left = NULL;
@@ -30,29 +30,29 @@ static struct travdone *travdone_alloc(const dev_t device, const jdupes_ino_t in
   trav->hash = hash;
   trav->device = device;
   trav->inode = inode;
-  LOUD(fprintf(stderr, "travdone_alloc returned %p\n", (void *)trav);)
+  LOUD(fprintf(stderr, "travcheck_alloc returned %p\n", (void *)trav);)
   return trav;
 }
 
 
-/* De-allocate the travdone tree */
-void travdone_free(struct travdone *cur)
+/* De-allocate the travcheck tree */
+void travcheck_free(struct travcheck *cur)
 {
-  LOUD(fprintf(stderr, "travdone_free(%p)\n", cur);)
+  LOUD(fprintf(stderr, "travcheck_free(%p)\n", cur);)
 
   if (cur == NULL) {
-    if (travdone_head == NULL) return;
-    cur = travdone_head;
-    travdone_head = NULL;
+    if (travcheck_head == NULL) return;
+    cur = travcheck_head;
+    travcheck_head = NULL;
   }
-  if (cur->left == cur) goto error_travdone_ptr;
-  if (cur->right == cur) goto error_travdone_ptr;
-  if (cur->left != NULL) travdone_free(cur->left);
-  if (cur->right != NULL) travdone_free(cur->right);
+  if (cur->left == cur) goto error_travcheck_ptr;
+  if (cur->right == cur) goto error_travcheck_ptr;
+  if (cur->left != NULL) travcheck_free(cur->left);
+  if (cur->right != NULL) travcheck_free(cur->right);
   if (cur != NULL) jc_string_free(cur);
   return;
-error_travdone_ptr:
-  fprintf(stderr, "internal error: invalid pointer in travdone_free(), report this\n");
+error_travcheck_ptr:
+  fprintf(stderr, "internal error: invalid pointer in travcheck_free(), report this\n");
   exit(EXIT_FAILURE);
 }
 
@@ -60,16 +60,16 @@ error_travdone_ptr:
 /* Check to see if device:inode pair has already been traversed */
 int traverse_check(const dev_t device, const jdupes_ino_t inode)
 {
-  struct travdone *traverse = travdone_head;
+  struct travcheck *traverse = travcheck_head;
   uintmax_t travhash;
 
   LOUD(fprintf(stderr, "traverse_check(dev %" PRIuMAX ", ino %" PRIuMAX "\n", (uintmax_t)device, (uintmax_t)inode);)
   travhash = TRAVHASH(device, inode);
-  if (travdone_head == NULL) {
-    travdone_head = travdone_alloc(device, inode, TRAVHASH(device, inode));
-    if (travdone_head == NULL) return 2;
+  if (travcheck_head == NULL) {
+    travcheck_head = travcheck_alloc(device, inode, TRAVHASH(device, inode));
+    if (travcheck_head == NULL) return 2;
   } else {
-    traverse = travdone_head;
+    traverse = travcheck_head;
     while (1) {
       if (traverse == NULL) jc_nullptr("traverse_check()");
       /* Don't re-traverse directories we've already seen */
@@ -81,8 +81,8 @@ int traverse_check(const dev_t device, const jdupes_ino_t inode)
           /* Traverse right */
           if (traverse->right == NULL) {
             LOUD(fprintf(stderr, "traverse_check add right: %" PRIuMAX ", %" PRIuMAX"\n", (uintmax_t)device, (uintmax_t)inode);)
-            DBG(travdone_rights++);
-            traverse->right = travdone_alloc(device, inode, travhash);
+            DBG(travcheck_rights++);
+            traverse->right = travcheck_alloc(device, inode, travhash);
             if (traverse->right == NULL) return 2;
             break;
           }
@@ -92,8 +92,8 @@ int traverse_check(const dev_t device, const jdupes_ino_t inode)
           /* Traverse left */
           if (traverse->left == NULL) {
             LOUD(fprintf(stderr, "traverse_check add left: %" PRIuMAX ", %" PRIuMAX "\n", (uintmax_t)device, (uintmax_t)inode);)
-            DBG(travdone_lefts++);
-            traverse->left = travdone_alloc(device, inode, travhash);
+            DBG(travcheck_lefts++);
+            traverse->left = travcheck_alloc(device, inode, travhash);
             if (traverse->left == NULL) return 2;
             break;
           }

@@ -1995,7 +1995,7 @@ int main(int argc, char **argv)
 
 /* We don't need the double traversal check tree anymore */
 #ifndef NO_TRAVCHECK
-  travdone_free(NULL);
+  travcheck_free(NULL);
 #endif /* NO_TRAVCHECK */
 
 #ifdef DEBUG

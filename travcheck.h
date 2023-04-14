@@ -11,16 +11,16 @@ extern "C" {
 #ifndef NO_TRAVCHECK
 
 /* Tree to track each directory traversed */
-struct travdone {
-  struct travdone *left;
-  struct travdone *right;
+struct travcheck {
+  struct travcheck *left;
+  struct travcheck *right;
   uintmax_t hash;
   jdupes_ino_t inode;
   dev_t device;
 };
 
-/* De-allocate the travdone tree */
-void travdone_free(struct travdone *cur);
+/* De-allocate the travcheck tree */
+void travcheck_free(struct travcheck *cur);
 int traverse_check(const dev_t device, const jdupes_ino_t inode);
 
 #endif /* NO_TRAVCHECK */
