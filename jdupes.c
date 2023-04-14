@@ -40,16 +40,18 @@
 #include <libgen.h>
 #include <time.h>
 #include <sys/time.h>
+
+#include <libjodycode.h>
 #include "jdupes.h"
+#include "version.h"
+#include "args.h"
+
 #ifndef USE_JODY_HASH
  #include "xxhash.h"
 #endif
 #ifdef ENABLE_DEDUPE
 #include <sys/utsname.h>
 #endif
-
-#include <libjodycode.h>
-#include "version.h"
 
 /* Headers for post-scanning actions */
 #include "act_deletefiles.h"
@@ -60,6 +62,7 @@
  #include "act_printjson.h"
 #endif /* NO_JSON */
 #include "act_summarize.h"
+
 
 /* Detect Windows and modify as needed */
 #if defined _WIN32 || defined __MINGW32__
@@ -324,57 +327,6 @@ void clean_exit(void)
   jc_string_malloc_destroy();
 #endif
   return;
-}
-
-
-static inline char **cloneargs(const int argc, char **argv)
-{
-  static int x;
-  static char **args;
-
-  args = (char **)jc_string_malloc(sizeof(char *) * (unsigned int)argc);
-  if (args == NULL) jc_oom("cloneargs() start");
-
-  for (x = 0; x < argc; x++) {
-    args[x] = (char *)jc_string_malloc(strlen(argv[x]) + 1);
-    if (args[x] == NULL) jc_oom("cloneargs() loop");
-    strcpy(args[x], argv[x]);
-  }
-
-  return args;
-}
-
-
-static int findarg(const char * const arg, const int start,
-                const int argc, char **argv)
-{
-  int x;
-
-  for (x = start; x < argc; x++)
-    if (jc_streq(argv[x], arg) == 0)
-      return x;
-
-  return x;
-}
-
-/* Find the first non-option argument after specified option. */
-static int nonoptafter(const char *option, const int argc,
-                char **oldargv, char **newargv)
-{
-  int x;
-  int targetind;
-  int testind;
-  int startat = 1;
-
-  targetind = findarg(option, 1, argc, oldargv);
-
-  for (x = optind; x < argc; x++) {
-    testind = findarg(newargv[x], startat, argc, oldargv);
-    if (testind > targetind) return x;
-    else startat = testind;
-  }
-
-  return x;
 }
 
 
