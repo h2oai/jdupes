@@ -237,9 +237,6 @@ static unsigned int filetree_lefts = 0, filetree_rights = 0;
   static unsigned int hll_exclude = 0;
   #endif
  #endif
- #ifndef NO_TRAVCHECK
- static uintmax_t travdone_lefts = 0, travdone_rights = 0;
- #endif
 #endif /* DEBUG */
 
 #ifdef TREE_DEPTH_STATS
@@ -2234,9 +2231,6 @@ skip_all_scan_code:
     fprintf(stderr, "%" PRIuMAX " total files, %" PRIuMAX " comparisons, branch L %u, R %u, both %u, max tree depth %u\n",
         filecount, comparisons, filetree_lefts, filetree_rights,
         filetree_lefts + filetree_rights, filetree_max_depth);
-#ifndef NO_TRAVCHECK
-    fprintf(stderr, "travdone allocs: left %" PRIuMAX ", right %" PRIuMAX " = heaviness %" PRIdMAX "\n", travdone_lefts, travdone_rights, (uintmax_t)(travdone_rights - travdone_lefts));
-#endif
 #ifdef SMA_DEBUG
     fprintf(stderr, "SMA: allocs %" PRIuMAX ", free %" PRIuMAX " (merge %" PRIuMAX ", repl %" PRIuMAX "), fail %" PRIuMAX ", reuse %" PRIuMAX ", scan %" PRIuMAX ", tails %" PRIuMAX "\n",
         sma_allocs, sma_free_good, sma_free_merged, sma_free_replaced,
