@@ -6,10 +6,6 @@ CFLAGS ?= -O2 -g
 # include "/usr" or "/usr/local".
 PREFIX = /usr/local
 
-# Certain platforms do not support long options (command line options).
-# To disable long options, uncomment the following line.
-#CFLAGS += -DOMIT_GETOPT_LONG
-
 # Uncomment for -B/--dedupe.
 # This can also be enabled at build time: 'make ENABLE_DEDUPE=1'
 #CFLAGS += -DENABLE_DEDUPE

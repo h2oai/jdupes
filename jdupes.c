@@ -32,7 +32,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <inttypes.h>
-#ifndef OMIT_GETOPT_LONG
+#ifndef NO_GETOPT_LONG
  #include <getopt.h>
 #endif
 #include <string.h>
@@ -167,70 +167,70 @@ const struct size_suffix size_suffix[] = {
 
 /* Assemble feature flag string from compile-time options */
 const char *feature_flags[] = {
+  #ifdef ENABLE_DEDUPE
+  "dedupe",
+  #endif
+  #ifdef DEBUG
+  "debug",
+  #endif
+  #ifdef __FAST_MATH__
+  "fastmath",
+  #endif
+  #ifdef LOUD_DEBUG
+  "loud",
+  #endif
+  #ifdef LOW_MEMORY
+  "lowmem",
+  #endif
+  #ifdef NO_CHUNKSIZE
+  "nochunk",
+  #endif
+  #ifdef NO_DELETE
+  "nodel",
+  #endif
+  #ifdef NO_ERRORONDUPE
+  "noeod",
+  #endif
+  #ifdef NO_EXTFILTER
+  "noxf",
+  #endif
+  #ifdef NO_HARDLINKS
+  "nohlink",
+  #endif
+  #ifdef NO_JODY_SORT
+  "nojsort",
+  #endif
+  #ifdef NO_JSON
+  "nojson",
+  #endif
+  #ifdef NO_GETOPT_LONG
+  "nolongopt",
+  #endif
+  #ifdef NO_MTIME
+  "nomtime",
+  #endif
+  #ifdef NO_PERMS
+  "noperm",
+  #endif
+  #ifdef NO_SYMLINKS
+  "noslink",
+  #endif
+  #ifdef NO_TRAVCHECK
+  "notrav",
+  #endif
+  #ifdef NO_USER_ORDER
+  "nouorder",
+  #endif
+  #ifdef NO_UNICODE
+  "nounicode",
+  #endif
+  #ifdef UNICODE
+  "unicode",
+  #endif
   #ifdef ON_WINDOWS
-    "windows",
-    #endif
-    #ifdef UNICODE
-    "unicode",
-    #endif
-    #ifdef OMIT_GETOPT_LONG
-    "nolong",
-    #endif
-    #ifdef __FAST_MATH__
-    "fastmath",
-    #endif
-    #ifdef DEBUG
-    "debug",
-    #endif
-    #ifdef LOUD_DEBUG
-    "loud",
-    #endif
-    #ifdef ENABLE_DEDUPE
-    "fsdedup",
-    #endif
-    #ifdef LOW_MEMORY
-    "lowmem",
-    #endif
-    #ifdef NO_CHUNKSIZE
-    "nochunksize",
-    #endif
-    #ifdef NO_DELETE
-    "nodelete",
-    #endif
-    #ifdef NO_ERRORONDUPE
-    "noerrondupe",
-    #endif
-    #ifdef NO_EXTFILTER
-    "noextfilter",
-    #endif
-    #ifdef NO_HARDLINKS
-    "nohardlink",
-    #endif
-    #ifdef NO_JODY_SORT
-    "nojodysort",
-    #endif
-    #ifdef NO_JSON
-    "nojson",
-    #endif
-    #ifdef NO_MTIME
-    "nomtime",
-    #endif
-    #ifdef NO_PERMS
-    "noperm",
-    #endif
-    #ifdef NO_SYMLINKS
-    "nosymlink",
-    #endif
-    #ifdef NO_TRAVCHECK
-    "notravcheck",
-    #endif
-    #ifdef NO_USER_ORDER
-    "nouserorder",
-    #endif
-    #ifdef NO_UNICODE
-    "nounicode",
-    #endif
-    NULL
+  "windows",
+  #endif
+  NULL
 };
 
 /* Required for progress indicator code */
@@ -1372,6 +1372,9 @@ static inline void help_text(void)
 
   printf("Duplicate file sets will be printed by default unless a different action\n");
   printf("option is specified (delete, summarize, link, dedupe, etc.)\n");
+#ifdef NO_GETOPT_LONG
+  printf("\nWARNING: getopt_long disabled in this build! Long options will not work.\n\n");
+#endif
 #ifdef LOUD
   printf(" -@ --loud        \toutput annoying low-level debug info while running\n");
 #endif
@@ -1471,9 +1474,6 @@ static inline void help_text(void)
 #ifndef ON_WINDOWS
   printf("                  \tYou can send SIGUSR1 to the program to toggle this\n");
 #endif
-#ifdef OMIT_GETOPT_LONG
-  printf("Note: Long options are not supported in this build.\n\n");
-#endif
 }
 
 
@@ -1503,7 +1503,7 @@ int main(int argc, char **argv)
   static struct utsname utsname;
 #endif
 
-#ifndef OMIT_GETOPT_LONG
+#ifndef NO_GETOPT_LONG
   static const struct option long_options[] =
   {
     { "loud", 0, 0, '@' },
@@ -1615,7 +1615,7 @@ int main(int argc, char **argv)
   atexit(clean_exit);
 
   while ((opt = GETOPT(argc, argv, GETOPT_STRING
-#ifndef OMIT_GETOPT_LONG
+#ifndef NO_GETOPT_LONG
           , long_options, NULL
 #endif
          )) != EOF) {
