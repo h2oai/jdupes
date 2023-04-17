@@ -48,7 +48,7 @@ OBJS += act_deletefiles.o act_linkfiles.o act_printmatches.o act_summarize.o act
 COMPILER_OPTIONS = -Wall -Wwrite-strings -Wcast-align -Wstrict-aliasing -Wstrict-prototypes -Wpointer-arith -Wundef
 COMPILER_OPTIONS += -Wshadow -Wfloat-equal -Waggregate-return -Wcast-qual -Wswitch-default -Wswitch-enum -Wconversion -Wunreachable-code -Wformat=2
 COMPILER_OPTIONS += -std=gnu99 -D_FILE_OFFSET_BITS=64 -fstrict-aliasing -pipe
-COMPILER_OPTIONS += -DSMA_MAX_FREE=11 -DNO_ATIME
+COMPILER_OPTIONS += -DNO_ATIME
 
 # Remove unused code if requested
 ifdef GC_SECTIONS
@@ -117,14 +117,14 @@ endif
 # Bare-bones mode (for the adventurous lunatic) - includes all LOW_MEMORY options
 ifdef BARE_BONES
 LOW_MEMORY=1
-COMPILER_OPTIONS += -DSMA_PASSTHROUGH -DNO_DELETE -DNO_TRAVCHECK -DBARE_BONES -DNO_ERRORONDUPE
+COMPILER_OPTIONS += -DNO_DELETE -DNO_TRAVCHECK -DBARE_BONES -DNO_ERRORONDUPE
 COMPILER_OPTIONS += -DCHUNK_SIZE=4096 -DPATHBUF_SIZE=1024
 endif
 
 # Low memory mode
 ifdef LOW_MEMORY
 USE_JODY_HASH = 1
-COMPILER_OPTIONS += -DLOW_MEMORY -DSMA_PAGE_SIZE=32768
+COMPILER_OPTIONS += -DLOW_MEMORY
 COMPILER_OPTIONS += -DNO_HARDLINKS -DNO_SYMLINKS -DNO_USER_ORDER -DNO_PERMS
 COMPILER_OPTIONS += -DNO_ATIME -DNO_JSON -DNO_EXTFILTER -DNO_CHUNKSIZE
 COMPILER_OPTIONS += -DNO_JODY_SORT

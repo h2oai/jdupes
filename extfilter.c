@@ -170,7 +170,7 @@ void add_extfilter(const char *option)
   /* Invoke help text if requested */
   if (jc_strcaseeq(option, "help") == 0) { help_text_extfilter(); exit(EXIT_SUCCESS); }
 
-  opt = jc_string_malloc(strlen(option) + 1);
+  opt = malloc(strlen(option) + 1);
   if (opt == NULL) jc_oom("add_extfilter option");
   strcpy(opt, option);
   p = opt;
@@ -194,12 +194,12 @@ void add_extfilter(const char *option)
   if (extfilter_head != NULL) {
     /* Add to end of exclusion stack if head is present */
     while (extf->next != NULL) extf = extf->next;
-    extf->next = jc_string_malloc(sizeof(struct extfilter) + strlen(p) + 1);
+    extf->next = malloc(sizeof(struct extfilter) + strlen(p) + 1);
     if (extf->next == NULL) jc_oom("add_extfilter alloc");
     extf = extf->next;
   } else {
     /* Allocate extfilter_head if no exclusions exist yet */
-    extfilter_head = jc_string_malloc(sizeof(struct extfilter) + strlen(p) + 1);
+    extfilter_head = malloc(sizeof(struct extfilter) + strlen(p) + 1);
     if (extfilter_head == NULL) jc_oom("add_extfilter alloc");
     extf = extfilter_head;
   }
@@ -236,7 +236,7 @@ void add_extfilter(const char *option)
   }
 
   LOUD(fprintf(stderr, "Added extfilter: tag '%s', data '%s', size %lld, flags %d\n", opt, extf->param, (long long)extf->size, extf->flags);)
-  jc_string_free(opt);
+  free(opt);
   return;
 
 error_bad_time:

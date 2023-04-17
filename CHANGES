@@ -1,3 +1,7 @@
+jdupes latest
+
+- string_malloc is deprecated in libjodycode and has been removed
+
 jdupes 1.22.0
 
 - libjodycode is now required to build and run jdupes (see INSTALL)

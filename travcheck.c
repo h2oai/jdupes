@@ -20,7 +20,7 @@ static struct travcheck *travcheck_alloc(const dev_t device, const jdupes_ino_t 
 
   LOUD(fprintf(stderr, "travcheck_alloc(dev %" PRIdMAX ", ino %" PRIdMAX ", hash %" PRIuMAX ")\n", (intmax_t)device, (intmax_t)inode, hash);)
 
-  trav = (struct travcheck *)jc_string_malloc(sizeof(struct travcheck));
+  trav = (struct travcheck *)malloc(sizeof(struct travcheck));
   if (trav == NULL) {
     LOUD(fprintf(stderr, "travcheck_alloc: malloc failed\n");)
     return NULL;
@@ -49,7 +49,7 @@ void travcheck_free(struct travcheck *cur)
   if (cur->right == cur) goto error_travcheck_ptr;
   if (cur->left != NULL) travcheck_free(cur->left);
   if (cur->right != NULL) travcheck_free(cur->right);
-  if (cur != NULL) jc_string_free(cur);
+  if (cur != NULL) free(cur);
   return;
 error_travcheck_ptr:
   fprintf(stderr, "internal error: invalid pointer in travcheck_free(), report this\n");

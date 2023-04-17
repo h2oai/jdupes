@@ -176,6 +176,9 @@ const char *feature_flags[] = {
   #ifdef __FAST_MATH__
   "fastmath",
   #endif
+  #ifdef USE_JODY_HASH
+  "jodyhash",
+  #endif
   #ifdef LOUD_DEBUG
   "loud",
   #endif
@@ -289,7 +292,6 @@ void sighandler(const int signum)
   (void)signum;
   if (interrupt || !ISFLAG(flags, F_SOFTABORT)) {
     fprintf(stderr, "\n");
-    jc_string_malloc_destroy();
     exit(EXIT_FAILURE);
   }
   interrupt = 1;
@@ -311,16 +313,6 @@ void sigusr1(const int signum)
   return;
 }
 #endif
-
-
-/* De-allocate on exit */
-void clean_exit(void)
-{
-#ifndef SMA_PASSTHROUGH
-  jc_string_malloc_destroy();
-#endif
-  return;
-}
 
 
 /* Update progress indicator if requested */
@@ -585,7 +577,7 @@ static int check_singlefile(file_t * const restrict newfile)
 
 static file_t *init_newfile(const size_t len, file_t * restrict * const restrict filelistp)
 {
-  file_t * const restrict newfile = (file_t *)jc_string_malloc(sizeof(file_t));
+  file_t * const restrict newfile = (file_t *)malloc(sizeof(file_t));
 
   if (!newfile) jc_oom("init_newfile() file structure");
   if (!filelistp) jc_nullptr("init_newfile() filelistp");
@@ -593,7 +585,7 @@ static file_t *init_newfile(const size_t len, file_t * restrict * const restrict
   LOUD(fprintf(stderr, "init_newfile(len %" PRIuMAX", filelistp %p)\n", (uintmax_t)len, filelistp));
 
   memset(newfile, 0, sizeof(file_t));
-  newfile->d_name = (char *)jc_string_malloc(len);
+  newfile->d_name = (char *)malloc(len);
   if (!newfile->d_name) jc_oom("init_newfile() filename");
 
   newfile->next = *filelistp;
@@ -624,8 +616,8 @@ static inline file_t *grokfile(const char * const restrict name, file_t * restri
   /* Single-file [l]stat() and exclusion condition check */
   if (check_singlefile(newfile) != 0) {
     LOUD(fprintf(stderr, "grokfile: check_singlefile rejected file\n"));
-    jc_string_free(newfile->d_name);
-    jc_string_free(newfile);
+    free(newfile->d_name);
+    free(newfile);
     return NULL;
   }
   return newfile;
@@ -716,7 +708,7 @@ static void grokdir(const char * const restrict dir,
     size_t d_name_len;
 
     /* Get necessary length and allocate d_name */
-    dirinfo = (struct dirent *)jc_string_malloc(sizeof(struct dirent));
+    dirinfo = (struct dirent *)malloc(sizeof(struct dirent));
     if (!W2M(ffd.cFileName, dirinfo->d_name)) continue;
 #else
   cd = opendir(dir);
@@ -764,8 +756,8 @@ static void grokdir(const char * const restrict dir,
     /* Single-file [l]stat() and exclusion condition check */
     if (check_singlefile(newfile) != 0) {
       LOUD(fprintf(stderr, "grokdir: check_singlefile rejected file\n"));
-      jc_string_free(newfile->d_name);
-      jc_string_free(newfile);
+      free(newfile->d_name);
+      free(newfile);
       continue;
     }
 
@@ -777,8 +769,8 @@ static void grokdir(const char * const restrict dir,
             && (getdirstats(newfile->d_name, &inode, &n_device, &mode) == 0)
             && (device != n_device)) {
           LOUD(fprintf(stderr, "grokdir: directory: not recursing (--one-file-system)\n"));
-          jc_string_free(newfile->d_name);
-          jc_string_free(newfile);
+          free(newfile->d_name);
+          free(newfile);
           continue;
         }
 #ifndef NO_SYMLINKS
@@ -793,8 +785,8 @@ static void grokdir(const char * const restrict dir,
         }
 #endif
       } else { LOUD(fprintf(stderr, "grokdir: directory: not recursing\n")); }
-      jc_string_free(newfile->d_name);
-      jc_string_free(newfile);
+      free(newfile->d_name);
+      free(newfile);
       continue;
     } else {
 //add_single_file:
@@ -810,8 +802,8 @@ static void grokdir(const char * const restrict dir,
 
       } else {
         LOUD(fprintf(stderr, "grokdir: not a regular file: %s\n", newfile->d_name);)
-        jc_string_free(newfile->d_name);
-        jc_string_free(newfile);
+        free(newfile->d_name);
+        free(newfile);
         if (single == 1) {
           single = 0;
           goto skip_single;
@@ -873,7 +865,7 @@ static jdupes_hash_t *get_filehash(const file_t * const restrict checkfile,
 
   /* Allocate on first use */
   if (chunk == NULL) {
-    chunk = (jdupes_hash_t *)jc_string_malloc(auto_chunk_size);
+    chunk = (jdupes_hash_t *)malloc(auto_chunk_size);
     if (!chunk) jc_oom("get_filehash() chunk");
   }
 
@@ -983,7 +975,7 @@ static inline void registerfile(filetree_t * restrict * const restrict nodeptr,
   LOUD(fprintf(stderr, "registerfile(direction %d)\n", d));
 
   /* Allocate and initialize a new node for the file */
-  branch = (filetree_t *)jc_string_malloc(sizeof(filetree_t));
+  branch = (filetree_t *)malloc(sizeof(filetree_t));
   if (branch == NULL) jc_oom("registerfile() branch");
   branch->file = file;
   branch->left = NULL;
@@ -1004,7 +996,6 @@ static inline void registerfile(filetree_t * restrict * const restrict nodeptr,
     default:
       /* This should never ever happen */
       fprintf(stderr, "\ninternal error: invalid direction for registerfile(), report this\n");
-      jc_string_malloc_destroy();
       exit(EXIT_FAILURE);
       break;
   }
@@ -1201,8 +1192,8 @@ static inline int confirmmatch(FILE * const restrict file1, FILE * const restric
 
   /* Allocate on first use; OOM if either is ever NULLed */
   if (!c1) {
-    c1 = (char *)jc_string_malloc(auto_chunk_size);
-    c2 = (char *)jc_string_malloc(auto_chunk_size);
+    c1 = (char *)malloc(auto_chunk_size);
+    c2 = (char *)malloc(auto_chunk_size);
   }
   if (!c1 || !c2) jc_oom("confirmmatch() c1/c2");
 
@@ -1580,7 +1571,7 @@ int main(int argc, char **argv)
 #ifdef UNICODE
   /* Create a UTF-8 **argv from the wide version */
   static char **argv;
-  argv = (char **)jc_string_malloc(sizeof(char *) * (size_t)argc);
+  argv = (char **)malloc(sizeof(char *) * (size_t)argc);
   if (!argv) jc_oom("main() unicode argv");
   jc_widearg_to_argv(argc, wargv, argv);
   /* fix up __argv so getopt etc. don't crash */
@@ -1611,8 +1602,6 @@ int main(int argc, char **argv)
 
   program_name = argv[0];
   oldargv = cloneargs(argc, argv);
-  /* Clean up string_malloc on any exit */
-  atexit(clean_exit);
 
   while ((opt = GETOPT(argc, argv, GETOPT_STRING
 #ifndef NO_GETOPT_LONG
@@ -1670,7 +1659,6 @@ int main(int argc, char **argv)
       break;
     case 'h':
       help_text();
-      jc_string_malloc_destroy();
       exit(EXIT_FAILURE);
 #ifndef NO_HARDLINKS
     case 'H':
@@ -1896,38 +1884,32 @@ int main(int argc, char **argv)
     default:
       if (opt != '?') fprintf(stderr, "Sorry, using '-%c' is not supported in this build.\n", opt);
       fprintf(stderr, "Try `jdupes --help' for more information.\n");
-      jc_string_malloc_destroy();
       exit(EXIT_FAILURE);
     }
   }
 
   if (optind >= argc) {
     fprintf(stderr, "no files or directories specified (use -h option for help)\n");
-    jc_string_malloc_destroy();
     exit(EXIT_FAILURE);
   }
 
   if (partialonly_spec == 1) {
     fprintf(stderr, "--partial-only specified only once (it's VERY DANGEROUS, read the manual!)\n");
-    jc_string_malloc_destroy();
     exit(EXIT_FAILURE);
   }
 
   if (ISFLAG(flags, F_PARTIALONLY) && ISFLAG(flags, F_QUICKCOMPARE)) {
     fprintf(stderr, "--partial-only overrides --quick and is even more dangerous (read the manual!)\n");
-    jc_string_malloc_destroy();
     exit(EXIT_FAILURE);
   }
 
   if (ISFLAG(flags, F_RECURSE) && ISFLAG(flags, F_RECURSEAFTER)) {
     fprintf(stderr, "options --recurse and --recurse: are not compatible\n");
-    jc_string_malloc_destroy();
     exit(EXIT_FAILURE);
   }
 
   if (ISFLAG(a_flags, FA_SUMMARIZEMATCHES) && ISFLAG(a_flags, FA_DELETEFILES)) {
     fprintf(stderr, "options --summarize and --delete are not compatible\n");
-    jc_string_malloc_destroy();
     exit(EXIT_FAILURE);
   }
 
@@ -1948,7 +1930,6 @@ int main(int argc, char **argv)
 
   if (pm > 1) {
       fprintf(stderr, "Only one of --summarize, --print-summarize, --delete, --link-hard,\n--link-soft, --json, --error-on-dupe, or --dedupe may be used\n");
-      jc_string_malloc_destroy();
       exit(EXIT_FAILURE);
   }
   if (pm == 0) SETFLAG(a_flags, FA_PRINTMATCHES);
@@ -1966,7 +1947,6 @@ int main(int argc, char **argv)
 
     if (firstrecurse == argc) {
       fprintf(stderr, "-R option must be isolated from other options\n");
-      jc_string_malloc_destroy();
       exit(EXIT_FAILURE);
     }
 
@@ -2010,7 +1990,6 @@ int main(int argc, char **argv)
   if (!ISFLAG(flags, F_HIDEPROGRESS)) fprintf(stderr, "\n");
   if (!files) {
     jc_fwprint(stderr, "No duplicates found.", 1);
-    jc_string_malloc_destroy();
     exit(EXIT_SUCCESS);
   }
 
@@ -2136,8 +2115,6 @@ skip_file_scan:
 #ifdef DEBUG
 skip_all_scan_code:
 #endif
-
-  jc_string_malloc_destroy();
 
 #ifdef DEBUG
   if (ISFLAG(flags, F_DEBUG)) {

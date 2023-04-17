@@ -1,6 +1,7 @@
 /* Argument functions
  * This file is part of jdupes; see jdupes.c for license information */
 
+#include <stdlib.h>
 #include <string.h>
 #include "jdupes.h"
 
@@ -9,11 +10,11 @@ char **cloneargs(const int argc, char **argv)
   static int x;
   static char **args;
 
-  args = (char **)jc_string_malloc(sizeof(char *) * (unsigned int)argc);
+  args = (char **)malloc(sizeof(char *) * (unsigned int)argc);
   if (args == NULL) jc_oom("cloneargs() start");
 
   for (x = 0; x < argc; x++) {
-    args[x] = (char *)jc_string_malloc(strlen(argv[x]) + 1);
+    args[x] = (char *)malloc(strlen(argv[x]) + 1);
     if (args[x] == NULL) jc_oom("cloneargs() loop");
     strcpy(args[x], argv[x]);
   }

@@ -6,8 +6,9 @@
 #include <assert.h>
 #include <stdio.h>
 #include <stdint.h>
-#include <inttypes.h>
+#include <stdlib.h>
 #include <string.h>
+#include <inttypes.h>
 #include "jdupes.h"
 #include "version.h"
 #include <libjodycode.h>
@@ -112,8 +113,8 @@ extern void printjson(file_t * restrict files, const int argc, char **argv)
 {
   file_t * restrict tmpfile;
   int arg = 0, comma = 0, len = 0;
-  char *temp = jc_string_malloc(PATH_MAX * 2);
-  char *temp2 = jc_string_malloc(PATH_MAX * 2);
+  char *temp = malloc(PATH_MAX * 2);
+  char *temp2 = malloc(PATH_MAX * 2);
   char *temp_insert = temp;
 
   LOUD(fprintf(stderr, "printjson: %p\n", files));
@@ -161,7 +162,7 @@ extern void printjson(file_t * restrict files, const int argc, char **argv)
 
   printf("\n  ]\n}\n");
 
-  jc_string_free(temp); jc_string_free(temp2);
+  free(temp); free(temp2);
   return;
 }
 
