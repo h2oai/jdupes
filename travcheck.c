@@ -81,7 +81,6 @@ int traverse_check(const dev_t device, const jdupes_ino_t inode)
           /* Traverse right */
           if (traverse->right == NULL) {
             LOUD(fprintf(stderr, "traverse_check add right: %" PRIuMAX ", %" PRIuMAX"\n", (uintmax_t)device, (uintmax_t)inode);)
-            DBG(travcheck_rights++);
             traverse->right = travcheck_alloc(device, inode, travhash);
             if (traverse->right == NULL) return 2;
             break;
@@ -92,7 +91,6 @@ int traverse_check(const dev_t device, const jdupes_ino_t inode)
           /* Traverse left */
           if (traverse->left == NULL) {
             LOUD(fprintf(stderr, "traverse_check add left: %" PRIuMAX ", %" PRIuMAX "\n", (uintmax_t)device, (uintmax_t)inode);)
-            DBG(travcheck_lefts++);
             traverse->left = travcheck_alloc(device, inode, travhash);
             if (traverse->left == NULL) return 2;
             break;
