@@ -132,7 +132,7 @@ extern void dedupefiles(file_t * restrict files)
     total_files++;
   }
 
-  if (!ISFLAG(flags, F_HIDEPROGRESS)) fprintf(stderr, "Deduplication done (%lu files processed)\n", total_files);
+  if (!ISFLAG(flags, F_HIDEPROGRESS)) fprintf(stderr, "Deduplication done (%" PRIuMAX " files processed)\n", total_files);
   free(fdr);
 #endif /* __linux__ */
 
