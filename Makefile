@@ -250,10 +250,10 @@ clean:
 	$(RM) $(OBJS) $(OBJS_CLEAN) build_date.h $(PROGRAM_NAME)$(SUFFIX) *~ .*.un~ *.gcno *.gcda *.gcov
 
 distclean: clean
-	$(RM) *.pkg.tar.*
-	$(RM) -r jdupes-*-*/ jdupes-*-*.zip
+	$(RM) -rf *.pkg.tar* jdupes-*-*/ jdupes-*-*.zip
 
 chrootpackage:
 	+./chroot_build.sh
+
 package:
-	+./generate_packages.sh
+	+./generate_packages.sh $(ARCH)

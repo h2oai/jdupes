@@ -1,24 +1,33 @@
-#!/bin/sh
+#!/bin/bash
 
 # Generate package folders with variant builds
 
 # Number of parallel make processes
-test -z "$PM" && PM=12
+if [ -z "$PM" ]
+	then PM=12
+	[ -d /sys/devices/system/cpu ] && \
+		PM=$(find /sys/devices/system/cpu -maxdepth 1 -mindepth 1 -type d | grep '/cpu[0-9][0-9]*' | wc -l) && \
+		PM=$((PM * 2))
+fi
 
 NAME="jdupes"
 
 VER="$(cat version.h | grep '#define VER "' | cut -d\" -f2)"
 echo "Program version: $VER"
 
-TA=__NONE__
-PKGTYPE=gz
+[ -z "$TA" ] && TA=__NONE__
+[ ! -z "$1" ] && ARCH="$1"
+[[ "$ARCH" = "linux-x64" || "$ARCH" = "x86_64" ]] && TA=linux && ARCH=x86_64 && CF=-m64
+[[ "$ARCH" = "linux-x32" || "$ARCH" = "x32" ]] && TA=linux && ARCH=x32 && CF=-mx32
+[[ "$ARCH" = "linux-i686" || "$ARCH" = "i686" ]] && TA=linux && ARCH=i686 && CF=-m32
+
 
 UNAME_S="$(uname -s | tr '[:upper:]' '[:lower:]')"
 UNAME_P="$(uname -p)"
 UNAME_M="$(uname -m)"
 
 # Detect macOS
-if [ "$UNAME_S" = "darwin" ]
+if [[ "$TA" = "macos" || "$UNAME_S" = "darwin" ]]
 	then
 	PKGTYPE=zip
 	TA=mac32
@@ -26,29 +35,29 @@ if [ "$UNAME_S" = "darwin" ]
 fi
 
 # Detect Power Macs under macOS
-if [[ "$UNAME_P" = "Power Macintosh" || "$UNAME_P" = "powerpc" ]]
+if [[ "$TA" = "macppc" || "$UNAME_P" = "Power Macintosh" || "$UNAME_P" = "powerpc" ]]
 	then
-	PKGTYPE=zip
 	TA=macppc32
 	test "$(sysctl hw.cpu64bit_capable)" = "hw.cpu64bit_capable: 1" && TA=macppc64
+	[ -z "$PKGTYPE" ] && PKGTYPE=zip
 fi
 
 # Detect Linux
-if [ "$UNAME_S" = "linux" ]
+if [[ "$TA" = "linux" || "$UNAME_S" = "linux" ]]
 	then
 	TA="linux-$UNAME_M"
 	[ ! -z "$ARCH" ] && TA="linux-$ARCH"
-	PKGTYPE=xz
+	[ -z "$PKGTYPE" ] && PKGTYPE=xz
 fi
 
 # Fall through - assume Windows
-if [ "$TA" = "__NONE__" ]
+if [[ "$TA" = "windows" || "$TA" = "__NONE__" ]]
 	then
-	PKGTYPE=zip
-	TGT=$(gcc -v 2>&1 | grep Target | cut -d\  -f2- | cut -d- -f1)
-	test "$TGT" = "i686" && TA=win32
-	test "$TGT" = "x86_64" && TA=win64
-	test "$UNAME_S" = "MINGW32_NT-5.1" && TA=winxp
+	[ -z "$PKGTYPE" ] && PKGTYPE=zip
+	[ -z "$ARCH" ] && ARCH=$(gcc -v 2>&1 | grep Target | cut -d\  -f2- | cut -d- -f1)
+	[ "$ARCH" = "i686" ] && TA=win32
+	[ "$ARCH" = "x86_64" ] && TA=win64
+	[ "$UNAME_S" = "MINGW32_NT-5.1" ] && TA=winxp
 	EXT=".exe"
 fi
 
@@ -65,14 +74,14 @@ if [ -d "../libjodycode" ]
 	echo "Rebuilding nearby libjodycode first"
 	WD="$(pwd)"
 	cd ../libjodycode
-	make clean && make -j$PM
+	make clean && make -j$PM CFLAGS_EXTRA="$CF"
 	cd "$WD"
 fi
 E1=1; E2=1; E3=1; E4=1
-make clean && make -j$PM ENABLE_DEDUPE=1 USE_NEARBY_JC=1 static_jc stripped && cp $NAME$EXT $PKGNAME/$NAME$EXT && E1=0
-make clean && make -j$PM ENABLE_DEDUPE=1 LOUD=1 USE_NEARBY_JC=1 static_jc stripped && cp $NAME$EXT $PKGNAME/${NAME}-loud$EXT && E2=0
-make clean && make -j$PM LOW_MEMORY=1 USE_NEARBY_JC=1 static_jc stripped && cp $NAME$EXT $PKGNAME/${NAME}-lowmem$EXT && E3=0
-make clean && make -j$PM BARE_BONES=1 USE_NEARBY_JC=1 static_jc stripped && cp $NAME$EXT $PKGNAME/${NAME}-barebones$EXT && E4=0
+make clean && make CFLAGS_EXTRA="$CF" -j$PM ENABLE_DEDUPE=1 USE_NEARBY_JC=1 static_jc stripped && cp $NAME$EXT $PKGNAME/$NAME$EXT && E1=0
+make clean && make CFLAGS_EXTRA="$CF" -j$PM ENABLE_DEDUPE=1 LOUD=1 USE_NEARBY_JC=1 static_jc stripped && cp $NAME$EXT $PKGNAME/${NAME}-loud$EXT && E2=0
+make clean && make CFLAGS_EXTRA="$CF" -j$PM LOW_MEMORY=1 USE_NEARBY_JC=1 static_jc stripped && cp $NAME$EXT $PKGNAME/${NAME}-lowmem$EXT && E3=0
+make clean && make CFLAGS_EXTRA="$CF" -j$PM BARE_BONES=1 USE_NEARBY_JC=1 static_jc stripped && cp $NAME$EXT $PKGNAME/${NAME}-barebones$EXT && E4=0
 strip ${PKGNAME}/${NAME}*$EXT
 make clean
 test $((E1 + E2 + E3 + E4)) -gt 0 && echo "Error building packages; aborting." && exit 1
@@ -92,6 +101,7 @@ if [ "$TA" = "mac64" ] && ld -v 2>&1 | grep -q 'archs:.*i386'
 	rm -f $PKGNAME/$NAME$EXT$TYPE $PKGNAME/$NAME-loud$EXT$TYPE $PKGNAME/$NAME-lowmem$EXT$TYPE $PKGNAME/$NAME-barebones$EXT$TYPE
 fi
 test "$PKGTYPE" = "zip" && zip -9r $PKGNAME.zip $PKGNAME/
+test "$PKGTYPE" = "tar"  && tar -c $PKGNAME/ > $PKGNAME.pkg.tar
 test "$PKGTYPE" = "gz"  && tar -c $PKGNAME/ | gzip -9 > $PKGNAME.pkg.tar.gz
 test "$PKGTYPE" = "xz"  && tar -c $PKGNAME/ | xz -e > $PKGNAME.pkg.tar.xz
 echo "Package generation complete."

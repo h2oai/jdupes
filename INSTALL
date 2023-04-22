@@ -25,7 +25,11 @@ This installs all jdupes files under /usr/local by default. You may change this
 to a different location by editing the Makefile or specifying a PREFIX on the
 command line: 'make PREFIX=/usr install'. DESTDIR is also supported to place
 everything into a different location for i.e. building distribution packages:
-'make DESTDIR=/pkg/jdupes install'.
+'make DESTDIR=/pkg/jdupes install'. There is also a package generation script
+'generate_packages.sh' which tries to make an archive file containing all of
+the necessary files for distribution; for Linux you can also tell it which
+x86 architecture you want explicitly (i686, x32, x86_64):
+'make package ARCH=x32"
 
 To force static or dynamic linking of libjodycode, use the make targets
 static_jc and dynamic_jc respectively. On Windows you must tell Make to use
