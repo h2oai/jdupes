@@ -116,9 +116,6 @@ extern "C" {
 /* Compile out debugging stat counters unless requested */
 #ifdef DEBUG
  #define DBG(a) a
- #ifndef TREE_DEPTH_STATS
-  #define TREE_DEPTH_STATS
- #endif
 #else
  #define DBG(a)
 #endif

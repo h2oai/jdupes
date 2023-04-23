@@ -153,11 +153,6 @@ static unsigned int filetree_lefts = 0, filetree_rights = 0;
  #endif
 #endif /* DEBUG */
 
-#ifdef TREE_DEPTH_STATS
-static unsigned int filetree_depth = 0;
-static unsigned int filetree_max_depth = 0;
-#endif
-
 /* File tree head */
 static filetree_t *checktree = NULL;
 
@@ -902,13 +897,6 @@ static inline void registerfile(filetree_t * restrict * const restrict nodeptr,
 }
 
 
-#ifdef TREE_DEPTH_STATS
-#define TREE_DEPTH_UPDATE_MAX() { if (filetree_max_depth < filetree_depth) filetree_max_depth = filetree_depth; filetree_depth = 0; }
-#else
-#define TREE_DEPTH_UPDATE_MAX()
-#endif
-
-
 /* Check two files for a match */
 static file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict file)
 {
@@ -1044,29 +1032,24 @@ static file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict f
   if (cmpresult < 0) {
     if (tree->left != NULL) {
       LOUD(fprintf(stderr, "checkmatch: recursing tree: left\n"));
-      DBG(filetree_lefts++; filetree_depth++;)
       return checkmatch(tree->left, file);
     } else {
       LOUD(fprintf(stderr, "checkmatch: registering file: left\n"));
       registerfile(&tree, LEFT, file);
-      TREE_DEPTH_UPDATE_MAX();
       return NULL;
     }
   } else if (cmpresult > 0) {
     if (tree->right != NULL) {
       LOUD(fprintf(stderr, "checkmatch: recursing tree: right\n"));
-      DBG(filetree_rights++; filetree_depth++;)
       return checkmatch(tree->right, file);
     } else {
       LOUD(fprintf(stderr, "checkmatch: registering file: right\n"));
       registerfile(&tree, RIGHT, file);
-      TREE_DEPTH_UPDATE_MAX();
       return NULL;
     }
   } else {
     /* All compares matched */
     DBG(partial_to_full++;)
-    TREE_DEPTH_UPDATE_MAX();
     LOUD(fprintf(stderr, "checkmatch: files appear to match based on hashes\n"));
     if (ISFLAG(p_flags, PF_FULLHASH)) printf("Full hashes match:\n   %s\n   %s\n\n", file->d_name, tree->file->d_name);
     return &tree->file;
@@ -1865,15 +1848,7 @@ skip_all_scan_code:
     fprintf(stderr, "\n%d partial (+%d small) -> %d full hash -> %d full (%d partial elim) (%d hash%u fail)\n",
         partial_hash, small_file, full_hash, partial_to_full,
         partial_elim, hash_fail, (unsigned int)sizeof(jdupes_hash_t)*8);
-    fprintf(stderr, "%" PRIuMAX " total files, %" PRIuMAX " comparisons, branch L %u, R %u, both %u, max tree depth %u\n",
-        filecount, comparisons, filetree_lefts, filetree_rights,
-        filetree_lefts + filetree_rights, filetree_max_depth);
-#ifdef SMA_DEBUG
-    fprintf(stderr, "SMA: allocs %" PRIuMAX ", free %" PRIuMAX " (merge %" PRIuMAX ", repl %" PRIuMAX "), fail %" PRIuMAX ", reuse %" PRIuMAX ", scan %" PRIuMAX ", tails %" PRIuMAX "\n",
-        sma_allocs, sma_free_good, sma_free_merged, sma_free_replaced,
-        sma_free_ignored, sma_free_reclaimed,
-        sma_free_scanned, sma_free_tails);
-#endif
+    fprintf(stderr, "%" PRIuMAX " total files, %" PRIuMAX " comparisons\n", filecount, comparisons);
 #ifndef NO_CHUNKSIZE
     if (manual_chunk_size > 0) fprintf(stderr, "I/O chunk size: %ld KiB (manually set)\n", manual_chunk_size >> 10);
     else {
