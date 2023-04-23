@@ -86,6 +86,16 @@ extern "C" {
 #define SETFLAG(a,b) (a |= b)
 #define CLEARFLAG(a,b) (a &= (~b))
 
+/* Chunk sizing */
+#ifndef CHUNK_SIZE
+ #define CHUNK_SIZE 65536
+#endif
+#ifndef NO_CHUNKSIZE
+ /* Larger chunk size makes large files process faster but uses more RAM */
+ #define MIN_CHUNK_SIZE 4096
+ #define MAX_CHUNK_SIZE 1048576 * 256
+#endif /* NO_CHUNKSIZE */
+
 /* Low memory option overrides */
 #ifdef LOW_MEMORY
  #ifndef NO_PERMS

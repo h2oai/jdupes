@@ -41,7 +41,7 @@ INSTALL_PROGRAM = $(INSTALL) -m 0755
 INSTALL_DATA    = $(INSTALL) -m 0644
 
 # Main object files
-OBJS += jdupes.o args.o extfilter.o travcheck.o
+OBJS += jdupes.o args.o helptext.o extfilter.o travcheck.o
 OBJS += act_deletefiles.o act_linkfiles.o act_printmatches.o act_summarize.o act_printjson.o
 
 # Configuration section
