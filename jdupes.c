@@ -1357,7 +1357,7 @@ static void registerpair(file_t **matchlist, file_t *newmatch,
 }
 
 
-static inline void help_text(void)
+static void help_text(void)
 {
   printf("Usage: jdupes [options] FILES and/or DIRECTORIES...\n\n");
 
@@ -1465,6 +1465,57 @@ static inline void help_text(void)
 #ifndef ON_WINDOWS
   printf("                  \tYou can send SIGUSR1 to the program to toggle this\n");
 #endif
+}
+
+
+static void version_text(void)
+{
+  printf("jdupes %s (%s) ", VER, VERDATE);
+
+  /* Indicate bitness information */
+  if (sizeof(uintptr_t) == 8) {
+    if (sizeof(long) == 4) printf("64-bit i32\n");
+    else if (sizeof(long) == 8) printf("64-bit\n");
+  } else if (sizeof(uintptr_t) == 4) {
+    if (sizeof(long) == 4) printf("32-bit");
+    else if (sizeof(long) == 8) printf("32-bit i64");
+#if defined(__x86_64__) && SIZE_MAX == 0xffffffff
+	printf(" (x32 ABI)");
+#endif
+	printf("\n");
+  } else printf("%u-bit i%u\n", (unsigned int)(sizeof(uintptr_t) * 8),
+      (unsigned int)(sizeof(long) * 8));
+
+  printf("Compile-time feature flags:");
+  if (*feature_flags != NULL) {
+    int c = 0;
+    while (feature_flags[c] != NULL) {
+      printf(" %s", feature_flags[c]);
+      c++;
+    }
+  } else printf(" none");
+  printf("\nCopyright (C) 2015-2023 by Jody Bruchon and contributors\n");
+  printf("Linked libjodycode version is %s (%s)\n", jc_version, jc_verdate);
+  printf("Permission is hereby granted, free of charge, to any person obtaining a copy of\n");
+  printf("this software and associated documentation files (the \"Software\"), to deal in\n");
+  printf("the Software without restriction, including without limitation the rights to\n");
+  printf("use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies\n");
+  printf("of the Software, and to permit persons to whom the Software is furnished to do\n");
+  printf("so, subject to the following conditions:\n\n");
+
+  printf("The above copyright notice and this permission notice shall be included in all\n");
+  printf("copies or substantial portions of the Software.\n\n");
+  printf("THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n");
+  printf("IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n");
+  printf("FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n");
+  printf("AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n");
+  printf("LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n");
+  printf("OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\n");
+  printf("SOFTWARE.\n");
+  printf("\nIf you find this software useful, please consider financially supporting\n");
+  printf("its development through the author's home page: https://www.jodybruchon.com/\n");
+  printf("\nReport bugs and get the latest releases: https://github.com/jbruchon/jdupes\n");
+  exit(EXIT_SUCCESS);
 }
 
 
@@ -1799,51 +1850,7 @@ int main(int argc, char **argv)
       break;
     case 'v':
     case 'V':
-      printf("jdupes %s (%s) ", VER, VERDATE);
-
-      /* Indicate bitness information */
-      if (sizeof(uintptr_t) == 8) {
-        if (sizeof(long) == 4) printf("64-bit i32\n");
-        else if (sizeof(long) == 8) printf("64-bit\n");
-      } else if (sizeof(uintptr_t) == 4) {
-        if (sizeof(long) == 4) printf("32-bit");
-        else if (sizeof(long) == 8) printf("32-bit i64");
-#if defined(__x86_64__) && SIZE_MAX == 0xffffffff
-	printf(" (x32 ABI)");
-#endif
-	printf("\n");
-      } else printf("%u-bit i%u\n", (unsigned int)(sizeof(uintptr_t) * 8),
-          (unsigned int)(sizeof(long) * 8));
-
-      printf("Compile-time feature flags:");
-      if (*feature_flags != NULL) {
-        int c = 0;
-        while (feature_flags[c] != NULL) {
-          printf(" %s", feature_flags[c]);
-          c++;
-        }
-      } else printf(" none");
-      printf("\nCopyright (C) 2015-2023 by Jody Bruchon and contributors\n");
-      printf("Linked libjodycode version is %s (%s)\n", jc_version, jc_verdate);
-      printf("Permission is hereby granted, free of charge, to any person obtaining a copy of\n");
-      printf("this software and associated documentation files (the \"Software\"), to deal in\n");
-      printf("the Software without restriction, including without limitation the rights to\n");
-      printf("use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies\n");
-      printf("of the Software, and to permit persons to whom the Software is furnished to do\n");
-      printf("so, subject to the following conditions:\n\n");
-
-      printf("The above copyright notice and this permission notice shall be included in all\n");
-      printf("copies or substantial portions of the Software.\n\n");
-      printf("THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n");
-      printf("IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n");
-      printf("FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n");
-      printf("AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n");
-      printf("LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n");
-      printf("OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\n");
-      printf("SOFTWARE.\n");
-      printf("\nIf you find this software useful, please consider financially supporting\n");
-      printf("its development through the author's home page: https://www.jodybruchon.com/\n");
-      printf("\nReport bugs and get the latest releases: https://github.com/jbruchon/jdupes\n");
+      version_text();
       exit(EXIT_SUCCESS);
     case 'o':
 #ifndef NO_MTIME  /* Remove if new order types are added! */
