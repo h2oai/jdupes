@@ -7,6 +7,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
+
+#include <libjodycode.h>
 #include "jdupes.h"
 
 /* Extended filter parameter flags */
@@ -161,7 +163,7 @@ void add_extfilter(const char *option)
   time_t tt;
   struct extfilter *extf = extfilter_head;
   const struct extfilter_tags *tags = extfilter_tags;
-  const struct size_suffix *ss = size_suffix;
+  const struct jc_size_suffix *ss = jc_size_suffix;
 
   if (option == NULL) jc_nullptr("add_extfilter()");
 

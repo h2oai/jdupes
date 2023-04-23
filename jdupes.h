@@ -247,13 +247,6 @@ typedef struct _filetree {
 #endif
 
 
-/* Suffix definitions (treat as case-insensitive) */
-struct size_suffix {
-  const char * const suffix;
-  const int64_t multiplier;
-};
-
-extern const struct size_suffix size_suffix[];
 extern char tempname[PATHBUF_SIZE * 2];
 
 extern const char *feature_flags[];
