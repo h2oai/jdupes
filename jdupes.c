@@ -1465,6 +1465,7 @@ static void help_text(void)
 #ifndef ON_WINDOWS
   printf("                  \tYou can send SIGUSR1 to the program to toggle this\n");
 #endif
+  return;
 }
 
 
@@ -1515,7 +1516,7 @@ static void version_text(void)
   printf("\nIf you find this software useful, please consider financially supporting\n");
   printf("its development through the author's home page: https://www.jodybruchon.com/\n");
   printf("\nReport bugs and get the latest releases: https://github.com/jbruchon/jdupes\n");
-  exit(EXIT_SUCCESS);
+  return;
 }
 
 
