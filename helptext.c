@@ -1,3 +1,5 @@
+/* Help text and version information
+ * This file is part of jdupes; see jdupes.c for license information */
 #include <stdio.h>
 #include <stdint.h>
 #include <inttypes.h>
