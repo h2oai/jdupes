@@ -218,7 +218,7 @@ void version_text(void)
     }
   } else printf(" none");
   printf("\nCopyright (C) 2015-2023 by Jody Bruchon and contributors\n");
-  printf("Linked libjodycode version is %s (%s)\n", jc_version, jc_verdate);
+  printf("Linked libjodycode version is %s (%s)\n\n", jc_version, jc_verdate);
   printf("Permission is hereby granted, free of charge, to any person obtaining a copy of\n");
   printf("this software and associated documentation files (the \"Software\"), to deal in\n");
   printf("the Software without restriction, including without limitation the rights to\n");
