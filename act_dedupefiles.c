@@ -69,12 +69,12 @@ extern void dedupefiles(file_t * restrict files)
 
     /* For each duplicate list head, handle the duplicates in the list */
     curfile2 = curfile;
-    src_fd = open(curfile->d_name, O_RDWR);
+    src_fd = open(curfile->d_name, O_RDONLY);
     /* If an open fails, keep going down the dupe list until it is exhausted */
     while (src_fd == -1 && curfile2->duplicates && curfile2->duplicates->duplicates) {
       fprintf(stderr, "dedupe: open failed (skipping): %s\n", curfile2->d_name);
       curfile2 = curfile2->duplicates;
-      src_fd = open(curfile2->d_name, O_RDWR);
+      src_fd = open(curfile2->d_name, O_RDONLY);
     }
     if (src_fd == -1) continue;
     printf("  [SRC] %s\n", curfile2->d_name);
@@ -91,7 +91,7 @@ extern void dedupefiles(file_t * restrict files)
       }
 
       /* Open destination file, skipping any that fail */
-      fdri->dest_fd = open(dupefile->d_name, O_RDWR);
+      fdri->dest_fd = open(dupefile->d_name, O_RDONLY);
       if (fdri->dest_fd == -1) {
         fprintf(stderr, "dedupe: open failed (skipping): %s\n", dupefile->d_name);
         continue;
