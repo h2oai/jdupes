@@ -1,6 +1,12 @@
-jdupes latest
+jdupes 1.23.0
 
-- string_malloc is deprecated in libjodycode and has been removed
+- Use the new libjodycode 2.0 API version handling system
+- Dedupe is now attempted on read-only files (meant for BTRFS snapshots)
+- The -C option can now accept power-of-two chunk sizes up to 256 MiB
+- "Extensions" are now "feature flags" and some have changed
+- OMIT_GETOPT_LONG is now NO_GETOPT_LONG (does anyone actually use this?)
+- Linux-x86_64 can now build several multilib arches (x86_64, x32, i386)
+- Various other under-the-hood code changes for libjodycode 2.0
 
 jdupes 1.22.0
 
