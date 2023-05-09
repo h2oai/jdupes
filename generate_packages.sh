@@ -19,7 +19,7 @@ echo "Program version: $VER"
 [ ! -z "$1" ] && ARCH="$1"
 [[ "$ARCH" = "linux-x64" || "$ARCH" = "x86_64" ]] && TA=linux && ARCH=x86_64 && CF=-m64
 [[ "$ARCH" = "linux-x32" || "$ARCH" = "x32" ]] && TA=linux && ARCH=x32 && CF=-mx32
-[[ "$ARCH" = "linux-i686" || "$ARCH" = "i686" ]] && TA=linux && ARCH=i686 && CF=-m32
+[[ "$ARCH" = "linux-i686" || "$ARCH" = "linux-i386" || "$ARCH" = "i686" || "$ARCH" = "i386" ]] && TA=linux && ARCH=i386 && CF=-m32
 
 
 UNAME_S="$(uname -s | tr '[:upper:]' '[:lower:]')"
@@ -55,7 +55,7 @@ if [[ "$TA" = "windows" || "$TA" = "__NONE__" ]]
 	then
 	[ -z "$PKGTYPE" ] && PKGTYPE=zip
 	[ -z "$ARCH" ] && ARCH=$(gcc -v 2>&1 | grep Target | cut -d\  -f2- | cut -d- -f1)
-	[ "$ARCH" = "i686" ] && TA=win32
+	[[ "$ARCH" = "i686" || "$ARCH" = "i386" ]] && TA=win32
 	[ "$ARCH" = "x86_64" ] && TA=win64
 	[ "$UNAME_S" = "MINGW32_NT-5.1" ] && TA=winxp
 	EXT=".exe"
