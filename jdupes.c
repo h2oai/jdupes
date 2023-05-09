@@ -146,7 +146,6 @@ static uintmax_t progress = 0, item_progress = 0, dupecount = 0;
 static unsigned int small_file = 0, partial_hash = 0, partial_elim = 0;
 static unsigned int full_hash = 0, partial_to_full = 0, hash_fail = 0;
 static uintmax_t comparisons = 0;
-static unsigned int filetree_lefts = 0, filetree_rights = 0;
  #ifdef ON_WINDOWS
   #ifndef NO_HARDLINKS
   static unsigned int hll_exclude = 0;
