@@ -42,6 +42,7 @@
 #include <sys/time.h>
 
 #include <libjodycode.h>
+#include "libjodycode_check.h"
 #include "jdupes.h"
 #include "version.h"
 #include "helptext.h"
@@ -1333,6 +1334,12 @@ int main(int argc, char **argv)
 
 #define GETOPT_STRING "@019ABC:DdEfHhIijKLlMmNnOo:P:pQqRrSsTtUuVvX:Zz"
 
+  /* Verify libjodycode compatibility before going further */
+  if (libjodycode_version_check(1, 0) != 0) {
+    version_text(1);
+    exit(EXIT_FAILURE);
+  }
+
 /* Windows buffers our stderr output; don't let it do that */
 #ifdef ON_WINDOWS
   if (setvbuf(stderr, NULL, _IONBF, 0) != 0)
@@ -1570,7 +1577,7 @@ int main(int argc, char **argv)
       break;
     case 'v':
     case 'V':
-      version_text();
+      version_text(0);
       exit(EXIT_SUCCESS);
     case 'o':
 #ifndef NO_MTIME  /* Remove if new order types are added! */

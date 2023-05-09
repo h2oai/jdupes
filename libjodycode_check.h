@@ -1,0 +1,22 @@
+/* libjodycode version check headear
+ * See libjodycode_check.c for license information */
+
+#ifndef LIBJODYCODE_CHECK_H
+#define LIBJODYCODE_CHECK_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+extern const int jc_build_api_major;
+extern const int jc_build_api_minor;
+extern const char *jc_build_version;
+extern const unsigned char jc_build_api_versiontable[];
+
+extern int libjodycode_version_check(int verbose, int bail);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* LIBJODYCODE_CHECK_H */

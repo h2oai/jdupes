@@ -8,7 +8,7 @@
 extern "C" {
 #endif
 
-void version_text(void);
+void version_text(int short_version);
 void help_text(void);
 
 #ifdef __cplusplus
