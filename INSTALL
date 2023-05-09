@@ -131,6 +131,9 @@ There are some package generators included as make targets:
 chrootpackage  Uses chroots under /chroot to build Linux packages
 package        Makes auto-detected macOS/Linux/Windows packages
 
+If you have a multilib compiler for x86_64 you can specify an architecture to
+make packages for: 'ARCH=xxx make package' where xxx is i386, x86_64, or x32.
+
 Windows builds do not support dedupe or symbolic links. Dedupe would only work
 in ReFS which was removed from all non-enterprise Windows 10 editions, so it
 will likely never be supported for Windows builds of jdupes. Symbolic linking
