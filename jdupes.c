@@ -53,6 +53,7 @@
 #ifndef NO_TRAVCHECK
  #include "travcheck.h"
 #endif
+#include "likely_unlikely.h"
 
 #ifndef USE_JODY_HASH
  #include "xxhash.h"
@@ -252,7 +253,7 @@ extern int file_has_changed(file_t * const restrict file)
   /* If -t/--no-change-check specified then completely bypass this code */
   if (ISFLAG(flags, F_NOCHANGECHECK)) return 0;
 
-  if (file == NULL || file->d_name == NULL) jc_nullptr("file_has_changed()");
+  if (unlikely(file == NULL || file->d_name == NULL)) jc_nullptr("file_has_changed()");
   LOUD(fprintf(stderr, "file_has_changed('%s')\n", file->d_name);)
 
   if (!ISFLAG(file->flags, FF_VALID_STAT)) return -66;
@@ -280,7 +281,7 @@ extern int file_has_changed(file_t * const restrict file)
 
 int getfilestats(file_t * const restrict file)
 {
-  if (file == NULL || file->d_name == NULL) jc_nullptr("getfilestats()");
+  if (unlikely(file == NULL || file->d_name == NULL)) jc_nullptr("getfilestats()");
   LOUD(fprintf(stderr, "getfilestats('%s')\n", file->d_name);)
 
   /* Don't stat the same file more than once */
@@ -318,7 +319,7 @@ extern int getdirstats(const char * const restrict name,
         jdupes_ino_t * const restrict inode, dev_t * const restrict dev,
         jdupes_mode_t * const restrict mode)
 {
-  if (name == NULL || inode == NULL || dev == NULL) jc_nullptr("getdirstats");
+  if (unlikely(name == NULL || inode == NULL || dev == NULL)) jc_nullptr("getdirstats");
   LOUD(fprintf(stderr, "getdirstats('%s', %p, %p)\n", name, (void *)inode, (void *)dev);)
 
   if (STAT(name, &s) != 0) return -1;
@@ -341,7 +342,7 @@ extern int getdirstats(const char * const restrict name,
  * -5 on exclusion due to permissions */
 extern int check_conditions(const file_t * const restrict file1, const file_t * const restrict file2)
 {
-  if (file1 == NULL || file2 == NULL || file1->d_name == NULL || file2->d_name == NULL) jc_nullptr("check_conditions()");
+  if (unlikely(file1 == NULL || file2 == NULL || file1->d_name == NULL || file2->d_name == NULL)) jc_nullptr("check_conditions()");
 
   LOUD(fprintf(stderr, "check_conditions('%s', '%s')\n", file1->d_name, file2->d_name);)
 
@@ -407,13 +408,13 @@ static int check_singlefile(file_t * const restrict newfile)
 {
   char * restrict tp = tempname;
 
-  if (newfile == NULL) jc_nullptr("check_singlefile()");
+  if (unlikely(newfile == NULL)) jc_nullptr("check_singlefile()");
 
   LOUD(fprintf(stderr, "check_singlefile: checking '%s'\n", newfile->d_name));
 
   /* Exclude hidden files if requested */
-  if (ISFLAG(flags, F_EXCLUDEHIDDEN)) {
-    if (newfile->d_name == NULL) jc_nullptr("check_singlefile newfile->d_name");
+  if (likely(ISFLAG(flags, F_EXCLUDEHIDDEN))) {
+    if (unlikely(newfile->d_name == NULL)) jc_nullptr("check_singlefile newfile->d_name");
     strcpy(tp, newfile->d_name);
     tp = basename(tp);
     if (tp[0] == '.' && jc_streq(tp, ".") && jc_streq(tp, "..")) {
@@ -472,8 +473,8 @@ static file_t *init_newfile(const size_t len, file_t * restrict * const restrict
 {
   file_t * const restrict newfile = (file_t *)malloc(sizeof(file_t));
 
-  if (!newfile) jc_oom("init_newfile() file structure");
-  if (!filelistp) jc_nullptr("init_newfile() filelistp");
+  if (unlikely(!newfile)) jc_oom("init_newfile() file structure");
+  if (unlikely(!filelistp)) jc_nullptr("init_newfile() filelistp");
 
   LOUD(fprintf(stderr, "init_newfile(len %" PRIuMAX", filelistp %p)\n", (uintmax_t)len, filelistp));
 
@@ -540,12 +541,12 @@ static void grokdir(const char * const restrict dir,
 #endif
   static int sf_warning = 0; /* single file warning should only appear once */
 
-  if (dir == NULL || filelistp == NULL) jc_nullptr("grokdir()");
+  if (unlikely(dir == NULL || filelistp == NULL)) jc_nullptr("grokdir()");
   LOUD(fprintf(stderr, "grokdir: scanning '%s' (order %d, recurse %d)\n", dir, user_item_count, recurse));
 
   /* Get directory stats (or file stats if it's a file) */
   i = getdirstats(dir, &inode, &device, &mode);
-  if (i < 0) goto error_stat_dir;
+  if (unlikely(i < 0)) goto error_stat_dir;
   /* if dir is actually a file, just add it to the file tree */
   if (i == 1) {
 /* Single file addition is disabled for now because there is no safeguard
@@ -572,10 +573,10 @@ static void grokdir(const char * const restrict dir,
 
 /* Double traversal prevention tree */
 #ifndef NO_TRAVCHECK
-  if (!ISFLAG(flags, F_NOTRAVCHECK)) {
+  if (likely(!ISFLAG(flags, F_NOTRAVCHECK))) {
     i = traverse_check(device, inode);
-    if (i == 1) return;
-    if (i == 2) goto error_stat_dir;
+    if (unlikely(i == 1)) return;
+    if (unlikely(i == 2)) goto error_stat_dir;
   }
 #endif /* NO_TRAVCHECK */
 
@@ -590,11 +591,11 @@ static void grokdir(const char * const restrict dir,
   if (*p == '/' || *p == '\\') *p = '\0';
   strncat(tempname, "\\*", PATHBUF_SIZE * 2 - 1);
 
-  if (!M2W(tempname, wname)) goto error_cd;
+  if (unlikely(!M2W(tempname, wname))) goto error_cd;
 
   LOUD(fprintf(stderr, "FindFirstFile: %s\n", dir));
   hFind = FindFirstFileW(wname, &ffd);
-  if (hFind == INVALID_HANDLE_VALUE) { LOUD(fprintf(stderr, "\nfile handle bad\n")); goto error_cd; }
+  if (unlikely(hFind == INVALID_HANDLE_VALUE)) { LOUD(fprintf(stderr, "\nfile handle bad\n")); goto error_cd; }
   LOUD(fprintf(stderr, "Loop start\n"));
   do {
     char * restrict tp = tempname;
@@ -605,7 +606,7 @@ static void grokdir(const char * const restrict dir,
     if (!W2M(ffd.cFileName, dirinfo->d_name)) continue;
 #else
   cd = opendir(dir);
-  if (!cd) goto error_cd;
+  if (unlikely(!cd)) goto error_cd;
 
   while ((dirinfo = readdir(cd)) != NULL) {
     char * restrict tp = tempname;
@@ -613,10 +614,10 @@ static void grokdir(const char * const restrict dir,
 #endif /* UNICODE */
 
     LOUD(fprintf(stderr, "grokdir: readdir: '%s'\n", dirinfo->d_name));
-    if (!jc_streq(dirinfo->d_name, ".") || !jc_streq(dirinfo->d_name, "..")) continue;
+    if (unlikely(!jc_streq(dirinfo->d_name, ".") || !jc_streq(dirinfo->d_name, ".."))) continue;
     if (!ISFLAG(flags, F_HIDEPROGRESS)) {
       gettimeofday(&time2, NULL);
-      if (progress == 0 || time2.tv_sec > time1.tv_sec) {
+      if (unlikely(progress == 0 || time2.tv_sec > time1.tv_sec)) {
         fprintf(stderr, "\rScanning: %" PRIuMAX " files, %" PRIuMAX " dirs (in %u specified)",
             progress, item_progress, user_item_count);
       }
@@ -631,7 +632,7 @@ static void grokdir(const char * const restrict dir,
       tp[dirlen] = dir_sep;
       dirlen++;
     }
-    if (dirlen + d_name_len + 1 >= (PATHBUF_SIZE * 2)) goto error_overflow;
+    if (unlikely(dirlen + d_name_len + 1 >= (PATHBUF_SIZE * 2))) goto error_overflow;
     tp += dirlen;
     memcpy(tp, dirinfo->d_name, d_name_len);
     tp += d_name_len;
@@ -753,17 +754,17 @@ static jdupes_hash_t *get_filehash(const file_t * const restrict checkfile,
 #else
 #endif
 
-  if (checkfile == NULL || checkfile->d_name == NULL) jc_nullptr("get_filehash()");
+  if (unlikely(checkfile == NULL || checkfile->d_name == NULL)) jc_nullptr("get_filehash()");
   LOUD(fprintf(stderr, "get_filehash('%s', %" PRIdMAX ")\n", checkfile->d_name, (intmax_t)max_read);)
 
   /* Allocate on first use */
-  if (chunk == NULL) {
+  if (unlikely(chunk == NULL)) {
     chunk = (jdupes_hash_t *)malloc(auto_chunk_size);
-    if (!chunk) jc_oom("get_filehash() chunk");
+    if (unlikely(!chunk)) jc_oom("get_filehash() chunk");
   }
 
   /* Get the file size. If we can't read it, bail out early */
-  if (checkfile->size == -1) {
+  if (unlikely(checkfile->size == -1)) {
     LOUD(fprintf(stderr, "get_filehash: not hashing because stat() info is bad\n"));
     return NULL;
   }
@@ -813,7 +814,7 @@ static jdupes_hash_t *get_filehash(const file_t * const restrict checkfile,
 
 #ifndef USE_JODY_HASH
   xxhstate = XXH64_createState();
-  if (xxhstate == NULL) jc_nullptr("xxhstate");
+  if (unlikely(xxhstate == NULL)) jc_nullptr("xxhstate");
   XXH64_reset(xxhstate, 0);
 #endif
 
@@ -823,7 +824,7 @@ static jdupes_hash_t *get_filehash(const file_t * const restrict checkfile,
 
     if (interrupt) return 0;
     bytes_to_read = (fsize >= (off_t)auto_chunk_size) ? auto_chunk_size : (size_t)fsize;
-    if (fread((void *)chunk, bytes_to_read, 1, file) != 1) {
+    if (unlikely(fread((void *)chunk, bytes_to_read, 1, file) != 1)) {
       fprintf(stderr, "\nerror reading from file "); jc_fwprint(stderr, checkfile->d_name, 1);
       fclose(file);
       return NULL;
@@ -864,12 +865,12 @@ static inline void registerfile(filetree_t * restrict * const restrict nodeptr,
 {
   filetree_t * restrict branch;
 
-  if (nodeptr == NULL || file == NULL || (d != NONE && *nodeptr == NULL)) jc_nullptr("registerfile()");
+  if (unlikely(nodeptr == NULL || file == NULL || (d != NONE && *nodeptr == NULL))) jc_nullptr("registerfile()");
   LOUD(fprintf(stderr, "registerfile(direction %d)\n", d));
 
   /* Allocate and initialize a new node for the file */
   branch = (filetree_t *)malloc(sizeof(filetree_t));
-  if (branch == NULL) jc_oom("registerfile() branch");
+  if (unlikely(branch == NULL)) jc_oom("registerfile() branch");
   branch->file = file;
   branch->left = NULL;
   branch->right = NULL;
@@ -904,7 +905,7 @@ static file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict f
   int cantmatch = 0;
   const jdupes_hash_t * restrict filehash;
 
-  if (tree == NULL || file == NULL || tree->file == NULL || tree->file->d_name == NULL || file->d_name == NULL) jc_nullptr("checkmatch()");
+  if (unlikely(tree == NULL || file == NULL || tree->file == NULL || tree->file->d_name == NULL || file->d_name == NULL)) jc_nullptr("checkmatch()");
   LOUD(fprintf(stderr, "checkmatch ('%s', '%s')\n", tree->file->d_name, file->d_name));
 
   /* If device and inode fields are equal one of the files is a
@@ -1068,7 +1069,7 @@ static inline int confirmmatch(FILE * const restrict file1, FILE * const restric
   off_t bytes = 0;
   int check = 0;
 
-  if (file1 == NULL || file2 == NULL) jc_nullptr("confirmmatch()");
+  if (unlikely(file1 == NULL || file2 == NULL)) jc_nullptr("confirmmatch()");
   LOUD(fprintf(stderr, "confirmmatch running\n"));
 
   /* Allocate on first use; OOM if either is ever NULLed */
@@ -1076,7 +1077,7 @@ static inline int confirmmatch(FILE * const restrict file1, FILE * const restric
     c1 = (char *)malloc(auto_chunk_size);
     c2 = (char *)malloc(auto_chunk_size);
   }
-  if (!c1 || !c2) jc_oom("confirmmatch() c1/c2");
+  if (unlikely(!c1 || !c2)) jc_oom("confirmmatch() c1/c2");
 
   fseek(file1, 0, SEEK_SET);
   fseek(file2, 0, SEEK_SET);
@@ -1111,7 +1112,7 @@ extern unsigned int get_max_dupes(const file_t *files, unsigned int * const rest
                 unsigned int * const restrict n_files) {
   unsigned int groups = 0;
 
-  if (files == NULL || max == NULL) jc_nullptr("get_max_dupes()");
+  if (unlikely(files == NULL || max == NULL)) jc_nullptr("get_max_dupes()");
   LOUD(fprintf(stderr, "get_max_dupes(%p, %p, %p)\n", (const void *)files, (void *)max, (void *)n_files));
 
   *max = 0;
@@ -1136,7 +1137,7 @@ extern unsigned int get_max_dupes(const file_t *files, unsigned int * const rest
 static int sort_pairs_by_param_order(file_t *f1, file_t *f2)
 {
   if (!ISFLAG(flags, F_USEPARAMORDER)) return 0;
-  if (f1 == NULL || f2 == NULL) jc_nullptr("sort_pairs_by_param_order()");
+  if (unlikely(f1 == NULL || f2 == NULL)) jc_nullptr("sort_pairs_by_param_order()");
   if (f1->user_order < f2->user_order) return -sort_direction;
   if (f1->user_order > f2->user_order) return sort_direction;
   return 0;
@@ -1147,7 +1148,7 @@ static int sort_pairs_by_param_order(file_t *f1, file_t *f2)
 #ifndef NO_MTIME
 static int sort_pairs_by_mtime(file_t *f1, file_t *f2)
 {
-  if (f1 == NULL || f2 == NULL) jc_nullptr("sort_pairs_by_mtime()");
+  if (unlikely(f1 == NULL || f2 == NULL)) jc_nullptr("sort_pairs_by_mtime()");
 
 #ifndef NO_USER_ORDER
   int po = sort_pairs_by_param_order(f1, f2);
@@ -1169,7 +1170,7 @@ static int sort_pairs_by_mtime(file_t *f1, file_t *f2)
 
 static int sort_pairs_by_filename(file_t *f1, file_t *f2)
 {
-  if (f1 == NULL || f2 == NULL) jc_nullptr("sort_pairs_by_filename()");
+  if (unlikely(f1 == NULL || f2 == NULL)) jc_nullptr("sort_pairs_by_filename()");
 
 #ifndef NO_USER_ORDER
   int po = sort_pairs_by_param_order(f1, f2);
@@ -1191,7 +1192,7 @@ static void registerpair(file_t **matchlist, file_t *newmatch,
   file_t *back;
 
   /* NULL pointer sanity checks */
-  if (matchlist == NULL || newmatch == NULL || comparef == NULL) jc_nullptr("registerpair()");
+  if (unlikely(matchlist == NULL || newmatch == NULL || comparef == NULL)) jc_nullptr("registerpair()");
   LOUD(fprintf(stderr, "registerpair: '%s', '%s'\n", (*matchlist)->d_name, newmatch->d_name);)
 
 #ifndef NO_ERRORONDUPE
