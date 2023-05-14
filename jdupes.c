@@ -177,9 +177,6 @@ struct timeval time1, time2;
 /* For path name mangling */
 char tempname[PATHBUF_SIZE * 2];
 
-/* Compare two hashes like memcmp() */
-#define HASH_COMPARE(a,b) ((a > b) ? 1:((a == b) ? 0:-1))
-
 /***** End definitions, begin code *****/
 
 /* Catch CTRL-C and either notify or terminate */

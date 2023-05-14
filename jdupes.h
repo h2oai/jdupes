@@ -122,6 +122,10 @@ extern "C" {
 #endif
 
 
+/* Compare two hashes like memcmp() */
+#define HASH_COMPARE(a,b) ((a > b) ? 1:((a == b) ? 0:-1))
+
+
 /* Behavior modification flags */
 extern uint64_t flags, a_flags;
 #define F_RECURSE		(1ULL << 0)
