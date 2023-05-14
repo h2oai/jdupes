@@ -9,10 +9,8 @@ extern "C" {
 #endif
 
 extern char **cloneargs(const int argc, char **argv);
-int findarg(const char * const arg, const int start,
-                const int argc, char **argv);
-int nonoptafter(const char *option, const int argc,
-                char **oldargv, char **newargv);
+int findarg(const char * const arg, const int start, const int argc, char **argv);
+int nonoptafter(const char *option, const int argc, char **oldargv, char **newargv);
 extern void linkfiles(file_t *files, const int linktype, const int only_current);
 
 #ifdef __cplusplus

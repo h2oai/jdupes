@@ -23,8 +23,7 @@ char **cloneargs(const int argc, char **argv)
 }
 
 
-int findarg(const char * const arg, const int start,
-                const int argc, char **argv)
+int findarg(const char * const arg, const int start, const int argc, char **argv)
 {
   int x;
 
@@ -36,8 +35,7 @@ int findarg(const char * const arg, const int start,
 }
 
 /* Find the first non-option argument after specified option. */
-int nonoptafter(const char *option, const int argc,
-                char **oldargv, char **newargv)
+int nonoptafter(const char *option, const int argc, char **oldargv, char **newargv)
 {
   int x;
   int targetind;
