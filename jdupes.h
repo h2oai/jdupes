@@ -251,6 +251,7 @@ typedef struct _filetree {
 /* Progress indicator variables */
 extern uintmax_t filecount, progress, item_progress, dupecount;
 extern struct timeval time1, time2;
+extern unsigned int user_item_count;
 
 extern char tempname[PATHBUF_SIZE * 2];
 

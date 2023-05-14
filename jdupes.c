@@ -160,7 +160,7 @@ uintmax_t comparisons = 0;
 static filetree_t *checktree = NULL;
 
 /* Directory/file parameter position counter */
-static unsigned int user_item_count = 1;
+unsigned int user_item_count = 1;
 
 /* registerfile() direction options */
 enum tree_direction { NONE, LEFT, RIGHT };
@@ -205,6 +205,18 @@ void sigusr1(const int signum)
   }
   return;
 }
+
+void check_sigusr1(void)
+{
+  /* Notify of change to soft abort status if SIGUSR1 received */
+  if (unlikely(usr1_toggle != 0)) {
+    fprintf(stderr, "\njdupes received a USR1 signal; soft abort (-Z) is now %s\n", usr1_toggle == 1 ? "ON" : "OFF" );
+    usr1_toggle = 0;
+  }
+  return;
+}
+#else
+#define check_sigusr1()
 #endif
 
 
@@ -406,7 +418,7 @@ static void grokdir(const char * const restrict dir,
 {
   file_t * restrict newfile;
   struct dirent *dirinfo;
-  static int grokdir_level = 0;
+  static uintmax_t grokdir_level = 0;
   size_t dirlen;
   int i, single = 0;
   jdupes_ino_t inode;
@@ -495,14 +507,8 @@ static void grokdir(const char * const restrict dir,
 
     LOUD(fprintf(stderr, "grokdir: readdir: '%s'\n", dirinfo->d_name));
     if (unlikely(!jc_streq(dirinfo->d_name, ".") || !jc_streq(dirinfo->d_name, ".."))) continue;
-    if (!ISFLAG(flags, F_HIDEPROGRESS)) {
-      gettimeofday(&time2, NULL);
-      if (unlikely(progress == 0 || time2.tv_sec > time1.tv_sec)) {
-        fprintf(stderr, "\rScanning: %" PRIuMAX " files, %" PRIuMAX " dirs (in %u specified)",
-            progress, item_progress, user_item_count);
-      }
-      time1.tv_sec = time2.tv_sec;
-    }
+    check_sigusr1();
+    update_phase1_progress(progress, "dirs");
 
     /* Assemble the file's full path name, optimized to avoid strcat() */
     dirlen = strlen(dir);
@@ -601,10 +607,7 @@ static void grokdir(const char * const restrict dir,
 
 skip_single:
   grokdir_level--;
-  if (grokdir_level == 0 && !ISFLAG(flags, F_HIDEPROGRESS)) {
-    fprintf(stderr, "\rScanning: %" PRIuMAX " files, %" PRIuMAX " items (in %u specified)",
-            progress, item_progress, user_item_count);
-  }
+  update_phase1_progress(grokdir_level, "items");
   return;
 
 error_stat_dir:
@@ -719,12 +722,11 @@ static jdupes_hash_t *get_filehash(const file_t * const restrict checkfile,
     if ((off_t)bytes_to_read > fsize) break;
     else fsize -= (off_t)bytes_to_read;
 
-    if (!ISFLAG(flags, F_HIDEPROGRESS)) {
-      check++;
-      if (check > CHECK_MINIMUM) {
-        update_progress("hashing", (int)(((checkfile->size - fsize) * 100) / checkfile->size));
-        check = 0;
-      }
+    check_sigusr1();
+    check++;
+    if (check > CHECK_MINIMUM) {
+      update_phase2_progress("hashing", (int)(((checkfile->size - fsize) * 100) / checkfile->size));
+      check = 0;
     }
   }
 
@@ -970,13 +972,11 @@ static inline int confirmmatch(FILE * const restrict file1, FILE * const restric
     if (r1 != r2) return 0; /* file lengths are different */
     if (memcmp (c1, c2, r1)) return 0; /* file contents are different */
 
-    if (!ISFLAG(flags, F_HIDEPROGRESS)) {
-      check++;
-      bytes += (off_t)r1;
-      if (check > CHECK_MINIMUM) {
-        update_progress("confirm", (int)((bytes * 100) / size));
-        check = 0;
-      }
+    check++;
+    bytes += (off_t)r1;
+    if (check > CHECK_MINIMUM) {
+      update_phase2_progress("confirm", (int)((bytes * 100) / size));
+      check = 0;
     }
   } while (r2);
 
@@ -1692,7 +1692,8 @@ int main(int argc, char **argv)
 skip_full_check:
     curfile = curfile->next;
 
-    if (!ISFLAG(flags, F_HIDEPROGRESS)) update_progress(NULL, -1);
+    check_sigusr1();
+    update_phase2_progress(NULL, -1);
     progress++;
   }
 

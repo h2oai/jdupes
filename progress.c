@@ -6,27 +6,32 @@
 #include <time.h>
 #include <sys/time.h>
 #include "jdupes.h"
+#include "likely_unlikely.h"
 
+
+void update_phase1_progress(const uintmax_t flag, const char * const restrict type)
+{
+  /* Don't update progress if there is no progress to update */
+  if (ISFLAG(flags, F_HIDEPROGRESS)) return;
+  gettimeofday(&time2, NULL);
+  if (unlikely(flag == 0 || time2.tv_sec > time1.tv_sec)) {
+    fprintf(stderr, "\rScanning: %" PRIuMAX " files, %" PRIuMAX " %s (in %u specified)",
+            progress, item_progress, type, user_item_count);
+  }
+  time1.tv_sec = time2.tv_sec;
+}
 
 /* Update progress indicator if requested */
-void update_progress(const char * const restrict msg, const int file_percent)
+void update_phase2_progress(const char * const restrict msg, const int file_percent)
 {
   static int did_fpct = 0;
 
-#ifndef ON_WINDOWS
-  /* Notify of change to soft abort status if SIGUSR1 received */
-  if (usr1_toggle != 0) {
-    fprintf(stderr, "\njdupes received a USR1 signal; soft abort (-Z) is now %s\n", usr1_toggle == 1 ? "ON" : "OFF" );
-    usr1_toggle = 0;
-  }
-#endif
-
-  /* The caller should be doing this anyway...but don't trust that they did */
+  /* Don't update progress if there is no progress to update */
   if (ISFLAG(flags, F_HIDEPROGRESS)) return;
 
   gettimeofday(&time2, NULL);
 
-  if (progress == 0 || time2.tv_sec > time1.tv_sec) {
+  if (unlikely(progress == 0 || time2.tv_sec > time1.tv_sec)) {
     fprintf(stderr, "\rProgress [%" PRIuMAX "/%" PRIuMAX ", %" PRIuMAX " pairs matched] %" PRIuMAX "%%",
       progress, filecount, dupecount, (progress * 100) / filecount);
     if (file_percent > -1 && msg != NULL) {
