@@ -253,10 +253,6 @@ extern char tempname[PATHBUF_SIZE * 2];
 extern const char *feature_flags[];
 
 extern int file_has_changed(file_t * const restrict file);
-extern int getdirstats(const char * const restrict name,
-        jdupes_ino_t * const restrict inode, dev_t * const restrict dev,
-	jdupes_mode_t * const restrict mode);
-extern int check_conditions(const file_t * const restrict file1, const file_t * const restrict file2);
 extern unsigned int get_max_dupes(const file_t *files, unsigned int * const restrict max,
 		                unsigned int * const restrict n_files);
 

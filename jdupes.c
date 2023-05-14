@@ -281,7 +281,7 @@ int getfilestats(file_t * const restrict file)
 
 
 /* Returns -1 if stat() fails, 0 if it's a directory, 1 if it's not */
-extern int getdirstats(const char * const restrict name,
+int getdirstats(const char * const restrict name,
         jdupes_ino_t * const restrict inode, dev_t * const restrict dev,
         jdupes_mode_t * const restrict mode)
 {
@@ -306,7 +306,7 @@ extern int getdirstats(const char * const restrict name,
  * -3 on exclusion due to isolation
  * -4 on exclusion due to same filesystem
  * -5 on exclusion due to permissions */
-extern int check_conditions(const file_t * const restrict file1, const file_t * const restrict file2)
+int check_conditions(const file_t * const restrict file1, const file_t * const restrict file2)
 {
   if (unlikely(file1 == NULL || file2 == NULL || file1->d_name == NULL || file2->d_name == NULL)) jc_nullptr("check_conditions()");
 
