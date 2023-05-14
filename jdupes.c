@@ -108,7 +108,7 @@ static const char *program_name;
  struct jc_winstat s;
 #else
  struct stat s;
- static int usr1_toggle = 0;
+ int usr1_toggle = 0;
 #endif
 
 #ifndef PARTIAL_HASH_SIZE
@@ -137,19 +137,18 @@ static const char *program_name;
 #endif
 
 /* Required for progress indicator code */
-static uintmax_t filecount = 0;
-static uintmax_t progress = 0, item_progress = 0, dupecount = 0;
+uintmax_t filecount = 0, progress = 0, item_progress = 0, dupecount = 0;
 /* Number of read loops before checking progress indicator */
 #define CHECK_MINIMUM 256
 
 /* Performance and behavioral statistics (debug mode) */
 #ifdef DEBUG
-static unsigned int small_file = 0, partial_hash = 0, partial_elim = 0;
-static unsigned int full_hash = 0, partial_to_full = 0, hash_fail = 0;
-static uintmax_t comparisons = 0;
+unsigned int small_file = 0, partial_hash = 0, partial_elim = 0;
+unsigned int full_hash = 0, partial_to_full = 0, hash_fail = 0;
+uintmax_t comparisons = 0;
  #ifdef ON_WINDOWS
   #ifndef NO_HARDLINKS
-  static unsigned int hll_exclude = 0;
+  unsigned int hll_exclude = 0;
   #endif
  #endif
 #endif /* DEBUG */

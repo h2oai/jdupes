@@ -57,6 +57,7 @@ extern "C" {
  typedef mode_t jdupes_mode_t;
  extern const char *FILE_MODE_RO;
  extern const char dir_sep;
+ extern int usr1_toggle;
  #ifdef UNICODE
   #error Do not define UNICODE on non-Windows platforms.
   #undef UNICODE
@@ -243,6 +244,9 @@ typedef struct _filetree {
  #define STAT stat
 #endif
 
+/* Progress indicator variables */
+extern uintmax_t filecount, progress, item_progress, dupecount;
+extern struct timeval time1, time2;
 
 extern char tempname[PATHBUF_SIZE * 2];
 
