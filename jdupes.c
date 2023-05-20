@@ -53,6 +53,7 @@
 #include "filestat.h"
 #include "helptext.h"
 #include "progress.h"
+#include "signal.h"
 #ifndef NO_TRAVCHECK
  #include "travcheck.h"
 #endif
@@ -111,7 +112,6 @@ static const char *program_name;
  struct jc_winstat s;
 #else
  struct stat s;
- int usr1_toggle = 0;
 #endif
 
 #ifndef PARTIAL_HASH_SIZE
@@ -168,9 +168,6 @@ enum tree_direction { NONE, LEFT, RIGHT };
 /* Sort order reversal */
 static int sort_direction = 1;
 
-/* Signal handler */
-static int interrupt = 0;
-
 /* Progress indicator time */
 struct timeval time1, time2;
 
@@ -178,47 +175,6 @@ struct timeval time1, time2;
 char tempname[PATHBUF_SIZE * 2];
 
 /***** End definitions, begin code *****/
-
-/* Catch CTRL-C and either notify or terminate */
-void sighandler(const int signum)
-{
-  (void)signum;
-  if (interrupt || !ISFLAG(flags, F_SOFTABORT)) {
-    fprintf(stderr, "\n");
-    exit(EXIT_FAILURE);
-  }
-  interrupt = 1;
-  return;
-}
-
-
-#ifndef ON_WINDOWS
-void sigusr1(const int signum)
-{
-  (void)signum;
-  if (!ISFLAG(flags, F_SOFTABORT)) {
-    SETFLAG(flags, F_SOFTABORT);
-    usr1_toggle = 1;
-  } else {
-    CLEARFLAG(flags, F_SOFTABORT);
-    usr1_toggle = 2;
-  }
-  return;
-}
-
-void check_sigusr1(void)
-{
-  /* Notify of change to soft abort status if SIGUSR1 received */
-  if (unlikely(usr1_toggle != 0)) {
-    fprintf(stderr, "\njdupes received a USR1 signal; soft abort (-Z) is now %s\n", usr1_toggle == 1 ? "ON" : "OFF" );
-    usr1_toggle = 0;
-  }
-  return;
-}
-#else
-#define check_sigusr1()
-#endif
-
 
 /***** Add new functions here *****/
 

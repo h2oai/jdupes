@@ -27,7 +27,6 @@ extern "C" {
 #include <stdint.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <libjodycode.h>
 
 #ifndef USE_JODY_HASH
 #include "xxhash.h"
@@ -57,7 +56,6 @@ extern "C" {
  typedef mode_t jdupes_mode_t;
  extern const char *FILE_MODE_RO;
  extern const char dir_sep;
- extern int usr1_toggle;
  #ifdef UNICODE
   #error Do not define UNICODE on non-Windows platforms.
   #undef UNICODE
