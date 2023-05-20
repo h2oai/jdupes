@@ -21,7 +21,7 @@
  static wpath_t wstr;
 #endif
 
-extern void deletefiles(file_t *files, int prompt, FILE *tty)
+void deletefiles(file_t *files, int prompt, FILE *tty)
 {
   unsigned int counter, groups;
   unsigned int curgroup = 0;

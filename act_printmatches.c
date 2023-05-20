@@ -8,7 +8,7 @@
 #include <libjodycode.h>
 #include "act_printmatches.h"
 
-extern void printmatches(file_t * restrict files)
+void printmatches(file_t * restrict files)
 {
   file_t * restrict tmpfile;
   int printed = 0;
@@ -45,7 +45,7 @@ extern void printmatches(file_t * restrict files)
 
 
 /* Print files that have no duplicates (unique files) */
-extern void printunique(file_t *files)
+void printunique(file_t *files)
 {
   file_t *chain, *scan;
   int printed = 0;

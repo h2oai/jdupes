@@ -7,7 +7,7 @@
 #include "jdupes.h"
 #include "act_summarize.h"
 
-extern void summarizematches(const file_t * restrict files)
+void summarizematches(const file_t * restrict files)
 {
   unsigned int numsets = 0;
   off_t numbytes = 0;

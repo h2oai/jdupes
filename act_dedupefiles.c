@@ -45,7 +45,7 @@
 
 #define KERNEL_DEDUP_MAX_SIZE 16777216
 
-extern void dedupefiles(file_t * restrict files)
+void dedupefiles(file_t * restrict files)
 {
 #ifdef __linux__
   struct file_dedupe_range *fdr;

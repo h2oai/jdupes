@@ -34,7 +34,7 @@
 #endif /* ENABLE_DEDUPE */
 
 /* linktype: 0=symlink, 1=hardlink, 2=clonefile() */
-extern void linkfiles(file_t *files, const int linktype, const int only_current)
+void linkfiles(file_t *files, const int linktype, const int only_current)
 {
   static file_t *tmpfile;
   static file_t *srcfile;
