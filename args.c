@@ -3,6 +3,8 @@
 
 #include <stdlib.h>
 #include <string.h>
+
+#include <libjodycode.h>
 #include "jdupes.h"
 
 char **cloneargs(const int argc, char **argv)

@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <inttypes.h>
+
+#include <libjodycode.h>
 #include "jdupes.h"
 #include "version.h"
 

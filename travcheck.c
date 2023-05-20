@@ -5,6 +5,8 @@
 
 #include <stdlib.h>
 #include <inttypes.h>
+
+#include <libjodycode.h>
 #include "jdupes.h"
 #include "travcheck.h"
 
