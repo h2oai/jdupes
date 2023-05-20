@@ -54,6 +54,7 @@
 #include "helptext.h"
 #include "progress.h"
 #include "signal.h"
+#include "sort.h"
 #ifndef NO_TRAVCHECK
  #include "travcheck.h"
 #endif
@@ -166,7 +167,7 @@ unsigned int user_item_count = 1;
 enum tree_direction { NONE, LEFT, RIGHT };
 
 /* Sort order reversal */
-static int sort_direction = 1;
+int sort_direction = 1;
 
 /* Progress indicator time */
 struct timeval time1, time2;
@@ -966,58 +967,6 @@ extern unsigned int get_max_dupes(const file_t *files, unsigned int * const rest
     files = files->next;
   }
   return groups;
-}
-
-
-#ifndef NO_USER_ORDER
-static int sort_pairs_by_param_order(file_t *f1, file_t *f2)
-{
-  if (!ISFLAG(flags, F_USEPARAMORDER)) return 0;
-  if (unlikely(f1 == NULL || f2 == NULL)) jc_nullptr("sort_pairs_by_param_order()");
-  if (f1->user_order < f2->user_order) return -sort_direction;
-  if (f1->user_order > f2->user_order) return sort_direction;
-  return 0;
-}
-#endif
-
-
-#ifndef NO_MTIME
-static int sort_pairs_by_mtime(file_t *f1, file_t *f2)
-{
-  if (unlikely(f1 == NULL || f2 == NULL)) jc_nullptr("sort_pairs_by_mtime()");
-
-#ifndef NO_USER_ORDER
-  int po = sort_pairs_by_param_order(f1, f2);
-  if (po != 0) return po;
-#endif /* NO_USER_ORDER */
-
-  if (f1->mtime < f2->mtime) return -sort_direction;
-  else if (f1->mtime > f2->mtime) return sort_direction;
-
-#ifndef NO_JODY_SORT
-  /* If the mtimes match, use the names to break the tie */
-  return jc_numeric_sort(f1->d_name, f2->d_name, sort_direction);
-#else
-  return strcmp(f1->d_name, f2->d_name) ? -sort_direction : sort_direction;
-#endif /* NO_JODY_SORT */
-}
-#endif
-
-
-static int sort_pairs_by_filename(file_t *f1, file_t *f2)
-{
-  if (unlikely(f1 == NULL || f2 == NULL)) jc_nullptr("sort_pairs_by_filename()");
-
-#ifndef NO_USER_ORDER
-  int po = sort_pairs_by_param_order(f1, f2);
-  if (po != 0) return po;
-#endif /* NO_USER_ORDER */
-
-#ifndef NO_JODY_SORT
-  return jc_numeric_sort(f1->d_name, f2->d_name, sort_direction);
-#else
-  return strcmp(f1->d_name, f2->d_name) ? -sort_direction : sort_direction;
-#endif /* NO_JODY_SORT */
 }
 
 

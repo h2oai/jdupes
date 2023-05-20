@@ -250,6 +250,7 @@ typedef struct _filetree {
 extern uintmax_t filecount, progress, item_progress, dupecount;
 extern struct timeval time1, time2;
 extern unsigned int user_item_count;
+extern int sort_direction;
 
 extern char tempname[PATHBUF_SIZE * 2];
 
