@@ -9,20 +9,16 @@
 #include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
+
+#include <libjodycode.h>
+#include "likely_unlikely.h"
 #include "jdupes.h"
 #include "version.h"
-#include <libjodycode.h>
 #include "act_printjson.h"
 
 #define IS_CONT(a)  ((a & 0xc0) == 0x80)
 #define GET_CONT(a) (a & 0x3f)
 #define TO_HEX(a) (char)(((a) & 0x0f) <= 0x09 ? ((a) & 0x0f) + 0x30 : ((a) & 0x0f) + 0x57)
-
-#ifndef __GNUC__
-#define __builtin_expect(v,e) (v)
-#endif
-#define likely(x)   __builtin_expect((x),1)
-#define unlikely(x) __builtin_expect((x),0)
 
 #if defined(__GNU__) && !defined(PATH_MAX)
 #define PATH_MAX 1024
@@ -109,7 +105,7 @@ static void json_escape(const char * restrict string, char * restrict const targ
   return;
 }
 
-extern void printjson(file_t * restrict files, const int argc, char **argv)
+void printjson(file_t * restrict files, const int argc, char **argv)
 {
   file_t * restrict tmpfile;
   int arg = 0, comma = 0, len = 0;
