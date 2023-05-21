@@ -1,4 +1,4 @@
-/* Signal handler functions
+/* Signal handler/interruption functions
  * This file is part of jdupes; see jdupes.c for license information */
 
 #include <stdio.h>

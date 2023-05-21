@@ -1,8 +1,8 @@
-/* Signal handler functions
+/* Signal handler/interruption functions
  * This file is part of jdupes; see jdupes.c for license information */
 
-#ifndef JDUPES_SIGNAL_H
-#define JDUPES_SIGNAL_H
+#ifndef JDUPES_INTERRUPT_H
+#define JDUPES_INTERRUPT_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -24,4 +24,4 @@ void check_sigusr1(void);
 }
 #endif
 
-#endif /* JDUPES_SIGNAL_H */
+#endif /* JDUPES_INTERRUPT_H */

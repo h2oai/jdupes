@@ -10,6 +10,8 @@ extern "C" {
 
 #ifndef NO_EXTFILTER
 
+#include "jdupes.h"
+
 void add_extfilter(const char *option);
 int extfilter_exclude(file_t * const restrict newfile);
 

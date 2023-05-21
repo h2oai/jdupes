@@ -81,6 +81,21 @@ extern "C" {
  #define W2M(a,b) WideCharToMultiByte(CP_UTF8, 0, a, -1, (LPSTR)b, WPATH_MAX, NULL, NULL)
 #endif /* UNICODE */
 
+/* Maximum path buffer size to use; must be large enough for a path plus
+ * any work that might be done to the array it's stored in. PATH_MAX is
+ * not always true. Read this article on the false promises of PATH_MAX:
+ * http://insanecoding.blogspot.com/2007/11/pathmax-simply-isnt.html
+ * Windows + Unicode needs a lot more space than UTF-8 in Linux/Mac OS X
+ */
+#ifndef PATHBUF_SIZE
+#define PATHBUF_SIZE 4096
+#endif
+/* Refuse to build if PATHBUF_SIZE is too small */
+#if PATHBUF_SIZE < PATH_MAX
+#warning "PATHBUF_SIZE is less than PATH_MAX"
+#endif
+
+
 #define ISFLAG(a,b) ((a & b) == b)
 #define SETFLAG(a,b) (a |= b)
 #define CLEARFLAG(a,b) (a &= (~b))
@@ -125,7 +140,7 @@ extern "C" {
 
 
 /* Behavior modification flags */
-extern uint64_t flags, a_flags;
+extern uint64_t flags, a_flags, p_flags;
 #define F_RECURSE		(1ULL << 0)
 #define F_HIDEPROGRESS		(1ULL << 1)
 #define F_SOFTABORT		(1ULL << 2)
@@ -248,11 +263,9 @@ typedef struct _filetree {
 
 /* Progress indicator variables */
 extern uintmax_t filecount, progress, item_progress, dupecount;
-extern struct timeval time1, time2;
 extern unsigned int user_item_count;
 extern int sort_direction;
-
-extern char tempname[PATHBUF_SIZE * 2];
+extern char tempname[];
 
 extern const char *feature_flags[];
 

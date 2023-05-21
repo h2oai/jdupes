@@ -41,8 +41,8 @@ INSTALL_PROGRAM = $(INSTALL) -m 0755
 INSTALL_DATA    = $(INSTALL) -m 0644
 
 # Main object files
-OBJS += args.o extfilter.o filestat.o jdupes.o helptext.o libjodycode_check.o
-OBJS += progress.o signal.o sort.o travcheck.o
+OBJS += args.o checks.o extfilter.o filestat.o jdupes.o helptext.o interrupt.o
+OBJS += libjodycode_check.o progress.o sort.o travcheck.o
 OBJS += act_deletefiles.o act_linkfiles.o act_printmatches.o act_summarize.o act_printjson.o
 
 # Configuration section
