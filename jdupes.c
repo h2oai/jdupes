@@ -424,9 +424,15 @@ error_overflow:
 }
 
 
-/* Hash part or all of a file */
-static jdupes_hash_t *get_filehash(const file_t * const restrict checkfile,
-                const size_t max_read)
+/* Hash part or all of a file
+ *
+ *              READ THIS BEFORE CHANGING THE HASH FUNCTION!
+ * The hash function is only used to do fast exclusion. There is not much
+ * benefit to using bigger or "better" hash functions. Upstream jdupes WILL
+ * NOT accept any pull requests that change the hash function unless there
+ * is an EXTREMELY compelling reason to do so. Do not waste your time with
+ * swapping hash functions. If you want to do it for fun then that's fine. */
+static jdupes_hash_t *get_filehash(const file_t * const restrict checkfile, const size_t max_read)
 {
   off_t fsize;
   /* This is an array because we return a pointer to it */
@@ -497,6 +503,7 @@ static jdupes_hash_t *get_filehash(const file_t * const restrict checkfile,
     fsize -= PARTIAL_HASH_SIZE;
   }
 
+/* WARNING: READ NOTICE ABOVE get_filehash() BEFORE CHANGING HASH FUNCTIONS! */
 #ifndef USE_JODY_HASH
   xxhstate = XXH64_createState();
   if (unlikely(xxhstate == NULL)) jc_nullptr("xxhstate");
