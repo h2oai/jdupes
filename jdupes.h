@@ -31,10 +31,11 @@ extern "C" {
 #endif /* USE_JODY_HASH */
 
 /* Set hash type (change this if swapping in a different hash function) */
-#ifndef USE_JODY_HASH
- typedef XXH64_hash_t jdupes_hash_t;
-#else
+#ifdef USE_JODY_HASH
+ #include "libjodycode.h"
  typedef jodyhash_t jdupes_hash_t;
+#else
+ typedef XXH64_hash_t jdupes_hash_t;
 #endif /* USE_JODY_HASH */
 
 /* Some types are different on Windows */
@@ -88,9 +89,11 @@ extern "C" {
 #ifndef PATHBUF_SIZE
 #define PATHBUF_SIZE 4096
 #endif
-/* Refuse to build if PATHBUF_SIZE is too small */
-#if PATHBUF_SIZE < PATH_MAX
-#warning "PATHBUF_SIZE is less than PATH_MAX"
+/* Complain if PATHBUF_SIZE is too small */
+#ifdef DEBUG
+ #if PATHBUF_SIZE < PATH_MAX
+ #warning "PATHBUF_SIZE is less than PATH_MAX"
+ #endif
 #endif
 
 
