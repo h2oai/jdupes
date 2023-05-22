@@ -25,8 +25,6 @@ extern "C" {
 
 #include <limits.h>
 #include <stdint.h>
-#include <sys/types.h>
-#include <unistd.h>
 
 #ifndef USE_JODY_HASH
 #include "xxhash.h"
