@@ -60,12 +60,16 @@
  #include "xxhash.h"
 #endif
 #ifdef ENABLE_DEDUPE
-#include <sys/utsname.h>
+ #ifdef __linux__
+  #include <sys/utsname.h>
+ #endif
 #endif
 
 /* Headers for post-scanning actions */
 #include "act_deletefiles.h"
-#include "act_dedupefiles.h"
+#ifdef ENABLE_DEDUPE
+ #include "act_dedupefiles.h"
+#endif
 #include "act_linkfiles.h"
 #include "act_printmatches.h"
 #ifndef NO_JSON
@@ -888,7 +892,9 @@ int main(int argc, char **argv)
 #endif
 #endif /* NO_CHUNKSIZE */
 #ifdef ENABLE_DEDUPE
+ #ifdef __linux__
   static struct utsname utsname;
+ #endif
 #endif
 
 #ifndef NO_GETOPT_LONG
@@ -1218,6 +1224,7 @@ int main(int argc, char **argv)
       break;
     case 'B':
 #ifdef ENABLE_DEDUPE
+#ifdef __linux__
       /* Refuse to dedupe on 2.x kernels; they could damage user data */
       if (uname(&utsname)) {
         fprintf(stderr, "Failed to get kernel version! Aborting.\n");
@@ -1228,6 +1235,7 @@ int main(int argc, char **argv)
         fprintf(stderr, "Refusing to dedupe on a 2.x kernel; data loss could occur. Aborting.\n");
         exit(EXIT_FAILURE);
       }
+#endif
       SETFLAG(a_flags, FA_DEDUPEFILES);
       /* btrfs will do the byte-for-byte check itself */
       SETFLAG(flags, F_QUICKCOMPARE);
@@ -1482,22 +1490,22 @@ skip_all_scan_code:
         partial_hash, small_file, full_hash, partial_to_full,
         partial_elim, hash_fail, (unsigned int)sizeof(jdupes_hash_t)*8);
     fprintf(stderr, "%" PRIuMAX " total files, %" PRIuMAX " comparisons\n", filecount, comparisons);
-#ifndef NO_CHUNKSIZE
+ #ifndef NO_CHUNKSIZE
     if (manual_chunk_size > 0) fprintf(stderr, "I/O chunk size: %ld KiB (manually set)\n", manual_chunk_size >> 10);
     else {
-#ifdef __linux__
+  #ifdef __linux__
       fprintf(stderr, "I/O chunk size: %" PRIuMAX " KiB (%s)\n", (uintmax_t)(auto_chunk_size >> 10), (pci.l1 + pci.l1d) != 0 ? "dynamically sized" : "default size");
-#else
+  #else
       fprintf(stderr, "I/O chunk size: %" PRIuMAX " KiB (default size)\n", (uintmax_t)(auto_chunk_size >> 10));
-#endif /* __linux__ */
-#endif /* NO_CHUNKSIZE */
+  #endif /* __linux__ */
     }
-#ifdef ON_WINDOWS
- #ifndef NO_HARDLINKS
+ #endif /* NO_CHUNKSIZE */
+ #ifdef ON_WINDOWS
+  #ifndef NO_HARDLINKS
     if (ISFLAG(a_flags, FA_HARDLINKFILES))
       fprintf(stderr, "Exclusions based on Windows hard link limit: %u\n", hll_exclude);
+  #endif
  #endif
-#endif
   }
 #endif /* DEBUG */
 

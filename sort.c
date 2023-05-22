@@ -2,6 +2,7 @@
  * This file is part of jdupes; see jdupes.c for license information */
 
 #include <stdio.h>
+#include <string.h>
 
 #include <libjodycode.h>
 #include "likely_unlikely.h"
