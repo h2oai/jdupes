@@ -199,17 +199,18 @@ void version_text(int short_version)
 
   /* Indicate bitness information */
   if (sizeof(uintptr_t) == 8) {
-    if (sizeof(long) == 4) printf("64-bit i32\n");
-    else if (sizeof(long) == 8) printf("64-bit\n");
+    if (sizeof(long) == 4) printf("64-bit i32");
+    else if (sizeof(long) == 8) printf("64-bit");
   } else if (sizeof(uintptr_t) == 4) {
     if (sizeof(long) == 4) printf("32-bit");
     else if (sizeof(long) == 8) printf("32-bit i64");
 #if defined(__x86_64__) && SIZE_MAX == 0xffffffff
 	printf(" (x32 ABI)");
 #endif
-	printf("\n");
-  } else printf("%u-bit i%u\n", (unsigned int)(sizeof(uintptr_t) * 8),
+  } else printf("%u-bit i%u", (unsigned int)(sizeof(uintptr_t) * 8),
       (unsigned int)(sizeof(long) * 8));
+  if (!short_version) printf(", linked to libjodycode %s (%s)\n", jc_version, jc_verdate);
+  else printf("\n");
 
   printf("Compile-time feature flags:");
   if (*feature_flags != NULL) {
@@ -221,8 +222,7 @@ void version_text(int short_version)
   } else printf(" none");
   printf("\n");
   if (short_version) return;
-  printf("Copyright (C) 2015-2023 by Jody Bruchon and contributors\n");
-  printf("Linked libjodycode version is %s (%s)\n\n", jc_version, jc_verdate);
+  printf("Copyright (C) 2015-2023 by Jody Bruchon and contributors\n\n");
   printf("Permission is hereby granted, free of charge, to any person obtaining a copy of\n");
   printf("this software and associated documentation files (the \"Software\"), to deal in\n");
   printf("the Software without restriction, including without limitation the rights to\n");
@@ -241,6 +241,6 @@ void version_text(int short_version)
   printf("SOFTWARE.\n");
   printf("\nIf you find this software useful, please consider financially supporting\n");
   printf("its development through the author's home page: https://www.jodybruchon.com/\n");
-  printf("\nReport bugs and get the latest releases: https://github.com/jbruchon/jdupes\n");
+  printf("Report bugs and get the latest releases: https://github.com/jbruchon/jdupes\n");
   return;
 }
