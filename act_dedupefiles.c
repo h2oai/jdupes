@@ -4,13 +4,17 @@
 #include "jdupes.h"
 
 #ifdef ENABLE_DEDUPE
+#include <errno.h>
+#include <fcntl.h>
+#include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
-#include <inttypes.h>
 #include <string.h>
-#include <errno.h>
-#include <fcntl.h>
+#include <unistd.h>
+
+#include "act_dedupefiles.h"
+#include "libjodycode.h"
 
 #ifdef __linux__
 /* Use built-in static dedupe header if requested */
@@ -40,8 +44,6 @@
 #ifndef JDUPES_DEDUPE_SUPPORTED
 #error Dedupe is only supported on Linux and macOS
 #endif
-
-#include "act_dedupefiles.h"
 
 #define KERNEL_DEDUP_MAX_SIZE 16777216
 
