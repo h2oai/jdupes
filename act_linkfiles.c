@@ -34,7 +34,7 @@
 #endif /* ENABLE_DEDUPE */
 
 
-void linkfiles_nosupport(const char * const restrict call, const char * const restrict type)
+static void linkfiles_nosupport(const char * const restrict call, const char * const restrict type)
 {
   fprintf(stderr, "internal error: linkfiles(%s) called without %s support\nPlease report this to the author as a program bug\n", call, type);
   exit(EXIT_FAILURE);
