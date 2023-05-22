@@ -4,7 +4,7 @@
 #include "jdupes.h"
 
 /* Compile out the code if no linking support is built in */
-#if !(defined NO_HARDLINKS && defined NO_SYMLINKS)
+#if !(defined NO_HARDLINKS && !defined NO_SYMLINKS && !defined ENABLE_DEDUPE)
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -32,6 +32,13 @@
   #endif /* NO_CLONEFILE */
  #endif /* __APPLE__ */
 #endif /* ENABLE_DEDUPE */
+
+
+void linkfiles_nosupport(const char * const restrict call, const char * const restrict type)
+{
+  fprintf(stderr, "internal error: linkfiles(%s) called without %s support\nPlease report this to the author as a program bug\n", call, type);
+  exit(EXIT_FAILURE);
+}
 
 /* linktype: 0=symlink, 1=hardlink, 2=clonefile() */
 void linkfiles(file_t *files, const int linktype, const int only_current)
@@ -94,13 +101,12 @@ void linkfiles(file_t *files, const int linktype, const int only_current)
 
       /* Link every file to the first file */
 
-      if (linktype) {
+      if (linktype == 0) {
 #ifndef NO_HARDLINKS
         x = 2;
         srcfile = dupelist[1];
 #else
-        fprintf(stderr, "internal error: linkfiles(hard) called without hard link support\nPlease report this to the author as a program bug\n");
-        exit(EXIT_FAILURE);
+        linkfiles_nosupport("hard", "hard link");
 #endif
       } else {
 #ifndef NO_SYMLINKS
@@ -116,15 +122,14 @@ void linkfiles(file_t *files, const int linktype, const int only_current)
         /* If no normal file exists, abort */
         if (srcfile == NULL) continue;
 #else
-        fprintf(stderr, "internal error: linkfiles(soft) called without symlink support\nPlease report this to the author as a program bug\n");
-        exit(EXIT_FAILURE);
+        linkfiles_nosupport("sort", "symlink");
 #endif
       }
       if (!ISFLAG(flags, F_HIDEPROGRESS)) {
         printf("[SRC] "); jc_fwprint(stdout, srcfile->d_name, 1);
       }
-#ifdef ENABLE_CLONEFILE_LINK
       if (linktype == 2) {
+#ifdef ENABLE_CLONEFILE_LINK
         if (STAT(srcfile->d_name, &s) != 0) {
           fprintf(stderr, "warning: stat() on source file failed, skipping:\n[SRC] ");
           jc_fwprint(stderr, srcfile->d_name, 1);
@@ -135,8 +140,10 @@ void linkfiles(file_t *files, const int linktype, const int only_current)
          * (which can result in files being unreadable), so we want to retain
          * the compression flag of srcfile */
         srcfile_preserved_flags = s.st_flags & UF_COMPRESSED;
-      }
+#else
+        linkfiles_nosupport("clone", "clonefile");
 #endif
+      }
       for (; x <= counter; x++) {
         if (linktype == 1 || linktype == 2) {
           /* Can't hard link files on different devices */
@@ -413,4 +420,4 @@ void linkfiles(file_t *files, const int linktype, const int only_current)
   free(dupelist);
   return;
 }
-#endif /* both NO_HARDLINKS and NO_SYMLINKS */
+#endif /* NO_HARDLINKS + NO_SYMLINKS + !ENABLE_DEDUPE */
