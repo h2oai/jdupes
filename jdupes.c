@@ -33,7 +33,6 @@
 #ifndef NO_GETOPT_LONG
  #include <getopt.h>
 #endif
-#include <string.h>
 #include <errno.h>
 
 #include <libjodycode.h>
