@@ -82,12 +82,12 @@
 /* Detect Windows and modify as needed */
 #if defined _WIN32 || defined __MINGW32__
  #ifdef UNICODE
-  static const wchar_t *FILE_MODE_RO = L"rbS";
+  const wchar_t *FILE_MODE_RO = L"rbS";
  #else
-  static const char *FILE_MODE_RO = "rbS";
+  const char *FILE_MODE_RO = "rbS";
  #endif /* UNICODE */
 #else /* Not Windows */
- static const char *FILE_MODE_RO = "rb";
+ const char *FILE_MODE_RO = "rb";
  #ifdef UNICODE
   #error Do not define UNICODE on non-Windows platforms.
   #undef UNICODE
@@ -97,8 +97,6 @@
 /* Windows + Unicode compilation */
 #ifdef UNICODE
 static wpath_t wname, wstr;
-int out_mode = _O_TEXT;
-int err_mode = _O_TEXT;
 #endif /* UNICODE */
 
 /* Behavior modification flags (a=action, p=-P) */

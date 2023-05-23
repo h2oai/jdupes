@@ -72,8 +72,6 @@ extern "C" {
   #endif
  #endif /* PATHBUF_SIZE */
   typedef wchar_t wpath_t[WPATH_MAX];
-  extern int out_mode;
-  extern int err_mode;
  #define M2W(a,b) MultiByteToWideChar(CP_UTF8, 0, a, -1, (LPWSTR)b, WPATH_MAX)
  #define W2M(a,b) WideCharToMultiByte(CP_UTF8, 0, a, -1, (LPSTR)b, WPATH_MAX, NULL, NULL)
 #endif /* UNICODE */
