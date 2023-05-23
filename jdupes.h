@@ -42,7 +42,6 @@ extern "C" {
 #ifdef ON_WINDOWS
  typedef uint64_t jdupes_ino_t;
  typedef uint32_t jdupes_mode_t;
- extern const char dir_sep;
  #ifdef UNICODE
   extern const wchar_t *FILE_MODE_RO;
  #else
@@ -54,7 +53,6 @@ extern "C" {
  typedef ino_t jdupes_ino_t;
  typedef mode_t jdupes_mode_t;
  extern const char *FILE_MODE_RO;
- extern const char dir_sep;
  #ifdef UNICODE
   #error Do not define UNICODE on non-Windows platforms.
   #undef UNICODE

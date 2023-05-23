@@ -42,7 +42,7 @@ INSTALL_DATA    = $(INSTALL) -m 0644
 
 # Main object files
 OBJS += args.o checks.o extfilter.o filestat.o jdupes.o helptext.o interrupt.o
-OBJS += libjodycode_check.o progress.o sort.o travcheck.o
+OBJS += libjodycode_check.o loaddir.o progress.o sort.o travcheck.o
 OBJS += act_deletefiles.o act_linkfiles.o act_printmatches.o act_summarize.o act_printjson.o
 
 # Configuration section
