@@ -22,12 +22,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
-#include <fcntl.h>
 #include <dirent.h>
-#include <unistd.h>
 #include <stdlib.h>
 #include <stdint.h>
-#include <inttypes.h>
 
 #include <libjodycode.h>
 #include "likely_unlikely.h"
