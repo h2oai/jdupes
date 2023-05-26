@@ -82,6 +82,7 @@
 #if defined _WIN32 || defined __MINGW32__
  #ifdef UNICODE
   const wchar_t *FILE_MODE_RO = L"rbS";
+ static wpath_t wstr;
  #else
   const char *FILE_MODE_RO = "rbS";
  #endif /* UNICODE */
@@ -92,11 +93,6 @@
   #undef UNICODE
  #endif
 #endif /* _WIN32 || __MINGW32__ */
-
-/* Windows + Unicode compilation */
-#ifdef UNICODE
-static wpath_t wname, wstr;
-#endif /* UNICODE */
 
 /* Behavior modification flags (a=action, p=-P) */
 uint_fast64_t flags = 0, a_flags = 0, p_flags = 0;

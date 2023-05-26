@@ -15,7 +15,7 @@
 #include "act_linkfiles.h"
 
 #ifdef UNICODE
- wpath_t wname, wname2;
+ static wpath_t wname, wname2;
 #endif
 
 /* Apple clonefile() is basically a hard link */
