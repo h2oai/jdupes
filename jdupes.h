@@ -102,9 +102,13 @@ extern "C" {
  #define CHUNK_SIZE 65536
 #endif
 #ifndef NO_CHUNKSIZE
+ extern size_t auto_chunk_size;
  /* Larger chunk size makes large files process faster but uses more RAM */
  #define MIN_CHUNK_SIZE 4096
  #define MAX_CHUNK_SIZE 1048576 * 256
+#else
+ /* If automatic chunk sizing is disabled, just use a fixed value */
+ #define auto_chunk_size CHUNK_SIZE
 #endif /* NO_CHUNKSIZE */
 
 /* Low memory option overrides */
@@ -258,8 +262,12 @@ typedef struct _filetree {
  #define STAT stat
 #endif
 
+/* Number of read loops before checking progress indicator */
+#define CHECK_MINIMUM 256
+
 /* Progress indicator variables */
 extern uintmax_t filecount, progress, item_progress, dupecount;
+
 extern unsigned int user_item_count;
 extern int sort_direction;
 extern char tempname[];
