@@ -19,6 +19,10 @@
  #include "travcheck.h"
 #endif
 
+#ifdef UNICODE
+ static wpath_t wname;
+#endif
+
 /* Detect Windows and modify as needed */
 #if defined _WIN32 || defined __MINGW32__
  const char dir_sep = '\\';

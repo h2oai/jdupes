@@ -8,9 +8,11 @@
 #include "likely_unlikely.h"
 #include "jdupes.h"
 
-/* Signal handler */
 int interrupt = 0;
+
+#ifndef ON_WINDOWS
 static int usr1_toggle = 0;
+#endif
 
 /* Catch CTRL-C and either notify or terminate */
 void sighandler(const int signum)
