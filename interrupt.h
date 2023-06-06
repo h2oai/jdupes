@@ -14,7 +14,8 @@ extern int interrupt;
 
 void sighandler(const int signum);
 #ifndef ON_WINDOWS
-void sigusr1(const int signum);
+void catch_sigusr1(const int signum);
+void catch_sigalrm(const int signum);
 void check_sigusr1(void);
 #else
 #define check_sigusr1()

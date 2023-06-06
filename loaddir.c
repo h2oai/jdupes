@@ -1,12 +1,13 @@
 /* jdupes directory scanning code
  * This file is part of jdupes; see jdupes.c for license information */
 
+#include <dirent.h>
+#include <inttypes.h>
+#include <stdlib.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
-#include <dirent.h>
-#include <stdlib.h>
-#include <stdint.h>
 
 #include <libjodycode.h>
 #include "likely_unlikely.h"
@@ -37,7 +38,7 @@ static file_t *init_newfile(const size_t len, file_t * restrict * const restrict
   if (unlikely(!newfile)) jc_oom("init_newfile() file structure");
   if (unlikely(!filelistp)) jc_nullptr("init_newfile() filelistp");
 
-  LOUD(fprintf(stderr, "init_newfile(len %" PRIuMAX", filelistp %p)\n", (uintmax_t)len, filelistp));
+  LOUD(fprintf(stderr, "init_newfile(len %" PRIuMAX ", filelistp %p)\n", (uintmax_t)len, filelistp));
 
   memset(newfile, 0, sizeof(file_t));
   newfile->d_name = (char *)malloc(len);
@@ -176,7 +177,10 @@ void loaddir(const char * const restrict dir,
     LOUD(fprintf(stderr, "loaddir: readdir: '%s'\n", dirinfo->d_name));
     if (unlikely(!jc_streq(dirinfo->d_name, ".") || !jc_streq(dirinfo->d_name, ".."))) continue;
     check_sigusr1();
-    update_phase1_progress(progress, "dirs");
+    if (progress_alarm != 0) {
+      progress_alarm = 0;
+      update_phase1_progress(progress, "dirs");
+    }
 
     /* Assemble the file's full path name, optimized to avoid strcat() */
     dirlen = strlen(dir);

@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
+#include <unistd.h>
 
 #include "likely_unlikely.h"
 #include "jdupes.h"
@@ -28,7 +29,7 @@ void sighandler(const int signum)
 
 
 #ifndef ON_WINDOWS
-void sigusr1(const int signum)
+void catch_sigusr1(const int signum)
 {
   (void)signum;
   if (!ISFLAG(flags, F_SOFTABORT)) {
@@ -40,6 +41,16 @@ void sigusr1(const int signum)
   }
   return;
 }
+
+
+void catch_sigalrm(const int signum)
+{
+  (void)signum;
+  progress_alarm = 1;
+  alarm(1);
+  return;
+}
+
 
 void check_sigusr1(void)
 {

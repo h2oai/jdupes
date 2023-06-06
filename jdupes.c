@@ -120,6 +120,7 @@ static const char *program_name;
 
 /* Required for progress indicator code */
 uintmax_t filecount = 0, progress = 0, item_progress = 0, dupecount = 0;
+int progress_alarm = 0;
 
 /* Performance and behavioral statistics (debug mode) */
 #ifdef DEBUG
@@ -360,7 +361,6 @@ static inline int confirmmatch(FILE * const restrict file1, FILE * const restric
   static char *c1 = NULL, *c2 = NULL;
   size_t r1, r2;
   off_t bytes = 0;
-  int check = 0;
 
   if (unlikely(file1 == NULL || file2 == NULL)) jc_nullptr("confirmmatch()");
   LOUD(fprintf(stderr, "confirmmatch running\n"));
@@ -383,11 +383,10 @@ static inline int confirmmatch(FILE * const restrict file1, FILE * const restric
     if (r1 != r2) return 0; /* file lengths are different */
     if (memcmp (c1, c2, r1)) return 0; /* file contents are different */
 
-    check++;
     bytes += (off_t)r1;
-    if (check > CHECK_MINIMUM) {
+    if (progress_alarm != 0) {
+      progress_alarm = 0;
       update_phase2_progress("confirm", (int)((bytes * 100) / size));
-      check = 0;
     }
   } while (r2);
 
@@ -912,8 +911,15 @@ int main(int argc, char **argv)
 
 #ifndef ON_WINDOWS
   /* Catch SIGUSR1 and use it to enable -Z */
-  signal(SIGUSR1, sigusr1);
+  signal(SIGUSR1, catch_sigusr1);
+  /* Catch SIGALRM for progress indicator */
+  signal(SIGALRM, catch_sigalrm);
+  /* Progress indicator every second */
+  if (!ISFLAG(flags, F_HIDEPROGRESS)) alarm(1);
 #endif
+
+  /* Force an immediate progress update */
+  progress_alarm = 1;
 
   if (ISFLAG(flags, F_RECURSEAFTER)) {
     firstrecurse = nonoptafter("--recurse:", argc, oldargv, argv);
@@ -974,6 +980,9 @@ int main(int argc, char **argv)
 
   /* Catch CTRL-C */
   signal(SIGINT, sighandler);
+
+  /* Force an immediate progress update */
+  progress_alarm = 1;
 
   while (curfile) {
     static file_t **match = NULL;
@@ -1055,7 +1064,10 @@ skip_full_check:
     curfile = curfile->next;
 
     check_sigusr1();
-    update_phase2_progress(NULL, -1);
+    if (progress_alarm != 0) {
+      progress_alarm = 0;
+      update_phase2_progress(NULL, -1);
+    }
     progress++;
   }
 
