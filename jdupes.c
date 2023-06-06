@@ -496,14 +496,14 @@ int main(int argc, char **argv)
 #endif
 #ifndef NO_CHUNKSIZE
   static long manual_chunk_size = 0;
-#ifdef __linux__
+ #ifdef __linux__
   static struct jc_proc_cacheinfo pci;
-#endif
+ #endif /* __linux__ */
 #endif /* NO_CHUNKSIZE */
 #ifdef ENABLE_DEDUPE
  #ifdef __linux__
   static struct utsname utsname;
- #endif
+ #endif /* __linux__ */
 #endif
 
 #ifndef NO_GETOPT_LONG
@@ -567,9 +567,9 @@ int main(int argc, char **argv)
     { "zero-match", 0, 0, 'z' },
     { NULL, 0, 0, 0 }
   };
-#define GETOPT getopt_long
+ #define GETOPT getopt_long
 #else
-#define GETOPT getopt
+ #define GETOPT getopt
 #endif
 
 #define GETOPT_STRING "@019ABC:DdEfHhIijKLlMmNnOo:P:pQqRrSsTtUuVvX:Zz"
@@ -844,16 +844,16 @@ int main(int argc, char **argv)
         fprintf(stderr, "Refusing to dedupe on a 2.x kernel; data loss could occur. Aborting.\n");
         exit(EXIT_FAILURE);
       }
-#endif
+#endif /* __linux__ */
       SETFLAG(a_flags, FA_DEDUPEFILES);
       /* btrfs will do the byte-for-byte check itself */
       SETFLAG(flags, F_QUICKCOMPARE);
       /* It is completely useless to dedupe zero-length extents */
       CLEARFLAG(flags, F_INCLUDEEMPTY);
-#else
+#else /* ENABLE_DEDUPE */
       fprintf(stderr, "This program was built without dedupe support\n");
       exit(EXIT_FAILURE);
-#endif
+#endif /* ENABLE_DEDUPE */
       LOUD(fprintf(stderr, "opt: CoW/block-level deduplication enabled (--dedupe)\n");)
       break;
 
