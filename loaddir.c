@@ -87,8 +87,8 @@ void loaddir(const char * const restrict dir,
 {
   file_t * restrict newfile;
   struct dirent *dirinfo;
-  static uintmax_t loaddir_level = 0;
   size_t dirlen;
+  static uint_fast32_t loaddir_level = 0;
   int i, single = 0;
   jdupes_ino_t inode;
   dev_t device, n_device;
@@ -179,7 +179,7 @@ void loaddir(const char * const restrict dir,
     check_sigusr1();
     if (progress_alarm != 0) {
       progress_alarm = 0;
-      update_phase1_progress(progress, "dirs");
+      if (!ISFLAG(flags, F_HIDEPROGRESS)) update_phase1_progress("dirs");
     }
 
     /* Assemble the file's full path name, optimized to avoid strcat() */
@@ -279,7 +279,12 @@ void loaddir(const char * const restrict dir,
 
 skip_single:
   loaddir_level--;
-  update_phase1_progress(loaddir_level, "items");
+  if (progress_alarm != 0) {
+    progress_alarm = 0;
+    if (!ISFLAG(flags, F_HIDEPROGRESS)) {
+      if (loaddir_level == 0) update_phase1_progress("items");
+    }
+  }
   return;
 
 error_stat_dir:
