@@ -7,8 +7,6 @@
 #include "likely_unlikely.h"
 
 
-struct timeval time1, time2;
-
 void update_phase1_progress(const char * const restrict type)
 {
   /* Don't update progress if there is no progress to update */

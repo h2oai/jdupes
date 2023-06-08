@@ -83,7 +83,7 @@
 #if defined _WIN32 || defined __MINGW32__
  #ifdef UNICODE
   const wchar_t *FILE_MODE_RO = L"rbS";
- static wpath_t wstr;
+  wpath_t wstr;
  #else
   const char *FILE_MODE_RO = "rbS";
  #endif /* UNICODE */

@@ -21,6 +21,11 @@ extern "C" {
  #endif
  #include <windows.h>
  #include <io.h>
+ #ifndef NO_HARDLINKS
+  #ifdef DEBUG
+   extern unsigned int hll_exclude;
+  #endif
+ #endif
 #endif /* Win32 */
 
 #include <limits.h>
@@ -40,7 +45,7 @@ extern "C" {
 #endif /* USE_JODY_HASH */
 
 /* Some types are different on Windows */
-#ifdef ON_WINDOWS
+#if defined _WIN32 || defined __MINGW32__
  typedef uint64_t jdupes_ino_t;
  typedef uint32_t jdupes_mode_t;
  #ifdef UNICODE
@@ -72,9 +77,10 @@ extern "C" {
    #define WPATH_MAX PATHBUF_SIZE
   #endif
  #endif /* PATHBUF_SIZE */
-  typedef wchar_t wpath_t[WPATH_MAX];
+ typedef wchar_t wpath_t[WPATH_MAX];
  #define M2W(a,b) MultiByteToWideChar(CP_UTF8, 0, a, -1, (LPWSTR)b, WPATH_MAX)
  #define W2M(a,b) WideCharToMultiByte(CP_UTF8, 0, a, -1, (LPSTR)b, WPATH_MAX, NULL, NULL)
+ extern wpath_t wstr;
 #endif /* UNICODE */
 
 /* Maximum path buffer size to use; must be large enough for a path plus
@@ -236,11 +242,11 @@ typedef struct _file {
   unsigned int user_order; /* Order of the originating command-line parameter */
 #endif
 #ifndef NO_HARDLINKS
- #ifndef ON_WINDOWS
-  nlink_t nlink;
- #else
+ #ifdef ON_WINDOWS
   uint32_t nlink;  /* link count on Windows is always a DWORD */
- #endif
+ #else
+  nlink_t nlink;
+ #endif /* ON_WINDOWS */
 #endif
 #ifndef NO_PERMS
   uid_t uid;
