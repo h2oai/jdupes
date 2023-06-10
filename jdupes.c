@@ -977,7 +977,7 @@ int main(int argc, char **argv)
   progress = 0;
 
   /* Catch CTRL-C */
-  signal(SIGINT, sighandler);
+  signal(SIGINT, catch_interrupt);
 
   /* Force an immediate progress update */
   progress_alarm = 1;

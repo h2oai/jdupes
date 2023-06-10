@@ -12,7 +12,7 @@ extern "C" {
 
 extern int interrupt;
 
-void sighandler(const int signum);
+void catch_interrupt(const int signum);
 void start_progress_alarm(void);
 void stop_progress_alarm(void);
 #ifdef ON_WINDOWS

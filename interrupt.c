@@ -15,6 +15,7 @@
 #include "likely_unlikely.h"
 #include "jdupes.h"
 
+/* CTRL-C */
 int interrupt = 0;
 
 #ifdef ON_WINDOWS
@@ -24,7 +25,7 @@ static int usr1_toggle = 0;
 #endif /* ON_WINDOWS */
 
 /* Catch CTRL-C and either notify or terminate */
-void sighandler(const int signum)
+void catch_interrupt(const int signum)
 {
   (void)signum;
   if (interrupt || !ISFLAG(flags, F_SOFTABORT)) {
