@@ -1,58 +1,15 @@
 Introduction
 -------------------------------------------------------------------------------
-jdupes is a program for identifying and taking actions upon duplicate files.
-
-A WORD OF WARNING: jdupes IS NOT a drop-in compatible replacement for fdupes!
-Do not blindly replace fdupes with jdupes in scripts and expect everything to
-work the same way. Option availability and meanings differ between the two
-programs. For example, the `-I` switch in jdupes means "isolate" and blocks
-intra-argument matching, while in fdupes it means "immediately delete files
-during scanning without prompting the user."
+jdupes is a program for identifying and taking actions upon duplicate files
+such as deleting, hard linking, symlinking, and block-level deduplication
+(also known as "dedupe" or "reflink"). It is faster than most other duplicate
+scanners. It prioritizes data safety over performance while also giving
+expert users access to advanced (and sometimes dangerous) features.
 
 Please consider financially supporting continued development of jdupes using
 the links on my home page (Ko-fi, PayPal, SubscribeStar, Flattr, etc.):
 
 https://www.jodybruchon.com/
-
-
-v1.20.0 specific: most long options have changed and -n has been removed
--------------------------------------------------------------------------------
-Long options now have consistent hyphenation to separate the words used in the
-option names. Run `jdupes -h` to see the correct usage. Legacy options will
-remain in place until the next major or minor release (v2.0 or v1.21.0) for
-compatibility purposes. Users should change any scripts using the old options
-to use the new ones...or better yet, stop using long options in your scripts
-in the first place, because it's unnecessarily verbose and wasteful to do so.
-
-
-v1.15+ specific: Why is the addition of single files not working?
--------------------------------------------------------------------------------
-If a file was added through recursion and also added explicitly, that file
-would end up matching itself. This issue can be seen in v1.14.1 or older
-versions that support single file addition using a command like this in the
-jdupes source code directory:
-
-/usr/src/jdupes$ jdupes -rH testdir/isolate/1/ testdir/isolate/1/1.txt
-testdir/isolate/1/1.txt
-testdir/isolate/1/1.txt
-testdir/isolate/1/2.txt
-
-Even worse, using the special dot directory will make it happen without the -H
-option, which is how I discovered this bug:
-
-
-/usr/src/jdupes/testdir/isolate/1$ jdupes . 1.txt
-./1.txt
-./2.txt
-1.txt
-
-This works for any path with a single dot directory anywhere in the path, so it
-has a good deal of potential for data loss in some use cases. As such, the best
-option was to shove out a new minor release with this feature turned off until
-some additional checking can be done, e.g. by making sure the canonical paths
-aren't identical between any two files.
-
-A future release will fix this safely.
 
 
 Why use jdupes instead of the original fdupes or other duplicate finders?
@@ -518,6 +475,104 @@ when processing a data set with over a million files, jdupes memory usage
 (tested on Linux x86-64 with -O3 optimization) doesn't exceed 2GB.  A low
 memory mode can be chosen at compile time to reduce overall memory usage with a
 small performance penalty.
+
+
+How does a duplicate scanner algorithm work?
+-------------------------------------------------------------------------------
+The most naive way to look for files that are the same is to compare all files
+to all other files using a tool like `cmp` command on Linux/macOS/BSD or the
+`fc` command on Windows/DOS. This works but is extremely slow and wastes a lot
+of time. For every new file to compare, the number of comparisons increases
+exponentially (the formula is n(n-1)/2 for the discrete math nerds):
+
+| Files | Compares |
+|-------|----------|
+|     2 |        1 |
+|     3 |        3 |
+|     4 |        6 |
+|     5 |       10 |
+|    10 |       45 |
+|   100 |     4950 |
+|  1000 |   499500 |
+|  5000 | 12497500 |
+| 10000 | 49995000 |
+| 14142 | 99991011 |
+
+Let's say that every file is 1,000 bytes in size and you have 10,000 files for
+a total size of 10,000,000 bytes (about 9.53 MiB). Using this naive comparison
+approach means the actual amount of data to compare is around 47,679 MiB. You
+should be able to see how extreme this can get--especially with larger files.
+
+A slightly smarter approach is to use *file hashes* as a substitute for the
+full file contents. A *hash* is a number based on the data fed into a *hash
+function* and the number is always the same when the same data is fed in.
+If the hash for two files is different then the contents of those files are
+guaranteed to be different; if the hash is the same then the data **might** be
+the same, though this is not guaranteed due to the *birthday problem:* the
+size of the number is much smaller than the size of the data it represents, so
+*there will always be many different inputs that produce the same hash value.*
+Files with matching hash values must still be compared just to be sure that
+they are 100% identical.
+
+49,995,000 comparisons can be done much quicker when you're only comparing a
+single big number every time instead of thousands or millions of bytes. This
+makes a big difference in performance since the only files being compared are
+files that look likely to be identical.
+
+**Fast exclusion of non-duplicates is the main purpose of duplicate scanners.**
+
+jdupes uses a lot of fast exclusion techniques beyond this. A partial list of
+these in the order they're performed is as follows:
+
+1. Files that the user asks the program to exclude are skipped entirely
+2. Files with different sizes can't be identical, so they're not compared
+3. The first 4 KiB is hashed and compared which avoids reading full files
+4. Entire files are hashed and compared which avoids comparing data directly
+5. Finally, actual file data is compared to verify that they are duplicates
+
+The vast majority of non-duplicate file pairs never make it past the partial
+(4 KiB) hashing step. This reduces the amount of data read from disk and time
+spent comparing things to the smallest amount possible.
+
+
+v1.20.0 specific: most long options have changed and -n has been removed
+-------------------------------------------------------------------------------
+Long options now have consistent hyphenation to separate the words used in the
+option names. Run `jdupes -h` to see the correct usage. Legacy options will
+remain in place until the next major or minor release (v2.0 or v1.21.0) for
+compatibility purposes. Users should change any scripts using the old options
+to use the new ones...or better yet, stop using long options in your scripts
+in the first place, because it's unnecessarily verbose and wasteful to do so.
+
+
+v1.15+ specific: Why is the addition of single files not working?
+-------------------------------------------------------------------------------
+If a file was added through recursion and also added explicitly, that file
+would end up matching itself. This issue can be seen in v1.14.1 or older
+versions that support single file addition using a command like this in the
+jdupes source code directory:
+
+/usr/src/jdupes$ jdupes -rH testdir/isolate/1/ testdir/isolate/1/1.txt
+testdir/isolate/1/1.txt
+testdir/isolate/1/1.txt
+testdir/isolate/1/2.txt
+
+Even worse, using the special dot directory will make it happen without the -H
+option, which is how I discovered this bug:
+
+
+/usr/src/jdupes/testdir/isolate/1$ jdupes . 1.txt
+./1.txt
+./2.txt
+1.txt
+
+This works for any path with a single dot directory anywhere in the path, so it
+has a good deal of potential for data loss in some use cases. As such, the best
+option was to shove out a new minor release with this feature turned off until
+some additional checking can be done, e.g. by making sure the canonical paths
+aren't identical between any two files.
+
+A future release will fix this safely.
 
 
 Contact information
