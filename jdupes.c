@@ -768,12 +768,12 @@ int main(int argc, char **argv)
       LOUD(fprintf(stderr, "opt: TOCTTOU safety check disabled (--no-change-check)\n");)
       break;
     case 'T':
-      if (partialonly_spec == 0)
-        partialonly_spec = 1;
-      else {
-        partialonly_spec = 2;
-        fprintf(stderr, "\nBIG FAT WARNING: -T/--partial-only is EXTREMELY DANGEROUS! Read the manual!\n\n");
+      partialonly_spec++;
+      if (partialonly_spec == 1) {
+      }
+      if (partialonly_spec == 2) {
         SETFLAG(flags, F_PARTIALONLY);
+        CLEARFLAG(flags, F_QUICKCOMPARE);
       }
       break;
     case 'u':
@@ -849,7 +849,7 @@ int main(int argc, char **argv)
 #endif /* __linux__ */
       SETFLAG(a_flags, FA_DEDUPEFILES);
       /* btrfs will do the byte-for-byte check itself */
-      SETFLAG(flags, F_QUICKCOMPARE);
+      if (!ISFLAG(flags, F_PARTIALONLY)) SETFLAG(flags, F_QUICKCOMPARE);
       /* It is completely useless to dedupe zero-length extents */
       CLEARFLAG(flags, F_INCLUDEEMPTY);
 #else /* ENABLE_DEDUPE */
@@ -871,15 +871,32 @@ int main(int argc, char **argv)
     exit(EXIT_FAILURE);
   }
 
-  if (partialonly_spec == 1) {
-    fprintf(stderr, "--partial-only specified only once (it's VERY DANGEROUS, read the manual!)\n");
-    exit(EXIT_FAILURE);
+  /* Make noise if people try to use -T because it's super dangerous */
+  if (partialonly_spec > 0) {
+    if (partialonly_spec > 2) {
+      fprintf(stderr, "Saying -T three or more times? You're a wizard. No reminders for you.\n");
+      goto skip_partialonly_noise;
+    }
+    fprintf(stderr, "\nBIG FAT WARNING: -T/--partial-only is EXTREMELY DANGEROUS! Read the manual!\n");
+    fprintf(stderr,   "                 If used with destructive actions YOU WILL LOSE DATA!\n");
+    fprintf(stderr,   "                 YOU ARE ON YOUR OWN. Use this power carefully.\n\n");
+    if (partialonly_spec == 1) {
+      fprintf(stderr, "-T is so dangerous that you must specify it twice to use it. By doing so,\n");
+      fprintf(stderr, "you agree that you're OK with LOSING ALL OF YOUR DATA BY USING -T.\n\n");
+      exit(EXIT_FAILURE);
+    }
+    if (partialonly_spec == 2) {
+      fprintf(stderr, "You passed -T twice. I hope you know what you're doing. Last chance!\n\n");
+      fprintf(stderr, "          HIT CTRL-C TO ABORT IF YOU AREN'T CERTAIN!\n          ");
+      for (int countdown = 10; countdown > 0; countdown--) {
+        fprintf(stderr, "%d, ", countdown);
+        sleep(1);
+      }
+      fprintf(stderr, "bye-bye, data, it was nice knowing you.\n");
+      fprintf(stderr, "For wizards: three tees is the way to be.\n\n");
+    }
   }
-
-  if (ISFLAG(flags, F_PARTIALONLY) && ISFLAG(flags, F_QUICKCOMPARE)) {
-    fprintf(stderr, "--partial-only overrides --quick and is even more dangerous (read the manual!)\n");
-    exit(EXIT_FAILURE);
-  }
+skip_partialonly_noise:
 
   if (ISFLAG(flags, F_RECURSE) && ISFLAG(flags, F_RECURSEAFTER)) {
     fprintf(stderr, "options --recurse and --recurse: are not compatible\n");

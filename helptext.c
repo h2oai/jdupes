@@ -175,7 +175,6 @@ void help_text(void)
   printf(" -t --no-change-check\tdisable security check for file changes (aka TOCTTOU)\n");
   printf(" -T --partial-only \tmatch based on partial hashes only. WARNING:\n");
   printf("                  \tEXTREMELY DANGEROUS paired with destructive actions!\n");
-  printf("                  \t-T must be specified twice to work. Read the manual!\n");
   printf(" -u --print-unique\tprint only a list of unique (non-matched) files\n");
   printf(" -U --no-trav-check\tdisable double-traversal safety check (BE VERY CAREFUL)\n");
   printf("                  \tThis fixes a Google Drive File Stream recursion issue\n");
