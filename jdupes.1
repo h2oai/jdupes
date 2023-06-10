@@ -75,6 +75,9 @@ reverse (invert) the sort order of matches
 isolate each command-line parameter from one another; only match if the
 files are under different parameter specifications
 .TP
+.B -j --json
+produce JSON (machine-readable) output
+.TP
 .B -L --link-hard
 replace all duplicate files with hardlinks to the first file in each set
 of duplicates
@@ -137,6 +140,9 @@ follow symlinked directories
 .B -T --partial-only
 .B [WARNING: EXTREME RISK OF DATA LOSS, SEE CAVEATS]
 match based on hash of first block of file data, ignoring the rest
+.TP
+.B -U --no-trav-check
+disable double-traversal safety check (BE VERY CAREFUL)
 .TP
 .B -u --print-unique
 print only a list of unique (non-duplicate, unmatched) files
