@@ -149,6 +149,9 @@ int sort_direction = 1;
 /* For path name mangling */
 char tempname[PATHBUF_SIZE * 2];
 
+/* String used anywhere no duplicates are found */
+const char *s_no_dupes = "No duplicates found.\n";
+
 /***** End definitions, begin code *****/
 
 /***** Add new functions here *****/
@@ -968,10 +971,7 @@ int main(int argc, char **argv)
 
   if (ISFLAG(flags, F_REVERSESORT)) sort_direction = -1;
   if (!ISFLAG(flags, F_HIDEPROGRESS)) fprintf(stderr, "\n");
-  if (!files) {
-    jc_fwprint(stderr, "No duplicates found.", 1);
-    exit(EXIT_SUCCESS);
-  }
+  if (!files) goto skip_file_scan;
 
   curfile = files;
   progress = 0;

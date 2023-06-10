@@ -38,7 +38,7 @@ void printmatches(file_t * restrict files)
     files = files->next;
   }
 
-  if (printed == 0) jc_fwprint(stderr, "No duplicates found.", 1);
+  if (printed == 0) printf("%s", s_no_dupes);
 
   return;
 }

@@ -47,7 +47,7 @@ void linkfiles(file_t *files, const int linktype, const int only_current)
   static file_t *srcfile;
   static file_t *curfile;
   static file_t ** restrict dupelist;
-  static unsigned int counter;
+  static unsigned int counter = 0;
   static unsigned int max = 0;
   static unsigned int x = 0;
   static size_t name_len = 0;
@@ -66,6 +66,7 @@ void linkfiles(file_t *files, const int linktype, const int only_current)
   LOUD(fprintf(stderr, "linkfiles(%d): %p\n", linktype, files);)
   curfile = files;
 
+  /* Calculate a maximum */
   while (curfile) {
     if (ISFLAG(curfile->flags, FF_HAS_DUPES)) {
       counter = 1;
@@ -416,6 +417,8 @@ void linkfiles(file_t *files, const int linktype, const int only_current)
     if (only_current == 1) break;
     files = files->next;
   }
+
+  if (counter == 0) printf("%s", s_no_dupes);
 
   free(dupelist);
   return;

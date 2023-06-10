@@ -57,7 +57,10 @@ void dedupefiles(file_t * restrict files)
   uint64_t total_files = 0;
 
   LOUD(fprintf(stderr, "\ndedupefiles: %p\n", files);)
-  if (!files) jc_nullptr("dedupefiles()");
+  if (!files) {
+    printf("%s", s_no_dupes);
+    exit(EXIT_SUCCESS);
+  }
 
   fdr = (struct file_dedupe_range *)calloc(1,
         sizeof(struct file_dedupe_range)

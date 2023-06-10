@@ -31,7 +31,7 @@ void summarizematches(const file_t * restrict files)
   }
 
   if (numsets == 0)
-    printf("No duplicates found.\n");
+    printf("%s", s_no_dupes);
   else
   {
     printf("%d duplicate files (in %d sets), occupying ", numfiles, numsets);
