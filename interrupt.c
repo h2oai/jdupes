@@ -2,7 +2,7 @@
  * This file is part of jdupes; see jdupes.c for license information */
 
 #ifdef ON_WINDOWS
-#define _WIN32_WINNT 0x0500
+ #define _WIN32_WINNT 0x0500
  #define WIN32_LEAN_AND_MEAN
  #include <windows.h>
 #endif
