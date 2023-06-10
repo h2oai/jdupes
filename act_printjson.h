@@ -11,7 +11,7 @@ extern "C" {
 #endif
 
 #include "jdupes.h"
-extern void printjson(file_t * restrict files, const int argc, char ** const restrict argv);
+void printjson(file_t * restrict files, const int argc, char ** const restrict argv);
 
 #ifdef __cplusplus
 }

@@ -282,9 +282,8 @@ extern char tempname[];
 
 extern const char *feature_flags[];
 
-extern int file_has_changed(file_t * const restrict file);
-extern unsigned int get_max_dupes(const file_t *files, unsigned int * const restrict max,
-		                unsigned int * const restrict n_files);
+int file_has_changed(file_t * const restrict file);
+unsigned int get_max_dupes(const file_t *files, unsigned int * const restrict max, unsigned int * const restrict n_files);
 
 #ifdef __cplusplus
 }

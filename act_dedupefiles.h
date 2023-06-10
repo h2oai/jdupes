@@ -9,7 +9,7 @@ extern "C" {
 #endif
 
 #include "jdupes.h"
-extern void dedupefiles(file_t * restrict files);
+void dedupefiles(file_t * restrict files);
 
 #ifdef __cplusplus
 }

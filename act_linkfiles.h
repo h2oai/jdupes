@@ -11,7 +11,7 @@ extern "C" {
 #endif
 
 #include "jdupes.h"
-extern void linkfiles(file_t *files, const int linktype, const int only_current);
+void linkfiles(file_t *files, const int linktype, const int only_current);
 
 #ifdef __cplusplus
 }

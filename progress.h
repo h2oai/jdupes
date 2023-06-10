@@ -8,8 +8,8 @@
 extern "C" {
 #endif
 
-extern void update_phase1_progress(const char * const restrict type);
-extern void update_phase2_progress(const char * const restrict msg, const int file_percent);
+void update_phase1_progress(const char * const restrict type);
+void update_phase2_progress(const char * const restrict msg, const int file_percent);
 
 #ifdef __cplusplus
 }

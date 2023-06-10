@@ -13,13 +13,15 @@ extern "C" {
 extern int interrupt;
 
 void sighandler(const int signum);
-#ifndef ON_WINDOWS
+#ifdef ON_WINDOWS
+#define check_sigusr1()
+void start_win_alarm(void);
+void stop_win_alarm(void);
+#else
 void catch_sigusr1(const int signum);
 void catch_sigalrm(const int signum);
 void check_sigusr1(void);
-#else
-#define check_sigusr1()
-#endif
+#endif /* ON_WINDOWS */
 
 #ifdef __cplusplus
 }
