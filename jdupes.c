@@ -909,16 +909,12 @@ int main(int argc, char **argv)
   }
   if (pm == 0) SETFLAG(a_flags, FA_PRINTMATCHES);
 
-#ifdef ON_WINDOWS
-  start_win_alarm();
-#else
+#ifndef ON_WINDOWS
   /* Catch SIGUSR1 and use it to enable -Z */
   signal(SIGUSR1, catch_sigusr1);
-  /* Catch SIGALRM for progress indicator */
-  signal(SIGALRM, catch_sigalrm);
-  /* Progress indicator every second */
-  if (!ISFLAG(flags, F_HIDEPROGRESS)) alarm(1);
 #endif
+  /* Progress indicator every second */
+  if (!ISFLAG(flags, F_HIDEPROGRESS)) start_progress_alarm();
 
   /* Force an immediate progress update */
   progress_alarm = 1;
@@ -1078,9 +1074,7 @@ skip_full_check:
 skip_file_scan:
   /* Stop catching CTRL+C and firing alarms */
   signal(SIGINT, SIG_DFL);
-#ifdef ON_WINDOWS
-  stop_win_alarm();
-#endif
+  if (!ISFLAG(flags, F_HIDEPROGRESS)) stop_progress_alarm();
 #ifndef NO_DELETE
   if (ISFLAG(a_flags, FA_DELETEFILES)) {
     if (ISFLAG(flags, F_NOPROMPT)) deletefiles(files, 0, 0);

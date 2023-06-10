@@ -45,7 +45,7 @@ void CALLBACK catch_win_alarm(PVOID arg1, BOOLEAN arg2)
 }
 
 
-void start_win_alarm(void)
+void start_progress_alarm(void)
 {
   LOUD(fprintf(stderr, "start_win_alarm()\n");)
   if (!CreateTimerQueueTimer(&hTimer, NULL, (WAITORTIMERCALLBACK)catch_win_alarm, 0, 1000, 1000, 0))
@@ -58,14 +58,30 @@ error_createtimer:
 }
 
 
-void stop_win_alarm(void)
+void stop_progress_alarm(void)
 {
   LOUD(fprintf(stderr, "stop_win_alarm()\n");)
   CloseHandle(hTimer);
   return;
 }
 
-#else
+#else /* not ON_WINDOWS */
+
+void start_progress_alarm(void)
+{
+  signal(SIGALRM, catch_sigalrm);
+  alarm(1);
+  return;
+}
+
+
+void stop_progress_alarm(void)
+{
+  signal(SIGALRM, SIG_IGN);
+  alarm(0);
+  return;
+}
+
 
 void catch_sigalrm(const int signum)
 {

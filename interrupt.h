@@ -13,10 +13,10 @@ extern "C" {
 extern int interrupt;
 
 void sighandler(const int signum);
+void start_progress_alarm(void);
+void stop_progress_alarm(void);
 #ifdef ON_WINDOWS
 #define check_sigusr1()
-void start_win_alarm(void);
-void stop_win_alarm(void);
 #else
 void catch_sigusr1(const int signum);
 void catch_sigalrm(const int signum);
