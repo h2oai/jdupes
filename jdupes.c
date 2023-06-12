@@ -149,7 +149,8 @@ int sort_direction = 1;
 /* For path name mangling */
 char tempname[PATHBUF_SIZE * 2];
 
-/* String used anywhere no duplicates are found */
+/* Strings used in multiple places */
+const char *s_interrupt = "\nStopping file scan due to user abort\n";
 const char *s_no_dupes = "No duplicates found.\n";
 
 /***** End definitions, begin code *****/
@@ -934,6 +935,9 @@ skip_partialonly_noise:
   signal(SIGUSR1, catch_sigusr1);
 #endif
 
+  /* Catch CTRL-C */
+  signal(SIGINT, catch_interrupt);
+
   /* Progress indicator every second */
   if (!ISFLAG(flags, F_HIDEPROGRESS)) {
     start_progress_alarm();
@@ -954,6 +958,7 @@ skip_partialonly_noise:
 
     /* F_RECURSE is not set for directories before --recurse: */
     for (int x = optind; x < firstrecurse; x++) {
+      if (interrupt) break;
       jc_slash_convert(argv[x]);
       loaddir(argv[x], &files, 0);
       user_item_count++;
@@ -963,16 +968,24 @@ skip_partialonly_noise:
     SETFLAG(flags, F_RECURSE);
 
     for (int x = firstrecurse; x < argc; x++) {
+      if (interrupt) break;
       jc_slash_convert(argv[x]);
       loaddir(argv[x], &files, 1);
       user_item_count++;
     }
   } else {
     for (int x = optind; x < argc; x++) {
+      if (interrupt) break;
       jc_slash_convert(argv[x]);
       loaddir(argv[x], &files, ISFLAG(flags, F_RECURSE));
       user_item_count++;
     }
+  }
+
+  /* Abort on CTRL-C (-Z doesn't matter yet) */
+  if (interrupt) {
+    fprintf(stderr, "%s", s_interrupt);
+    exit(EXIT_FAILURE);
   }
 
   /* Force a progress update */
@@ -998,9 +1011,6 @@ skip_partialonly_noise:
   curfile = files;
   progress = 0;
 
-  /* Catch CTRL-C */
-  signal(SIGINT, catch_interrupt);
-
   /* Force an immediate progress update */
   if (!ISFLAG(flags, F_HIDEPROGRESS)) progress_alarm = 1;
 
@@ -1010,7 +1020,7 @@ skip_partialonly_noise:
     static FILE *file2;
 
     if (interrupt) {
-      fprintf(stderr, "\nStopping file scan due to user abort\n");
+      fprintf(stderr, "%s", s_interrupt);
       if (!ISFLAG(flags, F_SOFTABORT)) exit(EXIT_FAILURE);
       interrupt = 0;  /* reset interrupt for re-use */
       goto skip_file_scan;

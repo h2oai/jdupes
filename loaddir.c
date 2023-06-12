@@ -104,9 +104,12 @@ void loaddir(const char * const restrict dir,
   if (unlikely(dir == NULL || filelistp == NULL)) jc_nullptr("loaddir()");
   LOUD(fprintf(stderr, "loaddir: scanning '%s' (order %d, recurse %d)\n", dir, user_item_count, recurse));
 
+  if (interrupt) return;
+
   /* Get directory stats (or file stats if it's a file) */
   i = getdirstats(dir, &inode, &device, &mode);
   if (unlikely(i < 0)) goto error_stat_dir;
+
   /* if dir is actually a file, just add it to the file tree */
   if (i == 1) {
 /* Single file addition is disabled for now because there is no safeguard
