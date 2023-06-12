@@ -11,7 +11,7 @@ void update_phase1_progress(const char * const restrict type)
 {
   fprintf(stderr, "\rScanning: %" PRIuMAX " files, %" PRIuMAX " %s (in %u specified)",
           progress, item_progress, type, user_item_count);
-  fflush(stderr);
+//  fflush(stderr);
 }
 
 /* Update progress indicator if requested */
@@ -28,6 +28,6 @@ void update_phase2_progress(const char * const restrict msg, const int file_perc
     fprintf(stderr, "                     ");
     did_fpct = 0;
   }
-  fflush(stderr);
+//  fflush(stderr);
   return;
 }

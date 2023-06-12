@@ -28,10 +28,6 @@ static int usr1_toggle = 0;
 void catch_interrupt(const int signum)
 {
   (void)signum;
-  if (interrupt || !ISFLAG(flags, F_SOFTABORT)) {
-    fprintf(stderr, "\n");
-    exit(EXIT_FAILURE);
-  }
   interrupt = 1;
   return;
 }
