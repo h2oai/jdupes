@@ -36,7 +36,6 @@ jdupes_hash_t *get_filehash(const file_t * const restrict checkfile, const size_
   static jdupes_hash_t hash[1];
   static jdupes_hash_t *chunk = NULL;
   FILE *file;
-  int check = 0;
 #ifndef USE_JODY_HASH
   XXH64_state_t *xxhstate;
 #else
@@ -129,10 +128,9 @@ jdupes_hash_t *get_filehash(const file_t * const restrict checkfile, const size_
     else fsize -= (off_t)bytes_to_read;
 
     check_sigusr1();
-    check++;
-    if (check > CHECK_MINIMUM) {
+    if (progress_alarm != 0) {
+      progress_alarm = 0;
       update_phase2_progress("hashing", (int)(((checkfile->size - fsize) * 100) / checkfile->size));
-      check = 0;
     }
   }
 

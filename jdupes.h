@@ -269,9 +269,6 @@ typedef struct _filetree {
  #define STAT stat
 #endif
 
-/* Number of read loops before checking progress indicator */
-#define CHECK_MINIMUM 256
-
 /* Progress indicator variables */
 extern uintmax_t filecount, progress, item_progress, dupecount;
 extern int progress_alarm;
