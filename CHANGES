@@ -1,3 +1,13 @@
+jdupes 1.24.0
+
+- Progress indication now uses platform timers instead of check loops
+- Lots of small code size and efficiency improvements
+- No one should be using -T so it has been made far more annoying
+- -B can be used with -T which may be faster for BTRFS dedupe work
+- CTRL-C aborts now show a user abort warning message to stderr
+- Improved version information display
+- Documentation updates
+
 jdupes 1.23.0
 
 - Use the new libjodycode 2.0 API version handling system
