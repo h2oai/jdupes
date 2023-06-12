@@ -9,8 +9,6 @@
 
 void update_phase1_progress(const char * const restrict type)
 {
-  /* Don't update progress if there is no progress to update */
-  if (ISFLAG(flags, F_HIDEPROGRESS)) return;
   fprintf(stderr, "\rScanning: %" PRIuMAX " files, %" PRIuMAX " %s (in %u specified)",
           progress, item_progress, type, user_item_count);
   fflush(stderr);
@@ -20,9 +18,6 @@ void update_phase1_progress(const char * const restrict type)
 void update_phase2_progress(const char * const restrict msg, const int file_percent)
 {
   static int did_fpct = 0;
-
-  /* Don't update progress if there is no progress to update */
-  if (ISFLAG(flags, F_HIDEPROGRESS)) return;
 
   fprintf(stderr, "\rProgress [%" PRIuMAX "/%" PRIuMAX ", %" PRIuMAX " pairs matched] %" PRIuMAX "%%",
     progress, filecount, dupecount, (progress * 100) / filecount);

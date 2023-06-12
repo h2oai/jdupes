@@ -933,11 +933,13 @@ skip_partialonly_noise:
   /* Catch SIGUSR1 and use it to enable -Z */
   signal(SIGUSR1, catch_sigusr1);
 #endif
-  /* Progress indicator every second */
-  if (!ISFLAG(flags, F_HIDEPROGRESS)) start_progress_alarm();
 
-  /* Force an immediate progress update */
-  progress_alarm = 1;
+  /* Progress indicator every second */
+  if (!ISFLAG(flags, F_HIDEPROGRESS)) {
+    start_progress_alarm();
+    /* Force an immediate progress update */
+    progress_alarm = 1;
+  }
 
   if (ISFLAG(flags, F_RECURSEAFTER)) {
     firstrecurse = nonoptafter("--recurse:", argc, oldargv, argv);
@@ -997,7 +999,7 @@ skip_partialonly_noise:
   signal(SIGINT, catch_interrupt);
 
   /* Force an immediate progress update */
-  progress_alarm = 1;
+  if (!ISFLAG(flags, F_HIDEPROGRESS)) progress_alarm = 1;
 
   while (curfile) {
     static file_t **match = NULL;

@@ -179,7 +179,7 @@ void loaddir(const char * const restrict dir,
     check_sigusr1();
     if (progress_alarm != 0) {
       progress_alarm = 0;
-      if (!ISFLAG(flags, F_HIDEPROGRESS)) update_phase1_progress("dirs");
+      update_phase1_progress("dirs");
     }
 
     /* Assemble the file's full path name, optimized to avoid strcat() */
@@ -281,9 +281,7 @@ skip_single:
   loaddir_level--;
   if (progress_alarm != 0) {
     progress_alarm = 0;
-    if (!ISFLAG(flags, F_HIDEPROGRESS)) {
-      if (loaddir_level == 0) update_phase1_progress("items");
-    }
+    if (loaddir_level == 0) update_phase1_progress("items");
   }
   return;
 
