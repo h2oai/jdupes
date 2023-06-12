@@ -88,7 +88,6 @@ void loaddir(const char * const restrict dir,
   file_t * restrict newfile;
   struct dirent *dirinfo;
   size_t dirlen;
-  static uint_fast32_t loaddir_level = 0;
   int i, single = 0;
   jdupes_ino_t inode;
   dev_t device, n_device;
@@ -142,7 +141,6 @@ void loaddir(const char * const restrict dir,
 #endif /* NO_TRAVCHECK */
 
   item_progress++;
-  loaddir_level++;
 
 #ifdef UNICODE
   /* Windows requires \* at the end of directory names */
@@ -278,11 +276,6 @@ void loaddir(const char * const restrict dir,
 #endif
 
 skip_single:
-  loaddir_level--;
-  if (progress_alarm != 0) {
-    progress_alarm = 0;
-    if (loaddir_level == 0) update_phase1_progress("items");
-  }
   return;
 
 error_stat_dir:

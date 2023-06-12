@@ -975,6 +975,9 @@ skip_partialonly_noise:
     }
   }
 
+  /* Force a progress update */
+  if (!ISFLAG(flags, F_HIDEPROGRESS)) update_phase1_progress("items");
+
 /* We don't need the double traversal check tree anymore */
 #ifndef NO_TRAVCHECK
   travcheck_free(NULL);
