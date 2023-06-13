@@ -112,16 +112,12 @@ jdupes_hash_t *get_filehash(const file_t * const restrict checkfile, const size_
 
     if (interrupt) return 0;
     bytes_to_read = (fsize >= (off_t)auto_chunk_size) ? auto_chunk_size : (size_t)fsize;
-    if (unlikely(fread((void *)chunk, bytes_to_read, 1, file) != 1)) {
-      fprintf(stderr, "\nerror reading from file "); jc_fwprint(stderr, checkfile->d_name, 1);
-      fclose(file);
-      return NULL;
-    }
+    if (unlikely(fread((void *)chunk, bytes_to_read, 1, file) != 1)) goto error_reading_file;
 
 #ifndef USE_JODY_HASH
     XXH64_update(xxhstate, chunk, bytes_to_read);
 #else
-    *hash = jc_block_hash(chunk, *hash, bytes_to_read);
+    if (unlikely(jc_block_hash(chunk, hash, bytes_to_read) != 0)) goto error_reading_file;
 #endif
 
     if ((off_t)bytes_to_read > fsize) break;
@@ -132,6 +128,11 @@ jdupes_hash_t *get_filehash(const file_t * const restrict checkfile, const size_
       progress_alarm = 0;
       update_phase2_progress("hashing", (int)(((checkfile->size - fsize) * 100) / checkfile->size));
     }
+    continue;
+error_reading_file:
+    fprintf(stderr, "\nerror reading from file "); jc_fwprint(stderr, checkfile->d_name, 1);
+    fclose(file);
+    return NULL;
   }
 
   fclose(file);
