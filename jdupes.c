@@ -592,9 +592,14 @@ int main(int argc, char **argv)
 #ifdef UNICODE
   /* Create a UTF-8 **argv from the wide version */
   static char **argv;
+  int wa_err;
   argv = (char **)malloc(sizeof(char *) * (size_t)argc);
   if (!argv) jc_oom("main() unicode argv");
-  jc_widearg_to_argv(argc, wargv, argv);
+  wa_err = jc_widearg_to_argv(argc, wargv, argv);
+  if (wa_err != 0) {
+    jc_print_error(wa_err);
+    exit(EXIT_FAILURE);
+  }
   /* fix up __argv so getopt etc. don't crash */
   __argv = argv;
   jc_set_output_modes(0x0c);
