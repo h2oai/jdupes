@@ -123,7 +123,7 @@ void linkfiles(file_t *files, const int linktype, const int only_current)
         /* If no normal file exists, abort */
         if (srcfile == NULL) continue;
 #else
-        linkfiles_nosupport("sort", "symlink");
+        linkfiles_nosupport("soft", "symlink");
 #endif
       }
       if (!ISFLAG(flags, F_HIDEPROGRESS)) {
