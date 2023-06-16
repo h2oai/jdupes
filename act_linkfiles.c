@@ -102,14 +102,14 @@ void linkfiles(file_t *files, const int linktype, const int only_current)
 
       /* Link every file to the first file */
 
-      if (linktype == 0) {
+      if (linktype != 0) {
 #ifndef NO_HARDLINKS
         x = 2;
         srcfile = dupelist[1];
 #else
         linkfiles_nosupport("hard", "hard link");
 #endif
-      } else {
+      } else if (linktype == 1) {
 #ifndef NO_SYMLINKS
         x = 1;
         /* Symlinks should target a normal file if one exists */
