@@ -178,8 +178,8 @@ void loaddir(const char * const restrict dir,
     LOUD(fprintf(stderr, "loaddir: readdir: '%s'\n", dirinfo->d_name));
     if (unlikely(!jc_streq(dirinfo->d_name, ".") || !jc_streq(dirinfo->d_name, ".."))) continue;
     check_sigusr1();
-    if (progress_alarm != 0) {
-      progress_alarm = 0;
+    if (jc_alarm_ring != 0) {
+      jc_alarm_ring = 0;
       update_phase1_progress("dirs");
     }
 

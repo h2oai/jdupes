@@ -120,7 +120,6 @@ static const char *program_name;
 
 /* Required for progress indicator code */
 uintmax_t filecount = 0, progress = 0, item_progress = 0, dupecount = 0;
-int progress_alarm = 0;
 
 /* Performance and behavioral statistics (debug mode) */
 #ifdef DEBUG
@@ -388,8 +387,8 @@ static inline int confirmmatch(FILE * const restrict file1, FILE * const restric
     if (memcmp (c1, c2, r1)) return 0; /* file contents are different */
 
     bytes += (off_t)r1;
-    if (progress_alarm != 0) {
-      progress_alarm = 0;
+    if (jc_alarm_ring != 0) {
+      jc_alarm_ring = 0;
       update_phase2_progress("confirm", (int)((bytes * 100) / size));
     }
   } while (r2);
@@ -945,9 +944,9 @@ skip_partialonly_noise:
 
   /* Progress indicator every second */
   if (!ISFLAG(flags, F_HIDEPROGRESS)) {
-    start_progress_alarm();
+    jc_start_alarm(1, 1);
     /* Force an immediate progress update */
-    progress_alarm = 1;
+    jc_alarm_ring = 1;
   }
 
   if (ISFLAG(flags, F_RECURSEAFTER)) {
@@ -1017,7 +1016,7 @@ skip_partialonly_noise:
   progress = 0;
 
   /* Force an immediate progress update */
-  if (!ISFLAG(flags, F_HIDEPROGRESS)) progress_alarm = 1;
+  if (!ISFLAG(flags, F_HIDEPROGRESS)) jc_alarm_ring = 1;
 
   while (curfile) {
     static file_t **match = NULL;
@@ -1099,8 +1098,8 @@ skip_full_check:
     curfile = curfile->next;
 
     check_sigusr1();
-    if (progress_alarm != 0) {
-      progress_alarm = 0;
+    if (jc_alarm_ring != 0) {
+      jc_alarm_ring = 0;
       update_phase2_progress(NULL, -1);
     }
     progress++;
@@ -1111,7 +1110,7 @@ skip_full_check:
 skip_file_scan:
   /* Stop catching CTRL+C and firing alarms */
   signal(SIGINT, SIG_DFL);
-  if (!ISFLAG(flags, F_HIDEPROGRESS)) stop_progress_alarm();
+  if (!ISFLAG(flags, F_HIDEPROGRESS)) jc_stop_alarm();
 #ifndef NO_DELETE
   if (ISFLAG(a_flags, FA_DELETEFILES)) {
     if (ISFLAG(flags, F_NOPROMPT)) deletefiles(files, 0, 0);

@@ -16,8 +16,8 @@
 
 #include <libjodycode.h>
 
-#include "interrupt.h"
 #include "likely_unlikely.h"
+#include "interrupt.h"
 #include "progress.h"
 #include "jdupes.h"
 
@@ -124,8 +124,8 @@ jdupes_hash_t *get_filehash(const file_t * const restrict checkfile, const size_
     else fsize -= (off_t)bytes_to_read;
 
     check_sigusr1();
-    if (progress_alarm != 0) {
-      progress_alarm = 0;
+    if (jc_alarm_ring != 0) {
+      jc_alarm_ring = 0;
       update_phase2_progress("hashing", (int)(((checkfile->size - fsize) * 100) / checkfile->size));
     }
     continue;
