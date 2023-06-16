@@ -109,7 +109,7 @@ void linkfiles(file_t *files, const int linktype, const int only_current)
 #else
         linkfiles_nosupport("hard", "hard link");
 #endif
-      } else if (linktype == 1) {
+      } else {
 #ifndef NO_SYMLINKS
         x = 1;
         /* Symlinks should target a normal file if one exists */
