@@ -11,6 +11,7 @@ extern "C" {
 extern const int jc_build_api_major;
 extern const int jc_build_api_minor;
 extern const char *jc_build_version;
+extern const char *jc_build_featurelevel;
 extern const unsigned char jc_build_api_versiontable[];
 
 extern int libjodycode_version_check(int verbose, int bail);
