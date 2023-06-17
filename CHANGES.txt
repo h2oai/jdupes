@@ -1,9 +1,9 @@
-jdupes 1.25.0
+jdupes 1.25.0 (2023-06-16)
 
 - Major bug in 1.24.0 affecting all types of linking has been fixed
 - Update interfaces to libjodycode 3 API
 
-jdupes 1.24.0
+jdupes 1.24.0 (2023-06-11)
 
 - Progress indication now uses platform timers instead of check loops
 - Lots of small code size and efficiency improvements
@@ -13,7 +13,7 @@ jdupes 1.24.0
 - Improved version information display
 - Documentation updates
 
-jdupes 1.23.0
+jdupes 1.23.0 (2023-05-08)
 
 - Use the new libjodycode 2.0 API version handling system
 - Dedupe is now attempted on read-only files (meant for BTRFS snapshots)
@@ -23,7 +23,7 @@ jdupes 1.23.0
 - Linux-x86_64 can now build several multilib arches (x86_64, x32, i386)
 - Various other under-the-hood code changes for libjodycode 2.0
 
-jdupes 1.22.0
+jdupes 1.22.0 (2023-04-09)
 
 - libjodycode is now required to build and run jdupes (see INSTALL)
 - Move all jody_* code to libjodycode and remove from jdupes
@@ -31,12 +31,12 @@ jdupes 1.22.0
 - Support showing x32 ABI in version information
 - Several build system improvements for macOS, BSD, and linking in libxxhash
 
-jdupes 1.21.3
+jdupes 1.21.3 (2023-02-09)
 
 - Fix exit behavior when no valid directories are given
 - Only act on "normal" files and directories
 
-jdupes 1.21.2
+jdupes 1.21.2 (2023-02-06)
 
 - Work around macOS data corruption (clonefile may wreck compressed files)
 - Major performance fix in the double traversal prevention tree code
@@ -48,7 +48,7 @@ jdupes 1.21.2
 - Many options/features/safety checks can now be selectively compiled out
 - New 'make BARE_BONES=1' option builds the most minimal jdupes possible
 
-jdupes 1.21.1
+jdupes 1.21.1 (2022-12-01)
 
 - Reinstate '-I/--isolate' by popular demand; use at your own risk!
 
