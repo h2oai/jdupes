@@ -34,11 +34,43 @@
 #endif /* ENABLE_DEDUPE */
 
 
+#ifdef ENABLE_CLONEFILE_LINK
+static void clonefile_error(const char * const restrict func, const char * const restrict name)
+{
+  fprintf(stderr, "warning: %s failed for destination file, reverting:\n-##-> ", func);
+  jc_fwprint(stderr,name, 1);
+  return;
+}
+#endif /* ENABLE_CLONEFILE_LINK */
+
+
+/* Only build this function if some functionality does not exist */
+#if defined NO_SYMLINKS || defined NO_HARDLINKS || !defined ENABLE_CLONEFILE_LINK
 static void linkfiles_nosupport(const char * const restrict call, const char * const restrict type)
 {
   fprintf(stderr, "internal error: linkfiles(%s) called without %s support\nPlease report this to the author as a program bug\n", call, type);
   exit(EXIT_FAILURE);
 }
+#endif /* anything unsupported */
+
+
+#ifdef ON_WINDOWS
+static void mb2wc_failed(const char * const restrict name)
+{
+  fprintf(stderr, "error: MultiByteToWideChar failed: ");
+  jc_fwprint(stderr, name, 1);
+}
+#endif /* ON_WINDOWS */
+
+
+static void revert_failed(const char * const restrict orig, const char * const restrict current)
+{
+  fprintf(stderr, "\nwarning: couldn't revert the file to its original name\n");
+  fprintf(stderr, "original: "); jc_fwprint(stderr, orig, 1);
+  fprintf(stderr, "current:  "); jc_fwprint(stderr, current, 1);
+  return;
+}
+
 
 /* linktype: 0=symlink, 1=hardlink, 2=clonefile() */
 void linkfiles(file_t *files, const int linktype, const int only_current)
@@ -175,7 +207,7 @@ void linkfiles(file_t *files, const int linktype, const int only_current)
         }
 #ifdef UNICODE
         if (!M2W(dupelist[x]->d_name, wname)) {
-          fprintf(stderr, "error: MultiByteToWideChar failed: "); jc_fwprint(stderr, dupelist[x]->d_name, 1);
+          mb2wc_failed(dupelist[x]->d_name);
           continue;
         }
 #endif /* UNICODE */
@@ -256,7 +288,7 @@ void linkfiles(file_t *files, const int linktype, const int only_current)
         /* Rename the destination file to the temporary name */
 #ifdef UNICODE
         if (!M2W(tempname, wname2)) {
-          fprintf(stderr, "error: MultiByteToWideChar failed: "); jc_fwprint(stderr, srcfile->d_name, 1);
+          mb2wc_failed(srcfile->d_name);
           continue;
         }
         i = MoveFileW(wname, wname2) ? 0 : 1;
@@ -281,7 +313,7 @@ void linkfiles(file_t *files, const int linktype, const int only_current)
 #ifdef ON_WINDOWS
  #ifdef UNICODE
         if (!M2W(srcfile->d_name, wname2)) {
-          fprintf(stderr, "error: MultiByteToWideChar failed: "); jc_fwprint(stderr, srcfile->d_name, 1);
+          mb2wc_failed(srcfile->d_name);
           continue;
         }
         if (CreateHardLinkW((LPCWSTR)wname, (LPCWSTR)wname2, NULL) == TRUE) success = 1;
@@ -303,22 +335,10 @@ void linkfiles(file_t *files, const int linktype, const int only_current)
                 /* chflags overrides the timestamps that were restored by copyfile, so we need to reapply those as well */
                 if (utimes(dupelist[x]->d_name, dupfile_original_tval) == 0) {
                   success = 1;
-                } else {
-                  fprintf(stderr, "warning: utimes() failed for destination file, reverting:\n-##-> ");
-                  jc_fwprint(stderr, dupelist[x]->d_name, 1);
-                }
-              } else {
-                fprintf(stderr, "warning: chflags() failed for destination file, reverting:\n-##-> ");
-                jc_fwprint(stderr, dupelist[x]->d_name, 1);
-              }
-            } else {
-              fprintf(stderr, "warning: copyfile() failed for destination file, reverting:\n-##-> ");
-              jc_fwprint(stderr, dupelist[x]->d_name, 1);
-            }
-          } else {
-            fprintf(stderr, "warning: clonefile() failed for destination file, reverting:\n-##-> ");
-            jc_fwprint(stderr, dupelist[x]->d_name, 1);
-          }
+                } else clonefile_error("utimes", dupelist[x]->d_name);
+              } else clonefile_error("chflags", dupelist[x]->d_name);
+            } else clonefile_error("copyfile", dupelist[x]->d_name);
+          } else clonefile_error("clonefile", dupelist[x]->d_name);
  #endif /* ENABLE_CLONEFILE_LINK */
         }
  #ifndef NO_SYMLINKS
@@ -361,25 +381,21 @@ void linkfiles(file_t *files, const int linktype, const int only_current)
           fprintf(stderr, "': %s\n", strerror(errno));
 #ifdef UNICODE
           if (!M2W(tempname, wname2)) {
-            fprintf(stderr, "error: MultiByteToWideChar failed: "); jc_fwprint(stderr, tempname, 1);
+            mb2wc_failed(srcfile->tempname);
             continue;
           }
           i = MoveFileW(wname2, wname) ? 0 : 1;
 #else
           i = rename(tempname, dupelist[x]->d_name);
 #endif /* UNICODE */
-          if (i != 0) {
-            fprintf(stderr, "error: cannot rename temp file back to original\n");
-            fprintf(stderr, "original: "); jc_fwprint(stderr, dupelist[x]->d_name, 1);
-            fprintf(stderr, "current:  "); jc_fwprint(stderr, tempname, 1);
-          }
+          if (i != 0) revert_failed(dupelist[x]->d_name, tempname);
           continue;
         }
 
         /* Remove temporary file to clean up; if we can't, reverse the linking */
 #ifdef UNICODE
           if (!M2W(tempname, wname2)) {
-            fprintf(stderr, "error: MultiByteToWideChar failed: "); jc_fwprint(stderr, tempname, 1);
+            mb2wc_failed(srcfile->tempname);
             continue;
           }
         i = DeleteFileW(wname2) ? 0 : 1;
@@ -404,11 +420,7 @@ void linkfiles(file_t *files, const int linktype, const int only_current)
 #else
             i = rename(tempname, dupelist[x]->d_name);
 #endif
-            if (i != 0) {
-              fprintf(stderr, "\nwarning: couldn't revert the file to its original name\n");
-              fprintf(stderr, "original: "); jc_fwprint(stderr, dupelist[x]->d_name, 1);
-              fprintf(stderr, "current:  "); jc_fwprint(stderr, tempname, 1);
-            }
+            if (i != 0) revert_failed(dupelist[x]->d_name, tempname);
           }
         }
       }
