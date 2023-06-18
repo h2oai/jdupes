@@ -381,7 +381,7 @@ void linkfiles(file_t *files, const int linktype, const int only_current)
           fprintf(stderr, "': %s\n", strerror(errno));
 #ifdef UNICODE
           if (!M2W(tempname, wname2)) {
-            mb2wc_failed(srcfile->tempname);
+            mb2wc_failed(tempname);
             continue;
           }
           i = MoveFileW(wname2, wname) ? 0 : 1;
@@ -395,7 +395,7 @@ void linkfiles(file_t *files, const int linktype, const int only_current)
         /* Remove temporary file to clean up; if we can't, reverse the linking */
 #ifdef UNICODE
           if (!M2W(tempname, wname2)) {
-            mb2wc_failed(srcfile->tempname);
+            mb2wc_failed(tempname);
             continue;
           }
         i = DeleteFileW(wname2) ? 0 : 1;
