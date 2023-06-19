@@ -5,24 +5,24 @@
 
 ERR=0
 
-# Detect installed program type (fdupes or jdupes)
-if [ -z "$ORIG_DUPE" ]
-	then ORIG_DUPE=false
-	jdupes -v 2>/dev/null >/dev/null && ORIG_DUPE=jdupes
-	fdupes -v 2>/dev/null >/dev/null && ORIG_DUPE=fdupes
-	test ! -z "$WINDIR" && "$WINDIR/jdupes.exe" -v 2>/dev/null >/dev/null && ORIG_DUPE="$WINDIR/jdupes.exe"
+# Detect installed jdupes
+if [ -z "$ORIG_JDUPES" ]
+	then
+	jdupes -v 2>/dev/null >/dev/null && ORIG_JDUPES=jdupes
+	test ! -z "$WINDIR" && "$WINDIR/jdupes.exe" -v 2>/dev/null >/dev/null && ORIG_JDUPES="$WINDIR/jdupes.exe"
 fi
 
-if [ ! $ORIG_DUPE -v 2>/dev/null >/dev/null ]
-	then echo "Cannot run installed jdupes or fdupes"
+if [ ! $ORIG_JDUPES -v 2>/dev/null >/dev/null ]
+	then echo "Can't run installed jdupes"
+	echo "To manually specify an original jdupes, use: ORIG_JDUPES=path/to/jdupes $0"
 	exit 1
 fi
 
 test ! -e ./jdupes && echo "Build jdupes first, silly" && exit 1
 
-echo -n "Installed $ORIG_DUPE:"
+echo -n "Installed $ORIG_JDUPES:"
 sync
-time $ORIG_DUPE -q "$@" > installed_output.txt || ERR=1
+time $ORIG_JDUPES -q "$@" > installed_output.txt || ERR=1
 echo -en "\nBuilt jdupes:"
 sync
 time ./jdupes -q "$@" > built_output.txt || ERR=1
