@@ -36,6 +36,7 @@ jdupes_hash_t *get_filehash(const file_t * const restrict checkfile, const size_
   static jdupes_hash_t hash[1];
   static jdupes_hash_t *chunk = NULL;
   FILE *file;
+  int hashing = 0;
 #ifndef USE_JODY_HASH
   XXH64_state_t *xxhstate;
 #else
@@ -126,7 +127,13 @@ jdupes_hash_t *get_filehash(const file_t * const restrict checkfile, const size_
     check_sigusr1();
     if (jc_alarm_ring != 0) {
       jc_alarm_ring = 0;
-      update_phase2_progress("hashing", (int)(((checkfile->size - fsize) * 100) / checkfile->size));
+      /* Only show "hashing" part if hashing one file updates progress at least twice */
+      if (hashing == 1) {
+        update_phase2_progress("hashing", (int)(((checkfile->size - fsize) * 100) / checkfile->size));
+      } else {
+        update_phase2_progress(NULL, -1);
+        hashing = 1;
+      }
     }
     continue;
 error_reading_file:
