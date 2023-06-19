@@ -1,3 +1,9 @@
+jdupes 1.25.1 (2023-06-19)
+
+- Fix -D on non-debug builds which was falling through to set -E
+- Debugging now dumps a list of internal option flags
+- Fixed progress indicator: "hashing: xyz%" only shows if "stuck" on one file
+
 jdupes 1.25.0 (2023-06-16)
 
 - Major bug in 1.24.0 affecting all types of linking has been fixed
@@ -52,7 +58,7 @@ jdupes 1.21.1 (2022-12-01)
 
 - Reinstate '-I/--isolate' by popular demand; use at your own risk!
 
-jdupes 1.21.0
+jdupes 1.21.0 (2022-09-03)
 
 - Remove '-I/--isolate' which has never worked correctly
 - Fix compiling when NO_HARDLINKS and NO_SYMLINKS are both defined
@@ -61,35 +67,35 @@ jdupes 1.21.0
 - Remove the temporary '-X help' warning about changes in functionality
 - Some minor under-the-hood changes for future enhancements
 
-jdupes 1.20.2
+jdupes 1.20.2 (2021-11-02)
 
 - Interactive deletion now offers "link set" options too
 
-jdupes 1.20.1
+jdupes 1.20.1 (2021-10-21)
 
 - Interactive deletion now assumes 'a' when you just hit [ENTER]
 
-jdupes 1.20.0
+jdupes 1.20.0 (2021-05-12)
 
 - Normalize long option hyphenation (CHECK YOUR SHELL SCRIPTS)
 - Remove long-deprecated -n/--noempty option (CHECK YOUR SHELL SCRIPTS)
 - Fix printout for -P/--partial when progress indicator is active
 - Miscellaneous documentation cleanups/updates
 
-jdupes 1.19.2
+jdupes 1.19.2 (2021-03-24)
 
 - SIGUSR1 to toggle -Z now shows an indication of the -Z status change
 - Fix for error in JSON handling of extended ASCII range (0x80-0xff)
 - Fix sort when zeroes in names aren't followed by a non-zero digit
 - Mac builds now output i386+x86_64 fat binaries (if possible)
 
-jdupes 1.19.1
+jdupes 1.19.1 (2020-11-28)
 
 - Fix missing space in ----> hard link indicator
 - Fix -P/--print and -p/--permissions options
 - Remove temporary warning when using -X
 
-jdupes 1.19.0
+jdupes 1.19.0 (2020-10-11)
 
 - Make -X size[+-=] an inclusion filter instead (CHECK YOUR SHELL SCRIPTS)
 - Fix -X noext/onlyext extension matching bugs
@@ -103,25 +109,25 @@ jdupes 1.19.0
 - jdupes-standalone has been removed due to falling too far out of sync
 - Embedded build date option has been removed
 
-jdupes 1.18.2
+jdupes 1.18.2 (2020-07-20)
 
 - Add -U/--notravcheck to skip double-traversal safety (for Google Drive FS)
 - Unified all simple packaging options under a single 'make package' call
 - Reduce code size on macOS by dropping some Linux-specific code
 
-jdupes 1.18.1
+jdupes 1.18.1 (2020-07-08)
 
 - Fix -X newer/older on Windows by writing a local strptime() substitute
 
-jdupes 1.18.0
+jdupes 1.18.0 (2020-07-08)
 
 - Add -X newer/older extfilters to reject files by modification date
 
-jdupes 1.17.1
+jdupes 1.17.1 (2020-07-02)
 
 - Add basic APFS clonefile() support to -B dedupe
 
-jdupes 1.17.0
+jdupes 1.17.0 (2020-06-24)
 
 - Rewrite dedupe code from scratch, probably fixing all dedupe bugs
 - extfilter: add substring match filter for file paths
@@ -130,18 +136,18 @@ jdupes 1.17.0
 - Build warnings fixed; report any you get (except ENABLE_DEDUPE=1 #warning)
 - New build targets static and static_stripped (for static binary builds)
 
-jdupes 1.16.0
+jdupes 1.16.0 (2020-06-06)
 
 - Add -X noext/onlyext filters to exclude/require specific file extension(s)
 - Added in-depth help text for -X/--extfilter (use -X help to view)
 - Clarify hard link limit behavior on Windows in program help text
 - This version still has BTRFS dedupe issues and file add-by-name disabled
 
-jdupes 1.15.0
+jdupes 1.15.0 (2020-05-15)
 
 - Disable single file addition on the command line for safety
 
-jdupes 1.14.1
+jdupes 1.14.1 (2020-05-15)
 
 - Fix some compilation issues
 - Add example shell scripts for processing piped jdupes output
@@ -149,13 +155,13 @@ jdupes 1.14.1
 - Fix some swapped/mangled help text in program and documentation
 - LOW_MEMORY compiles exclude more stuff to further reduce usage
 
-jdupes 1.14.0
+jdupes 1.14.0 (2019-12-29)
 
 - Long option --exclude is deprecated and renamed --extfilter
 - BTRFS compile options have been generalized to dedupe (see README)
 - Fix a bug in 1.13.3 where many options caused an inappropriate exit
 
-jdupes 1.13.3
+jdupes 1.13.3 (2019-12-22)
 
 - Fix the behavior of the -I/--isolate option
 - Move BTRFS-specific dedupe interfaces to general Linux 4.5+ interfaces
@@ -165,42 +171,42 @@ jdupes 1.13.3
 - Add EXE version info for generated Windows executables
 - Correct several copyright dates and comments
 
-jdupes 1.13.2
+jdupes 1.13.2 (2019-08-01)
 
 - Fix Unicode and escaped in JSON output
 
-jdupes 1.13.1
+jdupes 1.13.1 (2019-06-10)
 
 - Fix an incorrect NULL pointer check
 
-jdupes 1.13
+jdupes 1.13 (2019-06-04)
 
 - Add new option -j/--json for JSON (machine-readable) output
 - /usr/local is now the default PREFIX in Makefile
 - Minor performance optimizations
 - A few minor bug fixes
 
-jdupes 1.12
+jdupes 1.12 (2019-02-18)
 
 - Small reductions in memory usage
 - Add "standalone" jdupes C file which has no external requirements
 - Add ability to toggle -Z with a USR1 signal (not available on Windows)
 - Add -t/-no-tocttou option to disable file change safety checks
 
-jdupes 1.11.1
+jdupes 1.11.1 (2018-11-09)
 
 - Disable build date embedding by default to make reproducible builds easier
 
-jdupes 1.11
+jdupes 1.11 (2018-11-03)
 
 - Add new option -T for partial hash matches only (dangerous!)
 - Fix '-P partial' printing
 
-jdupes 1.10.4
+jdupes 1.10.4 (2018-09-09)
 
 - Fix a bug that caused -x/--xsize to fail randomly
 
-jdupes 1.10.3
+jdupes 1.10.3 (2018-09-02)
 
 - Add -M/--printwithsummary option
 - Add -0/--printnull option
@@ -208,15 +214,15 @@ jdupes 1.10.3
 - Do not output progress indicators if output is not a TTY
 - Remove an old undocumented long option '--summary'
 
-jdupes 1.10.2
+jdupes 1.10.2 (2018-05-24)
 
 - Add -P/--print option
 
-jdupes 1.10.1
+jdupes 1.10.1 (2018-04-24)
 
 - Fix -I option
 
-jdupes 1.10
+jdupes 1.10 (2018-04-22)
 
 - cacheinfo code not included on Windows where it is not used
 - Fix -H to work properly on individual files (not just directories)
@@ -228,7 +234,7 @@ jdupes 1.10
 - Remove HAVE_BTRFS_IOCTL_H deprecated compile-time option
 - Remove experimental tree rebalance code
 
-jdupes 1.9
+jdupes 1.9 (2017-12-04)
 
 - stderr on Windows is no longer polluted or empty when redirected
 - Added -1/--one-file-system to restrict recursion to the same filesystem
@@ -241,7 +247,7 @@ jdupes 1.9
 - Provide "fdupes_oneline.sh" which emulates old "fdupes -1" feature
 - Single file names passed as arguments are now accepted and processed
 
-jdupes 1.8
+jdupes 1.8 (2017-01-31)
 
 - All files are now licensed under The MIT License exclusively
 - Fixed a serious memory alloc bug; upgrading is *strongly* recommended
@@ -250,9 +256,9 @@ jdupes 1.8
 - Fixes for several potential crashes and buffer overflows
 - Indicate no duplicates were found if printing matches and none exist
 - On Linux, jdupes now auto-tunes I/O size based on CPU L1 D-cache size
-- The -v switch now also shows info about bitness in the version string
+- The -v option now also shows info about bitness in the version string
 
-jdupes 1.7
+jdupes 1.7 (2016-12-28)
 
 - Incompatible change: zero-length files no longer duplicates by default
 - New -z/--zeromatch option to consider zero-length files as duplicates
@@ -260,20 +266,20 @@ jdupes 1.7
 - The PROGRAM_NAME variable is now used properly during make
 - Program was re-organized into several split C files
 
-jdupes 1.6.2
+jdupes 1.6.2 (2016-12-03)
 
 - Fix: version number shown in jdupes -v wasn't updated in 1.6.1
 - Prevent BTRFS dedupe of more files than the kernel can handle
 - Track directories to avoid scanning the same directory twice
 
-jdupes 1.6.1
+jdupes 1.6.1 (2016-12-02)
 
 - Show backslash instead of forward slash as path separator on Windows
 - Make BTRFS dedupe error messages more informative and less confusing
 - Minor code tweaks, typo and help text fixes
 - Split some functions into separate files (jdupes.c was getting large)
 
-jdupes 1.6
+jdupes 1.6 (2016-11-27)
 
 - Add the -l/--linksoft option to create symbolic links from duplicates
 - Disable following symlinks to directories when -s/--symlinks is used
@@ -281,7 +287,7 @@ jdupes 1.6
 - Add configurable path buffer sizes and path buffer overflow checks
 - Fixes for some build warnings seen on ARM and MIPS
 
-jdupes 1.5.1
+jdupes 1.5.1 (2016-11-01)
 
 - Significant reduction in memory usage (with a bonus tiny speed boost)
 - Improvements in string_malloc memory allocator code
@@ -289,14 +295,14 @@ jdupes 1.5.1
 - Major BTRFS dedupe compilation and functionality fixes
 - LOW_MEMORY compile option added for more size/speed tradeoff control
 
-jdupes 1.5
+jdupes 1.5 (2016-09-26)
 
+- Fix partial hash optimization and re-enable for better performance
 - Invert -Z option: only "soft abort" if asked explicitly to do so
 - Tweak internal data chunk size to reduce data cache misses
-- Fix partial hash optimization
 - Change PREFIX for building from /usr/local back to /usr
 
-jdupes 1.4
+jdupes 1.4 (2016-08-22)
 
 - Add support for Unicode file paths on Windows platforms
 - Discard floating point code of dubious value
@@ -305,18 +311,21 @@ jdupes 1.4
 - Add -Z/--hardabort option to disable the new CTRL+C behavior
 - Add [n]one option to -d/--delete to discard all files in a match set
 - Minor bug fixes and tweaks to improve behavior
+- Partial hash optimization still broken and disabled
 
-jdupes 1.3
+jdupes 1.3 (2016-08-04)
 
 - Add -i/--reverse to invert the match sort order
 - Add -I/--isolate to force cross-parameter matching
-- Add "loud" debugging messages (-@ switch, build with 'make LOUD=1')
+- Add "loud" debugging messages (-@ option, build with 'make LOUD=1')
+- Improved debugging statistics
+- Partial hash optimization still broken and disabled
 
-jdupes 1.2.1
+jdupes 1.2.1 (2016-04-04)
 
-- Fix a serious bug that caused some duplicates to be missed
+- Disable partial hash optimization; it's broken and misses some duplicates
 
-jdupes 1.2
+jdupes 1.2 (2016-03-19)
 
 - Change I/O block size for improved performance
 - Improved progress indicator behavior with large files; now the progress
@@ -324,11 +333,11 @@ jdupes 1.2
 - Windows read speed boost with _O_SEQUENTIAL file flag
 - Experimental tree rebalance code tuning
 
-jdupes 1.1.1
+jdupes 1.1.1 (2016-03-0)
 
-- Fix a bug where the -r switch was always on even if not specified
+- Fix a bug where recursion was always enabled even if not specified 
 
-jdupes 1.1
+jdupes 1.1 (2016-03-07)
 
 - Work around the 1023-link limit for Windows hard linking so that linking
   can continue even when the limit is reached
@@ -342,22 +351,108 @@ jdupes 1.1
 - Fixed a bug where an extra newline was at the end of printed matches
 - Reduced progress delay interval; it was a bit slow on many large files
 
-jdupes 1.0.2
+jdupes 1.0.2 (2016-02-26)
 
 - Update jody_hash code to latest version
 - Change string_malloc to enable future string_free() improvements
 - Add string_malloc counters for debug stat mode
-- Add '+size' option to -x/--xsize switch to exclude files larger than the
+- Add '+size' option to -x/--xsize option to exclude files larger than the
   specified size instead of smaller than that size
 
-jdupes 1.0.1
+jdupes 1.0.1 (2016-01-14)
 
 - Fix bug in deletion set counter that would show e.g. "Set 1 of 0"
 - Minor size reductions by merging repeated fixed strings
 - Add feature flag 'fastmath' to show when compiled with -ffast-math
 - Corrections to code driven by -Wconversion and -Wwrite-strings
 
+jdupes 1.0 (2015-12-23)
 
-jdupes 1.0
+- Renamed program to "jdupes" to fully differentiate the fork from fdupes
+- Version text now lists build-time "feature flags" (useful for scripting)
 
-First release. For changes before the 'jdupes' name change, see OLD_CHANGES
+fdupes-jody-2.2 (2015-12-22)
+
+- Change all "fdupes" references to "fdupes-jody" and change contact info
+- Add block-level dedupe (-B) written by Sebastian Schmidt <yath@yath.de>
+- Remove and replace some string function calls
+
+fdupes-jody-2.1 (2015-12-09)
+
+- Minor performance improvements to hashing and memory allocation code
+- Added an experimental tree rebalancing function (-DUSE_TREE_REBALANCE)
+- Increased string_malloc pages from 64K to 256K for better performance
+- Made variable scope and type changes for a tiny performance boost
+
+fdupes-jody-2.0.2 (2015-12-01)
+
+- Removed redundant getfilestats() calls for a tiny speed boost
+- Added -D/--debug to show statistic counters; build with 'make DEBUG=1'
+
+fdupes-jody-2.0.1 (2015-10-04)
+
+- A serious hard link match performance bug was fixed
+- Some minor efficiency improvements
+
+fdupes-jody-2.0 (2015-08-26)
+
+- Increased "chunk size" for better performance and "thrashing"
+- When using -H, hard linked files match each other without any file reads
+- Use Jody Bruchon's string_alloc memory allocator instead of malloc/calloc
+- Progress indicator now shows the number of duplicate pairs found
+- Progress is updated more rapidly when full file comparisons happen
+- Floating point code was made optional and is removed by default
+- Comparison script added to check built program against installed version
+- Added secret -Q/--quick option which is faster but can be dangerous
+- Added -O/--paramorder option to sort by command line parameter order
+- The file list loading progress indicator was reworked
+- Support added for working on more than 2 million files at once
+- Hard linking is much safer and can roll back changes on failures
+- Hard links on Windows (on supporting filesystems) are now supported
+- Hashing code was optimized for an 8.4% improvement in benchmarks
+- Hard linking checks for more error states and final output is much clearer
+
+fdupes-jody-1.51-jody5 (2015-05-31)
+
+- Lower memory usage while slightly boosting performance
+- Change --order=name to an intelligent numerically correct sort
+- Fixed progress text not showing until the first progress update
+- Performance boost for small files (under 4 KiB)
+- Test files added for numerically correct sort ordering
+- Added `--xsize=SIZE' option: exclude files of size < SIZE
+- Updated Makefile: `PREFIX = /usr/local'
+- Updated README: Usage to reflect curent parameters
+
+fdupes-jody-1.51-jody4 (2015-03-27)
+
+- Better progress indicator delay amount
+- Updated jody_hash algorithm with much lower collision rate
+
+fdupes-jody-1.51-jody3 (2015-03-09)
+
+- Remove unnecessary MD5 support code
+- Improve progess indicator for large files
+- Remove freopen() which prevents porting to Mac OS and Windows
+- Add support for hard linking duplicates (-L option)
+- Fix -A option
+- Many minor bug fixes
+
+fdupes-jody-1.51-jody2 (2015-01-16)
+
+- Switched to C99
+- Replaced MD5 with Jody Bruchon's hash function
+- Added a delay to progress indications for better performance
+- Removed lots of unused code
+- Ported fdupes to Microsoft Windows (with MinGW)
+
+fdupes-jody-1.51-jody1 (2015-01-08)
+
+- Switch MD5 hash function to jody_hash for about 17% higher performance
+- Add a progress counter delay for approximate 2x speed boost over SSH
+- Switch code base to use C99 standard
+- Lots of code cleanups and minor improvements
+
+fdupes-1.51 (master @ commit 5d9143b)
+
+- Version of fdupes (with some changes included) forked by Jody Bruchon
+- Jody Bruchon's changes start after fdupes master @ commit 5d9143b
