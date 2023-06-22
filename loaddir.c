@@ -283,9 +283,11 @@ skip_single:
 
 error_stat_dir:
   fprintf(stderr, "\ncould not stat dir "); jc_fwprint(stderr, dir, 1);
+  exit_status = EXIT_FAILURE;
   return;
 error_cd:
   fprintf(stderr, "\ncould not chdir to "); jc_fwprint(stderr, dir, 1);
+  exit_status = EXIT_FAILURE;
   return;
 error_overflow:
   fprintf(stderr, "\nerror: a path buffer overflowed\n");

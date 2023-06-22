@@ -152,6 +152,9 @@ char tempname[PATHBUF_SIZE * 2];
 const char *s_interrupt = "\nStopping file scan due to user abort\n";
 const char *s_no_dupes = "No duplicates found.\n";
 
+/* Exit status; use exit() codes for setting this */
+int exit_status = EXIT_SUCCESS;
+
 /***** End definitions, begin code *****/
 
 /***** Add new functions here *****/
@@ -1173,6 +1176,12 @@ skip_file_scan:
   /* Stop catching CTRL+C and firing alarms */
   signal(SIGINT, SIG_DFL);
   if (!ISFLAG(flags, F_HIDEPROGRESS)) jc_stop_alarm();
+
+  if (files == NULL) {
+    printf("%s", s_no_dupes);
+    exit(exit_status);
+  }
+
 #ifndef NO_DELETE
   if (ISFLAG(a_flags, FA_DELETEFILES)) {
     if (ISFLAG(flags, F_NOPROMPT)) deletefiles(files, 0, 0);
@@ -1227,7 +1236,7 @@ skip_all_scan_code:
   }
 #endif /* DEBUG */
 
-  exit(EXIT_SUCCESS);
+  exit(exit_status);
 
 error_optarg:
   fprintf(stderr, "error: option '%c' requires an argument\n", opt);

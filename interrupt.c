@@ -22,6 +22,7 @@ void catch_interrupt(const int signum)
 {
   (void)signum;
   interrupt = 1;
+  exit_status = EXIT_FAILURE;
   return;
 }
 

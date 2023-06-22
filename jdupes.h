@@ -277,6 +277,7 @@ extern int sort_direction;
 extern char tempname[];
 extern const char *feature_flags[];
 extern const char *s_no_dupes;
+extern int exit_status;
 
 int file_has_changed(file_t * const restrict file);
 unsigned int get_max_dupes(const file_t *files, unsigned int * const restrict max, unsigned int * const restrict n_files);

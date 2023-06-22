@@ -57,10 +57,6 @@ void dedupefiles(file_t * restrict files)
   uint64_t total_files = 0;
 
   LOUD(fprintf(stderr, "\ndedupefiles: %p\n", files);)
-  if (!files) {
-    printf("%s", s_no_dupes);
-    exit(EXIT_SUCCESS);
-  }
 
   fdr = (struct file_dedupe_range *)calloc(1,
         sizeof(struct file_dedupe_range)
@@ -78,6 +74,7 @@ void dedupefiles(file_t * restrict files)
     /* If an open fails, keep going down the dupe list until it is exhausted */
     while (src_fd == -1 && curfile2->duplicates && curfile2->duplicates->duplicates) {
       fprintf(stderr, "dedupe: open failed (skipping): %s\n", curfile2->d_name);
+      exit_status = EXIT_FAILURE;
       curfile2 = curfile2->duplicates;
       src_fd = open(curfile2->d_name, O_RDONLY);
     }
@@ -99,6 +96,7 @@ void dedupefiles(file_t * restrict files)
       fdri->dest_fd = open(dupefile->d_name, O_RDONLY);
       if (fdri->dest_fd == -1) {
         fprintf(stderr, "dedupe: open failed (skipping): %s\n", dupefile->d_name);
+        exit_status = EXIT_FAILURE;
         continue;
       }
 
@@ -121,10 +119,16 @@ void dedupefiles(file_t * restrict files)
       if (err != FILE_DEDUPE_RANGE_SAME || errno != 0) {
         printf("  -XX-> %s\n", dupefile->d_name);
         fprintf(stderr, "error: ");
-        if (err == FILE_DEDUPE_RANGE_DIFFERS)
+        if (err == FILE_DEDUPE_RANGE_DIFFERS) {
           fprintf(stderr, "not identical (files modified between scan and dedupe?)\n");
-        else if (err != 0) fprintf(stderr, "%s (%d)\n", strerror(-err), err);
-	else if (errno != 0) fprintf(stderr, "%s (%d)\n", strerror(errno), errno);
+          exit_status = EXIT_FAILURE;
+        } else if (err != 0) {
+          fprintf(stderr, "%s (%d)\n", strerror(-err), err);
+          exit_status = EXIT_FAILURE;
+        } else if (errno != 0) {
+          fprintf(stderr, "%s (%d)\n", strerror(errno), errno);
+          exit_status = EXIT_FAILURE;
+        }
       } else {
         /* Dedupe OK; report to the user and add to file count */
         printf("  ====> %s\n", dupefile->d_name);

@@ -15,7 +15,7 @@
 #include "act_linkfiles.h"
 
 /* For interactive deletion input */
-#define INPUT_SIZE 512
+#define INPUT_SIZE 1024
 
 void deletefiles(file_t *files, int prompt, FILE *tty)
 {
@@ -95,7 +95,7 @@ void deletefiles(file_t *files, int prompt, FILE *tty)
         /* tail of buffer must be a newline */
         while (preservestr[i] != '\n') {
           tstr = (char *)realloc(preservestr, strlen(preservestr) + 1 + INPUT_SIZE);
-          if (!tstr) jc_oom("deletefiles() prompt string");
+          if (!tstr) jc_oom("deletefiles() prompt");
 
           preservestr = tstr;
           if (!fgets(preservestr + i + 1, INPUT_SIZE, tty))
@@ -159,12 +159,14 @@ stop_scanning:
           if (!M2W(dupelist[x]->d_name, wstr)) {
             printf("   [!] "); jc_fwprint(stdout, dupelist[x]->d_name, 0);
             printf("-- MultiByteToWideChar failed\n");
+	    exit_status = EXIT_FAILURE;
             continue;
           }
 #endif
           if (file_has_changed(dupelist[x])) {
             printf("   [!] "); jc_fwprint(stdout, dupelist[x]->d_name, 0);
             printf("-- file changed since being scanned\n");
+	    exit_status = EXIT_FAILURE;
 #ifdef UNICODE
           } else if (DeleteFileW(wstr) != 0) {
 #else
@@ -174,6 +176,7 @@ stop_scanning:
           } else {
             printf("   [!] "); jc_fwprint(stdout, dupelist[x]->d_name, 0);
             printf("-- unable to delete file\n");
+	    exit_status = EXIT_FAILURE;
           }
         }
       }
