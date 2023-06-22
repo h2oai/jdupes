@@ -1,3 +1,8 @@
+jdupes 1.25.2 (2023-06-21)
+
+- Fix -d and no valid directories exiting with an internal error message
+- All errors or serious warnings exit with FAILURE instead of SUCCESS
+
 jdupes 1.25.1 (2023-06-19)
 
 - Fix -D on non-debug builds which was falling through to set -E
