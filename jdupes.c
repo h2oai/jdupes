@@ -974,7 +974,7 @@ skip_partialonly_noise:
 
     /* F_RECURSE is not set for directories before --recurse: */
     for (int x = optind; x < firstrecurse; x++) {
-      if (interrupt) break;
+      if (unlikely(interrupt)) goto interrupt_exit;
       jc_slash_convert(argv[x]);
       loaddir(argv[x], &files, 0);
       user_item_count++;
@@ -984,14 +984,14 @@ skip_partialonly_noise:
     SETFLAG(flags, F_RECURSE);
 
     for (int x = firstrecurse; x < argc; x++) {
-      if (interrupt) break;
+      if (unlikely(interrupt)) goto interrupt_exit;
       jc_slash_convert(argv[x]);
       loaddir(argv[x], &files, 1);
       user_item_count++;
     }
   } else {
     for (int x = optind; x < argc; x++) {
-      if (interrupt) break;
+      if (unlikely(interrupt)) goto interrupt_exit;
       jc_slash_convert(argv[x]);
       loaddir(argv[x], &files, ISFLAG(flags, F_RECURSE));
       user_item_count++;
@@ -999,10 +999,7 @@ skip_partialonly_noise:
   }
 
   /* Abort on CTRL-C (-Z doesn't matter yet) */
-  if (interrupt) {
-    fprintf(stderr, "%s", s_interrupt);
-    exit(EXIT_FAILURE);
-  }
+  if (unlikely(interrupt)) goto interrupt_exit;
 
   /* Force a progress update */
   if (!ISFLAG(flags, F_HIDEPROGRESS)) update_phase1_progress("items");
@@ -1187,5 +1184,8 @@ skip_all_scan_code:
 
 error_optarg:
   fprintf(stderr, "error: option '%c' requires an argument\n", opt);
+  exit(EXIT_FAILURE);
+interrupt_exit:
+  fprintf(stderr, "%s", s_interrupt);
   exit(EXIT_FAILURE);
 }
