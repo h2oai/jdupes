@@ -10,7 +10,7 @@ extern "C" {
 
 #include "jdupes.h"
 void printmatches(file_t * restrict files);
-void printunique(file_t * restrict files);
+void printunique(file_t *files);
 
 #ifdef __cplusplus
 }

@@ -597,7 +597,7 @@ skip_partialonly_noise:
     exit(EXIT_FAILURE);
   }
 
-#ifdef ENABLE_DEDUPE
+#if defined ENABLE_DEDUPE && !defined NO_HARDLINKS
   if (ISFLAG(flags, F_CONSIDERHARDLINKS) && ISFLAG(a_flags, FA_DEDUPEFILES))
     fprintf(stderr, "warning: option --dedupe overrides the behavior of --hardlinks\n");
 #endif
@@ -724,10 +724,13 @@ skip_partialonly_noise:
       /* Quick or partial-only compare will never run confirmmatch()
        * Also skip match confirmation for hard-linked files
        * (This set of comparisons is ugly, but quite efficient) */
-      if (ISFLAG(flags, F_QUICKCOMPARE) || ISFLAG(flags, F_PARTIALONLY) ||
-           (ISFLAG(flags, F_CONSIDERHARDLINKS) &&
-           (curfile->inode == (*match)->inode) &&
-           (curfile->device == (*match)->device))
+      if (ISFLAG(flags, F_QUICKCOMPARE)
+          || ISFLAG(flags, F_PARTIALONLY)
+#ifndef NO_HARDLINKS
+	  || (ISFLAG(flags, F_CONSIDERHARDLINKS)
+#endif
+          && (curfile->inode == (*match)->inode)
+          && (curfile->device == (*match)->device))
          ) {
         LOUD(fprintf(stderr, "MAIN: notice: hard linked, quick, or partial-only match (-H/-Q/-T)\n"));
 #ifndef NO_MTIME
