@@ -21,11 +21,6 @@ extern "C" {
  #endif
  #include <windows.h>
  #include <io.h>
- #ifndef NO_HARDLINKS
-  #ifdef DEBUG
-   extern unsigned int hll_exclude;
-  #endif
- #endif
 #endif /* Win32 */
 
 #include <limits.h>
@@ -98,6 +93,18 @@ extern "C" {
  #warning "PATHBUF_SIZE is less than PATH_MAX"
  #endif
 #endif
+
+/* Debugging stats */
+#ifdef DEBUG
+extern unsigned int small_file, partial_hash, partial_elim;
+extern unsigned int full_hash, partial_to_full, hash_fail;
+extern uintmax_t comparisons;
+ #ifdef ON_WINDOWS
+  #ifndef NO_HARDLINKS
+  extern unsigned int hll_exclude;
+  #endif
+ #endif
+#endif /* DEBUG */
 
 
 #define ISFLAG(a,b) ((a & b) == b)
@@ -280,7 +287,6 @@ extern const char *s_no_dupes;
 extern int exit_status;
 
 int file_has_changed(file_t * const restrict file);
-unsigned int get_max_dupes(const file_t *files, unsigned int * const restrict max, unsigned int * const restrict n_files);
 
 #ifdef __cplusplus
 }

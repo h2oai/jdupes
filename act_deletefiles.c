@@ -11,11 +11,39 @@
 
 #include <libjodycode.h>
 #include "jdupes.h"
+#include "likely_unlikely.h"
 #include "act_deletefiles.h"
 #include "act_linkfiles.h"
 
 /* For interactive deletion input */
 #define INPUT_SIZE 1024
+
+
+/* Count the following statistics:
+   - Maximum number of files in a duplicate set (length of longest dupe chain)
+   - Total number of duplicate file sets (groups) */
+static unsigned int get_max_dupes(const file_t *files, unsigned int * const restrict max)
+{
+  unsigned int groups = 0;
+
+  if (unlikely(files == NULL || max == NULL)) jc_nullptr("get_max_dupes()");
+  LOUD(fprintf(stderr, "get_max_dupes(%p, %p)\n", (const void *)files, (void *)max);)
+
+  *max = 0;
+
+  while (files) {
+    unsigned int n_dupes;
+    if (ISFLAG(files->flags, FF_HAS_DUPES)) {
+      groups++;
+      n_dupes = 1;
+      for (file_t *curdupe = files->duplicates; curdupe; curdupe = curdupe->duplicates) n_dupes++;
+      if (n_dupes > *max) *max = n_dupes;
+    }
+    files = files->next;
+  }
+  return groups;
+}
+
 
 void deletefiles(file_t *files, int prompt, FILE *tty)
 {
@@ -32,7 +60,7 @@ void deletefiles(file_t *files, int prompt, FILE *tty)
 
   LOUD(fprintf(stderr, "deletefiles: %p, %d, %p\n", files, prompt, tty));
 
-  groups = get_max_dupes(files, &max, NULL);
+  groups = get_max_dupes(files, &max);
 
   max++;
 
