@@ -161,60 +161,6 @@ int exit_status = EXIT_SUCCESS;
 /***** Add new functions here *****/
 
 
-static void registerpair(file_t **matchlist, file_t *newmatch, int (*comparef)(file_t *f1, file_t *f2))
-{
-  file_t *traverse;
-  file_t *back;
-
-  /* NULL pointer sanity checks */
-  if (unlikely(matchlist == NULL || newmatch == NULL || comparef == NULL)) jc_nullptr("registerpair()");
-  LOUD(fprintf(stderr, "registerpair: '%s', '%s'\n", (*matchlist)->d_name, newmatch->d_name);)
-
-#ifndef NO_ERRORONDUPE
-  if (ISFLAG(a_flags, FA_ERRORONDUPE)) {
-    if (!ISFLAG(flags, F_HIDEPROGRESS)) fprintf(stderr, "\r");
-    fprintf(stderr, "Exiting based on user request (-E); duplicates found:\n");
-    printf("%s\n%s\n", (*matchlist)->d_name, newmatch->d_name);
-    exit(255);
-  }
-#endif
-
-  SETFLAG((*matchlist)->flags, FF_HAS_DUPES);
-  back = NULL;
-  traverse = *matchlist;
-
-  /* FIXME: This needs to be changed! As it currently stands, the compare
-   * function only runs on a pair as it is registered and future pairs can
-   * mess up the sort order. A separate sorting function should happen before
-   * the dupe chain is acted upon rather than while pairs are registered. */
-  while (traverse) {
-    if (comparef(newmatch, traverse) <= 0) {
-      newmatch->duplicates = traverse;
-
-      if (!back) {
-        *matchlist = newmatch; /* update pointer to head of list */
-        SETFLAG(newmatch->flags, FF_HAS_DUPES);
-        CLEARFLAG(traverse->flags, FF_HAS_DUPES); /* flag is only for first file in dupe chain */
-      } else back->duplicates = newmatch;
-
-      break;
-    } else {
-      if (traverse->duplicates == 0) {
-        traverse->duplicates = newmatch;
-        if (!back) SETFLAG(traverse->flags, FF_HAS_DUPES);
-
-        break;
-      }
-    }
-
-    back = traverse;
-    traverse = traverse->duplicates;
-  }
-  return;
-}
-
-
-
 #ifdef UNICODE
 int wmain(int argc, wchar_t **wargv)
 #else

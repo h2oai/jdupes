@@ -14,6 +14,7 @@ extern "C" {
 /* registerfile() direction options */
 enum tree_direction { NONE, LEFT, RIGHT };
 
+void registerpair(file_t **matchlist, file_t *newmatch, int (*comparef)(file_t *f1, file_t *f2));
 void registerfile(filetree_t * restrict * const restrict nodeptr, const enum tree_direction d, file_t * const restrict file);
 file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict file);
 int confirmmatch(FILE * const restrict file1, FILE * const restrict file2, const off_t size);
