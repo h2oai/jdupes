@@ -210,7 +210,9 @@ void loaddir(const char * const restrict dir,
     /* Single-file [l]stat() and exclusion condition check */
     if (check_singlefile(newfile) != 0) {
       LOUD(fprintf(stderr, "loaddir: check_singlefile rejected file\n"));
-      goto abort_dir_scan;
+      free(newfile->d_name);
+      free(newfile);
+      continue;
     }
 
     /* Optionally recurse directories, including symlinked ones if requested */
@@ -221,7 +223,9 @@ void loaddir(const char * const restrict dir,
             && (getdirstats(newfile->d_name, &inode, &n_device, &mode) == 0)
             && (device != n_device)) {
           LOUD(fprintf(stderr, "loaddir: directory: not recursing (--one-file-system)\n"));
-          goto abort_dir_scan;
+          free(newfile->d_name);
+          free(newfile);
+          continue;
         }
 #ifndef NO_SYMLINKS
         else if (ISFLAG(flags, F_FOLLOWLINKS) || !ISFLAG(newfile->flags, FF_IS_SYMLINK)) {
@@ -235,7 +239,6 @@ void loaddir(const char * const restrict dir,
         }
 #endif /* NO_SYMLINKS */
       } else { LOUD(fprintf(stderr, "loaddir: directory: not recursing\n")); }
-abort_dir_scan:
       free(newfile->d_name);
       free(newfile);
       continue;
