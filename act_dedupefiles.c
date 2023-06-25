@@ -47,6 +47,10 @@
 
 #define KERNEL_DEDUP_MAX_SIZE 16777216
 
+/* Error messages */
+static const char s_err_dedupe_notabug[] = "This is not a bug in jdupes; check your file stats/permissions.";
+static const char s_err_dedupe_repeated[] = "This verbose error description will not be repeated.";
+
 void dedupefiles(file_t * restrict files)
 {
 #ifdef __linux__
@@ -54,6 +58,7 @@ void dedupefiles(file_t * restrict files)
   struct file_dedupe_range_info *fdri;
   file_t *curfile, *curfile2, *dupefile;
   int src_fd;
+  int err_twentytwo = 0, err_ninetyfive = 0;
   uint64_t total_files = 0;
 
   LOUD(fprintf(stderr, "\ndedupefiles: %p\n", files);)
@@ -129,6 +134,20 @@ void dedupefiles(file_t * restrict files)
           fprintf(stderr, "%s (%d)\n", strerror(errno), errno);
           exit_status = EXIT_FAILURE;
         }
+        if ((err == -22 || errno == 22) && err_twentytwo == 0) {
+          fprintf(stderr, "       One or more files being deduped are read-only or hard linked.\n");
+          fprintf(stderr, "       Read-only files can only be deduped by the root user.\n");
+          fprintf(stderr, "       %s\n", s_err_dedupe_notabug);
+          fprintf(stderr, "       %s\n", s_err_dedupe_repeated);
+          err_twentytwo = 1;
+	}
+        if ((err == -95 || errno == 95) && err_ninetyfive == 0) {
+          fprintf(stderr, "       One or more files is on a filesystem that does not support\n");
+          fprintf(stderr, "       block-level deduplication or are on different filesystems.\n");
+          fprintf(stderr, "       %s\n", s_err_dedupe_notabug);
+          fprintf(stderr, "       %s\n", s_err_dedupe_repeated);
+          err_ninetyfive = 1;
+	}
       } else {
         /* Dedupe OK; report to the user and add to file count */
         printf("  ====> %s\n", dupefile->d_name);
