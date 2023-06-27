@@ -259,7 +259,7 @@ extf_help_and_exit:
 }
 
 
-/* Exclude files based on extended filter stack; return 0 = exclude */
+/* Exclude single files based on extended filter stack; return 0 = exclude */
 int extfilter_exclude(file_t * const restrict newfile)
 {
   for (struct extfilter *extf = extfilter_head; extf != NULL; extf = extf->next) {
