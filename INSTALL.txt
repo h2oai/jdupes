@@ -8,15 +8,15 @@ If your distribution doesn't have libjodycode, get it here:
 
 https://github.com/jbruchon/libjodycode
 
-If you clone and build libjodycode into ../libjodycode/ and pass the option
-USE_NEARBY_JC=1 to make then the build will use the header and library in
-that location instead of the libjodycode already installed on the system.
-You can then test the dynamically linked jdupes by telling it where to look:
+If you clone and build libjodycode into ../libjodycode/ then the build will use
+the header and library in that location instead of the libjodycode already
+installed on the system. You can then test the dynamically linked jdupes by
+telling it where to look:
 
 LD_LIBRARY_PATH=../libjodycode ./jdupes
 
 To install the program with the default options and flags, just issue the
-following commands (note that btrfs support is off by default):
+following commands:
 
 make
 sudo make install
@@ -76,7 +76,7 @@ of using CFLAGS_EXTRA, i.e. 'make DEBUG=1':
 NO_UNICODE             [Windows only] disable all Unicode support
 DEBUG                  Turn on algorithm statistic reporting with '-D'
 LOUD                   '-@' for low-level debugging; enables DEBUG
-ENABLE_DEDUPE          Enable '-B/--dedupe' deduplication features
+ENABLE_DEDUPE          Enable '-B' deduplication (Linux/macOS: on by default)
 DISABLE_DEDUPE         Forcibly disable (undefine) ENABLE_DEDUPE
 STATIC_DEDUPE_H        Build dedupe support with included minimal header file
 LOW_MEMORY             Build for extremely low-RAM environments (CAUTION!)
@@ -84,7 +84,7 @@ BARE_BONES             Build LOW_MEMORY with very aggressive code removal
 USE_JODY_HASH          Use jody_hash instead of xxHash64 (smaller, slower)
 EXTENRAL_HASH_LIB      Force hash code to be linked in externally (no build)
 FORCE_JC_DLL           Windows only: force linking to nearby libjodycode.dll
-USE_NEARBY_JC          Use the libjodycode at ../libjodycode if it exists
+IGNORE_NEARBY_JC       Do NOT use libjodycode at ../libjodycode if it exists
 GC_SECTIONS            Use gcc/ld section garbage collection to reduce size
 
 EXTERNAL_HASH_LIB will build jdupes with the interface code for the chosen hash

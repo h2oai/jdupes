@@ -184,17 +184,21 @@ ifdef STATIC_DEDUPE_H
  COMPILER_OPTIONS += -DSTATIC_DEDUPE_H
 endif
 
-### Find and use nearby libjodycode
 
-ifdef USE_NEARBY_JC
+### Find and use nearby libjodycode by default
+ifndef IGNORE_NEARBY_JC
  ifneq ("$(wildcard ../libjodycode/libjodycode.h)","")
- COMPILER_OPTIONS += -I../libjodycode -L../libjodycode
+  $(info Found and using nearby libjodycode at ../libjodycode)
+  COMPILER_OPTIONS += -I../libjodycode -L../libjodycode
+  ifeq ("$(wildcard ../libjodycode/version.o)","")
+   $(error You must build libjodycode before building jdupes)
+  endif
  endif
-endif
-ifdef FORCE_JC_DLL
- LINK_OPTIONS += -l:../libjodycode/libjodycode.dll
-else
- LINK_OPTIONS += -ljodycode
+ ifdef FORCE_JC_DLL
+  LINK_OPTIONS += -l:../libjodycode/libjodycode.dll
+ else
+  LINK_OPTIONS += -ljodycode
+ endif
 endif
 
 
@@ -262,4 +266,4 @@ package:
 	+./generate_packages.sh $(ARCH)
 
 libjodycode_hint:
-	@echo "hint: if ../libjodycode is built and Make fails, try doing 'make USE_NEARBY_JC=1 static_jc'"$$'\n'
+	$(info hint: if ../libjodycode is built but jdupes won't run, try doing 'make static_jc')
