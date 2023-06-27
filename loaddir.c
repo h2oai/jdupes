@@ -291,6 +291,6 @@ error_cd:
   exit_status = EXIT_FAILURE;
   return;
 error_overflow:
-  fprintf(stderr, "\nerror: a path buffer overflowed\n");
+  fprintf(stderr, "\nerror: a path overflowed (longer than PATHBUF_SIZE) cannot continue\n");
   exit(EXIT_FAILURE);
 }

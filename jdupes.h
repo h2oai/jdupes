@@ -88,9 +88,9 @@ extern "C" {
 #define PATHBUF_SIZE 4096
 #endif
 /* Complain if PATHBUF_SIZE is too small */
-#ifdef DEBUG
- #if PATHBUF_SIZE < PATH_MAX
- #warning "PATHBUF_SIZE is less than PATH_MAX"
+#if PATHBUF_SIZE < PATH_MAX
+ #if !defined LOW_MEMORY && !defined BARE_BONES
+  #warning "PATHBUF_SIZE is less than PATH_MAX"
  #endif
 #endif
 
