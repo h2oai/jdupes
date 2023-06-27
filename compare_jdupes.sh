@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Runs the installed *dupes* binary and the built binary and compares
 # the output for sameness. Also displays timing statistics.
