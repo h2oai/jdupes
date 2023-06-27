@@ -535,10 +535,10 @@ int main(int argc, char **argv)
         fprintf(stderr, "Refusing to dedupe on a 2.x kernel; data loss could occur. Aborting.\n");
         exit(EXIT_FAILURE);
       }
+      /* Kernel-level dedupe will do the byte-for-byte check itself */
+      if (!ISFLAG(flags, F_PARTIALONLY)) SETFLAG(flags, F_QUICKCOMPARE);
 #endif /* __linux__ */
       SETFLAG(a_flags, FA_DEDUPEFILES);
-      /* btrfs will do the byte-for-byte check itself */
-      if (!ISFLAG(flags, F_PARTIALONLY)) SETFLAG(flags, F_QUICKCOMPARE);
       /* It is completely useless to dedupe zero-length extents */
       CLEARFLAG(flags, F_INCLUDEEMPTY);
 #else /* ENABLE_DEDUPE */
