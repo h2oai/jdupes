@@ -66,6 +66,13 @@ ifeq ($(UNAME_S), Darwin)
 else
 	GCCVERSION = 1
 endif
+
+ifeq ($(UNAME_S), Linux)
+	ifndef DISABLE_DEDUPE
+		ENABLE_DEDUPE = 1
+	endif
+endif
+
 ifeq ($(GCCVERSION), 1)
 	COMPILER_OPTIONS += -Wextra -Wstrict-overflow=5 -Winit-self
 endif
