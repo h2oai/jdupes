@@ -77,6 +77,7 @@ NO_UNICODE             [Windows only] disable all Unicode support
 DEBUG                  Turn on algorithm statistic reporting with '-D'
 LOUD                   '-@' for low-level debugging; enables DEBUG
 ENABLE_DEDUPE          Enable '-B/--dedupe' deduplication features
+DISABLE_DEDUPE         Forcibly disable (undefine) ENABLE_DEDUPE
 STATIC_DEDUPE_H        Build dedupe support with included minimal header file
 LOW_MEMORY             Build for extremely low-RAM environments (CAUTION!)
 BARE_BONES             Build LOW_MEMORY with very aggressive code removal

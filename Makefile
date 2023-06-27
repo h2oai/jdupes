@@ -91,10 +91,7 @@ ifdef HARDEN
 COMPILER_OPTIONS += -Wformat -Wformat-security -D_FORTIFY_SOURCE=2 -fstack-protector-strong -fPIE -fpie -Wl,-z,relro -Wl,-z,now
 endif
 
-# Catch someone trying to enable BTRFS in flags and turn on ENABLE_DEDUPE
-ifneq (,$(findstring DENABLE_BTRFS,$(CFLAGS) $(CFLAGS_EXTRA)))
-	ENABLE_DEDUPE=1
-endif
+# Catch someone trying to enable dedupe in flags and turn on ENABLE_DEDUPE
 ifneq (,$(findstring DENABLE_DEDUPE,$(CFLAGS) $(CFLAGS_EXTRA)))
 	ENABLE_DEDUPE=1
 endif
@@ -164,15 +161,11 @@ COMPILER_OPTIONS += -DNO_CLONEFILE=1
 endif
 endif
 
-# Compatibility mappings for dedupe feature
-ifdef ENABLE_BTRFS
-ENABLE_DEDUPE=1
-endif
-ifdef STATIC_BTRFS_H
-STATIC_DEDUPE_H=1
-endif
-
 # Dedupe feature (originally only BTRFS, now generalized)
+ifdef DISABLE_DEDUPE
+override undefine ENABLE_DEDUPE
+override undefine STATIC_DEDUPE_H
+endif
 ifdef ENABLE_DEDUPE
 COMPILER_OPTIONS += -DENABLE_DEDUPE
 OBJS += act_dedupefiles.o
