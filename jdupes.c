@@ -724,14 +724,15 @@ skip_partialonly_noise:
       /* Quick or partial-only compare will never run confirmmatch()
        * Also skip match confirmation for hard-linked files
        * (This set of comparisons is ugly, but quite efficient) */
-      if (ISFLAG(flags, F_QUICKCOMPARE)
+      if (
+             ISFLAG(flags, F_QUICKCOMPARE)
           || ISFLAG(flags, F_PARTIALONLY)
 #ifndef NO_HARDLINKS
 	  || (ISFLAG(flags, F_CONSIDERHARDLINKS)
+          &&  (curfile->inode == (*match)->inode)
+          &&  (curfile->device == (*match)->device))
 #endif
-          && (curfile->inode == (*match)->inode)
-          && (curfile->device == (*match)->device))
-         ) {
+	  ) {
         LOUD(fprintf(stderr, "MAIN: notice: hard linked, quick, or partial-only match (-H/-Q/-T)\n"));
 #ifndef NO_MTIME
         registerpair(match, curfile, (ordertype == ORDER_TIME) ? sort_pairs_by_mtime : sort_pairs_by_filename);
