@@ -41,7 +41,7 @@ data deduplication on disk (known as copy-on-write, CoW, cloning, or
 reflink); only a few filesystems support this (BTRFS; XFS when mkfs.xfs
 was used with -m crc=1,reflink=1; Apple APFS)
 .TP
-.B -C --chunk-size=\fIBYTES\fR
+.B -C --chunk-size=\fInumber-of-KiB\fR
 set the I/O chunk size manually; larger values may improve performance
 on rotating media by reducing the number of head seeks required, but
 also increases memory usage and can reduce performance in some cases

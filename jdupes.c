@@ -334,10 +334,10 @@ int main(int argc, char **argv)
       break;
 #ifndef NO_CHUNKSIZE
     case 'C':
-      manual_chunk_size = strtol(optarg, NULL, 10) & 0x0ffff000L;  /* Align to 4K sizes */
+      manual_chunk_size = (strtol(optarg, NULL, 10) & 0x0ffffffcL) << 10;  /* Align to 4K sizes */
       if (manual_chunk_size < MIN_CHUNK_SIZE || manual_chunk_size > MAX_CHUNK_SIZE) {
-        fprintf(stderr, "warning: invalid manual chunk size (must be %d-%d); using defaults\n", MIN_CHUNK_SIZE, MAX_CHUNK_SIZE);
-        LOUD(fprintf(stderr, "Manual chunk size (failed) was apparently '%s' => %ld\n", optarg, manual_chunk_size));
+        fprintf(stderr, "warning: invalid manual chunk size (must be %d - %d KiB); using defaults\n", MIN_CHUNK_SIZE / 1024, MAX_CHUNK_SIZE / 1024);
+        LOUD(fprintf(stderr, "Manual chunk size (failed) was apparently '%s' => %ld KiB\n", optarg, manual_chunk_size / 1024));
         manual_chunk_size = 0;
       } else auto_chunk_size = (size_t)manual_chunk_size;
       LOUD(fprintf(stderr, "Manual chunk size is %ld\n", manual_chunk_size));

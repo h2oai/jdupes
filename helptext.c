@@ -100,7 +100,7 @@ void help_text(void)
   printf(" -B --dedupe      \tdo a copy-on-write (reflink/clone) deduplication\n");
 #endif
 #ifndef NO_CHUNKSIZE
-  printf(" -C --chunk-size=#\toverride I/O chunk size (min %d, max %d)\n", MIN_CHUNK_SIZE, MAX_CHUNK_SIZE);
+  printf(" -C --chunk-size=#\toverride I/O chunk size in KiB (min %d, max %d)\n", MIN_CHUNK_SIZE / 1024, MAX_CHUNK_SIZE / 1024);
 #endif /* NO_CHUNKSIZE */
 #ifndef NO_DELETE
   printf(" -d --delete      \tprompt user for files to preserve and delete all\n");

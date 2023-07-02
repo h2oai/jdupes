@@ -101,7 +101,7 @@ option is specified (delete, summarize, link, dedupe, etc.)
  -1 --one-file-system   do not match files on different filesystems/devices
  -A --no-hidden         exclude hidden files from consideration
  -B --dedupe            do a copy-on-write (reflink/clone) deduplication
- -C --chunk-size=#      override I/O chunk size (min 4096, max 16777216)
+ -C --chunk-size=#      override I/O chunk size in KiB (min 4, max 262144)
  -d --delete            prompt user for files to preserve and delete all
                         others; important: under particular circumstances,
                         data may be lost when using this option together
