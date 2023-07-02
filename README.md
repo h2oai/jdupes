@@ -7,7 +7,7 @@ scanners. It prioritizes data safety over performance while also giving
 expert users access to advanced (and sometimes dangerous) features.
 
 Please consider financially supporting continued development of jdupes using
-the links on my home page (Ko-fi, PayPal, SubscribeStar, Flattr, etc.):
+the links on my home page (Ko-fi, PayPal, SubscribeStar, etc.):
 
 https://www.jodybruchon.com/
 
