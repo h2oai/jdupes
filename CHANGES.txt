@@ -1,3 +1,7 @@
+jdupes 1.26 (2023-07-02)
+
+- Change -C to use KiB instead of bytes for easier typing (CHECK YOUR SCRIPTS)
+
 jdupes 1.25.3 (2023-06-27)
 
 - Fix CTRL+C broken during scanning phase
