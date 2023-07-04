@@ -141,11 +141,11 @@ file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict file)
     default: break;
   }
 
-  /* Print pre-check (early) match candidates if requested */
-  if (ISFLAG(p_flags, PF_EARLYMATCH)) printf("Early match check passed:\n   %s\n   %s\n\n", file->d_name, tree->file->d_name);
-
   /* If preliminary matching succeeded, do main file data checks */
   if (cmpresult == 0) {
+    /* Print pre-check (early) match candidates if requested */
+    if (ISFLAG(p_flags, PF_EARLYMATCH)) printf("Early match check passed:\n   %s\n   %s\n\n", file->d_name, tree->file->d_name);
+
     LOUD(fprintf(stderr, "checkmatch: starting file data comparisons\n"));
     /* Attempt to exclude files quickly with partial file hashing */
     if (!ISFLAG(tree->file->flags, FF_HASH_PARTIAL)) {
