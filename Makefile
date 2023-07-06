@@ -226,6 +226,7 @@ static_stripped: $(PROGRAM_NAME) static
 	strip $(PROGRAM_NAME)$(SUFFIX)
 
 $(PROGRAM_NAME): $(OBJS)
+	$(CC) $(CFLAGS) $(OBJS) $(BDYNAMIC) $(LDFLAGS) $(DYN_LDFLAGS) -o $(PROGRAM_NAME)$(SUFFIX)
 
 winres.o: winres.rc winres.manifest.xml
 	./tune_winres.sh
