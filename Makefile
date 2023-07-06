@@ -205,7 +205,7 @@ ifndef IGNORE_NEARBY_JC
   endif
  endif
  STATIC_LDFLAGS += ../libjodycode/libjodycode.a
- DYN_LDFLAGS += -ljodycode
+ DYN_LDFLAGS += -l:../libjodycode/libjodycode$(LIBEXT)
 endif
 
 
