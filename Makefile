@@ -47,24 +47,29 @@ ifdef GC_SECTIONS
 endif
 
 
-UNAME_S=$(shell uname -s)
+# Bare-bones mode (for the adventurous lunatic) - includes all LOW_MEMORY options
+ifdef BARE_BONES
+ LOW_MEMORY = 1
+ COMPILER_OPTIONS += -DNO_DELETE -DNO_TRAVCHECK -DBARE_BONES -DNO_ERRORONDUPE
+ COMPILER_OPTIONS += -DCHUNK_SIZE=4096 -DPATHBUF_SIZE=1024
+endif
 
-# Don't use unsupported compiler options on gcc 3/4 (Mac OS X 10.5.8 Xcode)
-# ENABLE_DEDUPE by default - macOS Sierra 10.12 and up required
-ifeq ($(UNAME_S), Darwin)
- GCCVERSION = $(shell expr `LC_ALL=C gcc -v 2>&1 | grep '[cn][cg] version' | sed 's/[^0-9]*//;s/[ .].*//'` \>= 5)
- ifndef DISABLE_DEDUPE
-  ENABLE_DEDUPE = 1
+# Low memory mode
+ifdef LOW_MEMORY
+ USE_JODY_HASH = 1
+ DISABLE_DEDUPE = 1
+ override undefine ENABLE_DEDUPE
+ COMPILER_OPTIONS += -DLOW_MEMORY
+ COMPILER_OPTIONS += -DNO_HARDLINKS -DNO_SYMLINKS -DNO_USER_ORDER -DNO_PERMS
+ COMPILER_OPTIONS += -DNO_ATIME -DNO_JSON -DNO_EXTFILTER -DNO_CHUNKSIZE
+ COMPILER_OPTIONS += -DNO_JODY_SORT
+ ifndef BARE_BONES
+  COMPILER_OPTIONS += -DCHUNK_SIZE=16384
  endif
-else
- GCCVERSION = 1
- BDYNAMIC = -Wl,-Bdynamic
- BSTATIC = -Wl,-Bstatic
 endif
 
-ifeq ($(GCCVERSION), 1)
- COMPILER_OPTIONS += -Wextra -Wstrict-overflow=5 -Winit-self
-endif
+
+UNAME_S=$(shell uname -s)
 
 # Are we running on a Windows OS?
 ifeq ($(OS), Windows_NT)
@@ -101,25 +106,24 @@ ifdef ON_WINDOWS
   OBJS += winres.o
  endif
  override undefine ENABLE_DEDUPE
+ DISABLE_DEDUPE = 1
 endif
 
-# Bare-bones mode (for the adventurous lunatic) - includes all LOW_MEMORY options
-ifdef BARE_BONES
- LOW_MEMORY=1
- COMPILER_OPTIONS += -DNO_DELETE -DNO_TRAVCHECK -DBARE_BONES -DNO_ERRORONDUPE
- COMPILER_OPTIONS += -DCHUNK_SIZE=4096 -DPATHBUF_SIZE=1024
-endif
-
-# Low memory mode
-ifdef LOW_MEMORY
- USE_JODY_HASH = 1
- COMPILER_OPTIONS += -DLOW_MEMORY
- COMPILER_OPTIONS += -DNO_HARDLINKS -DNO_SYMLINKS -DNO_USER_ORDER -DNO_PERMS
- COMPILER_OPTIONS += -DNO_ATIME -DNO_JSON -DNO_EXTFILTER -DNO_CHUNKSIZE
- COMPILER_OPTIONS += -DNO_JODY_SORT
- ifndef BARE_BONES
-  COMPILER_OPTIONS += -DCHUNK_SIZE=16384
+# Don't use unsupported compiler options on gcc 3/4 (Mac OS X 10.5.8 Xcode)
+# ENABLE_DEDUPE by default - macOS Sierra 10.12 and up required
+ifeq ($(UNAME_S), Darwin)
+ GCCVERSION = $(shell expr `LC_ALL=C gcc -v 2>&1 | grep '[cn][cg] version' | sed 's/[^0-9]*//;s/[ .].*//'` \>= 5)
+ ifndef DISABLE_DEDUPE
+  ENABLE_DEDUPE = 1
  endif
+else
+ GCCVERSION = 1
+ BDYNAMIC = -Wl,-Bdynamic
+ BSTATIC = -Wl,-Bstatic
+endif
+
+ifeq ($(GCCVERSION), 1)
+ COMPILER_OPTIONS += -Wextra -Wstrict-overflow=5 -Winit-self
 endif
 
 # Use jody_hash instead of xxHash if requested
@@ -157,7 +161,7 @@ endif
 # ENABLE_DEDUPE should be ON by default for Linux
 ifeq ($(UNAME_S), Linux)
  ifndef DISABLE_DEDUPE
- ENABLE_DEDUPE = 1
+  ENABLE_DEDUPE = 1
  endif
 endif
 
@@ -170,6 +174,7 @@ endif
 # Catch someone trying to enable dedupe in flags and turn on ENABLE_DEDUPE
 ifneq (,$(findstring DENABLE_DEDUPE,$(CFLAGS) $(CFLAGS_EXTRA)))
  ENABLE_DEDUPE = 1
+ $(warn Do not enable dedupe in CFLAGS; use make ENABLE_DEDUPE=1 instead)
  ifdef DISABLE_DEDUPE
   $(error DISABLE_DEDUPE set but -DENABLE_DEDUPE is in CFLAGS. Choose only one)
  endif

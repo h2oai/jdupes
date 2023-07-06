@@ -92,6 +92,14 @@ if [ "$TA" = "mac64" ] && ld -v 2>&1 | grep -q 'archs:.*i386'
 	TYPE=-i386; CE=-m32
 	# On macOS Big Sur (Darwin 20) or higher, try to build a x86_64 + arm64 binary
 	[ $(uname -r | cut -d. -f1) -ge 20 ] && TYPE=-arm64 && CE="-target arm64-apple-macos11"
+	if [ -d "../libjodycode" ]
+		then
+		echo "Rebuilding nearby libjodycode first"
+		WD="$(pwd)"
+		cd ../libjodycode
+		make clean && make -j$PM CFLAGS_EXTRA="$CE"
+		cd "$WD"
+	fi
 	for X in '' '-loud' '-lowmem' '-barebones'
 		do make clean && make -j$PM CFLAGS_EXTRA="$CE" stripped && cp $NAME$EXT $PKGNAME/$NAME$X$EXT$TYPE || ERR=1
 		[ $ERR -eq 0 ] && lipo -create -output $PKGNAME/jdupes_temp $PKGNAME/$NAME$X$EXT$TYPE $PKGNAME/$NAME$X$EXT && mv $PKGNAME/jdupes_temp $PKGNAME/$NAME$X$EXT
