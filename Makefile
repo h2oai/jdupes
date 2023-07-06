@@ -97,8 +97,9 @@ ifdef ON_WINDOWS
  ifndef NO_UNICODE
   UNICODE=1
   COMPILER_OPTIONS += -municode
-  SUFFIX=.exe
  endif
+ SUFFIX=.exe
+ LIBEXT=.dll
  COMPILER_OPTIONS += -D__USE_MINGW_ANSI_STDIO=1 -DON_WINDOWS=1
  ifeq ($(UNAME_S), MINGW32_NT-5.1)
   OBJS += winres_xp.o
@@ -107,6 +108,8 @@ ifdef ON_WINDOWS
  endif
  override undefine ENABLE_DEDUPE
  DISABLE_DEDUPE = 1
+else
+ LIBEXT=.so
 endif
 
 # Don't use unsupported compiler options on gcc 3/4 (Mac OS X 10.5.8 Xcode)
@@ -201,14 +204,8 @@ ifndef IGNORE_NEARBY_JC
    $(error You must build libjodycode before building jdupes)
   endif
  endif
- ifdef FORCE_JC_DLL
-  DYN_LDFLAGS += -l:../libjodycode/libjodycode.dll
- else
-  ifeq ($(UNAME_S), Darwin)
-   FINALSTATIC = ../libjodycode/libjodycode.a
-  endif
-  DYN_LDFLAGS += -ljodycode
- endif
+ STATIC_LDFLAGS += ../libjodycode/libjodycode.a
+ DYN_LDFLAGS += -ljodycode
 endif
 
 
@@ -222,10 +219,10 @@ dynamic_jc: $(PROGRAM_NAME)
 	$(CC) $(CFLAGS) $(OBJS) $(BDYNAMIC) $(LDFLAGS) $(DYN_LDFLAGS) -o $(PROGRAM_NAME)$(SUFFIX)
 
 static_jc: $(PROGRAM_NAME)
-	$(CC) $(CFLAGS) $(OBJS) $(BSTATIC) $(LDFLAGS) $(BDYNAMIC) $(FINALSTATIC) -o $(PROGRAM_NAME)$(SUFFIX)
+	$(CC) $(CFLAGS) $(OBJS) $(LDFLAGS) $(STATIC_LDFLAGS) $(BDYNAMIC) -o $(PROGRAM_NAME)$(SUFFIX)
 
 static: $(PROGRAM_NAME)
-	$(CC) $(CFLAGS) $(OBJS) -static $(LDFLAGS) $(FINALSTATIC) -o $(PROGRAM_NAME)$(SUFFIX)
+	$(CC) $(CFLAGS) $(OBJS) -static $(LDFLAGS) $(STATIC_LDFLAGS) -o $(PROGRAM_NAME)$(SUFFIX)
 
 static_stripped: $(PROGRAM_NAME) static
 	strip $(PROGRAM_NAME)$(SUFFIX)
