@@ -53,22 +53,23 @@ make CFLAGS_EXTRA='-DYOUR_OPTION_ONE -DYOUR_OPTION_TWO'
 
 This is a list of options that can be "turned on" this way:
 
-ON_WINDOWS             Modify code to compile with MinGW on Windows
-NO_WINDOWS             Disable Windows MinGW special cases (mainly for Cygwin)
-NO_ATIME               Disable all access time features
-NO_CHUNKSIZE           Disable auto I/O chunk sizing code and -C option
-NO_DELETE              Disable deletion -d, -N
-NO_ERRORONDUPE         Disable error exit on first dupe found -E
-NO_EXTFILTER           Disable extended filter -X
-NO_HARDLINKS           Disable hard link code -L, -H
-NO_GETOPT_LONG         Disable getopt_long() (long options will not work)
-NO_JODY_SORT           Disable numerically-correct sort (use "naive" name sort)
-NO_JSON                Disable JSON output -j
-NO_MTIME               Disable all modify time features
-NO_PERMS               Disable permission matching -p
-NO_SYMLINKS            Disable symbolic link code -l, -s
-NO_TRAVCHECK           Disable double-traversal safety code (-U always on)
-NO_USER_ORDER          Disable isolation and parameter sort order -I, -O
+ON_WINDOWS         Modify code to compile with MinGW on Windows
+NO_WINDOWS         Disable Windows MinGW special cases (mainly for Cygwin)
+NO_ATIME           Disable all access time features
+NO_CHUNKSIZE       Disable auto I/O chunk sizing code and -C option
+NO_DELETE          Disable deletion -d, -N
+NO_ERRORONDUPE     Disable error exit on first dupe found -E
+NO_EXTFILTER       Disable extended filter -X
+NO_GETOPT_LONG     Disable getopt_long() (long options will not work)
+NO_HARDLINKS       Disable hard link code -L, -H
+NO_HELPTEXT        Disable all help text and almost all version text
+NO_JODY_SORT       Disable numerically-correct sort (use "naive" name sort)
+NO_JSON            Disable JSON output -j
+NO_MTIME           Disable all modify time features
+NO_PERMS           Disable permission matching -p
+NO_SYMLINKS        Disable symbolic link code -l, -s
+NO_TRAVCHECK       Disable double-traversal safety code (-U always on)
+NO_USER_ORDER      Disable isolation and parameter sort order -I, -O
 
 Certain options can be turned on by setting a variable passed to make instead
 of using CFLAGS_EXTRA, i.e. 'make DEBUG=1':

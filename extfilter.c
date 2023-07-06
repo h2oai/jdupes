@@ -9,6 +9,7 @@
 #include <inttypes.h>
 
 #include <libjodycode.h>
+#include "helptext.h"
 #include "jdupes.h"
 
 /* Extended filter parameter flags */
@@ -65,6 +66,7 @@ static const struct extfilter_tags extfilter_tags[] = {
 
 static void help_text_extfilter(void)
 {
+#ifndef NO_HELPTEXT
   printf("Detailed help for jdupes -X/--ext-filter options\n");
   printf("General format: jdupes -X filter[:value][size_suffix]\n\n");
 
@@ -95,6 +97,9 @@ static void help_text_extfilter(void)
 
   printf(  "Extension matching is case-insensitive.\n");
   printf(  "Path substring matching is case-sensitive.\n");
+#else /* NO_HELPTEXT */
+  version_text(0);
+#endif /* NO_HELPTEXT */
 }
 
 

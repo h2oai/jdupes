@@ -5,10 +5,12 @@
 #include <inttypes.h>
 
 #include <libjodycode.h>
+#include "helptext.h"
 #include "jdupes.h"
 #include "version.h"
 
 
+#ifndef NO_HELPTEXT
 /* Assemble feature flag string from compile-time options */
 const char *feature_flags[] = {
   #ifdef ENABLE_DEDUPE
@@ -79,10 +81,12 @@ const char *feature_flags[] = {
   #endif
   NULL
 };
+#endif /* NO_HELPTEXT */
 
 
 void help_text(void)
 {
+#ifndef NO_HELPTEXT
   printf("Usage: jdupes [options] FILES and/or DIRECTORIES...\n\n");
 
   printf("Duplicate file sets will be printed by default unless a different action\n");
@@ -188,6 +192,10 @@ void help_text(void)
 #ifndef ON_WINDOWS
   printf("                  \tYou can send SIGUSR1 to the program to toggle this\n");
 #endif
+
+#else /* NO_HELPTEXT */
+  version_text(0);
+#endif /* NO_HELPTEXT */
   return;
 }
 
@@ -196,6 +204,7 @@ void version_text(int short_version)
 {
   printf("jdupes %s (%s) ", VER, VERDATE);
 
+#ifndef NO_HELPTEXT
   /* Indicate bitness information */
   if (sizeof(uintptr_t) == 8) {
     if (sizeof(long) == 4) printf("64-bit i32");
@@ -241,5 +250,9 @@ void version_text(int short_version)
   printf("\nIf you find this software useful, please consider financially supporting\n");
   printf("its development through the author's home page: https://www.jodybruchon.com/\n");
   printf("Report bugs and get the latest releases: https://github.com/jbruchon/jdupes\n");
+#else
+  (void)short_version;
+  printf("\nBuilt with no help text. You're on your own.\n");
+#endif /* NO_HELPTEXT */
   return;
 }
