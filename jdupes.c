@@ -193,37 +193,27 @@ int main(int argc, char **argv)
   static const struct option long_options[] =
   {
     { "loud", 0, 0, '@' },
-    { "printnull", 0, 0, '0' }, //LEGACY
     { "print-null", 0, 0, '0' },
     { "one-file-system", 0, 0, '1' },
     { "", 0, 0, '9' },
-    { "nohidden", 0, 0, 'A' }, //LEGACY
     { "no-hidden", 0, 0, 'A' },
     { "dedupe", 0, 0, 'B' },
-    { "chunksize", 1, 0, 'C' }, //LEGACY
     { "chunk-size", 1, 0, 'C' },
     { "debug", 0, 0, 'D' },
     { "delete", 0, 0, 'd' },
     { "error-on-dupe", 0, 0, 'E' },
-    { "omitfirst", 0, 0, 'f' }, //LEGACY
     { "omit-first", 0, 0, 'f' },
-    { "hardlinks", 0, 0, 'H' }, //LEGACY
     { "hard-links", 0, 0, 'H' },
     { "help", 0, 0, 'h' },
     { "isolate", 0, 0, 'I' },
     { "reverse", 0, 0, 'i' },
     { "json", 0, 0, 'j' },
 /*    { "skip-hash", 0, 0, 'K' }, */
-    { "linkhard", 0, 0, 'L' }, //LEGACY
     { "link-hard", 0, 0, 'L' },
-    { "linksoft", 0, 0, 'l' }, //LEGACY
     { "link-soft", 0, 0, 'l' },
-    { "printwithsummary", 0, 0, 'M'}, //LEGACY
     { "print-summarize", 0, 0, 'M'},
     { "summarize", 0, 0, 'm'},
-    { "noprompt", 0, 0, 'N' }, //LEGACY
     { "no-prompt", 0, 0, 'N' },
-    { "paramorder", 0, 0, 'O' }, //LEGACY
     { "param-order", 0, 0, 'O' },
     { "order", 1, 0, 'o' },
     { "print", 1, 0, 'P' },
@@ -235,18 +225,12 @@ int main(int argc, char **argv)
     { "size", 0, 0, 'S' },
     { "symlinks", 0, 0, 's' },
     { "partial-only", 0, 0, 'T' },
-    { "nochangecheck", 0, 0, 't' }, //LEGACY
     { "no-change-check", 0, 0, 't' },
-    { "notravcheck", 0, 0, 'U' }, //LEGACY
     { "no-trav-check", 0, 0, 'U' },
-    { "printunique", 0, 0, 'u' }, //LEGACY
     { "print-unique", 0, 0, 'u' },
     { "version", 0, 0, 'v' },
-    { "extfilter", 1, 0, 'X' }, //LEGACY
     { "ext-filter", 1, 0, 'X' },
-    { "softabort", 0, 0, 'Z' }, //LEGACY
     { "soft-abort", 0, 0, 'Z' },
-    { "zeromatch", 0, 0, 'z' }, //LEGACY
     { "zero-match", 0, 0, 'z' },
     { NULL, 0, 0, 0 }
   };
