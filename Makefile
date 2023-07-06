@@ -52,12 +52,14 @@ UNAME_S=$(shell uname -s)
 # Don't use unsupported compiler options on gcc 3/4 (Mac OS X 10.5.8 Xcode)
 # ENABLE_DEDUPE by default - macOS Sierra 10.12 and up required
 ifeq ($(UNAME_S), Darwin)
- GCCVERSION = $(shell expr `LC_ALL=C gcc -v 2>&1 | grep 'gcc version ' | cut -d\  -f3 | cut -d. -f1` \>= 5)
+ GCCVERSION = $(shell expr `LC_ALL=C gcc -v 2>&1 | grep '[cn][cg] version' | sed 's/[^0-9]*//;s/[ .].*//'` \>= 5)
  ifndef DISABLE_DEDUPE
   ENABLE_DEDUPE = 1
  endif
 else
  GCCVERSION = 1
+ BDYNAMIC = -Wl,-Bdynamic
+ BSTATIC = -Wl,-Bstatic
 endif
 
 ifeq ($(GCCVERSION), 1)
@@ -195,9 +197,12 @@ ifndef IGNORE_NEARBY_JC
   endif
  endif
  ifdef FORCE_JC_DLL
-  LINK_OPTIONS += -l:../libjodycode/libjodycode.dll
+  DYN_LDFLAGS += -l:../libjodycode/libjodycode.dll
  else
-  LINK_OPTIONS += -ljodycode
+  ifeq ($(UNAME_S), Darwin)
+   FINALSTATIC = ../libjodycode/libjodycode.a
+  endif
+  DYN_LDFLAGS += -ljodycode
  endif
 endif
 
@@ -206,22 +211,21 @@ CFLAGS += $(COMPILER_OPTIONS) $(CFLAGS_EXTRA)
 LDFLAGS += $(LINK_OPTIONS) $(LDFLAGS_EXTRA)
 
 
-all: libjodycode_hint $(PROGRAM_NAME)
+all: libjodycode_hint $(PROGRAM_NAME) dynamic_jc
 
 dynamic_jc: $(PROGRAM_NAME)
-	$(CC) $(CFLAGS) $(OBJS) -Wl,-Bdynamic $(LDFLAGS) -o $(PROGRAM_NAME)$(SUFFIX)
+	$(CC) $(CFLAGS) $(OBJS) $(BDYNAMIC) $(LDFLAGS) $(DYN_LDFLAGS) -o $(PROGRAM_NAME)$(SUFFIX)
 
 static_jc: $(PROGRAM_NAME)
-	$(CC) $(CFLAGS) $(OBJS) -Wl,-Bstatic $(LDFLAGS) -Wl,-Bdynamic -o $(PROGRAM_NAME)$(SUFFIX)
+	$(CC) $(CFLAGS) $(OBJS) $(BSTATIC) $(LDFLAGS) $(BDYNAMIC) $(FINALSTATIC) -o $(PROGRAM_NAME)$(SUFFIX)
 
 static: $(PROGRAM_NAME)
-	$(CC) $(CFLAGS) $(OBJS) -static $(LDFLAGS) -o $(PROGRAM_NAME)$(SUFFIX)
+	$(CC) $(CFLAGS) $(OBJS) -static $(LDFLAGS) $(FINALSTATIC) -o $(PROGRAM_NAME)$(SUFFIX)
 
 static_stripped: $(PROGRAM_NAME) static
 	strip $(PROGRAM_NAME)$(SUFFIX)
 
 $(PROGRAM_NAME): $(OBJS)
-	$(CC) $(CFLAGS) $(OBJS) $(LDFLAGS) -o $(PROGRAM_NAME)$(SUFFIX)
 
 winres.o: winres.rc winres.manifest.xml
 	./tune_winres.sh

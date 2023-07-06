@@ -17,20 +17,24 @@
 #include "libjodycode.h"
 
 #ifdef __linux__
-/* Use built-in static dedupe header if requested */
-#ifdef STATIC_DEDUPE_H
-#include "linux-dedupe-static.h"
-#else
-#include <linux/fs.h>
-#endif /* STATIC_DEDUPE_H */
+ /* Use built-in static dedupe header if requested */
+ #ifdef STATIC_DEDUPE_H
+  #include "linux-dedupe-static.h"
+ #else
+  #include <linux/fs.h>
+ #endif /* STATIC_DEDUPE_H */
 
-/* If the Linux headers are too old, automatically use the static one */
-#ifndef FILE_DEDUPE_RANGE_SAME
-#warning Automatically enabled STATIC_DEDUPE_H due to insufficient header support
-#include "linux-dedupe-static.h"
-#endif /* FILE_DEDUPE_RANGE_SAME */
-#include <sys/ioctl.h>
-#define JDUPES_DEDUPE_SUPPORTED 1
+ /* If the Linux headers are too old, automatically use the static one */
+ #ifndef FILE_DEDUPE_RANGE_SAME
+  #warning Automatically enabled STATIC_DEDUPE_H due to insufficient header support
+  #include "linux-dedupe-static.h"
+ #endif /* FILE_DEDUPE_RANGE_SAME */
+ #include <sys/ioctl.h>
+ #define JDUPES_DEDUPE_SUPPORTED 1
+ #define KERNEL_DEDUP_MAX_SIZE 16777216
+ /* Error messages */
+ static const char s_err_dedupe_notabug[] = "This is not a bug in jdupes; check your file stats/permissions.";
+ static const char s_err_dedupe_repeated[] = "This verbose error description will not be repeated.";
 #endif /* __linux__ */
 
 #ifdef __APPLE__
@@ -44,12 +48,6 @@
 #ifndef JDUPES_DEDUPE_SUPPORTED
 #error Dedupe is only supported on Linux and macOS
 #endif
-
-#define KERNEL_DEDUP_MAX_SIZE 16777216
-
-/* Error messages */
-static const char s_err_dedupe_notabug[] = "This is not a bug in jdupes; check your file stats/permissions.";
-static const char s_err_dedupe_repeated[] = "This verbose error description will not be repeated.";
 
 void dedupefiles(file_t * restrict files)
 {
