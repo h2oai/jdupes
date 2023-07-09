@@ -29,12 +29,12 @@
  * NOT accept any pull requests that change the hash function unless there
  * is an EXTREMELY compelling reason to do so. Do not waste your time with
  * swapping hash functions. If you want to do it for fun then that's fine. */
-jdupes_hash_t *get_filehash(const file_t * const restrict checkfile, const size_t max_read)
+uint64_t *get_filehash(const file_t * const restrict checkfile, const size_t max_read)
 {
   off_t fsize;
   /* This is an array because we return a pointer to it */
-  static jdupes_hash_t hash[1];
-  static jdupes_hash_t *chunk = NULL;
+  static uint64_t hash[1];
+  static uint64_t *chunk = NULL;
   FILE *file;
   int hashing = 0;
 #ifndef USE_JODY_HASH
@@ -47,7 +47,7 @@ jdupes_hash_t *get_filehash(const file_t * const restrict checkfile, const size_
 
   /* Allocate on first use */
   if (unlikely(chunk == NULL)) {
-    chunk = (jdupes_hash_t *)malloc(auto_chunk_size);
+    chunk = (uint64_t *)malloc(auto_chunk_size);
     if (unlikely(!chunk)) jc_oom("get_filehash() chunk");
   }
 

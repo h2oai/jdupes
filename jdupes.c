@@ -822,7 +822,7 @@ skip_all_scan_code:
   if (ISFLAG(flags, F_DEBUG)) {
     fprintf(stderr, "\n%d partial (+%d small) -> %d full hash -> %d full (%d partial elim) (%d hash%u fail)\n",
         partial_hash, small_file, full_hash, partial_to_full,
-        partial_elim, hash_fail, (unsigned int)sizeof(jdupes_hash_t)*8);
+        partial_elim, hash_fail, (unsigned int)sizeof(uint64_t)*8);
     fprintf(stderr, "%" PRIuMAX " total files, %" PRIuMAX " comparisons\n", filecount, comparisons);
  #ifndef NO_CHUNKSIZE
     if (manual_chunk_size > 0) fprintf(stderr, "I/O chunk size: %ld KiB (manually set)\n", manual_chunk_size >> 10);

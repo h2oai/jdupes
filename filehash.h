@@ -10,7 +10,7 @@ extern "C" {
 
 #include "jdupes.h"
 
-jdupes_hash_t *get_filehash(const file_t * const restrict checkfile, const size_t max_read);
+uint64_t *get_filehash(const file_t * const restrict checkfile, const size_t max_read);
 
 #ifdef __cplusplus
 }

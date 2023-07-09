@@ -27,16 +27,10 @@ extern "C" {
 #include <stdint.h>
 #include <sys/types.h>
 
-#ifndef USE_JODY_HASH
-#include "xxhash.h"
-#endif /* USE_JODY_HASH */
-
-/* Set hash type (change this if swapping in a different hash function) */
 #ifdef USE_JODY_HASH
  #include "libjodycode.h"
- typedef jodyhash_t jdupes_hash_t;
 #else
- typedef XXH64_hash_t jdupes_hash_t;
+ #include "xxhash.h"
 #endif /* USE_JODY_HASH */
 
 /* Some types are different on Windows */
@@ -237,8 +231,8 @@ typedef struct _file {
   off_t size;
   dev_t device;
   jdupes_ino_t inode;
-  jdupes_hash_t filehash_partial;
-  jdupes_hash_t filehash;
+  uint64_t filehash_partial;
+  uint64_t filehash;
 #ifndef NO_MTIME
   time_t mtime;
 #endif
