@@ -17,9 +17,17 @@
 #include <libjodycode.h>
 
 #include "likely_unlikely.h"
+#include "filehash.h"
 #include "interrupt.h"
 #include "progress.h"
 #include "jdupes.h"
+#include "xxhash.h"
+
+const char *hash_algo_list[2] = {
+  "xxHash64 v2",
+  "jodyhash v7"
+};
+
 
 /* Hash part or all of a file
  *
@@ -29,20 +37,18 @@
  * NOT accept any pull requests that change the hash function unless there
  * is an EXTREMELY compelling reason to do so. Do not waste your time with
  * swapping hash functions. If you want to do it for fun then that's fine. */
-uint64_t *get_filehash(const file_t * const restrict checkfile, const size_t max_read)
+uint64_t *get_filehash(const file_t * const restrict checkfile, const size_t max_read, int algo)
 {
   off_t fsize;
   /* This is an array because we return a pointer to it */
   static uint64_t hash[1];
   static uint64_t *chunk = NULL;
-  FILE *file;
+  FILE *file = NULL;
   int hashing = 0;
-#ifndef USE_JODY_HASH
-  XXH64_state_t *xxhstate;
-#else
-#endif
+  XXH64_state_t *xxhstate = NULL;
 
   if (unlikely(checkfile == NULL || checkfile->d_name == NULL)) jc_nullptr("get_filehash()");
+  if (unlikely((algo != HASH_ALGO_XXHASH2_64) && (algo != HASH_ALGO_JODYHASH64))) goto error_bad_hash_algo;
   LOUD(fprintf(stderr, "get_filehash('%s', %" PRIdMAX ")\n", checkfile->d_name, (intmax_t)max_read);)
 
   /* Allocate on first use */
@@ -101,11 +107,11 @@ uint64_t *get_filehash(const file_t * const restrict checkfile, const size_t max
   }
 
 /* WARNING: READ NOTICE ABOVE get_filehash() BEFORE CHANGING HASH FUNCTIONS! */
-#ifndef USE_JODY_HASH
-  xxhstate = XXH64_createState();
-  if (unlikely(xxhstate == NULL)) jc_nullptr("xxhstate");
-  XXH64_reset(xxhstate, 0);
-#endif
+  if (algo == HASH_ALGO_XXHASH2_64) {
+    xxhstate = XXH64_createState();
+    if (unlikely(xxhstate == NULL)) jc_nullptr("xxhstate");
+    XXH64_reset(xxhstate, 0);
+  }
 
   /* Read the file in chunks until we've read it all. */
   while (fsize > 0) {
@@ -115,11 +121,16 @@ uint64_t *get_filehash(const file_t * const restrict checkfile, const size_t max
     bytes_to_read = (fsize >= (off_t)auto_chunk_size) ? auto_chunk_size : (size_t)fsize;
     if (unlikely(fread((void *)chunk, bytes_to_read, 1, file) != 1)) goto error_reading_file;
 
-#ifndef USE_JODY_HASH
-    XXH64_update(xxhstate, chunk, bytes_to_read);
-#else
-    if (unlikely(jc_block_hash(chunk, hash, bytes_to_read) != 0)) goto error_reading_file;
-#endif
+  switch (algo) {
+    case HASH_ALGO_XXHASH2_64:
+      if (unlikely(XXH64_update(xxhstate, chunk, bytes_to_read) != XXH_OK)) goto error_reading_file;
+      break;
+    case HASH_ALGO_JODYHASH64:
+      if (unlikely(jc_block_hash(chunk, hash, bytes_to_read) != 0)) goto error_reading_file;
+      break;
+    default:
+      goto error_bad_hash_algo;
+  }
 
     if ((off_t)bytes_to_read > fsize) break;
     else fsize -= (off_t)bytes_to_read;
@@ -136,19 +147,23 @@ uint64_t *get_filehash(const file_t * const restrict checkfile, const size_t max
       }
     }
     continue;
-error_reading_file:
-    fprintf(stderr, "\nerror reading from file "); jc_fwprint(stderr, checkfile->d_name, 1);
-    fclose(file);
-    return NULL;
   }
 
   fclose(file);
 
-#ifndef USE_JODY_HASH
-  *hash = XXH64_digest(xxhstate);
-  XXH64_freeState(xxhstate);
-#endif
+  if (algo == HASH_ALGO_XXHASH2_64) {
+    *hash = XXH64_digest(xxhstate);
+    XXH64_freeState(xxhstate);
+  }
 
   LOUD(fprintf(stderr, "get_filehash: returning hash: 0x%016jx\n", (uintmax_t)*hash));
   return hash;
+error_reading_file:
+  fprintf(stderr, "\nerror reading from file "); jc_fwprint(stderr, checkfile->d_name, 1);
+  fclose(file);
+  return NULL;
+error_bad_hash_algo:
+  fprintf(stderr, "\nerror reading from file "); jc_fwprint(stderr, checkfile->d_name, 1);
+  fclose(file);
+  return NULL;
 }

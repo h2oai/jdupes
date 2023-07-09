@@ -140,6 +140,9 @@ uintmax_t comparisons = 0;
 /* File tree head */
 static filetree_t *checktree = NULL;
 
+/* Hash algorithm (see filehash.h) */
+int hash_algo = HASH_ALGO_XXHASH2_64;
+
 /* Directory/file parameter position counter */
 unsigned int user_item_count = 1;
 

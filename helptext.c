@@ -5,6 +5,7 @@
 #include <inttypes.h>
 
 #include <libjodycode.h>
+#include "filehash.h"
 #include "helptext.h"
 #include "jdupes.h"
 #include "version.h"
@@ -21,9 +22,6 @@ const char *feature_flags[] = {
   #endif
   #ifdef __FAST_MATH__
   "fastmath",
-  #endif
-  #ifdef USE_JODY_HASH
-  "jodyhash",
   #endif
   #ifdef LOUD_DEBUG
   "loud",
@@ -217,8 +215,11 @@ void version_text(int short_version)
 #endif
   } else printf("%u-bit i%u", (unsigned int)(sizeof(uintptr_t) * 8),
       (unsigned int)(sizeof(long) * 8));
-  if (!short_version) printf(", linked to libjodycode %s (%s)\n", jc_version, jc_verdate);
-  else printf("\n");
+  if (!short_version) {
+    printf(", linked to libjodycode %s (%s), hash %s\n", jc_version, jc_verdate, hash_algo_list[hash_algo]);
+    printf("Hash algorithms available:");
+    for (int i = 0; i < HASH_ALGO_COUNT; i++) printf(" %s%c", hash_algo_list[i], i == (HASH_ALGO_COUNT - 1) ? '\n' : ',');
+  } else printf("\n");
 
   printf("Compile-time feature flags:");
   if (*feature_flags != NULL) {

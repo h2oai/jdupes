@@ -27,12 +27,6 @@ extern "C" {
 #include <stdint.h>
 #include <sys/types.h>
 
-#ifdef USE_JODY_HASH
- #include "libjodycode.h"
-#else
- #include "xxhash.h"
-#endif /* USE_JODY_HASH */
-
 /* Some types are different on Windows */
 #if defined _WIN32 || defined __MINGW32__
  typedef uint64_t jdupes_ino_t;
@@ -273,6 +267,7 @@ typedef struct _filetree {
 /* Progress indicator variables */
 extern uintmax_t filecount, progress, item_progress, dupecount;
 
+extern int hash_algo;
 extern unsigned int user_item_count;
 extern int sort_direction;
 extern char tempname[];
