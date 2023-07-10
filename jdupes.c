@@ -204,7 +204,8 @@ int main(int argc, char **argv)
     { "chunk-size", 1, 0, 'C' },
     { "debug", 0, 0, 'D' },
     { "delete", 0, 0, 'd' },
-    { "error-on-dupe", 0, 0, 'E' },
+    { "error-on-dupe", 0, 0, 'e' },
+    { "ext-option", 0, 0, 'E' },
     { "omit-first", 0, 0, 'f' },
     { "hard-links", 0, 0, 'H' },
     { "help", 0, 0, 'h' },
@@ -346,6 +347,9 @@ int main(int argc, char **argv)
       break;
 #ifndef NO_ERRORONDUPE
     case 'E':
+      fprintf(stderr, "WARNING: -E is moving to -e in the next release!");
+      fprintf(stderr, "CHECK YOUR SCRIPTS and make the change NOW!");
+    case 'e':
       SETFLAG(a_flags, FA_ERRORONDUPE);
       break;
 #endif /* NO_ERRORONDUPE */
