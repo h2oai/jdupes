@@ -9,7 +9,7 @@ extern "C" {
 #endif
 
 #define HASH_ALGO_COUNT 2
-const char *hash_algo_list[HASH_ALGO_COUNT];
+extern const char *hash_algo_list[HASH_ALGO_COUNT];
 #define HASH_ALGO_XXHASH2_64 0
 #define HASH_ALGO_JODYHASH64 1
 
