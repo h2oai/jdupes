@@ -349,6 +349,8 @@ int main(int argc, char **argv)
     case 'E':
       fprintf(stderr, "WARNING: -E is moving to -e in the next release!");
       fprintf(stderr, "CHECK YOUR SCRIPTS and make the change NOW!");
+      SETFLAG(a_flags, FA_ERRORONDUPE);
+      break;
     case 'e':
       SETFLAG(a_flags, FA_ERRORONDUPE);
       break;
