@@ -73,7 +73,7 @@ extern "C" {
  * Windows + Unicode needs a lot more space than UTF-8 in Linux/Mac OS X
  */
 #ifndef PATHBUF_SIZE
-#define PATHBUF_SIZE 4096
+ #define PATHBUF_SIZE 4096
 #endif
 /* Complain if PATHBUF_SIZE is too small */
 #if PATHBUF_SIZE < PATH_MAX
@@ -203,16 +203,6 @@ typedef enum {
 
 #ifndef PARTIAL_HASH_SIZE
  #define PARTIAL_HASH_SIZE 4096
-#endif
-
-/* Maximum path buffer size to use; must be large enough for a path plus
- * any work that might be done to the array it's stored in. PATH_MAX is
- * not always true. Read this article on the false promises of PATH_MAX:
- * http://insanecoding.blogspot.com/2007/11/pathmax-simply-isnt.html
- * Windows + Unicode needs a lot more space than UTF-8 in Linux/Mac OS X
- */
-#ifndef PATHBUF_SIZE
-#define PATHBUF_SIZE 4096
 #endif
 
 /* Per-file information */
