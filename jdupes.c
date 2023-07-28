@@ -829,8 +829,8 @@ skip_all_scan_code:
 
 #ifdef DEBUG
   if (ISFLAG(flags, F_DEBUG)) {
-    fprintf(stderr, "\n%d partial (+%d small) -> %d full hash -> %d full (%d partial elim) (%d hash%u fail)\n",
-        partial_hash, small_file, full_hash, partial_to_full,
+    fprintf(stderr, "\n%d partial(%uKiB) (+%d small) -> %d full hash -> %d full (%d partial elim) (%d hash%u fail)\n",
+        partial_hash, PARTIAL_HASH_SIZE >> 10, small_file, full_hash, partial_to_full,
         partial_elim, hash_fail, (unsigned int)sizeof(uint64_t)*8);
     fprintf(stderr, "%" PRIuMAX " total files, %" PRIuMAX " comparisons\n", filecount, comparisons);
  #ifndef NO_CHUNKSIZE

@@ -1,6 +1,9 @@
 /* jdupes file matching functions
  * This file is part of jdupes; see jdupes.c for license information */
 
+#ifdef __linux__
+ #include <fcntl.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -287,6 +290,12 @@ int confirmmatch(FILE * const restrict file1, FILE * const restrict file2, const
 
   fseek(file1, 0, SEEK_SET);
   fseek(file2, 0, SEEK_SET);
+#ifdef __linux__
+  posix_fadvise(fileno(file1), 0, size, POSIX_FADV_SEQUENTIAL);
+  posix_fadvise(fileno(file1), 0, size, POSIX_FADV_WILLNEED);
+  posix_fadvise(fileno(file2), 0, size, POSIX_FADV_SEQUENTIAL);
+  posix_fadvise(fileno(file2), 0, size, POSIX_FADV_WILLNEED);
+#endif /* __linux__ */
 
   do {
     if (interrupt) return 0;

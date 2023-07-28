@@ -241,6 +241,7 @@ void loaddir(const char * const restrict dir,
       } else { LOUD(fprintf(stderr, "loaddir: directory: not recursing\n")); }
       free(newfile->d_name);
       free(newfile);
+      if (unlikely(interrupt)) return;
       continue;
     } else {
 //add_single_file:
