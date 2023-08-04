@@ -189,7 +189,7 @@ void linkfiles(file_t *files, const int linktype, const int only_current)
             fprintf(stderr, "warning: hard link target on different device, not linking:\n-//-> ");
             jc_fwprint(stderr, dupelist[x]->d_name, 1);
             exit_status = EXIT_FAILURE;
-            goto linkfile_loop;
+            continue;
           } else {
             /* The devices for the files are the same, but we still need to skip
              * anything that is already hard linked (-L and -H both set) */
@@ -199,7 +199,7 @@ void linkfiles(file_t *files, const int linktype, const int only_current)
                 if (!ISFLAG(flags, F_HIDEPROGRESS)) {
                   printf("-==-> "); jc_fwprint(stdout, dupelist[x]->d_name, 1);
                 }
-              goto linkfile_loop;
+              continue;
             }
           }
         } else {
@@ -207,14 +207,14 @@ void linkfiles(file_t *files, const int linktype, const int only_current)
           /* Do not attempt to symlink a file to itself or to another symlink */
 #ifndef NO_SYMLINKS
           if (ISFLAG(dupelist[x]->flags, FF_IS_SYMLINK) &&
-              ISFLAG(dupelist[symsrc]->flags, FF_IS_SYMLINK)) goto linkfile_loop;
-          if (x == symsrc) goto linkfile_loop;
+              ISFLAG(dupelist[symsrc]->flags, FF_IS_SYMLINK)) continue;
+          if (x == symsrc) continue;
 #endif
         }
 #ifdef UNICODE
         if (!M2W(dupelist[x]->d_name, wname)) {
           mb2wc_failed(dupelist[x]->d_name);
-          goto linkfile_loop;
+          continue;
         }
 #endif /* UNICODE */
 
@@ -228,7 +228,7 @@ void linkfiles(file_t *files, const int linktype, const int only_current)
           fprintf(stderr, "warning: link target is a read-only file, not linking:\n-//-> ");
           jc_fwprint(stderr, dupelist[x]->d_name, 1);
           exit_status = EXIT_FAILURE;
-          goto linkfile_loop;
+          continue;
         }
         /* Check file pairs for modification before linking */
         /* Safe linking: don't actually delete until the link succeeds */
@@ -239,15 +239,15 @@ void linkfiles(file_t *files, const int linktype, const int only_current)
           LOUD(fprintf(stderr, "file_has_changed: %d\n", i);)
           srcfile = dupelist[x];
           exit_status = EXIT_FAILURE;
-          goto linkfile_loop;
-          goto linkfile_loop;
+          continue;
+          continue;
         }
         if (file_has_changed(dupelist[x])) {
           fprintf(stderr, "warning: target file modified since scanned, not linking:\n-//-> ");
           jc_fwprint(stderr, dupelist[x]->d_name, 1);
           exit_status = EXIT_FAILURE;
-          goto linkfile_loop;
-          goto linkfile_loop;
+          continue;
+          continue;
         }
 #ifdef ON_WINDOWS
         /* For Windows, the hard link count maximum is 1023 (+1); work around
@@ -257,20 +257,20 @@ void linkfiles(file_t *files, const int linktype, const int only_current)
           jc_fwprint(stderr, dupelist[x]->d_name, 1);
           srcfile = dupelist[x];
           exit_status = EXIT_FAILURE;
-          goto linkfile_loop;
+          continue;
         }
         if (s.st_nlink >= 1024) {
           fprintf(stderr, "warning: maximum source link count reached, changing source file:\n[SRC] ");
           srcfile = dupelist[x];
           exit_status = EXIT_FAILURE;
-          goto linkfile_loop;
+          continue;
         }
-        if (STAT(dupelist[x]->d_name, &s) != 0) goto linkfile_loop;
+        if (STAT(dupelist[x]->d_name, &s) != 0) continue;
         if (s.st_nlink >= 1024) {
           fprintf(stderr, "warning: maximum destination link count reached, skipping:\n-//-> ");
           jc_fwprint(stderr, dupelist[x]->d_name, 1);
           exit_status = EXIT_FAILURE;
-          goto linkfile_loop;
+          continue;
         }
 #endif
 #ifdef ENABLE_CLONEFILE_LINK
@@ -279,7 +279,7 @@ void linkfiles(file_t *files, const int linktype, const int only_current)
             fprintf(stderr, "warning: stat() on destination file failed, skipping:\n-##-> ");
             jc_fwprint(stderr, dupelist[x]->d_name, 1);
             exit_status = EXIT_FAILURE;
-            goto linkfile_loop;
+            continue;
           }
 
           /* macOS unexpectedly copies the compressed flag when copying metadata
@@ -296,7 +296,7 @@ void linkfiles(file_t *files, const int linktype, const int only_current)
 
         /* Make sure the name will fit in the buffer before trying */
         name_len = strlen(dupelist[x]->d_name) + 14;
-        if (name_len > PATHBUF_SIZE) goto linkfile_loop;
+        if (name_len > PATHBUF_SIZE) continue;
         /* Assemble a temporary file name */
         strcpy(tempname, dupelist[x]->d_name);
         strcat(tempname, ".__jdupes__.tmp");
@@ -304,7 +304,7 @@ void linkfiles(file_t *files, const int linktype, const int only_current)
 #ifdef UNICODE
         if (!M2W(tempname, wname2)) {
           mb2wc_failed(srcfile->d_name);
-          goto linkfile_loop;
+          continue;
         }
         i = MoveFileW(wname, wname2) ? 0 : 1;
 #else
@@ -320,7 +320,7 @@ void linkfiles(file_t *files, const int linktype, const int only_current)
 #else
           rename(tempname, dupelist[x]->d_name);
 #endif
-          goto linkfile_loop;
+          continue;
         }
 
         /* Create the desired hard link with the original file's name */
@@ -330,7 +330,7 @@ void linkfiles(file_t *files, const int linktype, const int only_current)
  #ifdef UNICODE
         if (!M2W(srcfile->d_name, wname2)) {
           mb2wc_failed(srcfile->d_name);
-          goto linkfile_loop;
+          continue;
         }
         if (CreateHardLinkW((LPCWSTR)wname, (LPCWSTR)wname2, NULL) == TRUE) success = 1;
  #else
@@ -399,21 +399,21 @@ void linkfiles(file_t *files, const int linktype, const int only_current)
 #ifdef UNICODE
           if (!M2W(tempname, wname2)) {
             mb2wc_failed(tempname);
-            goto linkfile_loop;
+            continue;
           }
           i = MoveFileW(wname2, wname) ? 0 : 1;
 #else
           i = rename(tempname, dupelist[x]->d_name);
 #endif /* UNICODE */
           if (i != 0) revert_failed(dupelist[x]->d_name, tempname);
-          goto linkfile_loop;
+          continue;
         }
 
         /* Remove temporary file to clean up; if we can't, reverse the linking */
 #ifdef UNICODE
           if (!M2W(tempname, wname2)) {
             mb2wc_failed(tempname);
-            goto linkfile_loop;
+            continue;
           }
         i = DeleteFileW(wname2) ? 0 : 1;
 #else
