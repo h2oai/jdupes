@@ -15,15 +15,18 @@ typedef struct _hashdb {
   struct _hashdb *left;
   struct _hashdb *right;
   uint64_t path_hash;
-  uint64_t partial_hash;
-  uint64_t full_hash;
+  uint64_t partialhash;
+  uint64_t fullhash;
   char *path;
   time_t mtime;
   int hashcount;
 } hashdb_t;
 
-extern hashdb_t *alloc_hashdb_entry(uint64_t path_hash, int pathlen, file_t *check);
+extern hashdb_t *hashdb;
+
+extern hashdb_t *add_hashdb_entry(uint64_t path_hash, int pathlen, file_t *check);
 extern void dump_hashdb(hashdb_t *cur);
+extern int get_path_hash(char *path, uint64_t *path_hash);
 extern int load_hash_database(char *dbname);
 extern void load_hashdb_entry(file_t *file);
 extern void hd16(char *a);

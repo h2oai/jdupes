@@ -30,6 +30,7 @@ void dump_all_flags(void)
   if (ISFLAG(flags, F_NOTRAVCHECK)) fprintf(stderr, " F_NOTRAVCHECK");
   if (ISFLAG(flags, F_SKIPHASH)) fprintf(stderr, " F_SKIPHASH");
   if (ISFLAG(flags, F_BENCHMARKSTOP)) fprintf(stderr, " F_BENCHMARKSTOP");
+  if (ISFLAG(flags, F_HASHDB)) fprintf(stderr, " F_HASHDB");
 
   if (ISFLAG(flags, F_LOUD)) fprintf(stderr, " F_LOUD");
   if (ISFLAG(flags, F_DEBUG)) fprintf(stderr, " F_DEBUG");

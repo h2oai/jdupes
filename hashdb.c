@@ -11,7 +11,7 @@
 #include "hashdb.h"
 
 
-static hashdb_t *hashdb = NULL;
+hashdb_t *hashdb = NULL;
 static int hashdb_algo = 0;
 
 #define HASHDB_MIN_VER 1
@@ -36,21 +36,21 @@ void dump_hashdb(hashdb_t *cur)
   if (cur == NULL) return;
   if (cur == hashdb) printf("jdupes hashdb:1,0,000000006f000000\n");
  /* db line format: hashcount,partial,full,mtime,path */
-  if (cur->hashcount != 0) printf("%u,%016lx,%016lx,%016lx,%s\n", cur->hashcount, cur->partial_hash, cur->full_hash, cur->mtime, cur->path);
+  if (cur->hashcount != 0) printf("%u,%016lx,%016lx,%016lx,%s\n", cur->hashcount, cur->partialhash, cur->fullhash, cur->mtime, cur->path);
   if (cur->left != NULL) dump_hashdb(cur->left);
   if (cur->right != NULL) dump_hashdb(cur->right);
   return;
 }
 
 
-hashdb_t *alloc_hashdb_entry(uint64_t path_hash, int pathlen, file_t *check)
+hashdb_t *add_hashdb_entry(uint64_t path_hash, int pathlen, file_t *check)
 {
   hashdb_t *file = (hashdb_t *)malloc(sizeof(hashdb_t) + pathlen + 1);
   hashdb_t *cur;
 
   if (file == NULL) return NULL;
   if (check != NULL && check->d_name == NULL) return NULL;
-//fprintf(stderr, "alloc_hashdb_entry(%016lx, %d, %p)\n", path_hash, pathlen, (void *)check);
+fprintf(stderr, "add_hashdb_entry(%016lx, %d, %p)\n", path_hash, pathlen, (void *)check);
   memset(file, 0, sizeof(hashdb_t));
   file->path = (char *)((uintptr_t)file + (uintptr_t)sizeof(hashdb_t));
 
@@ -62,15 +62,17 @@ hashdb_t *alloc_hashdb_entry(uint64_t path_hash, int pathlen, file_t *check)
     while (1) {
 //fprintf(stderr, "%016lx >= %016lx ?\n", cur->path_hash, path_hash);
       /* If path is set then this entry may already exist and we need to check */
-      if (check != NULL && cur->path != NULL && cur->path_hash == path_hash && strcmp(cur->path, check->d_name) == 0) {
-        fprintf(stderr, "file already exists: '%s'\n", cur->path);
-        free(file);
-        /* Invalidate this entry */
-        if (cur->mtime != file->mtime) {
-          cur->hashcount = 0;
-	  fprintf(stderr, "invalidating entry based on mtime: '%s' %lx != %lx\n", cur->path, cur->mtime, file->mtime);
-          return NULL;
-	} else return cur;
+      if (check != NULL && cur->path != NULL) {
+        if (cur->path_hash == path_hash && strcmp(cur->path, check->d_name) == 0) {
+          fprintf(stderr, "file already exists: '%s'\n", cur->path);
+          free(file);
+          /* Invalidate this entry */
+          if (cur->mtime != file->mtime) {
+            cur->hashcount = 0;
+	    fprintf(stderr, "invalidating entry based on mtime: '%s' %lx != %lx\n", cur->path, cur->mtime, file->mtime);
+            return NULL;
+          } else return cur;
+	}
       }
       if (cur->path_hash >= path_hash) {
         if (cur->left == NULL) {
@@ -91,6 +93,18 @@ hashdb_t *alloc_hashdb_entry(uint64_t path_hash, int pathlen, file_t *check)
       }
     }
   }
+  /* If a check entry was given then populate it */
+  if (check != NULL && check->d_name != NULL && ISFLAG(check->flags, FF_HASH_PARTIAL)) {
+    file->path_hash = path_hash;
+    file->path = (char *)malloc(pathlen + 1);
+    if (file->path == NULL) return NULL;
+    strncpy(file->path, check->d_name, PATH_MAX);
+    file->mtime = check->mtime;
+    file->partialhash = check->filehash_partial;
+    file->fullhash = check->filehash;
+    if (ISFLAG(check->flags, FF_HASH_FULL)) file->hashcount = 2;
+    else file->hashcount = 1;
+  }
   return file;
 }
 
@@ -106,6 +120,8 @@ int load_hash_database(char *dbname)
   int linenum = 1;
   time_t db_mtime;
   
+  if (dbname == NULL) goto error_hashdb_null;
+fprintf(stderr, "load_hash_database('%s')\n", dbname);
   errno = 0;
   db = fopen(dbname, "rb");
   if (db == NULL) goto error_hashdb_open;
@@ -131,8 +147,7 @@ int load_hash_database(char *dbname)
     int pathlen;
     int linelen;
     int hashcount;
-    uint64_t partial_hash, full_hash = 0, path_hash;
-    uint64_t aligned_path[(PATH_MAX + 128) / sizeof(uint64_t)];
+    uint64_t partialhash, fullhash = 0, path_hash;
     time_t mtime;
     char *path;
     hashdb_t *entry;
@@ -153,35 +168,29 @@ int load_hash_database(char *dbname)
     hashcount = (int)strtol(field, NULL, 16);
     if (hashcount < 1 || hashcount > 2) goto error_hashdb_line;
     field = strtok(NULL, ","); if (field == NULL) goto error_hashdb_line;
-    partial_hash = strtoull(field, NULL, 16);
+    partialhash = strtoull(field, NULL, 16);
     field = strtok(NULL, ","); if (field == NULL) goto error_hashdb_line;
-    if (hashcount == 2) full_hash = strtoull(field, NULL, 16);
+    if (hashcount == 2) fullhash = strtoull(field, NULL, 16);
     field = strtok(NULL, ","); if (field == NULL) goto error_hashdb_line;
     mtime = (time_t)strtoull(field, NULL, 16);
     path = buf + 53;
     path = strtok(path, "\n"); if (path == NULL) goto error_hashdb_line;
     pathlen = linelen - 54;
     if (pathlen > PATH_MAX) goto error_hashdb_line;
-//    memset((char *)&aligned_path, 0, sizeof(aligned_path));
-    memcpy((char *)&aligned_path, path, pathlen);
-    *((char *)&aligned_path + pathlen) = '\0';
-//    memset((char *)(&aligned_path) + pathlen, 0, 8);
-    path_hash = 0;
-    if (jc_block_hash(aligned_path, &path_hash, pathlen) != 0) goto error_hashdb_path_hash;
-//fprintf(stderr, "jc_block_hash(%p '%s', %p (%016lx), %u)\n", (void *)aligned_path, (char *)aligned_path, (void *)&path_hash, path_hash, pathlen);
-//hd16((char *)aligned_path);
+    *(path + pathlen) = '\0';
+    if (get_path_hash(path, &path_hash) != 0) goto error_hashdb_path_hash;
 
     SECS_TO_TIME(date, &mtime);
-//fprintf(stderr, "file entry: [%u:%016lx] '%s', mtime %s, hashes [%u] %016lx:%016lx\n", pathlen, path_hash, path, date, hashcount, partial_hash, full_hash);
+//fprintf(stderr, "file entry: [%u:%016lx] '%s', mtime %s, hashes [%u] %016lx:%016lx\n", pathlen, path_hash, path, date, hashcount, partialhash, fullhash);
 
-    entry = alloc_hashdb_entry(path_hash, pathlen, NULL);
+    entry = add_hashdb_entry(path_hash, pathlen, NULL);
     if (entry == NULL) goto error_hashdb_add;
     // init path entry items
     entry->path_hash = path_hash;
-    memcpy(entry->path, aligned_path, pathlen + 1);
+    memcpy(entry->path, path, pathlen + 1);
     entry->mtime = mtime;
-    entry->partial_hash = partial_hash;
-    entry->full_hash = full_hash;
+    entry->partialhash = partialhash;
+    entry->fullhash = fullhash;
     entry->hashcount = hashcount;
   }
 
@@ -208,22 +217,33 @@ error_hashdb_add:
 error_hashdb_path_hash:
   fprintf(stderr, "error: internal failure hashing a path\n");
   return 7;
+error_hashdb_null:
+  fprintf(stderr, "error: internal failure: NULL pointer for hashdb\n");
+  return 7;
 }
  
- 
+
+int get_path_hash(char *path, uint64_t *path_hash)
+{
+  uint64_t aligned_path[(PATH_MAX + 8) / sizeof(uint64_t)];
+
+//  memset((char *)&aligned_path, 0, sizeof(aligned_path));
+  strncpy((char *)&aligned_path, path, PATH_MAX);
+  *path_hash = 0;
+  return jc_block_hash((uint64_t *)aligned_path, path_hash, strlen((char *)aligned_path));
+}
+
+
  /* If file hash info is already present in hash database then preload those hashes */
 void load_hashdb_entry(file_t *file)
 {
   uint64_t path_hash;
-  uint64_t aligned_path[(PATH_MAX + 8) / sizeof(uint64_t)];
   hashdb_t *cur = hashdb;
 
+//fprintf(stderr, "load_hashdb_entry('%s')\n", file->d_name);
   if (file == NULL || file->d_name == NULL) goto error_null;
   if (cur == NULL) return;
-//  memset((char *)&aligned_path, 0, sizeof(aligned_path));
-  strncpy((char *)&aligned_path, file->d_name, PATH_MAX);
-  path_hash = 0;
-  if (jc_block_hash((uint64_t *)aligned_path, &path_hash, strlen((char *)aligned_path)) != 0) goto error_path_hash;
+  if (get_path_hash(file->d_name, &path_hash) != 0) goto error_path_hash;
   while (1) {
     if (cur->path_hash != path_hash) {
       if (path_hash < cur->path_hash) cur = cur->left;
@@ -238,9 +258,9 @@ void load_hashdb_entry(file_t *file)
     } else {
       /* Found a matching path too but check mtime */
       if (file->mtime != cur->mtime) return;
-      file->filehash_partial = cur->partial_hash;
+      file->filehash_partial = cur->partialhash;
       if (cur->hashcount == 2) {
-        file->filehash = cur->full_hash;
+        file->filehash = cur->fullhash;
         SETFLAG(file->flags, (FF_HASH_PARTIAL | FF_HASH_FULL));
       } else SETFLAG(file->flags, FF_HASH_PARTIAL);
       return;
@@ -261,7 +281,6 @@ error_path_hash:
 /* For testing purposes only */
 int main(void) {
   file_t file;
-  uint64_t aligned_path[(PATH_MAX + 128) / sizeof(uint64_t)];
   uint64_t path_hash;
 
   memset(&file, 0, sizeof(file_t));
@@ -272,9 +291,8 @@ int main(void) {
   strcpy(file.d_name, "THREE Turntables!@#"); file.mtime = 0x64e37acd;
   load_hashdb_entry(&file);
   printf("File info: name '%s', flags %x, hashes %016lx:%016lx\n", file.d_name, file.flags, file.filehash_partial, file.filehash);
-  memcpy(&aligned_path, file.d_name, strlen(file.d_name) + 1); path_hash = 0;
-  if (jc_block_hash(aligned_path, &path_hash, strlen((char *)aligned_path)) != 0) return 1;
-  alloc_hashdb_entry(path_hash, strlen(file.d_name), &file);
+  if (get_path_hash(file.d_name, &path_hash) != 0) return 1;
+  add_hashdb_entry(path_hash, strlen(file.d_name), &file);
 
   file.filehash_partial = 0; file.filehash = 0; file.flags = 0; *(file.d_name) = '\0';
   strcpy(file.d_name, "BAR");

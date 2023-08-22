@@ -13,6 +13,9 @@
 #include "likely_unlikely.h"
 #include "checks.h"
 #include "filehash.h"
+#ifndef NO_HASHDB
+ #include "hashdb.h"
+#endif
 #include "interrupt.h"
 #include "match.h"
 #include "progress.h"
@@ -114,6 +117,10 @@ file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict file)
   int cmpresult = 0;
   int cantmatch = 0;
   const uint64_t * restrict filehash;
+#ifndef NO_HASHDB
+  uint64_t path_hash;
+  int pathlen;
+#endif
 
   if (unlikely(tree == NULL || file == NULL || tree->file == NULL || tree->file->d_name == NULL || file->d_name == NULL)) jc_nullptr("checkmatch()");
   LOUD(fprintf(stderr, "checkmatch ('%s', '%s')\n", tree->file->d_name, file->d_name));
@@ -221,6 +228,18 @@ file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict file)
       DBG(partial_elim++);
     }
   }  /* if (cmpresult == 0) */
+
+  /* Add to hash database */
+#ifndef NO_HASHDB
+  if (get_path_hash(file->d_name, &path_hash) == 0) {
+    pathlen = strlen(file->d_name);
+    add_hashdb_entry(path_hash, pathlen, file);
+  }
+  if (get_path_hash(tree->file->d_name, &path_hash) == 0) {
+    pathlen = strlen(tree->file->d_name);
+    add_hashdb_entry(path_hash, pathlen, tree->file);
+  }
+#endif
 
   if ((cantmatch != 0) && (cmpresult == 0)) {
     LOUD(fprintf(stderr, "checkmatch: rejecting because match not allowed (cantmatch = 1)\n"));

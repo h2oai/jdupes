@@ -50,6 +50,9 @@
 #endif
 #include "filehash.h"
 #include "filestat.h"
+#ifndef NO_HASHDB
+ #include "hashdb.h"
+#endif
 #include "helptext.h"
 #include "loaddir.h"
 #include "match.h"
@@ -524,6 +527,13 @@ int main(int argc, char **argv)
       add_extfilter(optarg);
       break;
 #endif /* NO_EXTFILTER */
+#ifndef NO_HASHDB
+    case 'y':
+      SETFLAG(flags, F_HASHDB);
+      load_hash_database(optarg);
+      LOUD(fprintf(stderr, "opt: use a hash database (--hash-database)\n");)
+      break;
+#endif /* NO_HASHDB */
     case 'z':
       SETFLAG(flags, F_INCLUDEEMPTY);
       LOUD(fprintf(stderr, "opt: zero-length files count as matches (--zero-match)\n");)
@@ -795,6 +805,8 @@ skip_file_scan:
     printf("%s", s_no_dupes);
     exit(exit_status);
   }
+
+  dump_hashdb(hashdb);
 
 #ifndef NO_DELETE
   if (ISFLAG(a_flags, FA_DELETEFILES)) {
