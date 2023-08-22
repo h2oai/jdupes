@@ -15,10 +15,14 @@
 
 hashdb_t *hashdb = NULL;
 static int hashdb_algo = 0;
+static int hashdb_dirty = 0;
 
 #define HASHDB_VER 1
 #define HASHDB_MIN_VER 1
 #define HASHDB_MAX_VER 1
+#ifndef PH_SHIFT
+ #define PH_SHIFT 2
+#endif
 #define SECS_TO_TIME(a,b) strftime(a, 32, "%F %T", localtime(b));
 
 
@@ -37,15 +41,19 @@ void hd16(char *a) {
 int save_hash_database(const char * const restrict dbname)
 {
   FILE *db;
+  unsigned long cnt;
 
   if (dbname == NULL) goto error_hashdb_null;
   LOUD(fprintf(stderr, "save_hash_database('%s')\n", dbname);)
+  /* Don't save the hash database if it wasn't changed */
+  if (hashdb_dirty == 0) return 0;
   errno = 0;
   db = fopen(dbname, "w+b");
   if (db == NULL) goto error_hashdb_open;
 
-  if (write_hashdb_entry(db, hashdb) != 0) goto error_hashdb_write;
+  if (write_hashdb_entry(db, hashdb, &cnt) != 0) goto error_hashdb_write;
   fclose(db);
+//fprintf(stderr, "Wrote %lu items to hash databse\n", cnt);
 
   return 0;
 
@@ -62,7 +70,7 @@ error_hashdb_write:
 }
 
 
-int write_hashdb_entry(FILE *db, hashdb_t *cur)
+int write_hashdb_entry(FILE *db, hashdb_t *cur, unsigned long *cnt)
 {
   struct timeval tm;
   int err = 0;
@@ -84,6 +92,7 @@ int write_hashdb_entry(FILE *db, hashdb_t *cur)
   if (cur->hashcount != 0) {
     snprintf(out, PATH_MAX + 127, "%u,%016lx,%016lx,%08lx,%08lx,%016lx,%s\n",
       cur->hashcount, cur->partialhash, cur->fullhash, cur->mtime, cur->size, cur->inode, cur->path);
+    (*cnt)++;
     LOUD(fprintf(stderr, "write hashdb: %s", out);)
     errno = 0;
     fputs(out, db);
@@ -91,8 +100,8 @@ int write_hashdb_entry(FILE *db, hashdb_t *cur)
   }
 
   /* Traverse the tree, propagating errors */
-  if (cur->left != NULL) err = write_hashdb_entry(db, cur->left);
-  if (err == 0 && cur->right != NULL) err = write_hashdb_entry(db, cur->right);
+  if (cur->left != NULL) err = write_hashdb_entry(db, cur->left, cnt);
+  if (err == 0 && cur->right != NULL) err = write_hashdb_entry(db, cur->right, cnt);
   return err;
 }
 
@@ -120,12 +129,15 @@ hashdb_t *add_hashdb_entry(const uint64_t path_hash, int pathlen, file_t *check)
   hashdb_t *file = (hashdb_t *)malloc(sizeof(hashdb_t) + pathlen + 1);
   hashdb_t *cur;
   int exclude;
+//static int ldepth = 0, rdepth = 0;
 
   if (file == NULL) return NULL;
   if (check != NULL && check->d_name == NULL) return NULL;
 //fprintf(stderr, "add_hashdb_entry(%016lx, %d, %p)\n", path_hash, pathlen, (void *)check);
   memset(file, 0, sizeof(hashdb_t));
   file->path = (char *)((uintptr_t)file + (uintptr_t)sizeof(hashdb_t));
+//fprintf(stderr, "path %p\n", (void *)file->path);
+  file->path_hash = path_hash;
 
   if (hashdb == NULL) {
 //fprintf(stderr, "root hash %016lx\n", path_hash);
@@ -139,25 +151,28 @@ hashdb_t *add_hashdb_entry(const uint64_t path_hash, int pathlen, file_t *check)
         if (cur->path_hash == path_hash && strcmp(cur->path, check->d_name) == 0) {
 //fprintf(stderr, "file already exists: '%s'\n", cur->path);
           free(file);
-          /* Invalidate this entry */
-	  exclude = 0;
+          /* Invalidate this entry if something has changed */
+          exclude = 0;
           if (cur->mtime != check->mtime) exclude |= 1;
           if (cur->inode != check->inode) exclude |= 2;
           if (cur->size != check->size) exclude |= 4;
-	  if (exclude == 0) {
+          if (exclude == 0) {
             return cur;
-	  } else {
+          } else {
             cur->hashcount = 0;
+            hashdb_dirty = 1;
             return NULL;
           }
-	}
+        }
       }
+//fprintf(stderr, "path hashes: %016lx %016lx\n", cur->path_hash, path_hash);
       if (cur->path_hash >= path_hash) {
         if (cur->left == NULL) {
           cur->left = file;
           break;
         } else {
           cur = cur->left;
+//ldepth++;
           continue;
         }
       } else {
@@ -166,13 +181,16 @@ hashdb_t *add_hashdb_entry(const uint64_t path_hash, int pathlen, file_t *check)
           break;
         } else {
           cur = cur->right;
+//rdepth++;
           continue;
         }
       }
     }
+//fprintf(stderr, "ldepth %d, rdepth %d\n", ldepth, rdepth);
   }
   /* If a check entry was given then populate it */
   if (check != NULL && check->d_name != NULL && ISFLAG(check->flags, FF_HASH_PARTIAL)) {
+    hashdb_dirty = 1;
     file->path_hash = path_hash;
     if (file->path == NULL) return NULL;
     strncpy(file->path, check->d_name, pathlen);
@@ -323,11 +341,14 @@ warn_hashdb_algo:
 int get_path_hash(char *path, uint64_t *path_hash)
 {
   uint64_t aligned_path[(PATH_MAX + 8) / sizeof(uint64_t)];
+  int retval;
 
 //  memset((char *)&aligned_path, 0, sizeof(aligned_path));
   strncpy((char *)&aligned_path, path, PATH_MAX);
   *path_hash = 0;
-  return jc_block_hash((uint64_t *)aligned_path, path_hash, strlen((char *)aligned_path));
+  retval = jc_block_hash((uint64_t *)aligned_path, path_hash, strlen((char *)aligned_path));
+  *path_hash -= ~((*path_hash << PH_SHIFT) | (*path_hash >> ((sizeof(uint64_t) * 8) - PH_SHIFT)));
+  return retval;
 }
 
 
