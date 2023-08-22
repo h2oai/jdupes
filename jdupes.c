@@ -144,7 +144,11 @@ uintmax_t comparisons = 0;
 static filetree_t *checktree = NULL;
 
 /* Hash algorithm (see filehash.h) */
+#ifdef USE_JODY_HASH
+int hash_algo = HASH_ALGO_JODYHASH64;
+#else
 int hash_algo = HASH_ALGO_XXHASH2_64;
+#endif
 
 /* Directory/file parameter position counter */
 unsigned int user_item_count = 1;
@@ -537,7 +541,7 @@ int main(int argc, char **argv)
         SETFLAG(flags, F_HASHDB);
         hashdb_name = (char *)malloc(strlen(optarg) + 1);
 	strcpy(hashdb_name, optarg);
-      }
+      } else goto error_load_hashdb;
       LOUD(fprintf(stderr, "opt: use a hash database (--hash-db)\n");)
       break;
 #endif /* NO_HASHDB */
@@ -813,11 +817,10 @@ skip_file_scan:
     exit(exit_status);
   }
 
-  if (ISFLAG(flags, F_HASHDB)) {
-    //dump_hashdb(hashdb);
-    save_hash_database(hashdb_name);
-    free(hashdb_name);
-  }
+#ifndef NO_HASHDB
+  if (ISFLAG(flags, F_HASHDB)) save_hash_database(hashdb_name);
+  if (hashdb_name != NULL) free(hashdb_name);
+#endif
 
 #ifndef NO_DELETE
   if (ISFLAG(a_flags, FA_DELETEFILES)) {
@@ -878,6 +881,11 @@ skip_all_scan_code:
 error_optarg:
   fprintf(stderr, "error: option '%c' requires an argument\n", opt);
   exit(EXIT_FAILURE);
+#ifndef NO_HASHDB
+error_load_hashdb:
+  fprintf(stderr, "error: failure loading hash database '%s'\n", optarg);
+  exit(EXIT_FAILURE);
+#endif
 interrupt_exit:
   fprintf(stderr, "%s", s_interrupt);
   exit(EXIT_FAILURE);

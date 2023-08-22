@@ -444,7 +444,9 @@ void linkfiles(file_t *files, const int linktype, const int only_current)
       }
       if (!ISFLAG(flags, F_HIDEPROGRESS)) printf("\n");
     }
+#if !defined NO_SYMLINKS || defined ENABLE_CLONEFILE_LINK
 linkfile_loop:
+#endif
     if (only_current == 1) break;
     files = files->next;
   }

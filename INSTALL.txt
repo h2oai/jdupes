@@ -62,6 +62,7 @@ NO_ERRORONDUPE     Disable error exit on first dupe found -E
 NO_EXTFILTER       Disable extended filter -X
 NO_GETOPT_LONG     Disable getopt_long() (long options will not work)
 NO_HARDLINKS       Disable hard link code -L, -H
+NO_HASHDB          Disable hash cache database feature -y
 NO_HELPTEXT        Disable all help text and almost all version text
 NO_JODY_SORT       Disable numerically-correct sort (use "naive" name sort)
 NO_JSON            Disable JSON output -j
