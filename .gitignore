@@ -24,6 +24,7 @@
 /jdupes-*-*/
 /jdupes-*-*.zip
 /hashdb
+/jdupes_hashdb.txt
 /*.pkg.tar.*
 test_temp
 output.log
