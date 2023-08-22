@@ -1,5 +1,5 @@
-jdupes hashdb:1,1,0000000064e3aaac
-2,01234567deadbeef,deadbeef76543210,0000000064e3a000,XyzZ
-2,c0ffee00deadbeef,deadbeef69696969,0000000064e39000,BAR
-2,fefefefea0a0dcdc,00112233456789ab,0000000064e37acc,Two Turntables!@#
-1,fefefafea0a0dcdc,0000000000000000,0000000064e37acd,THREE Turntables!@#
+jdupes hashdb:1,0,0000000064e3aaac
+2,01234567deadbeef,deadbeef76543210,64e3a000,XyzZ
+2,c0ffee00deadbeef,deadbeef69696969,64e39000,BAR
+2,fefefefea0a0dcdc,00112233456789ab,64e37acc,Two Turntables!@#
+1,fefefafea0a0dcdc,0000000000000000,64e37acd,THREE Turntables!@#
