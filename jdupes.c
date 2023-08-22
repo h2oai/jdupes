@@ -536,12 +536,13 @@ int main(int argc, char **argv)
 #endif /* NO_EXTFILTER */
 #ifndef NO_HASHDB
     case 'y':
+      SETFLAG(flags, F_HASHDB);
+      hashdb_name = (char *)malloc(strlen(optarg) + 1);
+      if (hashdb_name == NULL) jc_nullptr("hashdb");
+      if (strcmp(optarg, ".") == 0) strcpy(hashdb_name, "jdupes_hashdb.txt");
+      else strcpy(hashdb_name, optarg);
       /* If the DB doesn't exist, error code 1 is returned and we'll make one later */
-      if (load_hash_database(optarg) < 2) {
-        SETFLAG(flags, F_HASHDB);
-        hashdb_name = (char *)malloc(strlen(optarg) + 1);
-	strcpy(hashdb_name, optarg);
-      } else goto error_load_hashdb;
+      if (load_hash_database(hashdb_name) > 1) goto error_load_hashdb;
       LOUD(fprintf(stderr, "opt: use a hash database (--hash-db)\n");)
       break;
 #endif /* NO_HASHDB */
@@ -883,6 +884,7 @@ error_optarg:
   exit(EXIT_FAILURE);
 #ifndef NO_HASHDB
 error_load_hashdb:
+  free(hashdb_name);
   fprintf(stderr, "error: failure loading hash database '%s'\n", optarg);
   exit(EXIT_FAILURE);
 #endif

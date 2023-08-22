@@ -44,6 +44,9 @@ const char *feature_flags[] = {
   #ifdef NO_HARDLINKS
   "nohlink",
   #endif
+  #ifdef NO_HASHDB
+  "nohashdb",
+  #endif
   #ifdef NO_JODY_SORT
   "nojsort",
   #endif
