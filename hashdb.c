@@ -124,23 +124,31 @@ void dump_hashdb(hashdb_t *cur)
 }
 
 
+static hashdb_t *alloc_hashdb_node(const int pathlen)
+{
+  int allocsize;
+
+//  allocsize = sizeof(hashdb_t) + pathlen + 1;
+  allocsize = sizeof(hashdb_t) + pathlen + 1;
+  if ((allocsize & 0x0fLU) != 0) allocsize += 16 - (allocsize & 0xf);
+  return (hashdb_t *)calloc(1, allocsize);
+}
+
+
 hashdb_t *add_hashdb_entry(const uint64_t path_hash, int pathlen, file_t *check)
 {
-  hashdb_t *file = (hashdb_t *)malloc(sizeof(hashdb_t) + pathlen + 1);
+  hashdb_t *file;
   hashdb_t *cur;
   int exclude;
 //static int ldepth = 0, rdepth = 0;
 
-  if (file == NULL) return NULL;
   if (check != NULL && check->d_name == NULL) return NULL;
 //fprintf(stderr, "add_hashdb_entry(%016lx, %d, %p)\n", path_hash, pathlen, (void *)check);
-  memset(file, 0, sizeof(hashdb_t));
-  file->path = (char *)((uintptr_t)file + (uintptr_t)sizeof(hashdb_t));
-//fprintf(stderr, "path %p\n", (void *)file->path);
-  file->path_hash = path_hash;
 
   if (hashdb == NULL) {
 //fprintf(stderr, "root hash %016lx\n", path_hash);
+    file = alloc_hashdb_node(pathlen);
+    if (file == NULL) return NULL;
     hashdb = file;
   } else {
     cur = hashdb;
@@ -150,7 +158,6 @@ hashdb_t *add_hashdb_entry(const uint64_t path_hash, int pathlen, file_t *check)
       if (check != NULL && cur->path != NULL) {
         if (cur->path_hash == path_hash && strcmp(cur->path, check->d_name) == 0) {
 //fprintf(stderr, "file already exists: '%s'\n", cur->path);
-          free(file);
           /* Invalidate this entry if something has changed */
           exclude = 0;
           if (cur->mtime != check->mtime) exclude |= 1;
@@ -168,6 +175,8 @@ hashdb_t *add_hashdb_entry(const uint64_t path_hash, int pathlen, file_t *check)
 //fprintf(stderr, "path hashes: %016lx %016lx\n", cur->path_hash, path_hash);
       if (cur->path_hash >= path_hash) {
         if (cur->left == NULL) {
+          file = alloc_hashdb_node(pathlen);
+          if (file == NULL) return NULL;
           cur->left = file;
           break;
         } else {
@@ -177,6 +186,8 @@ hashdb_t *add_hashdb_entry(const uint64_t path_hash, int pathlen, file_t *check)
         }
       } else {
         if (cur->right == NULL) {
+          file = alloc_hashdb_node(pathlen);
+          if (file == NULL) return NULL;
           cur->right = file;
           break;
         } else {
@@ -188,12 +199,15 @@ hashdb_t *add_hashdb_entry(const uint64_t path_hash, int pathlen, file_t *check)
     }
 //fprintf(stderr, "ldepth %d, rdepth %d\n", ldepth, rdepth);
   }
+
   /* If a check entry was given then populate it */
   if (check != NULL && check->d_name != NULL && ISFLAG(check->flags, FF_HASH_PARTIAL)) {
     hashdb_dirty = 1;
     file->path_hash = path_hash;
-    if (file->path == NULL) return NULL;
-    strncpy(file->path, check->d_name, pathlen);
+    file->path = (char *)((uintptr_t)file + (uintptr_t)sizeof(hashdb_t));
+//    strncpy(file->path, check->d_name, pathlen);
+    memcpy(file->path, check->d_name, pathlen + 1);
+//fprintf(stderr, "file->path %s\n", file->path);
     *(file->path + pathlen) = '\0';
     file->mtime = check->mtime;
     file->inode = check->inode;
@@ -202,6 +216,11 @@ hashdb_t *add_hashdb_entry(const uint64_t path_hash, int pathlen, file_t *check)
     file->fullhash = check->filehash;
     if (ISFLAG(check->flags, FF_HASH_FULL)) file->hashcount = 2;
     else file->hashcount = 1;
+  } else {
+    /* No check entry? Populate from passed parameters */
+    file->path = (char *)((uintptr_t)file + (uintptr_t)sizeof(hashdb_t));
+//fprintf(stderr, "path %p\n", (void *)file->path);
+    file->path_hash = path_hash;
   }
   return file;
 }
