@@ -234,6 +234,7 @@ int main(int argc, char **argv)
     { "print-unique", 0, 0, 'u' },
     { "version", 0, 0, 'v' },
     { "ext-filter", 1, 0, 'X' },
+    { "hash-database", 1, 0, 'y' },
     { "soft-abort", 0, 0, 'Z' },
     { "zero-match", 0, 0, 'z' },
     { NULL, 0, 0, 0 }
@@ -243,7 +244,7 @@ int main(int argc, char **argv)
  #define GETOPT getopt
 #endif
 
-#define GETOPT_STRING "@019ABC:DdEefHhIijKLlMmNnOo:P:pQqRrSsTtUuVvX:Zz"
+#define GETOPT_STRING "@019ABC:DdEefHhIijKLlMmNnOo:P:pQqRrSsTtUuVvX:y:Zz"
 
   /* Verify libjodycode compatibility before going further */
   if (libjodycode_version_check(1, 0) != 0) {
@@ -320,6 +321,28 @@ int main(int argc, char **argv)
     case 'A':
       SETFLAG(flags, F_EXCLUDEHIDDEN);
       break;
+#ifdef ENABLE_DEDUPE
+    case 'B':
+#ifdef __linux__
+      /* Refuse to dedupe on 2.x kernels; they could damage user data */
+      if (uname(&utsname)) {
+        fprintf(stderr, "Failed to get kernel version! Aborting.\n");
+        exit(EXIT_FAILURE);
+      }
+      LOUD(fprintf(stderr, "dedupefiles: uname got release '%s'\n", utsname.release));
+      if (*(utsname.release) == '2' && *(utsname.release + 1) == '.') {
+        fprintf(stderr, "Refusing to dedupe on a 2.x kernel; data loss could occur. Aborting.\n");
+        exit(EXIT_FAILURE);
+      }
+      /* Kernel-level dedupe will do the byte-for-byte check itself */
+      if (!ISFLAG(flags, F_PARTIALONLY)) SETFLAG(flags, F_QUICKCOMPARE);
+#endif /* __linux__ */
+      SETFLAG(a_flags, FA_DEDUPEFILES);
+      /* It is completely useless to dedupe zero-length extents */
+      CLEARFLAG(flags, F_INCLUDEEMPTY);
+      LOUD(fprintf(stderr, "opt: CoW/block-level deduplication enabled (--dedupe)\n");)
+      break;
+#endif /* ENABLE_DEDUPE */
 #ifndef NO_CHUNKSIZE
     case 'C':
       manual_chunk_size = (strtol(optarg, NULL, 10) & 0x0ffffffcL) << 10;  /* Align to 4K sizes */
@@ -415,6 +438,18 @@ int main(int argc, char **argv)
       LOUD(fprintf(stderr, "opt: delete files without prompting (--noprompt)\n");)
       break;
 #endif /* NO_DELETE */
+    case 'o':
+#ifndef NO_MTIME  /* Remove if new order types are added! */
+      if (!jc_strncaseeq("name", optarg, 5)) {
+        ordertype = ORDER_NAME;
+      } else if (!jc_strncaseeq("time", optarg, 5)) {
+        ordertype = ORDER_TIME;
+      } else {
+        fprintf(stderr, "invalid value for --order: '%s'\n", optarg);
+        exit(EXIT_FAILURE);
+      }
+#endif /* NO_MTIME */
+      break;
     case 'p':
       SETFLAG(flags, F_PERMISSIONS);
       LOUD(fprintf(stderr, "opt: permissions must also match (--permissions)\n");)
@@ -466,6 +501,10 @@ int main(int argc, char **argv)
       SETFLAG(flags, F_NOTRAVCHECK);
       LOUD(fprintf(stderr, "opt: double-traversal safety check disabled (--no-trav-check)\n");)
       break;
+    case 'v':
+    case 'V':
+      version_text(0);
+      exit(EXIT_SUCCESS);
 #ifndef NO_SYMLINKS
     case 'l':
       SETFLAG(a_flags, FA_MAKESYMLINKS);
@@ -498,47 +537,6 @@ int main(int argc, char **argv)
       SETFLAG(flags, F_DEBUG | F_LOUD | F_HIDEPROGRESS);
 #endif
       LOUD(fprintf(stderr, "opt: loud debugging enabled, hope you can handle it (--loud)\n");)
-      break;
-    case 'v':
-    case 'V':
-      version_text(0);
-      exit(EXIT_SUCCESS);
-    case 'o':
-#ifndef NO_MTIME  /* Remove if new order types are added! */
-      if (!jc_strncaseeq("name", optarg, 5)) {
-        ordertype = ORDER_NAME;
-      } else if (!jc_strncaseeq("time", optarg, 5)) {
-        ordertype = ORDER_TIME;
-      } else {
-        fprintf(stderr, "invalid value for --order: '%s'\n", optarg);
-        exit(EXIT_FAILURE);
-      }
-#endif /* NO_MTIME */
-      break;
-    case 'B':
-#ifdef ENABLE_DEDUPE
-#ifdef __linux__
-      /* Refuse to dedupe on 2.x kernels; they could damage user data */
-      if (uname(&utsname)) {
-        fprintf(stderr, "Failed to get kernel version! Aborting.\n");
-        exit(EXIT_FAILURE);
-      }
-      LOUD(fprintf(stderr, "dedupefiles: uname got release '%s'\n", utsname.release));
-      if (*(utsname.release) == '2' && *(utsname.release + 1) == '.') {
-        fprintf(stderr, "Refusing to dedupe on a 2.x kernel; data loss could occur. Aborting.\n");
-        exit(EXIT_FAILURE);
-      }
-      /* Kernel-level dedupe will do the byte-for-byte check itself */
-      if (!ISFLAG(flags, F_PARTIALONLY)) SETFLAG(flags, F_QUICKCOMPARE);
-#endif /* __linux__ */
-      SETFLAG(a_flags, FA_DEDUPEFILES);
-      /* It is completely useless to dedupe zero-length extents */
-      CLEARFLAG(flags, F_INCLUDEEMPTY);
-#else /* ENABLE_DEDUPE */
-      fprintf(stderr, "This program was built without dedupe support\n");
-      exit(EXIT_FAILURE);
-#endif /* ENABLE_DEDUPE */
-      LOUD(fprintf(stderr, "opt: CoW/block-level deduplication enabled (--dedupe)\n");)
       break;
 
     default:

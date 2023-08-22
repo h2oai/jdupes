@@ -8,18 +8,8 @@
 #include <time.h>
 #include "jdupes.h"
 #include "libjodycode.h"
+#include "hashdb.h"
 
-
-typedef struct _hashdb {
-  struct _hashdb *left;
-  struct _hashdb *right;
-  uint64_t path_hash;
-  char *path;
-  time_t mtime;
-  uint64_t partial_hash;
-  uint64_t full_hash;
-  unsigned int hashcount;
-} hashdb_t;
 
 static hashdb_t *hashdb = NULL;
 static int hashdb_algo = 0;
@@ -28,10 +18,6 @@ static int hashdb_algo = 0;
 #define HASHDB_MAX_VER 1
 #define SECS_TO_TIME(a,b) strftime(a, 32, "%F %T", localtime(b));
 
-void dump_hashdb(hashdb_t *cur);
-int load_hash_database(char *dbname);
-void load_hashdb_entry(file_t *file);
-hashdb_t *alloc_hashdb_entry(uint64_t path_hash, int pathlen, file_t *check);
 
 void hd16(char *a) {
   int i;
@@ -42,48 +28,6 @@ void hd16(char *a) {
   for (i = 0; i < 16; i++) printf("%c", a[i]);
   printf("\n");
   return;
-}
-
-
-/* For testing purposes only */
-int main(void) {
-  file_t file;
-  uint64_t aligned_path[(PATH_MAX + 128) / sizeof(uint64_t)];
-  uint64_t path_hash;
-
-  memset(&file, 0, sizeof(file_t));
-  file.d_name = (char *)malloc(128);
-
-  fprintf(stderr, "load_hash_database returned %d\n", load_hash_database("test_hashdb.txt"));
-
-  strcpy(file.d_name, "THREE Turntables!@#"); file.mtime = 0x64e37acd;
-  load_hashdb_entry(&file);
-  printf("File info: name '%s', flags %x, hashes %016lx:%016lx\n", file.d_name, file.flags, file.filehash_partial, file.filehash);
-  memcpy(&aligned_path, file.d_name, strlen(file.d_name) + 1); path_hash = 0;
-  if (jc_block_hash(aligned_path, &path_hash, strlen((char *)aligned_path)) != 0) return 1;
-  alloc_hashdb_entry(path_hash, strlen(file.d_name), &file);
-
-  file.filehash_partial = 0; file.filehash = 0; file.flags = 0; *(file.d_name) = '\0';
-  strcpy(file.d_name, "BAR");
-  load_hashdb_entry(&file);
-  printf("File info: name '%s', flags %x, hashes %016lx:%016lx\n", file.d_name, file.flags, file.filehash_partial, file.filehash);
-  file.filehash_partial = 0; file.filehash = 0; file.flags = 0; *(file.d_name) = '\0';
-  strcpy(file.d_name, "Two Turntables!@#");
-  load_hashdb_entry(&file);
-  printf("File info: name '%s', flags %x, hashes %016lx:%016lx\n", file.d_name, file.flags, file.filehash_partial, file.filehash);
-  file.filehash_partial = 0; file.filehash = 0; file.flags = 0; *(file.d_name) = '\0';
-  strcpy(file.d_name, "XyzZ");
-  load_hashdb_entry(&file);
-  printf("File info: name '%s', flags %x, hashes %016lx:%016lx\n", file.d_name, file.flags, file.filehash_partial, file.filehash);
-  file.filehash_partial = 0; file.filehash = 0; file.flags = 0; *(file.d_name) = '\0';
-  strcpy(file.d_name, "NOT IN THE DATABASE.");
-  load_hashdb_entry(&file);
-  printf("File info: name '%s', flags %x, hashes %016lx:%016lx\n", file.d_name, file.flags, file.filehash_partial, file.filehash);
-  file.filehash_partial = 0; file.filehash = 0; file.flags = 0; *(file.d_name) = '\0';
-
-  dump_hashdb(hashdb);
-
-  return 0;
 }
 
 
@@ -159,7 +103,7 @@ int load_hash_database(char *dbname)
   char date[32];
   char *field, *temp;
   int db_ver;
-  unsigned int linenum = 1;
+  int linenum = 1;
   time_t db_mtime;
   
   errno = 0;
@@ -173,18 +117,20 @@ int load_hash_database(char *dbname)
   if (strcmp(field, "jdupes hashdb") != 0) goto error_hashdb_header;
   field = strtok(NULL, ":");
   temp = strtok(field, ",");
-  db_ver = strtoul(temp, NULL, 10);
+  db_ver = (int)strtoul(temp, NULL, 10);
   temp = strtok(NULL, ",");
-  hashdb_algo = strtoul(temp, NULL, 10);
+  hashdb_algo = (int)strtoul(temp, NULL, 10);
   temp = strtok(NULL, ",");
-  db_mtime = strtoull(temp, NULL, 16);
+  db_mtime = (int)strtoull(temp, NULL, 16);
   SECS_TO_TIME(date, &db_mtime);
   fprintf(stderr, "ver %u, algo %u, mod %s\n", db_ver, hashdb_algo, date);
   if (db_ver < HASHDB_MIN_VER || db_ver > HASHDB_MAX_VER) goto error_hashdb_version;
 
   /* Read database entries */
   while (1) {
-    unsigned int pathlen, linelen, hashcount;
+    int pathlen;
+    int linelen;
+    int hashcount;
     uint64_t partial_hash, full_hash = 0, path_hash;
     uint64_t aligned_path[(PATH_MAX + 128) / sizeof(uint64_t)];
     time_t mtime;
@@ -198,13 +144,13 @@ int load_hash_database(char *dbname)
     }
 //fprintf(stderr, "read hashdb: %s", buf);
     linenum++;
-    linelen = strlen(buf);
+    linelen = (int)strlen(buf);
     if (linelen < 54) goto error_hashdb_line;
 
     /* Split each entry into fields and
      * hashcount: 1 = partial only, 2 = partial and full */
     field = strtok(buf, ","); if (field == NULL) goto error_hashdb_line;
-    hashcount = strtoul(field, NULL, 16);
+    hashcount = (int)strtol(field, NULL, 16);
     if (hashcount < 1 || hashcount > 2) goto error_hashdb_line;
     field = strtok(NULL, ","); if (field == NULL) goto error_hashdb_line;
     partial_hash = strtoull(field, NULL, 16);
@@ -309,3 +255,47 @@ error_path_hash:
   fprintf(stderr, "error: internal error hashing a path\n");
   return;
 }
+
+
+#ifdef HASHDB_TESTING
+/* For testing purposes only */
+int main(void) {
+  file_t file;
+  uint64_t aligned_path[(PATH_MAX + 128) / sizeof(uint64_t)];
+  uint64_t path_hash;
+
+  memset(&file, 0, sizeof(file_t));
+  file.d_name = (char *)malloc(128);
+
+  fprintf(stderr, "load_hash_database returned %d\n", load_hash_database("test_hashdb.txt"));
+
+  strcpy(file.d_name, "THREE Turntables!@#"); file.mtime = 0x64e37acd;
+  load_hashdb_entry(&file);
+  printf("File info: name '%s', flags %x, hashes %016lx:%016lx\n", file.d_name, file.flags, file.filehash_partial, file.filehash);
+  memcpy(&aligned_path, file.d_name, strlen(file.d_name) + 1); path_hash = 0;
+  if (jc_block_hash(aligned_path, &path_hash, strlen((char *)aligned_path)) != 0) return 1;
+  alloc_hashdb_entry(path_hash, strlen(file.d_name), &file);
+
+  file.filehash_partial = 0; file.filehash = 0; file.flags = 0; *(file.d_name) = '\0';
+  strcpy(file.d_name, "BAR");
+  load_hashdb_entry(&file);
+  printf("File info: name '%s', flags %x, hashes %016lx:%016lx\n", file.d_name, file.flags, file.filehash_partial, file.filehash);
+  file.filehash_partial = 0; file.filehash = 0; file.flags = 0; *(file.d_name) = '\0';
+  strcpy(file.d_name, "Two Turntables!@#");
+  load_hashdb_entry(&file);
+  printf("File info: name '%s', flags %x, hashes %016lx:%016lx\n", file.d_name, file.flags, file.filehash_partial, file.filehash);
+  file.filehash_partial = 0; file.filehash = 0; file.flags = 0; *(file.d_name) = '\0';
+  strcpy(file.d_name, "XyzZ");
+  load_hashdb_entry(&file);
+  printf("File info: name '%s', flags %x, hashes %016lx:%016lx\n", file.d_name, file.flags, file.filehash_partial, file.filehash);
+  file.filehash_partial = 0; file.filehash = 0; file.flags = 0; *(file.d_name) = '\0';
+  strcpy(file.d_name, "NOT IN THE DATABASE.");
+  load_hashdb_entry(&file);
+  printf("File info: name '%s', flags %x, hashes %016lx:%016lx\n", file.d_name, file.flags, file.filehash_partial, file.filehash);
+  file.filehash_partial = 0; file.filehash = 0; file.flags = 0; *(file.d_name) = '\0';
+
+  dump_hashdb(hashdb);
+
+  return 0;
+}
+#endif /* HASHDB_TESTING */
