@@ -211,13 +211,13 @@ typedef struct _file {
   struct _file *duplicates;
   struct _file *next;
   char *d_name;
-  uint32_t flags;  /* Status flags */
-  jdupes_mode_t mode;
-  off_t size;
-  dev_t device;
-  jdupes_ino_t inode;
   uint64_t filehash_partial;
   uint64_t filehash;
+  uint32_t flags;  /* Status flags */
+  jdupes_mode_t mode;
+  jdupes_ino_t inode;
+  off_t size;
+  dev_t device;
 #ifndef NO_MTIME
   time_t mtime;
 #endif

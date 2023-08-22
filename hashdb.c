@@ -209,9 +209,9 @@ hashdb_t *add_hashdb_entry(const uint64_t path_hash, int pathlen, file_t *check)
     memcpy(file->path, check->d_name, pathlen + 1);
 //fprintf(stderr, "file->path %s\n", file->path);
     *(file->path + pathlen) = '\0';
-    file->mtime = check->mtime;
-    file->inode = check->inode;
     file->size = check->size;
+    file->inode = check->inode;
+    file->mtime = check->mtime;
     file->partialhash = check->filehash_partial;
     file->fullhash = check->filehash;
     if (ISFLAG(check->flags, FF_HASH_FULL)) file->hashcount = 2;

@@ -15,13 +15,13 @@ typedef struct _hashdb {
   struct _hashdb *left;
   struct _hashdb *right;
   uint64_t path_hash;
+  char *path;
+  jdupes_ino_t inode;
+  off_t size;
   uint64_t partialhash;
   uint64_t fullhash;
-  char *path;
-  off_t size;
-  jdupes_ino_t inode;
   time_t mtime;
-  int hashcount;
+  uint_fast8_t hashcount;
 } hashdb_t;
 
 extern hashdb_t *hashdb;

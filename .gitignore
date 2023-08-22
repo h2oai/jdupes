@@ -47,6 +47,7 @@ core
 *.gcda
 *.gcno
 *.gcov
+cachegrind.out.*
 
 # Mac OS
 .DS_Store
