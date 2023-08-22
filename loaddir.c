@@ -255,7 +255,7 @@ void loaddir(const char * const restrict dir,
       if (S_ISREG(newfile->mode)) {
 #endif
 #ifndef NO_HASHDB
-        if (ISFLAG(flags, F_HASHDB)) load_hashdb_entry(newfile);
+        if (ISFLAG(flags, F_HASHDB)) read_hashdb_entry(newfile);
 #endif
         *filelistp = newfile;
         filecount++;

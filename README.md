@@ -155,6 +155,7 @@ parameter order
  -v --version           display jdupes version and license information
  -X --ext-filter=x:y    filter files based on specified criteria
                         Use '-X help' for detailed extfilter help
+ -y --hash-db=file      use a hash database text file to speed up repeat runs
  -z --zero-match        consider zero-length files to be duplicates
  -Z --soft-abort        If the user aborts (i.e. CTRL-C) act on matches so far
                         You can send SIGUSR1 to the program to toggle this

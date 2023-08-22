@@ -16,6 +16,7 @@
 hashdb_t *hashdb = NULL;
 static int hashdb_algo = 0;
 
+#define HASHDB_VER 1
 #define HASHDB_MIN_VER 1
 #define HASHDB_MAX_VER 1
 #define SECS_TO_TIME(a,b) strftime(a, 32, "%F %T", localtime(b));
@@ -30,6 +31,68 @@ void hd16(char *a) {
   for (i = 0; i < 16; i++) printf("%c", a[i]);
   printf("\n");
   return;
+}
+
+
+int save_hash_database(const char * const restrict dbname)
+{
+  FILE *db;
+
+  if (dbname == NULL) goto error_hashdb_null;
+fprintf(stderr, "save_hash_database('%s')\n", dbname);
+  errno = 0;
+  db = fopen(dbname, "w+b");
+  if (db == NULL) goto error_hashdb_open;
+
+  if (write_hashdb_entry(db, hashdb) != 0) goto error_hashdb_write;
+  fclose(db);
+
+  return 0;
+
+error_hashdb_null:
+  fprintf(stderr, "error: internal failure: NULL pointer for hashdb\n");
+  return 1;
+error_hashdb_open:
+  fprintf(stderr, "error: cannot open hashdb '%s' for writing: %s\n", dbname, strerror(errno));
+  return 2;
+error_hashdb_write:
+  fprintf(stderr, "error: writing failed to hashdb '%s': %s\n", dbname, strerror(errno));
+  fclose(db);
+  return 2;
+}
+
+
+int write_hashdb_entry(FILE *db, hashdb_t *cur)
+{
+  struct timeval tm;
+  int err = 0;
+  static char out[PATH_MAX + 128];
+
+  if (cur == NULL) return -1;
+
+  /* Write header on first call */
+  if (cur == hashdb) {
+    gettimeofday(&tm, NULL);
+    snprintf(out, PATH_MAX + 127, "jdupes hashdb:%d,%d,%08lx\n", HASHDB_VER, hash_algo, tm.tv_sec);
+    fprintf(stderr, "db write: %s", out);
+    errno = 0;
+    fputs(out, db);
+    if (errno != 0) return 1;
+  }
+
+  /* Write out this node if it wasn't invalidated */
+  if (cur->hashcount != 0) {
+    snprintf(out, PATH_MAX + 127, "%u,%016lx,%016lx,%08lx,%s\n", cur->hashcount, cur->partialhash, cur->fullhash, cur->mtime, cur->path);
+    fprintf(stderr, "db write: %s", out);
+    errno = 0;
+    fputs(out, db);
+    if (errno != 0) return 1;
+  }
+
+  /* Traverse the tree, propagating errors */
+  if (cur->left != NULL) err = write_hashdb_entry(db, cur->left);
+  if (err == 0 && cur->right != NULL) err = write_hashdb_entry(db, cur->right);
+  return err;
 }
 
 
@@ -121,17 +184,17 @@ int load_hash_database(char *dbname)
 {
   FILE *db;
   char buf[PATH_MAX + 128];
-  char date[32];
   char *field, *temp;
   int db_ver;
   int linenum = 1;
-  time_t db_mtime;
+//  time_t db_mtime;
+//char date[32];
   
   if (dbname == NULL) goto error_hashdb_null;
-fprintf(stderr, "load_hash_database('%s')\n", dbname);
+//fprintf(stderr, "load_hash_database('%s')\n", dbname);
   errno = 0;
   db = fopen(dbname, "rb");
-  if (db == NULL) goto error_hashdb_open;
+  if (db == NULL) goto warn_hashdb_open;
 
   /* Read header line */
   if ((fgets(buf, PATH_MAX + 127, db) == NULL) || (ferror(db) != 0)) goto error_hashdb_read;
@@ -144,9 +207,10 @@ fprintf(stderr, "load_hash_database('%s')\n", dbname);
   temp = strtok(NULL, ",");
   hashdb_algo = (int)strtoul(temp, NULL, 10);
   temp = strtok(NULL, ",");
-  db_mtime = (int)strtoul(temp, NULL, 8);
-  SECS_TO_TIME(date, &db_mtime);
-  fprintf(stderr, "hashdb header: ver %u, algo %u, mod %s\n", db_ver, hashdb_algo, date);
+  /* Database mod time is currently set but not used */
+//  db_mtime = (int)strtoul(temp, NULL, 16);
+//SECS_TO_TIME(date, &db_mtime);
+//fprintf(stderr, "hashdb header: ver %u, algo %u, mod %s\n", db_ver, hashdb_algo, date);
   if (db_ver < HASHDB_MIN_VER || db_ver > HASHDB_MAX_VER) goto error_hashdb_version;
   if (hashdb_algo != hash_algo) goto warn_hashdb_algo;
 
@@ -180,7 +244,7 @@ fprintf(stderr, "load_hash_database('%s')\n", dbname);
     field = strtok(NULL, ","); if (field == NULL) goto error_hashdb_line;
     if (hashcount == 2) fullhash = strtoull(field, NULL, 16);
     field = strtok(NULL, ","); if (field == NULL) goto error_hashdb_line;
-    mtime = (time_t)strtoul(field, NULL, 8);
+    mtime = (time_t)strtoul(field, NULL, 16);
     path = buf + 45;
     path = strtok(path, "\n"); if (path == NULL) goto error_hashdb_line;
     pathlen = linelen - 46;
@@ -188,8 +252,8 @@ fprintf(stderr, "load_hash_database('%s')\n", dbname);
     *(path + pathlen) = '\0';
     if (get_path_hash(path, &path_hash) != 0) goto error_hashdb_path_hash;
 
-    SECS_TO_TIME(date, &mtime);
-fprintf(stderr, "file entry: [%u:%016lx] '%s', mtime %s, hashes [%u] %016lx:%016lx\n", pathlen, path_hash, path, date, hashcount, partialhash, fullhash);
+//SECS_TO_TIME(date, &mtime);
+//fprintf(stderr, "file entry: [%u:%016lx] '%s', mtime %s, hashes [%u] %016lx:%016lx\n", pathlen, path_hash, path, date, hashcount, partialhash, fullhash);
 
     entry = add_hashdb_entry(path_hash, pathlen, NULL);
     if (entry == NULL) goto error_hashdb_add;
@@ -204,8 +268,8 @@ fprintf(stderr, "file entry: [%u:%016lx] '%s', mtime %s, hashes [%u] %016lx:%016
 
   return linenum - 1;
 
-error_hashdb_open:
-  fprintf(stderr, "error opening hash database '%s': %s\n", dbname, strerror(errno));
+warn_hashdb_open:
+  fprintf(stderr, "warning: creating a new hash database '%s'\n", dbname);
   return 1;
 error_hashdb_read:
   fprintf(stderr, "error reading hash database '%s': %s\n", dbname, strerror(errno));
@@ -230,7 +294,6 @@ error_hashdb_null:
   return 8;
 warn_hashdb_algo:
   fprintf(stderr, "warning: hashdb uses a different hash algorithm than selected; not loading\n");
-  CLEARFLAG(flags, F_HASHDB);
   return 9;
 }
  
@@ -247,12 +310,12 @@ int get_path_hash(char *path, uint64_t *path_hash)
 
 
  /* If file hash info is already present in hash database then preload those hashes */
-void load_hashdb_entry(file_t *file)
+void read_hashdb_entry(file_t *file)
 {
   uint64_t path_hash;
   hashdb_t *cur = hashdb;
 
-//fprintf(stderr, "load_hashdb_entry('%s')\n", file->d_name);
+//fprintf(stderr, "read_hashdb_entry('%s')\n", file->d_name);
   if (file == NULL || file->d_name == NULL) goto error_null;
   if (cur == NULL) return;
   if (get_path_hash(file->d_name, &path_hash) != 0) goto error_path_hash;
@@ -281,7 +344,7 @@ void load_hashdb_entry(file_t *file)
   return;
 
 error_null:
-  fprintf(stderr, "error: internal error: NULL data passed to load_hashdb_entry()\n");
+  fprintf(stderr, "error: internal error: NULL data passed to read_hashdb_entry()\n");
   return;
 error_path_hash:
   fprintf(stderr, "error: internal error hashing a path\n");
@@ -301,26 +364,26 @@ int main(void) {
   fprintf(stderr, "load_hash_database returned %d\n", load_hash_database("test_hashdb.txt"));
 
   strcpy(file.d_name, "THREE Turntables!@#"); file.mtime = 0x64e37acd;
-  load_hashdb_entry(&file);
+  read_hashdb_entry(&file);
   printf("File info: name '%s', flags %x, hashes %016lx:%016lx\n", file.d_name, file.flags, file.filehash_partial, file.filehash);
   if (get_path_hash(file.d_name, &path_hash) != 0) return 1;
   add_hashdb_entry(path_hash, strlen(file.d_name), &file);
 
   file.filehash_partial = 0; file.filehash = 0; file.flags = 0; *(file.d_name) = '\0';
   strcpy(file.d_name, "BAR");
-  load_hashdb_entry(&file);
+  read_hashdb_entry(&file);
   printf("File info: name '%s', flags %x, hashes %016lx:%016lx\n", file.d_name, file.flags, file.filehash_partial, file.filehash);
   file.filehash_partial = 0; file.filehash = 0; file.flags = 0; *(file.d_name) = '\0';
   strcpy(file.d_name, "Two Turntables!@#");
-  load_hashdb_entry(&file);
+  read_hashdb_entry(&file);
   printf("File info: name '%s', flags %x, hashes %016lx:%016lx\n", file.d_name, file.flags, file.filehash_partial, file.filehash);
   file.filehash_partial = 0; file.filehash = 0; file.flags = 0; *(file.d_name) = '\0';
   strcpy(file.d_name, "XyzZ");
-  load_hashdb_entry(&file);
+  read_hashdb_entry(&file);
   printf("File info: name '%s', flags %x, hashes %016lx:%016lx\n", file.d_name, file.flags, file.filehash_partial, file.filehash);
   file.filehash_partial = 0; file.filehash = 0; file.flags = 0; *(file.d_name) = '\0';
   strcpy(file.d_name, "NOT IN THE DATABASE.");
-  load_hashdb_entry(&file);
+  read_hashdb_entry(&file);
   printf("File info: name '%s', flags %x, hashes %016lx:%016lx\n", file.d_name, file.flags, file.filehash_partial, file.filehash);
 
   file.filehash_partial = 1; file.filehash = 2; file.flags = 6; file.mtime = 0x6e412345; strcpy(file.d_name, "File to add to DB");

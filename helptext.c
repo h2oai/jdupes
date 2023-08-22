@@ -186,6 +186,7 @@ void help_text(void)
   printf(" -X --ext-filter=x:y\tfilter files based on specified criteria\n");
   printf("                  \tUse '-X help' for detailed extfilter help\n");
 #endif /* NO_EXTFILTER */
+  printf(" -y --hash-db=file\tuse a hash database text file to speed up repeat runs\n");
   printf(" -z --zero-match  \tconsider zero-length files to be duplicates\n");
   printf(" -Z --soft-abort  \tIf the user aborts (i.e. CTRL-C) act on matches so far\n");
 #ifndef ON_WINDOWS

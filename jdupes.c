@@ -194,6 +194,9 @@ int main(int argc, char **argv)
   static struct utsname utsname;
  #endif /* __linux__ */
 #endif
+#ifndef NO_HASHDB
+  char *hashdb_name = NULL;
+#endif
 
 #ifndef NO_GETOPT_LONG
   static const struct option long_options[] =
@@ -237,7 +240,7 @@ int main(int argc, char **argv)
     { "print-unique", 0, 0, 'u' },
     { "version", 0, 0, 'v' },
     { "ext-filter", 1, 0, 'X' },
-    { "hash-database", 1, 0, 'y' },
+    { "hash-db", 1, 0, 'y' },
     { "soft-abort", 0, 0, 'Z' },
     { "zero-match", 0, 0, 'z' },
     { NULL, 0, 0, 0 }
@@ -529,9 +532,13 @@ int main(int argc, char **argv)
 #endif /* NO_EXTFILTER */
 #ifndef NO_HASHDB
     case 'y':
-      SETFLAG(flags, F_HASHDB);
-      load_hash_database(optarg);
-      LOUD(fprintf(stderr, "opt: use a hash database (--hash-database)\n");)
+      /* If the DB doesn't exist, error code 1 is returned and we'll make one later */
+      if (load_hash_database(optarg) < 2) {
+        SETFLAG(flags, F_HASHDB);
+        hashdb_name = (char *)malloc(strlen(optarg) + 1);
+	strcpy(hashdb_name, optarg);
+      }
+      LOUD(fprintf(stderr, "opt: use a hash database (--hash-db)\n");)
       break;
 #endif /* NO_HASHDB */
     case 'z':
@@ -806,7 +813,11 @@ skip_file_scan:
     exit(exit_status);
   }
 
-  dump_hashdb(hashdb);
+  if (ISFLAG(flags, F_HASHDB)) {
+    //dump_hashdb(hashdb);
+    save_hash_database(hashdb_name);
+    free(hashdb_name);
+  }
 
 #ifndef NO_DELETE
   if (ISFLAG(a_flags, FA_DELETEFILES)) {
