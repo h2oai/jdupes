@@ -14,6 +14,7 @@
 
 
 hashdb_t *hashdb = NULL;
+//hashdb_t *hashdb[65536];
 static int hashdb_algo = 0;
 static int hashdb_dirty = 0;
 
@@ -363,10 +364,12 @@ int get_path_hash(char *path, uint64_t *path_hash)
   int retval;
 
 //  memset((char *)&aligned_path, 0, sizeof(aligned_path));
-  strncpy((char *)&aligned_path, path, PATH_MAX);
   *path_hash = 0;
-  retval = jc_block_hash((uint64_t *)aligned_path, path_hash, strlen((char *)aligned_path));
-  *path_hash -= ~((*path_hash << PH_SHIFT) | (*path_hash >> ((sizeof(uint64_t) * 8) - PH_SHIFT)));
+  if ((uintptr_t)path & 0x0f) {
+    strncpy((char *)&aligned_path, path, PATH_MAX);
+    retval = jc_block_hash((uint64_t *)aligned_path, path_hash, strlen((char *)aligned_path));
+  } else retval = jc_block_hash((uint64_t *)path, path_hash, strlen(path));
+//  *path_hash -= ~((*path_hash << PH_SHIFT) | (*path_hash >> ((sizeof(uint64_t) * 8) - PH_SHIFT)));
   return retval;
 }
 
