@@ -118,7 +118,7 @@ file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict file)
   int cantmatch = 0;
   const uint64_t * restrict filehash;
 #ifndef NO_HASHDB
-  uint32_t path_hash;
+  uint64_t path_hash;
   int pathlen;
 #endif
 
