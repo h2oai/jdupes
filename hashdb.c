@@ -136,7 +136,7 @@ static hashdb_t *alloc_hashdb_node(const int pathlen)
 }
 
 
-hashdb_t *add_hashdb_entry(const uint64_t path_hash, int pathlen, file_t *check)
+hashdb_t *add_hashdb_entry(const uint32_t path_hash, int pathlen, file_t *check)
 {
   hashdb_t *file;
   hashdb_t *cur;
@@ -270,7 +270,8 @@ int load_hash_database(char *dbname)
     int pathlen;
     int linelen;
     int hashcount;
-    uint64_t partialhash, fullhash = 0, path_hash;
+    uint64_t partialhash, fullhash = 0;
+    uint32_t path_hash;
     time_t mtime;
     char *path;
     hashdb_t *entry;
@@ -358,18 +359,22 @@ warn_hashdb_algo:
 }
  
 
-int get_path_hash(char *path, uint64_t *path_hash)
+int get_path_hash(char *path, uint32_t *path_hash)
 {
   uint64_t aligned_path[(PATH_MAX + 8) / sizeof(uint64_t)];
   int retval;
+  uint64_t hash = 0;
 
-//  memset((char *)&aligned_path, 0, sizeof(aligned_path));
-  *path_hash = 0;
   if ((uintptr_t)path & 0x0f) {
     strncpy((char *)&aligned_path, path, PATH_MAX);
-    retval = jc_block_hash((uint64_t *)aligned_path, path_hash, strlen((char *)aligned_path));
-  } else retval = jc_block_hash((uint64_t *)path, path_hash, strlen(path));
-//  *path_hash -= ~((*path_hash << PH_SHIFT) | (*path_hash >> ((sizeof(uint64_t) * 8) - PH_SHIFT)));
+    retval = jc_block_hash((uint64_t *)aligned_path, &hash, strlen((char *)aligned_path));
+  } else retval = jc_block_hash((uint64_t *)path, &hash, strlen(path));
+  hash ^= (hash >> 32);
+  hash = hash & 0xffffffff;
+  hash |= (hash >> 16);
+  hash &= 0xffff;
+  *path_hash = hash;
+//fprintf(stderr, "path_hash: %08lx\n", hash);
   return retval;
 }
 
@@ -377,8 +382,8 @@ int get_path_hash(char *path, uint64_t *path_hash)
  /* If file hash info is already present in hash database then preload those hashes */
 void read_hashdb_entry(file_t *file)
 {
-  uint64_t path_hash;
   hashdb_t *cur = hashdb;
+  uint32_t path_hash;
 
   LOUD(fprintf(stderr, "read_hashdb_entry('%s')\n", file->d_name);)
   if (file == NULL || file->d_name == NULL) goto error_null;
@@ -394,6 +399,7 @@ void read_hashdb_entry(file_t *file)
     /* Found a matching path hash */
     if (strcmp(cur->path, file->d_name) != 0) {
       cur = cur->left;
+      if (cur == NULL) return;
       continue;
     } else {
       /* Found a matching path too but check mtime */
@@ -422,7 +428,7 @@ error_path_hash:
 int hash_algo = 0;
 int main(void) {
   file_t file;
-  uint64_t path_hash;
+  uint32_t path_hash;
 
   memset(&file, 0, sizeof(file_t));
   file.d_name = (char *)malloc(128);
