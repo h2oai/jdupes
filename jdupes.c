@@ -200,6 +200,7 @@ int main(int argc, char **argv)
 #endif
 #ifndef NO_HASHDB
   char *hashdb_name = NULL;
+  int hdblen;
 #endif
 
 #ifndef NO_GETOPT_LONG
@@ -537,7 +538,9 @@ int main(int argc, char **argv)
 #ifndef NO_HASHDB
     case 'y':
       SETFLAG(flags, F_HASHDB);
-      hashdb_name = (char *)malloc(strlen(optarg) + 1);
+      hdblen = strlen(optarg) + 1;
+      if (hdblen < 24) hdblen = 24;
+      hashdb_name = (char *)malloc(hdblen);
       if (hashdb_name == NULL) jc_nullptr("hashdb");
       if (strcmp(optarg, ".") == 0) strcpy(hashdb_name, "jdupes_hashdb.txt");
       else strcpy(hashdb_name, optarg);
