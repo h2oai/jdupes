@@ -22,7 +22,7 @@ static int hashdb_dirty = 0;
 #define HASHDB_MIN_VER 1
 #define HASHDB_MAX_VER 1
 #ifndef PH_SHIFT
- #define PH_SHIFT 2
+ #define PH_SHIFT 12
 #endif
 #define SECS_TO_TIME(a,b) strftime(a, 32, "%F %T", localtime(b));
 
@@ -205,6 +205,7 @@ hashdb_t *add_hashdb_entry(const uint32_t path_hash, int pathlen, file_t *check)
   if (check != NULL && check->d_name != NULL && ISFLAG(check->flags, FF_HASH_PARTIAL)) {
     hashdb_dirty = 1;
     file->path_hash = path_hash;
+//fprintf(stderr, "path_hash: %08x\n", path_hash);
     file->path = (char *)((uintptr_t)file + (uintptr_t)sizeof(hashdb_t));
 //    strncpy(file->path, check->d_name, pathlen);
     memcpy(file->path, check->d_name, pathlen + 1);
@@ -222,6 +223,7 @@ hashdb_t *add_hashdb_entry(const uint32_t path_hash, int pathlen, file_t *check)
     file->path = (char *)((uintptr_t)file + (uintptr_t)sizeof(hashdb_t));
 //fprintf(stderr, "path %p\n", (void *)file->path);
     file->path_hash = path_hash;
+//fprintf(stderr, "path_hash: %08x\n", path_hash);
   }
   return file;
 }
@@ -359,6 +361,7 @@ warn_hashdb_algo:
 }
  
 
+#if 0
 int get_path_hash(char *path, uint32_t *path_hash)
 {
   uint64_t aligned_path[(PATH_MAX + 8) / sizeof(uint64_t)];
@@ -369,13 +372,30 @@ int get_path_hash(char *path, uint32_t *path_hash)
     strncpy((char *)&aligned_path, path, PATH_MAX);
     retval = jc_block_hash((uint64_t *)aligned_path, &hash, strlen((char *)aligned_path));
   } else retval = jc_block_hash((uint64_t *)path, &hash, strlen(path));
-  hash ^= (hash >> 32);
-  hash = hash & 0xffffffff;
-  hash |= (hash >> 16);
+//  hash ^= (hash >> 32);
+//  hash = hash & 0xffffffff;
+//  hash ^= (hash >> 16);
+//  hash &= 0xffff;
+  *path_hash = (hash >> PH_SHIFT) & 0xffff;
+//  *path_hash = hash;
+  return retval;
+}
+#endif
+
+
+int get_path_hash(char *path, uint32_t *path_hash)
+{
+  uint64_t hash = 0;
+  const int len = strlen(path);
+
+  for (int i = 0; i < len; i++) {
+    hash ^= path[i];
+    hash = ((hash << PH_SHIFT) | (hash >> ((sizeof(hash) * 8) - PH_SHIFT)));
+  }
+  hash ^= (hash >> 16);
   hash &= 0xffff;
   *path_hash = hash;
-//fprintf(stderr, "path_hash: %08lx\n", hash);
-  return retval;
+  return 0;
 }
 
 
