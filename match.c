@@ -231,7 +231,7 @@ file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict file)
 
   /* Add to hash database */
 #ifndef NO_HASHDB
-  If (ISFLAG(flags, F_HASHDB) {
+  if (ISFLAG(flags, F_HASHDB)) {
     if (get_path_hash(file->d_name, &path_hash) == 0) {
       pathlen = strlen(file->d_name);
       add_hashdb_entry(path_hash, pathlen, file);
