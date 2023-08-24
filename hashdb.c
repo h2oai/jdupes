@@ -21,9 +21,12 @@
 #endif
 #define SECS_TO_TIME(a,b) strftime(a, 32, "%F %T", localtime(b));
 
-#define HT_SIZE 256
-//#define HT_SIZE 4096
-//#define HT_SIZE 65536
+#ifndef HT_SIZE
+// #define HT_SIZE 256
+// #define HT_SIZE 4096
+// #define HT_SIZE 65536
+ #define HT_SIZE 131072
+#endif
 #define HT_MASK (HT_SIZE - 1)
 //#define HT_MASK 0xffLLU
 
@@ -31,6 +34,9 @@ static hashdb_t *hashdb[HT_SIZE];
 static int hashdb_init = 0;
 static int hashdb_algo = 0;
 static int hashdb_dirty = 0;
+
+/* Pivot direction for rebalance */
+enum pivot { PIVOT_LEFT, PIVOT_RIGHT };
 
 
 void hd16(char *a) {
@@ -166,13 +172,56 @@ void dump_hashdb(hashdb_t *cur)
 }
 
 
+static void pivot_hashdb_tree(hashdb_t **parent, hashdb_t *cur, enum pivot direction)
+{
+  hashdb_t *temp;
+
+//fprintf(stderr, "pivoting one %s\n", direction == PIVOT_LEFT ? "left" : "right");
+  if (direction == PIVOT_LEFT) {
+    temp = cur->right;
+    cur->right = cur->right->left;
+    temp->left = cur;
+    *parent = temp;
+  } else {  // PIVOT_RIGHT
+    temp = cur->left;
+    cur->left = cur->left->right;
+    temp->right = cur;
+    *parent = temp;
+  }
+
+  return;
+}
+
+
+static void rebalance_hashdb_tree(hashdb_t **parent)
+{
+  const uint64_t center = 0x8000000000000000ULL;
+  hashdb_t *cur = *parent;
+
+  if (unlikely(cur == NULL || parent == NULL)) return;
+  if (cur->left == NULL && cur->right == NULL) return;
+
+  if (cur->left != NULL) rebalance_hashdb_tree(&(cur->left));
+  if (cur->right != NULL) rebalance_hashdb_tree(&(cur->right));
+  if (cur->path_hash > center) {
+    /* This node might be better off to the right */
+    if (cur->left != NULL && cur->left->path_hash > center) pivot_hashdb_tree(parent, cur, PIVOT_RIGHT);
+  } else if (cur->path_hash < center) {
+    /* This node might be better off to the left */
+    if (cur->right != NULL && cur->right->path_hash < center) pivot_hashdb_tree(parent, cur, PIVOT_LEFT);
+  }
+  return;
+}
+
+
 hashdb_t *add_hashdb_entry(const uint64_t path_hash, int pathlen, file_t *check)
 {
   const unsigned int bucket = path_hash & HT_MASK;
   hashdb_t *file;
   hashdb_t *cur;
   int exclude;
-//static int ldepth = 0, rdepth = 0;
+  static int ldepth = 0, rdepth = 0, difference;
+  static uint64_t rebal = 0;
 
   /* Allocate hashdb on first use */
   if (unlikely(hashdb_init == 0)) {
@@ -205,6 +254,7 @@ hashdb_t *add_hashdb_entry(const uint64_t path_hash, int pathlen, file_t *check)
           if (exclude == 0) {
             return cur;
           } else {
+//fprintf(stderr, "invalidating file: '%s'\n", cur->path);
             cur->hashcount = 0;
             hashdb_dirty = 1;
             return NULL;
@@ -220,7 +270,7 @@ hashdb_t *add_hashdb_entry(const uint64_t path_hash, int pathlen, file_t *check)
           break;
         } else {
           cur = cur->left;
-//ldepth++;
+          ldepth++;
           continue;
         }
       } else {
@@ -231,12 +281,20 @@ hashdb_t *add_hashdb_entry(const uint64_t path_hash, int pathlen, file_t *check)
           break;
         } else {
           cur = cur->right;
-//rdepth++;
+          rdepth++;
           continue;
         }
       }
     }
 //fprintf(stderr, "ldepth %d, rdepth %d\n", ldepth, rdepth);
+    difference = ldepth - rdepth;
+    if (difference < 0) difference = -difference;
+//fprintf(stderr, "difference %d > %d ?\n", difference, (rdepth + ldepth) / 2);
+    if (difference > 100000) {
+      rebal++;
+//fprintf(stderr, "rebalance %lu, bucket %u\n", rebal, bucket);
+      rebalance_hashdb_tree(&(hashdb[bucket]));
+    }
   }
 
   /* If a check entry was given then populate it */
@@ -400,44 +458,18 @@ warn_hashdb_algo:
 }
  
 
-//#if 0
 int get_path_hash(char *path, uint64_t *path_hash)
 {
   uint64_t aligned_path[(PATH_MAX + 8) / sizeof(uint64_t)];
   int retval;
-  uint64_t hash = 0;
 
+  *path_hash = 0;
   if ((uintptr_t)path & 0x0f) {
     strncpy((char *)&aligned_path, path, PATH_MAX);
-    retval = jc_block_hash((uint64_t *)aligned_path, &hash, strlen((char *)aligned_path));
-  } else retval = jc_block_hash((uint64_t *)path, &hash, strlen(path));
-//  hash ^= (hash >> 32);
-//  hash = hash & 0xffffffff;
-//  hash ^= (hash >> 16);
-//  hash &= 0xffff;
-//  *path_hash = (hash >> PH_SHIFT) & 0xffff;
-  *path_hash = hash;
+    retval = jc_block_hash((uint64_t *)aligned_path, path_hash, strlen((char *)aligned_path));
+  } else retval = jc_block_hash((uint64_t *)path, path_hash, strlen(path));
   return retval;
 }
-//#endif
-
-
-#if 0
-int get_path_hash(char *path, uint32_t *path_hash)
-{
-  uint64_t hash = 0;
-  const int len = strlen(path);
-
-  for (int i = 0; i < len; i++) {
-    hash ^= path[i];
-    hash = ((hash << PH_SHIFT) | (hash >> ((sizeof(hash) * 8) - PH_SHIFT)));
-  }
-  hash ^= (hash >> 16);
-  hash &= 0xffff;
-  *path_hash = hash;
-  return 0;
-}
-#endif
 
 
  /* If file hash info is already present in hash database then preload those hashes */
