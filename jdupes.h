@@ -191,6 +191,7 @@ extern uint64_t flags, a_flags, p_flags;
 #define FF_HAS_DUPES		(1U << 3)
 #define FF_IS_SYMLINK		(1U << 4)
 #define FF_NOT_UNIQUE		(1U << 5)
+#define FF_HASHDB_DIRTY		(1U << 5)
 
 /* Extra print flags */
 #define PF_PARTIAL		(1U << 0)

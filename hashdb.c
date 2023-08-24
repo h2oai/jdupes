@@ -252,6 +252,12 @@ hashdb_t *add_hashdb_entry(const uint64_t path_hash, int pathlen, file_t *check)
           if (cur->inode != check->inode) exclude |= 2;
           if (cur->size != check->size) exclude |= 4;
           if (exclude == 0) {
+            if (cur->hashcount == 1 && ISFLAG(check->flags, FF_HASH_FULL)) {
+              cur->hashcount = 2;
+              cur->fullhash = check->filehash;
+              hashdb_dirty = 1;
+//fprintf(stderr, "Added full hash to file %s\n", cur->path);
+            }
             return cur;
           } else {
 //fprintf(stderr, "invalidating file: '%s'\n", cur->path);
