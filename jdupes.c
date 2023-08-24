@@ -480,7 +480,6 @@ int main(int argc, char **argv)
       break;
     case 'Q':
       SETFLAG(flags, F_QUICKCOMPARE);
-      fprintf(stderr, "\nBIG FAT WARNING: -Q/--quick MAY BE DANGEROUS! Read the manual!\n\n");
       LOUD(fprintf(stderr, "opt: byte-for-byte safety check disabled (--quick)\n");)
       break;
     case 'r':
