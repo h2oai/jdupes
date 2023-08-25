@@ -1,3 +1,13 @@
+jdupes 1.27.0 (2023-08-25)
+
+- Added long-awaited hash database feature '-y' (SEE README BEFORE USING)
+- Removed legacy long options that were deprecated in v1.20.0
+- -E option was moved to -e and now throws an error (CHECK YOUR SCRIPTS)
+- Multiple hash algorithm capability added, but no user option exists yet
+- Linux: use posix_fadvise() to improve read performance
+- Fixed possible infinite loop freezing on certain errors when linking files
+- Removed annoying warning for -Q; the user deserves what the user asks for
+
 jdupes 1.26.1 (2023-07-04)
 
 - Fix '-P early' to actually work correctly
