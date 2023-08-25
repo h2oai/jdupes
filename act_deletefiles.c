@@ -14,6 +14,9 @@
 #include "likely_unlikely.h"
 #include "act_deletefiles.h"
 #include "act_linkfiles.h"
+#ifndef NO_HASHDB
+ #include "hashdb.h"
+#endif
 
 /* For interactive deletion input */
 #define INPUT_SIZE 1024
@@ -153,7 +156,7 @@ void deletefiles(file_t *files, int prompt, FILE *tty)
           if (*token == 's' || *token == 'S') linktype = 0; /* symlink */
 #endif
 #if defined NO_HARDLINKS && defined NO_SYMLINKS
-	  /* no linking calls */
+          /* no linking calls */
 #else
           if (linktype != -1) {
             linkfiles(files, linktype, 1);
@@ -187,24 +190,30 @@ stop_scanning:
           if (!M2W(dupelist[x]->d_name, wstr)) {
             printf("   [!] "); jc_fwprint(stdout, dupelist[x]->d_name, 0);
             printf("-- MultiByteToWideChar failed\n");
-	    exit_status = EXIT_FAILURE;
+            exit_status = EXIT_FAILURE;
             continue;
           }
 #endif
           if (file_has_changed(dupelist[x])) {
             printf("   [!] "); jc_fwprint(stdout, dupelist[x]->d_name, 0);
             printf("-- file changed since being scanned\n");
-	    exit_status = EXIT_FAILURE;
+            exit_status = EXIT_FAILURE;
 #ifdef UNICODE
           } else if (DeleteFileW(wstr) != 0) {
 #else
           } else if (remove(dupelist[x]->d_name) == 0) {
 #endif
             printf("   [-] "); jc_fwprint(stdout, dupelist[x]->d_name, 1);
+#ifndef NO_HASHDB
+            if (ISFLAG(flags, F_HASHDB)) {
+              dupelist[x]->mtime = 0;
+              add_hashdb_entry(NULL, 0, dupelist[x]);
+          }
+#endif
           } else {
             printf("   [!] "); jc_fwprint(stdout, dupelist[x]->d_name, 0);
             printf("-- unable to delete file\n");
-	    exit_status = EXIT_FAILURE;
+            exit_status = EXIT_FAILURE;
           }
         }
       }
