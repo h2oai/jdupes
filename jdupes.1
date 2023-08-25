@@ -339,6 +339,29 @@ see how they affect performance for your hardware and data set. This
 option does not affect match results in any way, so even if it slows
 down the file matching process it will not hurt anything.
 
+The
+.B \-y
+or
+.BR \-\-hash\-db
+feature creates and maintains a text file with a list of
+file paths, hashes, and other metadata that enables jdupes to "remember" file
+data across runs. Specifying a period '.' as the database file name will use a
+name of "jdupes_hashdb.txt" instead; this alias makes it easy to use the hash
+database feature without typing a descriptive name each time. THIS FEATURE IS
+CURRENTLY UNDER DEVELOPMENT AND HAS MANY QUIRKS. USE IT AT YOUR OWN RISK. In
+particular, one of the biggest problems with this feature is that it stores
+every path exactly as specified on the command line; if any paths are passed
+into jdupes on a subsequent run with a different prefix then they will not be
+recognized and they will be treated as totally different files. For example,
+running \fBjdupes \-y . foo/\fP is not the same as \fBjdupes \-y . ./foo\fP nor the same
+as (from a sibling directory) \fBjdupes \-y ../foo\fP. You must run jdupes from the
+same working directory and with the same path specifications to take advantage
+of the hash database feature. When used correctly, a fully populated hash
+database can reduce subsequent runs with hundreds of thousands of files that
+normally take a very long time to run down to the directory scanning time plus
+a couple of seconds. If the directory data is already in the OS disk cache,
+this can make subsequent runs with over 100K files finish in under one second.
+
 .SH REPORTING BUGS
 Send bug reports to jody@jodybruchon.com or use the issue tracker at:
 

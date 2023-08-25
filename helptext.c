@@ -121,7 +121,6 @@ void help_text(void)
 #ifndef NO_ERRORONDUPE
   printf(" -e --error-on-dupe\texit on any duplicate found with status code 255\n");
 #endif
-  printf(" -E               \tDEPRECATED: moved to '-e'; new feature in next release\n");
   printf(" -f --omit-first  \tomit the first file in each set of matches\n");
   printf(" -h --help        \tdisplay this help message\n");
 #ifndef NO_HARDLINKS
@@ -190,6 +189,7 @@ void help_text(void)
   printf("                  \tUse '-X help' for detailed extfilter help\n");
 #endif /* NO_EXTFILTER */
   printf(" -y --hash-db=file\tuse a hash database text file to speed up repeat runs\n");
+  printf("                  \tPassing '-y .' will expand to  '-y jdupes_hashdb.txt'\n");
   printf(" -z --zero-match  \tconsider zero-length files to be duplicates\n");
   printf(" -Z --soft-abort  \tIf the user aborts (i.e. CTRL-C) act on matches so far\n");
 #ifndef ON_WINDOWS

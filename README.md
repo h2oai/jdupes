@@ -109,8 +109,7 @@ option is specified (delete, summarize, link, dedupe, etc.)
                         particular directory more than once; refer to the
                         documentation for additional information
  -D --debug             output debug statistics after completion
- -e --error-on-dupe	exit on any duplicate found with status code 255
- -E               	DEPRECATED: moved to '-e'; new feature in next release
+ -e --error-on-dupe     exit on any duplicate found with status code 255
  -f --omit-first        omit the first file in each set of matches
  -h --help              display this help message
  -H --hard-links        treat any linked files as duplicate files. Normally
@@ -156,6 +155,7 @@ parameter order
  -X --ext-filter=x:y    filter files based on specified criteria
                         Use '-X help' for detailed extfilter help
  -y --hash-db=file      use a hash database text file to speed up repeat runs
+                        Passing '-y .' will expand to  '-y jdupes_hashdb.txt'
  -z --zero-match        consider zero-length files to be duplicates
  -Z --soft-abort        If the user aborts (i.e. CTRL-C) act on matches so far
                         You can send SIGUSR1 to the program to toggle this
@@ -328,6 +328,25 @@ difficult. Its current purpose is to reveal more information about the file
 matching process by printing match pairs that pass certain steps of the process
 prior to full file comparison. This can be useful if you have two files that
 are passing early checks but failing after full checks.
+
+The `-y`/`--hash-db` feature creates and maintains a text file with a list of
+file paths, hashes, and other metadata that enables jdupes to "remember" file
+data across runs. Specifying a period '.' as the database file name will use a
+name of "jdupes_hashdb.txt" instead; this alias makes it easy to use the hash
+database feature without typing a descriptive name each time. THIS FEATURE IS
+CURRENTLY UNDER DEVELOPMENT AND HAS MANY QUIRKS. USE IT AT YOUR OWN RISK. In
+particular, one of the biggest problems with this feature is that it stores
+every path exactly as specified on the command line; if any paths are passed
+into jdupes on a subsequent run with a different prefix then they will not be
+recognized and they will be treated as totally different files. For example,
+running `jdupes -y . foo/` is not the same as `jdupes -y . ./foo` nor the same
+as (from a sibling directory) `jdupes -y ../foo`. You must run jdupes from the
+same working directory and with the same path specifications to take advantage
+of the hash database feature. When used correctly, a fully populated hash
+database can reduce subsequent runs with hundreds of thousands of files that
+normally take a very long time to run down to the directory scanning time plus
+a couple of seconds. If the directory data is already in the OS disk cache,
+this can make subsequent runs with over 100K files finish in under one second.
 
 
 Hard and soft (symbolic) linking status symbols and behavior
