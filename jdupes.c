@@ -907,7 +907,7 @@ error_optarg:
 #ifndef NO_HASHDB
 error_load_hashdb:
   free(hashdb_name);
-  fprintf(stderr, "error: failure loading hash database '%s'\n", optarg);
+  fprintf(stderr, "error: failure loading hash database '%s'\n", hashdb_name);
   exit(EXIT_FAILURE);
 #endif
 interrupt_exit:
