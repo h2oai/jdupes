@@ -381,9 +381,9 @@ int main(int argc, char **argv)
       break;
 #ifndef NO_ERRORONDUPE
     case 'E':
-      fprintf(stderr, "WARNING: -E is moving to -e in the next release!");
-      fprintf(stderr, "CHECK YOUR SCRIPTS and make the change NOW!");
-      SETFLAG(a_flags, FA_ERRORONDUPE);
+      fprintf(stderr, "The -E option has been moved to -e as threatened in 1.26.1!\n");
+      fprintf(stderr, "Fix whatever used -E and try again. This is not a bug. Exiting.\n");
+      exit(EXIT_FAILURE);
       break;
     case 'e':
       SETFLAG(a_flags, FA_ERRORONDUPE);
@@ -395,7 +395,7 @@ int main(int argc, char **argv)
       break;
     case 'h':
       help_text();
-      exit(EXIT_FAILURE);
+      exit(EXIT_SUCCESS);
 #ifndef NO_HARDLINKS
     case 'H':
       SETFLAG(flags, F_CONSIDERHARDLINKS);
@@ -537,6 +537,7 @@ int main(int argc, char **argv)
 #ifndef NO_HASHDB
     case 'y':
       SETFLAG(flags, F_HASHDB);
+      LOUD(fprintf(stderr, "opt: use a hash database (--hash-db)\n");)
       hdblen = strlen(optarg) + 1;
       if (hdblen < 24) hdblen = 24;
       hashdb_name = (char *)malloc(hdblen);
@@ -545,7 +546,6 @@ int main(int argc, char **argv)
       else strcpy(hashdb_name, optarg);
       /* If the DB doesn't exist, error code 1 is returned and we'll make one later */
       if (load_hash_database(hashdb_name) > 1) goto error_load_hashdb;
-      LOUD(fprintf(stderr, "opt: use a hash database (--hash-db)\n");)
       break;
 #endif /* NO_HASHDB */
     case 'z':
