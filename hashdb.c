@@ -250,7 +250,7 @@ hashdb_t *add_hashdb_entry(const uint64_t path_hash, int pathlen, file_t *check)
           exclude = 0;
           if (cur->mtime != check->mtime) exclude |= 1;
           if (cur->inode != check->inode) exclude |= 2;
-          if (cur->size != check->size) exclude |= 4;
+          if (cur->size  != check->size)  exclude |= 4;
           if (exclude == 0) {
             if (cur->hashcount == 1 && ISFLAG(check->flags, FF_HASH_FULL)) {
               cur->hashcount = 2;
@@ -479,11 +479,12 @@ int get_path_hash(char *path, uint64_t *path_hash)
 
 
  /* If file hash info is already present in hash database then preload those hashes */
-void read_hashdb_entry(file_t *file)
+int read_hashdb_entry(file_t *file)
 {
   unsigned int bucket;
   hashdb_t *cur;
   uint64_t path_hash;
+  int exclude;
 
   LOUD(fprintf(stderr, "read_hashdb_entry('%s')\n", file->d_name);)
   if (file == NULL || file->d_name == NULL) goto error_null;
@@ -491,39 +492,49 @@ void read_hashdb_entry(file_t *file)
   bucket = path_hash & HT_MASK;
 //fprintf(stderr, "sizeof %lu, sizeof _t %lu, hashdb %p, hashdb+bucket %p, bucket %u => %lu\n", sizeof(hashdb), sizeof(hashdb_t), (void *)hashdb, (void *)(hashdb + bucket), bucket, (uintptr_t)((hashdb + bucket) - hashdb));
 //fprintf(stderr, "hashdb[bucket] %p\n", (void *)hashdb[bucket]);
-  if (hashdb[bucket] == NULL) return;
+  if (hashdb[bucket] == NULL) return 0;
   cur = hashdb[bucket];
   while (1) {
     if (cur->path_hash != path_hash) {
       if (path_hash < cur->path_hash) cur = cur->left;
       else cur = cur->right;
-      if (cur == NULL) return;
+      if (cur == NULL) return 0;
       continue;
     }
     /* Found a matching path hash */
     if (strcmp(cur->path, file->d_name) != 0) {
       cur = cur->left;
-      if (cur == NULL) return;
+      if (cur == NULL) return 0;
       continue;
     } else {
       /* Found a matching path too but check mtime */
-      if (file->mtime != cur->mtime) return;
+      exclude = 0;
+      if (cur->mtime != file->mtime) exclude |= 1;
+      if (cur->inode != file->inode) exclude |= 2;
+      if (cur->size  != file->size)  exclude |= 4;
+      if (exclude != 0) {
+        /* Invalidate if something has changed */
+//fprintf(stderr, "invalidating file: '%s' [%d]\n", cur->path, exclude);
+        cur->hashcount = 0;
+        hashdb_dirty = 1;
+        return -1;
+      }
       file->filehash_partial = cur->partialhash;
       if (cur->hashcount == 2) {
         file->filehash = cur->fullhash;
         SETFLAG(file->flags, (FF_HASH_PARTIAL | FF_HASH_FULL));
       } else SETFLAG(file->flags, FF_HASH_PARTIAL);
-      return;
+      return 1;
     }
   }
-  return;
+  return 0;
 
 error_null:
   fprintf(stderr, "error: internal error: NULL data passed to read_hashdb_entry()\n");
-  return;
+  return -255;
 error_path_hash:
   fprintf(stderr, "error: internal error hashing a path\n");
-  return;
+  return -255;
 }
 
 

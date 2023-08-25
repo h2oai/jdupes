@@ -29,7 +29,7 @@ extern void dump_hashdb(hashdb_t *cur);
 extern int get_path_hash(char *path, uint64_t *path_hash);
 extern int load_hash_database(char *dbname);
 extern int save_hash_database(const char * const restrict dbname);
-extern void read_hashdb_entry(file_t *file);
+extern int read_hashdb_entry(file_t *file);
 extern int write_hashdb_entry(FILE *db, hashdb_t *cur, unsigned long *cnt);
 extern void hd16(char *a);
 
