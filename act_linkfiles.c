@@ -13,6 +13,9 @@
 
 #include <libjodycode.h>
 #include "act_linkfiles.h"
+#ifndef NO_HASHDB
+ #include "hashdb.h"
+#endif
 
 #ifdef UNICODE
  static wpath_t wname, wname2;
@@ -339,6 +342,13 @@ void linkfiles(file_t *files, const int linktype, const int only_current)
 #else /* ON_WINDOWS */
         if (linktype == 1) {
           if (link(srcfile->d_name, dupelist[x]->d_name) == 0) success = 1;
+#ifndef NO_HASHDB
+          /* Invalidate the hashdb entry for the newly linked file */
+          if (ISFLAG(flags, F_HASHDB)) {
+            dupelist[x]->mtime = 0;
+            add_hashdb_entry(NULL, 0, dupelist[x]);
+          }
+#endif
  #ifdef ENABLE_CLONEFILE_LINK
         } else if (linktype == 2) {
           if (clonefile(srcfile->d_name, dupelist[x]->d_name, 0) == 0) {
