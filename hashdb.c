@@ -79,7 +79,7 @@ int save_hash_database(const char * const restrict dbname)
 
   if (write_hashdb_entry(db, NULL, &cnt) != 0) goto error_hashdb_write;
   fclose(db);
-  LOUD(fprintf(stderr, "Wrote %lu items to hash databse '%s'\n", cnt, dbname);)
+  LOUD(fprintf(stderr, "Wrote %" PRIu64 " items to hash databse '%s'\n", cnt, dbname);)
 
   return cnt;
 
@@ -105,7 +105,7 @@ static int write_hashdb_entry(FILE *db, hashdb_t *cur, uint64_t *cnt)
   /* Write header and traverse array on first call */
   if (unlikely(cur == NULL)) {
     gettimeofday(&tm, NULL);
-    snprintf(out, PATH_MAX + 127, "jdupes hashdb:%d,%d,%08lx\n", HASHDB_VER, hash_algo, tm.tv_sec);
+    snprintf(out, PATH_MAX + 127, "jdupes hashdb:%d,%d,%08lx\n", HASHDB_VER, hash_algo, (unsigned long)tm.tv_sec);
     LOUD(fprintf(stderr, "write hashdb: %s", out);)
     errno = 0;
     fputs(out, db);
@@ -123,7 +123,7 @@ static int write_hashdb_entry(FILE *db, hashdb_t *cur, uint64_t *cnt)
   if (cur->hashcount != 0) {
 
     snprintf(out, PATH_MAX + 127, "%u,%016" PRIx64 ",%016" PRIx64 ",%08lx,%08" PRId64 ",%016" PRIx64",%s\n",
-      cur->hashcount, cur->partialhash, cur->fullhash, cur->mtime, cur->size, cur->inode, cur->path);
+      cur->hashcount, cur->partialhash, cur->fullhash, (unsigned long)cur->mtime, cur->size, cur->inode, cur->path);
     (*cnt)++;
     LOUD(fprintf(stderr, "write hashdb: %s", out);)
     errno = 0;
