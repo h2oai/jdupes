@@ -598,9 +598,9 @@ A future release will fix this safely.
 
 Contact information
 -------------------------------------------------------------------------------
-To post bug reports/feature requests: https://github.com/jbruchon/jdupes/issues
+For general program information, help, and tech info: https://www.jdupes.com/
 
-For all other jdupes inquiries, contact Jody Bruchon <jody@jodybruchon.com>
+Have a bug report or questions? contact Jody Bruchon <jody@jodybruchon.com>
 
 
 Legal information and software license

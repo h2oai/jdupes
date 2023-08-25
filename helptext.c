@@ -255,7 +255,7 @@ void version_text(int short_version)
   printf("SOFTWARE.\n");
   printf("\nIf you find this software useful, please consider financially supporting\n");
   printf("its development through the author's home page: https://www.jodybruchon.com/\n");
-  printf("Report bugs and get the latest releases: https://github.com/jbruchon/jdupes\n");
+  printf("Report bugs, get new releases, or learn about jdupes: https://www.jdupes.com/\n");
 #else
   (void)short_version;
   printf("\nBuilt with no help text. You're on your own.\n");
