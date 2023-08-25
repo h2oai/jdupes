@@ -33,7 +33,7 @@ void registerpair(file_t **matchlist, file_t *newmatch, int (*comparef)(file_t *
 #ifndef NO_ERRORONDUPE
   if (ISFLAG(a_flags, FA_ERRORONDUPE)) {
     if (!ISFLAG(flags, F_HIDEPROGRESS)) fprintf(stderr, "\r");
-    fprintf(stderr, "Exiting based on user request (-E); duplicates found:\n");
+    fprintf(stderr, "Exiting based on user request (-e); duplicates found:\n");
     printf("%s\n%s\n", (*matchlist)->d_name, newmatch->d_name);
     exit(255);
   }
