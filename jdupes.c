@@ -538,6 +538,12 @@ int main(int argc, char **argv)
     case 'y':
       SETFLAG(flags, F_HASHDB);
       LOUD(fprintf(stderr, "opt: use a hash database (--hash-db)\n");)
+      fprintf(stderr, "\nWARNING: THE HASH DATABASE FEATURE IS UNDER HEAVY DEVELOPMENT!\n");
+      fprintf(stderr,   "         It functions properly but there are LOTS OF QUIRKS.\n");
+      fprintf(stderr,   "         The behavior is not fully documented yet and basic\n");
+      fprintf(stderr,   "         'smarts' such as rewriting relative paths have not\n");
+      fprintf(stderr,   "         been implemented. USE THIS FEATURE AT YOUR OWN RISK.\n");
+      fprintf(stderr,   "         Report any crashes or bugs to  <jody@jodybruchon.com>\n\n");
       hdblen = strlen(optarg) + 1;
       if (hdblen < 24) hdblen = 24;
       hashdb_name = (char *)malloc(hdblen);
