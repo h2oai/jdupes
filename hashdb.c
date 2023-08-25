@@ -23,13 +23,9 @@
 #define SECS_TO_TIME(a,b) strftime(a, 32, "%F %T", localtime(b));
 
 #ifndef HT_SIZE
-// #define HT_SIZE 256
-// #define HT_SIZE 4096
-// #define HT_SIZE 65536
  #define HT_SIZE 131072
 #endif
 #define HT_MASK (HT_SIZE - 1)
-//#define HT_MASK 0xffLLU
 
 static hashdb_t *hashdb[HT_SIZE];
 static int hashdb_init = 0;
@@ -226,11 +222,11 @@ hashdb_t *add_hashdb_entry(char *in_path, int pathlen, const file_t *check)
   unsigned int bucket;
   hashdb_t *file;
   hashdb_t *cur;
-  char *path;
   uint64_t path_hash;
   int exclude;
-  static int ldepth = 0, rdepth = 0, difference;
-  static uint64_t rebal = 0;
+  int difference;
+  char *path;
+//  static uint64_t rebal = 0;
 
   /* Allocate hashdb on first use */
   if (unlikely(hashdb_init == 0)) {
@@ -258,6 +254,7 @@ hashdb_t *add_hashdb_entry(char *in_path, int pathlen, const file_t *check)
 //fprintf(stderr, "file is now the head of bucket %u\n", bucket);
   } else {
     cur = hashdb[bucket];
+    difference = 0;
     while (1) {
 //fprintf(stderr, "%016lx >= %016lx ?\n", cur->path_hash, path_hash);
       /* If path is set then this entry may already exist and we need to check */
@@ -294,7 +291,7 @@ hashdb_t *add_hashdb_entry(char *in_path, int pathlen, const file_t *check)
           break;
         } else {
           cur = cur->left;
-          ldepth++;
+          difference--;
           continue;
         }
       } else {
@@ -305,17 +302,14 @@ hashdb_t *add_hashdb_entry(char *in_path, int pathlen, const file_t *check)
           break;
         } else {
           cur = cur->right;
-          rdepth++;
+          difference++;
           continue;
         }
       }
     }
-//fprintf(stderr, "ldepth %d, rdepth %d\n", ldepth, rdepth);
-    difference = ldepth - rdepth;
     if (difference < 0) difference = -difference;
-//fprintf(stderr, "difference %d > %d ?\n", difference, (rdepth + ldepth) / 2);
-    if (difference > 100000) {
-      rebal++;
+    if (difference > 64) {
+//      rebal++;
 //fprintf(stderr, "rebalance %lu, bucket %u\n", rebal, bucket);
       rebalance_hashdb_tree(&(hashdb[bucket]));
     }
