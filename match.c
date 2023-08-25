@@ -117,10 +117,6 @@ file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict file)
   int cmpresult = 0;
   int cantmatch = 0;
   const uint64_t * restrict filehash;
-#ifndef NO_HASHDB
-  uint64_t path_hash;
-  int pathlen;
-#endif
 
   if (unlikely(tree == NULL || file == NULL || tree->file == NULL || tree->file->d_name == NULL || file->d_name == NULL)) jc_nullptr("checkmatch()");
   LOUD(fprintf(stderr, "checkmatch ('%s', '%s')\n", tree->file->d_name, file->d_name));
@@ -232,15 +228,13 @@ file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict file)
   /* Add to hash database */
 #ifndef NO_HASHDB
   if (ISFLAG(flags, F_HASHDB)) {
-    if (ISFLAG(file->flags, FF_HASHDB_DIRTY) && get_path_hash(file->d_name, &path_hash) == 0) {
-      pathlen = strlen(file->d_name);
+    if (ISFLAG(file->flags, FF_HASHDB_DIRTY)) {
       CLEARFLAG(file->flags, FF_HASHDB_DIRTY);
-      add_hashdb_entry(path_hash, pathlen, file);
+      add_hashdb_entry(NULL, 0, file);
   }
-    if (ISFLAG(tree->file->flags, FF_HASHDB_DIRTY) && get_path_hash(tree->file->d_name, &path_hash) == 0) {
-      pathlen = strlen(tree->file->d_name);
+    if (ISFLAG(tree->file->flags, FF_HASHDB_DIRTY)) {
       CLEARFLAG(tree->file->flags, FF_HASHDB_DIRTY);
-      add_hashdb_entry(path_hash, pathlen, tree->file);
+      add_hashdb_entry(NULL, 0, tree->file);
     }
  }
 #endif

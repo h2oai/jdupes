@@ -39,7 +39,11 @@ static int hashdb_dirty = 0;
 /* Pivot direction for rebalance */
 enum pivot { PIVOT_LEFT, PIVOT_RIGHT };
 
+static int get_path_hash(char *path, uint64_t *path_hash);
 
+
+#if 0
+/* Hex dump 16 bytes of memory */
 void hd16(char *a) {
   int i;
 
@@ -50,6 +54,7 @@ void hd16(char *a) {
   printf("\n");
   return;
 }
+#endif
 
 
 static hashdb_t *alloc_hashdb_node(const int pathlen)
@@ -215,11 +220,14 @@ static void rebalance_hashdb_tree(hashdb_t **parent)
 }
 
 
-hashdb_t *add_hashdb_entry(const uint64_t path_hash, int pathlen, file_t *check)
+/* in_pathlen allows use of a precomputed path length to avoid extra strlen() calls */
+hashdb_t *add_hashdb_entry(char *in_path, int pathlen, const file_t *check)
 {
-  const unsigned int bucket = path_hash & HT_MASK;
+  unsigned int bucket;
   hashdb_t *file;
   hashdb_t *cur;
+  char *path;
+  uint64_t path_hash;
   int exclude;
   static int ldepth = 0, rdepth = 0, difference;
   static uint64_t rebal = 0;
@@ -230,13 +238,22 @@ hashdb_t *add_hashdb_entry(const uint64_t path_hash, int pathlen, file_t *check)
     hashdb_init = 1;
   }
 
-  if (check != NULL && check->d_name == NULL) return NULL;
+  if (unlikely((in_path == NULL && check == NULL) || (check != NULL && check->d_name == NULL))) return NULL;
+
+  /* Get path hash and length from supplied path; use hash to choose the bucket */
+  if (in_path == NULL) path = check->d_name;
+  else path = in_path;
+  if (pathlen == 0) pathlen = strlen(path);
+  if (get_path_hash(path, &path_hash) != 0) return NULL;
+  bucket = path_hash & HT_MASK;
+
 //fprintf(stderr, "add_hashdb_entry(%016lx, %d, %p)\n", path_hash, pathlen, (void *)check);
 
   if (hashdb[bucket] == NULL) {
 //fprintf(stderr, "root hash %016lx\n", path_hash);
     file = alloc_hashdb_node(pathlen);
     if (file == NULL) return NULL;
+    file->path_hash = path_hash;
     hashdb[bucket] = file;
 //fprintf(stderr, "file is now the head of bucket %u\n", bucket);
   } else {
@@ -376,7 +393,6 @@ int64_t load_hash_database(char *dbname)
     int linelen;
     int hashcount;
     uint64_t partialhash, fullhash = 0;
-    uint64_t path_hash;
     time_t mtime;
     char *path;
     hashdb_t *entry;
@@ -415,15 +431,13 @@ int64_t load_hash_database(char *dbname)
     pathlen = linelen - FIXED_LINELEN + 1;
     if (pathlen > PATH_MAX) goto error_hashdb_line;
     *(path + pathlen) = '\0';
-    if (get_path_hash(path, &path_hash) != 0) goto error_hashdb_path_hash;
 
 //SECS_TO_TIME(date, &mtime);
 //fprintf(stderr, "file entry: [%u:%016lx] '%s', mtime %s, size %ld, inode %lu, hashes [%u] %016lx:%016lx\n", pathlen, path_hash, path, date, size, inode, hashcount, partialhash, fullhash);
 
-    entry = add_hashdb_entry(path_hash, pathlen, NULL);
+    entry = add_hashdb_entry(path, pathlen, NULL);
     if (entry == NULL) goto error_hashdb_add;
     // init path entry items
-    entry->path_hash = path_hash;
     memcpy(entry->path, path, pathlen + 1);
     entry->mtime = mtime;
     entry->inode = inode;
@@ -453,19 +467,16 @@ error_hashdb_line:
 error_hashdb_add:
   fprintf(stderr, "error: internal failure allocating a hashdb entry\n");
   return -5;
-error_hashdb_path_hash:
-  fprintf(stderr, "error: internal failure hashing a path\n");
-  return -6;
 error_hashdb_null:
   fprintf(stderr, "error: internal failure: NULL pointer for hashdb\n");
-  return -7;
+  return -6;
 warn_hashdb_algo:
   fprintf(stderr, "warning: hashdb uses a different hash algorithm than selected; not loading\n");
-  return -8;
+  return -7;
 }
  
 
-int get_path_hash(char *path, uint64_t *path_hash)
+static int get_path_hash(char *path, uint64_t *path_hash)
 {
   uint64_t aligned_path[(PATH_MAX + 8) / sizeof(uint64_t)];
   int retval;
