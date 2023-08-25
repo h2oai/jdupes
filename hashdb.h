@@ -25,11 +25,9 @@ typedef struct _hashdb {
 } hashdb_t;
 
 extern hashdb_t *add_hashdb_entry(char *in_path, const int in_pathlen, const file_t *check);
-extern void dump_hashdb(hashdb_t *cur);
 extern int64_t load_hash_database(char *dbname);
 extern int save_hash_database(const char * const restrict dbname);
 extern int read_hashdb_entry(file_t *file);
-extern int write_hashdb_entry(FILE *db, hashdb_t *cur, unsigned long *cnt);
 
 #ifdef __cplusplus
 }

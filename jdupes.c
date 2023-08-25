@@ -202,6 +202,7 @@ int main(int argc, char **argv)
   char *hashdb_name = NULL;
   int hdblen;
   int64_t hdbsize;
+  uint64_t hdbout;
 #endif
 
 #ifndef NO_GETOPT_LONG
@@ -756,11 +757,11 @@ skip_partialonly_noise:
              ISFLAG(flags, F_QUICKCOMPARE)
           || ISFLAG(flags, F_PARTIALONLY)
 #ifndef NO_HARDLINKS
-	  || (ISFLAG(flags, F_CONSIDERHARDLINKS)
+          || (ISFLAG(flags, F_CONSIDERHARDLINKS)
           &&  (curfile->inode == (*match)->inode)
           &&  (curfile->device == (*match)->device))
 #endif
-	  ) {
+          ) {
         LOUD(fprintf(stderr, "MAIN: notice: hard linked, quick, or partial-only match (-H/-Q/-T)\n"));
 #ifndef NO_MTIME
         registerpair(match, curfile, (ordertype == ORDER_TIME) ? sort_pairs_by_mtime : sort_pairs_by_filename);
@@ -833,11 +834,6 @@ skip_file_scan:
     exit(exit_status);
   }
 
-#ifndef NO_HASHDB
-  if (ISFLAG(flags, F_HASHDB)) save_hash_database(hashdb_name);
-  if (hashdb_name != NULL) free(hashdb_name);
-#endif
-
 #ifndef NO_DELETE
   if (ISFLAG(a_flags, FA_DELETEFILES)) {
     if (ISFLAG(flags, F_NOPROMPT)) deletefiles(files, 0, 0);
@@ -862,6 +858,17 @@ skip_file_scan:
     if (ISFLAG(a_flags, FA_PRINTMATCHES)) printf("\n\n");
     summarizematches(files);
   }
+
+#ifndef NO_HASHDB
+  if (ISFLAG(flags, F_HASHDB)) {
+    hdbout = save_hash_database(hashdb_name);
+    if (!ISFLAG(flags, F_HIDEPROGRESS)) {
+      if (hdbout > 0) fprintf(stderr, "Wrote %" PRIu64 " entries to the hash database\n", hdbout);
+      else fprintf(stderr, "Hash database is OK (no changes)\n");
+    }
+  }
+  if (hashdb_name != NULL) free(hashdb_name);
+#endif
 
 #ifdef DEBUG
 skip_all_scan_code:
