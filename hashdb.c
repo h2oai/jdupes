@@ -2,6 +2,7 @@
  * This file is part of jdupes; see jdupes.c for license information */
 
 #include <errno.h>
+#include <inttypes.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -333,13 +334,13 @@ hashdb_t *add_hashdb_entry(const uint64_t path_hash, int pathlen, file_t *check)
 /* db header format: jdupes hashdb:dbversion,hashtype,update_mtime
  * db line format: hashcount,partial,full,mtime,size,inode,path */
 #define FIXED_LINELEN 71
-int load_hash_database(char *dbname)
+int64_t load_hash_database(char *dbname)
 {
   FILE *db;
   char buf[PATH_MAX + 128];
   char *field, *temp;
   int db_ver;
-  int linenum = 1;
+  int64_t linenum = 1;
 #ifdef LOUD_DEBUG
   time_t db_mtime;
   char date[32];
@@ -390,7 +391,7 @@ int load_hash_database(char *dbname)
 //    LOUD(fprintf(stderr, "read hashdb: %s", buf);)
 //fprintf(stderr, "read hashdb: %s", buf);
     linenum++;
-    linelen = (int)strlen(buf);
+    linelen = (int64_t)strlen(buf);
     if (linelen < FIXED_LINELEN + 1) goto error_hashdb_line;
 
     /* Split each entry into fields and
@@ -432,35 +433,35 @@ int load_hash_database(char *dbname)
     entry->hashcount = hashcount;
   }
 
-  return 0;
+  return linenum - 1;
 
 warn_hashdb_open:
-  fprintf(stderr, "warning: creating a new hash database '%s'\n", dbname);
-  return 1;
+  fprintf(stderr, "Creating a new hash database '%s'\n", dbname);
+  return 0;
 error_hashdb_read:
   fprintf(stderr, "error reading hash database '%s': %s\n", dbname, strerror(errno));
-  return 2;
+  return -1;
 error_hashdb_header:
   fprintf(stderr, "error in header of hash database '%s'\n", dbname);
-  return 3;
+  return -2;
 error_hashdb_version:
   fprintf(stderr, "error: bad db version %u in hash database '%s'\n", db_ver, dbname);
-  return 4;
+  return -3;
 error_hashdb_line:
-  fprintf(stderr, "error: bad line %u in hash database '%s': '%s'\n", linenum, dbname, buf);
-  return 5;
+  fprintf(stderr, "error: bad line %" PRId64 " in hash database '%s': '%s'\n", linenum, dbname, buf);
+  return -4;
 error_hashdb_add:
   fprintf(stderr, "error: internal failure allocating a hashdb entry\n");
-  return 6;
+  return -5;
 error_hashdb_path_hash:
   fprintf(stderr, "error: internal failure hashing a path\n");
-  return 7;
+  return -6;
 error_hashdb_null:
   fprintf(stderr, "error: internal failure: NULL pointer for hashdb\n");
-  return 8;
+  return -7;
 warn_hashdb_algo:
   fprintf(stderr, "warning: hashdb uses a different hash algorithm than selected; not loading\n");
-  return 9;
+  return -8;
 }
  
 

@@ -201,6 +201,7 @@ int main(int argc, char **argv)
 #ifndef NO_HASHDB
   char *hashdb_name = NULL;
   int hdblen;
+  int64_t hdbsize;
 #endif
 
 #ifndef NO_GETOPT_LONG
@@ -544,14 +545,13 @@ int main(int argc, char **argv)
       fprintf(stderr,   "         'smarts' such as rewriting relative paths have not\n");
       fprintf(stderr,   "         been implemented. USE THIS FEATURE AT YOUR OWN RISK.\n");
       fprintf(stderr,   "         Report any crashes or bugs to  <jody@jodybruchon.com>\n\n");
+      hdbsize = 0;
       hdblen = strlen(optarg) + 1;
       if (hdblen < 24) hdblen = 24;
       hashdb_name = (char *)malloc(hdblen);
       if (hashdb_name == NULL) jc_nullptr("hashdb");
       if (strcmp(optarg, ".") == 0) strcpy(hashdb_name, "jdupes_hashdb.txt");
       else strcpy(hashdb_name, optarg);
-      /* If the DB doesn't exist, error code 1 is returned and we'll make one later */
-      if (load_hash_database(hashdb_name) > 1) goto error_load_hashdb;
       break;
 #endif /* NO_HASHDB */
     case 'z':
@@ -649,6 +649,15 @@ skip_partialonly_noise:
 
   /* Catch CTRL-C */
   signal(SIGINT, catch_interrupt);
+
+#ifndef NO_HASHDB
+  if (ISFLAG(flags, F_HASHDB)) {
+    if (!ISFLAG(flags, F_HIDEPROGRESS)) fprintf(stderr, "Loading hash database...");
+    hdbsize = load_hash_database(hashdb_name);
+    if (hdbsize < 0) goto error_load_hashdb;
+    if (!ISFLAG(flags, F_HIDEPROGRESS)) fprintf(stderr, "%" PRId64 " entries loaded.\n", hdbsize);
+  }
+#endif /* NO_HASHDB */
 
   /* Progress indicator every second */
   if (!ISFLAG(flags, F_HIDEPROGRESS)) {
