@@ -124,9 +124,13 @@ int write_hashdb_entry(FILE *db, hashdb_t *cur, unsigned long *cnt)
 
   /* Write out this node if it wasn't invalidated */
   if (cur->hashcount != 0) {
-
-    snprintf(out, PATH_MAX + 127, "%u,%016" PRIx64 ",%016" PRIx64 ",%08lx,%08" PRId64 ",%016" PRIx64",%s\n",
+#ifdef ON_WINDOWS
+    snprintf(out, PATH_MAX + 127, "%u,%016llx,%016llx,%08llx,%08llx,%016llx,%s\n",
       cur->hashcount, cur->partialhash, cur->fullhash, cur->mtime, cur->size, cur->inode, cur->path);
+#else
+    snprintf(out, PATH_MAX + 127, "%u,%016lx,%016lx,%08lx,%08lx,%016lx,%s\n",
+      cur->hashcount, cur->partialhash, cur->fullhash, cur->mtime, cur->size, cur->inode, cur->path);
+#endif
     (*cnt)++;
     LOUD(fprintf(stderr, "write hashdb: %s", out);)
     errno = 0;
@@ -156,8 +160,14 @@ void dump_hashdb(hashdb_t *cur)
     }
     return;
   }
-  if (cur->hashcount != 0) printf("%u,%016" PRIx64 ",%016" PRIx64 ",%08lx,%08" PRId64 ",%016" PRIx64",%s\n",
+  /* db line format: hashcount,partial,full,mtime,path */
+#ifdef ON_WINDOWS
+  if (cur->hashcount != 0) printf("%u,%016llx,%016llx,%08llx,%08llx,%016llx,%s\n",
       cur->hashcount, cur->partialhash, cur->fullhash, cur->mtime, cur->size, cur->inode, cur->path);
+#else
+  if (cur->hashcount != 0) printf("%u,%016lx,%016lx,%08lx,%08lx,%016lx,%s\n",
+      cur->hashcount, cur->partialhash, cur->fullhash, cur->mtime, cur->size, cur->inode, cur->path);
+#endif
   if (cur->left != NULL) dump_hashdb(cur->left);
   if (cur->right != NULL) dump_hashdb(cur->right);
   return;
