@@ -67,7 +67,7 @@ static hashdb_t *alloc_hashdb_node(const int pathlen)
 int save_hash_database(const char * const restrict dbname)
 {
   FILE *db;
-  uint64_t cnt;
+  uint64_t cnt = 0;
 
   if (dbname == NULL) goto error_hashdb_null;
   LOUD(fprintf(stderr, "save_hash_database('%s')\n", dbname);)
