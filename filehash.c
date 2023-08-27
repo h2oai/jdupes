@@ -95,9 +95,6 @@ uint64_t *get_filehash(const file_t * const restrict checkfile, const size_t max
   else file = _wfopen(wstr, FILE_MODE_RO);
 #else
   file = fopen(checkfile->d_name, FILE_MODE_RO);
-#ifdef __linux__
-    filenum = fileno(file);
-#endif /* __linux__ */
 #endif /* UNICODE */
   if (file == NULL) {
     fprintf(stderr, "\n%s error opening file ", strerror(errno)); jc_fwprint(stderr, checkfile->d_name, 1);
@@ -113,11 +110,13 @@ uint64_t *get_filehash(const file_t * const restrict checkfile, const size_t max
     }
     fsize -= PARTIAL_HASH_SIZE;
 #ifdef __linux__
+    filenum = fileno(file);
     posix_fadvise(filenum, PARTIAL_HASH_SIZE, fsize, POSIX_FADV_SEQUENTIAL);
     posix_fadvise(filenum, PARTIAL_HASH_SIZE, fsize, POSIX_FADV_WILLNEED);
 #endif /* __linux__ */
   } else {
 #ifdef __linux__
+    filenum = fileno(file);
     posix_fadvise(filenum, 0, fsize, POSIX_FADV_SEQUENTIAL);
     posix_fadvise(filenum, 0, fsize, POSIX_FADV_WILLNEED);
 #endif /* __linux__ */
