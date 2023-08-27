@@ -1,3 +1,7 @@
+jdupes 1.27.3 (2023-08-26)
+
+- Fix crash on Linux when opening a file for hashing fails
+
 jdupes 1.27.2 (2023-08-26)
 
 - Hash database no longer crashes on 32-bit and x32 systems
