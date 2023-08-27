@@ -230,7 +230,7 @@ static: $(PROGRAM_NAME)
 	$(CC) $(CFLAGS) $(OBJS) -static $(LDFLAGS) $(STATIC_LDFLAGS) -o $(PROGRAM_NAME)$(SUFFIX)
 
 static_stripped: $(PROGRAM_NAME) static
-	strip $(PROGRAM_NAME)$(SUFFIX)
+	-strip $(PROGRAM_NAME)$(SUFFIX)
 
 $(PROGRAM_NAME): $(OBJS)
 	$(CC) $(CFLAGS) $(OBJS) $(BDYNAMIC) $(LDFLAGS) $(DYN_LDFLAGS) -o $(PROGRAM_NAME)$(SUFFIX)

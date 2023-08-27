@@ -44,7 +44,7 @@ static file_t *init_newfile(const size_t len, file_t * restrict * const restrict
   LOUD(fprintf(stderr, "init_newfile(len %" PRIuMAX ", filelistp %p)\n", (uintmax_t)len, filelistp));
 
   memset(newfile, 0, sizeof(file_t));
-  newfile->d_name = (char *)malloc(len);
+  newfile->d_name = (char *)malloc(EXTEND64(len));
   if (!newfile->d_name) jc_oom("init_newfile() filename");
 
   newfile->next = *filelistp;

@@ -17,7 +17,7 @@ echo "Program version: $VER"
 
 [ -z "$TA" ] && TA=__NONE__
 [ ! -z "$1" ] && ARCH="$1"
-[[ "$ARCH" = "linux-x64" || "$ARCH" = "x86_64" ]] && TA=linux && ARCH=x86_64 && CF=-m64
+[[ "$ARCH" = "linux-x64" || "$ARCH" = "x86_64" || "$ARCH" = "x86-64" ]] && TA=linux && ARCH=x86_64 && CF=-m64
 [[ "$ARCH" = "linux-x32" || "$ARCH" = "x32" ]] && TA=linux && ARCH=x32 && CF=-mx32
 [[ "$ARCH" = "linux-i686" || "$ARCH" = "linux-i386" || "$ARCH" = "i686" || "$ARCH" = "i386" ]] && TA=linux && ARCH=i386 && CF=-m32
 

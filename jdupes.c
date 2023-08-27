@@ -651,10 +651,9 @@ skip_partialonly_noise:
 
 #ifndef NO_HASHDB
   if (ISFLAG(flags, F_HASHDB)) {
-    if (!ISFLAG(flags, F_HIDEPROGRESS)) fprintf(stderr, "Loading hash database...");
     hdbsize = load_hash_database(hashdb_name);
     if (hdbsize < 0) goto error_load_hashdb;
-    if (!ISFLAG(flags, F_HIDEPROGRESS)) fprintf(stderr, "%" PRId64 " entries loaded.\n", hdbsize);
+    if (hdbsize > 0 && !ISFLAG(flags, F_HIDEPROGRESS)) fprintf(stderr, "%" PRId64 " entries loaded.\n", hdbsize);
   }
 #endif /* NO_HASHDB */
 
@@ -861,7 +860,7 @@ skip_file_scan:
 
 #ifndef NO_HASHDB
   if (ISFLAG(flags, F_HASHDB)) {
-    hdbout = save_hash_database(hashdb_name);
+    hdbout = save_hash_database(hashdb_name, 1);
     if (!ISFLAG(flags, F_HIDEPROGRESS)) {
       if (hdbout > 0) fprintf(stderr, "Wrote %" PRIu64 " entries to the hash database\n", hdbout);
       else fprintf(stderr, "Hash database is OK (no changes)\n");
@@ -906,7 +905,6 @@ error_optarg:
   exit(EXIT_FAILURE);
 #ifndef NO_HASHDB
 error_load_hashdb:
-  fprintf(stderr, "error: failure loading hash database '%s'\n", hashdb_name);
   free(hashdb_name);
   exit(EXIT_FAILURE);
 #endif

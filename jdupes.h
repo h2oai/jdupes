@@ -141,6 +141,8 @@ extern uintmax_t comparisons;
 /* Compare two hashes like memcmp() */
 #define HASH_COMPARE(a,b) ((a > b) ? 1:((a == b) ? 0:-1))
 
+/* Extend an allocation length to the next 64-bit (8-byte) boundary */
+#define EXTEND64(a) ((a & 0x7) > 0 ? ((a & (~0x7)) + 8) : a)
 
 /* Behavior modification flags */
 extern uint64_t flags, a_flags, p_flags;
@@ -214,14 +216,14 @@ typedef struct _file {
   char *d_name;
   uint64_t filehash_partial;
   uint64_t filehash;
-  uint32_t flags;  /* Status flags */
-  jdupes_mode_t mode;
   jdupes_ino_t inode;
   off_t size;
-  dev_t device;
 #ifndef NO_MTIME
   time_t mtime;
 #endif
+  dev_t device;
+  uint32_t flags;  /* Status flags */
+  jdupes_mode_t mode;
 #ifndef NO_ATIME
   time_t atime;
 #endif

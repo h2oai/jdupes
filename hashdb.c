@@ -14,9 +14,9 @@
 #include "likely_unlikely.h"
 #include "hashdb.h"
 
-#define HASHDB_VER 1
+#define HASHDB_VER 2
 #define HASHDB_MIN_VER 1
-#define HASHDB_MAX_VER 1
+#define HASHDB_MAX_VER 2
 #ifndef PH_SHIFT
  #define PH_SHIFT 12
 #endif
@@ -35,7 +35,7 @@ static int hashdb_dirty = 0;
 /* Pivot direction for rebalance */
 enum pivot { PIVOT_LEFT, PIVOT_RIGHT };
 
-static int write_hashdb_entry(FILE *db, hashdb_t *cur, uint64_t *cnt);
+static int write_hashdb_entry(FILE *db, hashdb_t *cur, uint64_t *cnt, const int destroy);
 static int get_path_hash(char *path, uint64_t *path_hash);
 
 
@@ -59,27 +59,32 @@ static hashdb_t *alloc_hashdb_node(const int pathlen)
   int allocsize;
 
   allocsize = sizeof(hashdb_t) + pathlen + 1;
-  if ((allocsize & 0x0fLU) != 0) allocsize += 16 - (allocsize & 0xf);
-  return (hashdb_t *)calloc(1, allocsize);
+  return (hashdb_t *)calloc(1, EXTEND64(allocsize));
 }
 
 
-int save_hash_database(const char * const restrict dbname)
+/* destroy = 1 will free() all nodes while saving */
+int save_hash_database(const char * const restrict dbname, const int destroy)
 {
-  FILE *db;
+  FILE *db = NULL;
   uint64_t cnt = 0;
 
   if (dbname == NULL) goto error_hashdb_null;
   LOUD(fprintf(stderr, "save_hash_database('%s')\n", dbname);)
   /* Don't save the hash database if it wasn't changed */
-  if (hashdb_dirty == 0) return 0;
-  errno = 0;
-  db = fopen(dbname, "w+b");
-  if (db == NULL) goto error_hashdb_open;
+  if (hashdb_dirty == 0 && destroy == 0) return 0;
+  if (hashdb_dirty == 1) {
+    errno = 0;
+    db = fopen(dbname, "w+b");
+    if (db == NULL) goto error_hashdb_open;
+  }
 
-  if (write_hashdb_entry(db, NULL, &cnt) != 0) goto error_hashdb_write;
-  fclose(db);
-  LOUD(fprintf(stderr, "Wrote %" PRIu64 " items to hash databse '%s'\n", cnt, dbname);)
+  if (write_hashdb_entry(db, NULL, &cnt, destroy) != 0) goto error_hashdb_write;
+  if (hashdb_dirty == 1) {
+    fclose(db);
+    LOUD(if (hashdb_dirty == 1) fprintf(stderr, "Wrote %" PRIu64 " items to hash databse '%s'\n", cnt, dbname);)
+    hashdb_dirty = 0;
+  }
 
   return cnt;
 
@@ -96,7 +101,7 @@ error_hashdb_write:
 }
 
 
-static int write_hashdb_entry(FILE *db, hashdb_t *cur, uint64_t *cnt)
+static int write_hashdb_entry(FILE *db, hashdb_t *cur, uint64_t *cnt, const int destroy)
 {
   struct timeval tm;
   int err = 0;
@@ -104,30 +109,31 @@ static int write_hashdb_entry(FILE *db, hashdb_t *cur, uint64_t *cnt)
 
   /* Write header and traverse array on first call */
   if (unlikely(cur == NULL)) {
-    gettimeofday(&tm, NULL);
-    snprintf(out, PATH_MAX + 127, "jdupes hashdb:%d,%d,%08lx\n", HASHDB_VER, hash_algo, (unsigned long)tm.tv_sec);
-    LOUD(fprintf(stderr, "write hashdb: %s", out);)
-    errno = 0;
-    fputs(out, db);
-    if (errno != 0) return 1;
+    if (hashdb_dirty == 1) {
+      gettimeofday(&tm, NULL);
+      snprintf(out, PATH_MAX + 127, "jdupes hashdb:%d,%d,%08lx\n", HASHDB_VER, hash_algo, (unsigned long)tm.tv_sec);
+      LOUD(fprintf(stderr, "write hashdb: %s", out);)
+      errno = 0;
+      fputs(out, db);
+      if (errno != 0) return 1;
+    }
     /* Write out each hash bucket, skipping empty buckets */
     for (int i = 0; i < HT_SIZE; i++) {
       if (hashdb[i] == NULL) continue;
-      err = write_hashdb_entry(db, hashdb[i], cnt);
+      err = write_hashdb_entry(db, hashdb[i], cnt, destroy);
       if (err != 0) return err;
+    }
+    if (destroy == 1) {
+      memset(hashdb, 0, sizeof(hashdb_t *) * HT_SIZE);
+      hashdb_init = 0;
     }
     return 0;
   }
 
   /* Write out this node if it wasn't invalidated */
-  if (cur->hashcount != 0) {
-#ifdef ON_WINDOWS
-    snprintf(out, PATH_MAX + 127, "%u,%016llx,%016llx,%08llx,%08llx,%016llx,%s\n",
-      cur->hashcount, cur->partialhash, cur->fullhash, cur->mtime, cur->size, cur->inode, cur->path);
-#else
-    snprintf(out, PATH_MAX + 127, "%u,%016lx,%016lx,%08lx,%08lx,%016lx,%s\n",
-      cur->hashcount, cur->partialhash, cur->fullhash, cur->mtime, cur->size, cur->inode, cur->path);
-#endif
+  if (hashdb_dirty == 1 && cur->hashcount != 0) {
+    snprintf(out, PATH_MAX + 127, "%u,%016" PRIx64 ",%016" PRIx64 ",%016" PRIx64 ",%016" PRIx64 ",%016" PRIx64 ",%s\n",
+      cur->hashcount, cur->partialhash, cur->fullhash, (uint64_t)cur->mtime, (uint64_t)cur->size, (uint64_t)cur->inode, cur->path);
     (*cnt)++;
     LOUD(fprintf(stderr, "write hashdb: %s", out);)
     errno = 0;
@@ -136,8 +142,9 @@ static int write_hashdb_entry(FILE *db, hashdb_t *cur, uint64_t *cnt)
   }
 
   /* Traverse the tree, propagating errors */
-  if (cur->left != NULL) err = write_hashdb_entry(db, cur->left, cnt);
-  if (err == 0 && cur->right != NULL) err = write_hashdb_entry(db, cur->right, cnt);
+  if (cur->left != NULL) err = write_hashdb_entry(db, cur->left, cnt, destroy);
+  if (err == 0 && cur->right != NULL) err = write_hashdb_entry(db, cur->right, cnt, destroy);
+  if (destroy == 1) { free(cur); }
   return err;
 }
 
@@ -323,15 +330,17 @@ hashdb_t *add_hashdb_entry(char *in_path, int pathlen, const file_t *check)
   return file;
 }
 
+
 /* db header format: jdupes hashdb:dbversion,hashtype,update_mtime
  * db line format: hashcount,partial,full,mtime,size,inode,path */
-#define FIXED_LINELEN 71
 int64_t load_hash_database(char *dbname)
 {
   FILE *db;
+  char line[PATH_MAX + 128];
   char buf[PATH_MAX + 128];
   char *field, *temp;
   int db_ver;
+  unsigned int fixed_len;
   int64_t linenum = 1;
 #ifdef LOUD_DEBUG
   time_t db_mtime;
@@ -345,7 +354,10 @@ int64_t load_hash_database(char *dbname)
   if (db == NULL) goto warn_hashdb_open;
 
   /* Read header line */
-  if ((fgets(buf, PATH_MAX + 127, db) == NULL) || (ferror(db) != 0)) goto error_hashdb_read;
+  if ((fgets(buf, PATH_MAX + 127, db) == NULL) || (ferror(db) != 0)) {
+    if (errno == 0) goto warn_hashdb_open;  // empty file = make new DB
+    goto error_hashdb_read;
+  } else if (!ISFLAG(flags, F_HIDEPROGRESS)) fprintf(stderr, "Loading hash database...");
   field = strtok(buf, ":");
   if (strcmp(field, "jdupes hashdb") != 0) goto error_hashdb_header;
   field = strtok(NULL, ":");
@@ -361,10 +373,14 @@ int64_t load_hash_database(char *dbname)
   if (db_ver < HASHDB_MIN_VER || db_ver > HASHDB_MAX_VER) goto error_hashdb_version;
   if (hashdb_algo != hash_algo) goto warn_hashdb_algo;
 
+  /* v1 has 8-byte sizes; v2 has 16-byte (4GiB+) sizes */
+  fixed_len = 87;
+  if (db_ver == 1) fixed_len = 71;
+
   /* Read database entries */
   while (1) {
     int pathlen;
-    int linelen;
+    unsigned int linelen;
     int hashcount;
     uint64_t partialhash, fullhash = 0;
     time_t mtime;
@@ -374,14 +390,15 @@ int64_t load_hash_database(char *dbname)
     jdupes_ino_t inode;
 
     errno = 0;
-    if ((fgets(buf, PATH_MAX + 127, db) == NULL)) {
-      if (ferror(db) != 0 || errno != 0) goto error_hashdb_read;
+    if ((fgets(line, PATH_MAX + 128, db) == NULL)) {
+      if (ferror(db) != 0) goto error_hashdb_read;
       break;
     }
-    LOUD(fprintf(stderr, "read hashdb: %s", buf);)
+    LOUD(fprintf(stderr, "read hashdb: %s", line);)
+    strncpy(buf, line, PATH_MAX + 128);
     linenum++;
     linelen = (int64_t)strlen(buf);
-    if (linelen < FIXED_LINELEN + 1) goto error_hashdb_line;
+    if (linelen < fixed_len + 1) goto error_hashdb_line;
 
     /* Split each entry into fields and
      * hashcount: 1 = partial only, 2 = partial and full */
@@ -395,13 +412,14 @@ int64_t load_hash_database(char *dbname)
     field = strtok(NULL, ","); if (field == NULL) goto error_hashdb_line;
     mtime = (time_t)strtoul(field, NULL, 16);
     field = strtok(NULL, ","); if (field == NULL) goto error_hashdb_line;
-    size = strtoul(field, NULL, 16);
+    size = strtoll(field, NULL, 16);
+    if (size == 0) goto error_hashdb_line;
     field = strtok(NULL, ","); if (field == NULL) goto error_hashdb_line;
     inode = strtoull(field, NULL, 16);
 
-    path = buf + FIXED_LINELEN;
+    path = buf + fixed_len;
     path = strtok(path, "\n"); if (path == NULL) goto error_hashdb_line;
-    pathlen = linelen - FIXED_LINELEN + 1;
+    pathlen = linelen - fixed_len + 1;
     if (pathlen > PATH_MAX) goto error_hashdb_line;
     *(path + pathlen) = '\0';
 
@@ -432,7 +450,7 @@ error_hashdb_version:
   fprintf(stderr, "error: bad db version %u in hash database '%s'\n", db_ver, dbname);
   return -3;
 error_hashdb_line:
-  fprintf(stderr, "error: bad line %" PRId64 " in hash database '%s': '%s'\n", linenum, dbname, buf);
+  fprintf(stderr, "\nerror: bad line %" PRId64 " in hash database '%s':\n\n%s\n\n", linenum, dbname, line);
   return -4;
 error_hashdb_add:
   fprintf(stderr, "error: internal failure allocating a hashdb entry\n");
