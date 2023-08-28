@@ -24,6 +24,10 @@
 /* Copy any hashes between entries for detected hard-linked files */
 static void cross_copy_hashes(file_t *file1, file_t *file2)
 {
+#ifndef NO_HASHDB
+  int dirty1 = 0, dirty2 = 0;
+#endif
+
   if (file1 == NULL || file2 == NULL) jc_nullptr("cross_copy_hashes()");
 
   if (ISFLAG(file1->flags, FF_HASH_FULL)) {
@@ -31,20 +35,40 @@ static void cross_copy_hashes(file_t *file1, file_t *file2)
     file2->filehash_partial = file1->filehash_partial;
     file2->filehash = file1->filehash;
     SETFLAG(file2->flags, FF_HASH_PARTIAL | FF_HASH_FULL);
+#ifndef NO_HASHDB
+    dirty2 = 1;
+#endif
   } else if (ISFLAG(file2->flags, FF_HASH_FULL)) {
     if (ISFLAG(file1->flags, FF_HASH_FULL)) return;
     file1->filehash_partial = file2->filehash_partial;
     file1->filehash = file2->filehash;
     SETFLAG(file1->flags, FF_HASH_PARTIAL | FF_HASH_FULL);
+#ifndef NO_HASHDB
+    dirty1 = 1;
+#endif
   } else if (ISFLAG(file1->flags, FF_HASH_PARTIAL)) {
     if (ISFLAG(file2->flags, FF_HASH_PARTIAL)) return;
     file2->filehash_partial = file1->filehash_partial;
     SETFLAG(file2->flags, FF_HASH_PARTIAL);
+#ifndef NO_HASHDB
+    dirty2 = 1;
+#endif
   } else if (ISFLAG(file2->flags, FF_HASH_PARTIAL)) {
     if (ISFLAG(file1->flags, FF_HASH_PARTIAL)) return;
     file1->filehash_partial = file2->filehash_partial;
     SETFLAG(file1->flags, FF_HASH_PARTIAL);
+#ifndef NO_HASHDB
+    dirty1 = 1;
+#endif
   }
+
+  /* Add to hash database */
+#ifndef NO_HASHDB
+  if (ISFLAG(flags, F_HASHDB)) {
+    if (dirty1 == 1) add_hashdb_entry(NULL, 0, file1);
+    if (dirty2 == 1) add_hashdb_entry(NULL, 0, file2);
+ }
+#endif
 
   return;
 }
@@ -146,6 +170,9 @@ file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict file)
   int cmpresult = 0;
   int cantmatch = 0;
   const uint64_t * restrict filehash;
+#ifndef NO_HASHDB
+  int dirtyfile = 0, dirtytree = 0;
+#endif
 
   if (unlikely(tree == NULL || file == NULL || tree->file == NULL || tree->file->d_name == NULL || file->d_name == NULL)) jc_nullptr("checkmatch()");
   LOUD(fprintf(stderr, "checkmatch ('%s', '%s')\n", tree->file->d_name, file->d_name));
@@ -192,7 +219,10 @@ file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict file)
       if (filehash == NULL) return NULL;
 
       tree->file->filehash_partial = *filehash;
-      SETFLAG(tree->file->flags, FF_HASH_PARTIAL | FF_HASHDB_DIRTY);
+      SETFLAG(tree->file->flags, FF_HASH_PARTIAL);
+#ifndef NO_HASHDB
+      dirtytree = 1;
+#endif
     }
 
     if (!ISFLAG(file->flags, FF_HASH_PARTIAL)) {
@@ -200,7 +230,10 @@ file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict file)
       if (filehash == NULL) return NULL;
 
       file->filehash_partial = *filehash;
-      SETFLAG(file->flags, FF_HASH_PARTIAL | FF_HASHDB_DIRTY);
+      SETFLAG(file->flags, FF_HASH_PARTIAL);
+#ifndef NO_HASHDB
+      dirtyfile = 1;
+#endif
     }
 
     cmpresult = HASH_COMPARE(file->filehash_partial, tree->file->filehash_partial);
@@ -218,12 +251,18 @@ file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict file)
       /* filehash_partial = filehash if file is small enough */
       if (!ISFLAG(file->flags, FF_HASH_FULL)) {
         file->filehash = file->filehash_partial;
-        SETFLAG(file->flags, FF_HASH_FULL | FF_HASHDB_DIRTY);
+        SETFLAG(file->flags, FF_HASH_FULL);
+#ifndef NO_HASHDB
+	dirtyfile = 1;
+#endif
         DBG(small_file++;)
       }
       if (!ISFLAG(tree->file->flags, FF_HASH_FULL)) {
         tree->file->filehash = tree->file->filehash_partial;
-        SETFLAG(tree->file->flags, FF_HASH_FULL | FF_HASHDB_DIRTY);
+        SETFLAG(tree->file->flags, FF_HASH_FULL);
+#ifndef NO_HASHDB
+	dirtytree = 1;
+#endif
         DBG(small_file++;)
       }
     } else if (cmpresult == 0) {
@@ -236,7 +275,10 @@ file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict file)
           if (filehash == NULL) return NULL;
 
           tree->file->filehash = *filehash;
-          SETFLAG(tree->file->flags, FF_HASH_FULL | FF_HASHDB_DIRTY);
+          SETFLAG(tree->file->flags, FF_HASH_FULL);
+#ifndef NO_HASHDB
+	  dirtytree = 1;
+#endif
         }
 
         if (!ISFLAG(file->flags, FF_HASH_FULL)) {
@@ -244,7 +286,10 @@ file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict file)
           if (filehash == NULL) return NULL;
 
           file->filehash = *filehash;
-          SETFLAG(file->flags, FF_HASH_FULL | FF_HASHDB_DIRTY);
+          SETFLAG(file->flags, FF_HASH_FULL);
+#ifndef NO_HASHDB
+	  dirtyfile = 1;
+#endif
         }
 
         /* Full file hash comparison */
@@ -261,14 +306,8 @@ file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict file)
   /* Add to hash database */
 #ifndef NO_HASHDB
   if (ISFLAG(flags, F_HASHDB)) {
-    if (ISFLAG(file->flags, FF_HASHDB_DIRTY)) {
-      CLEARFLAG(file->flags, FF_HASHDB_DIRTY);
-      add_hashdb_entry(NULL, 0, file);
-  }
-    if (ISFLAG(tree->file->flags, FF_HASHDB_DIRTY)) {
-      CLEARFLAG(tree->file->flags, FF_HASHDB_DIRTY);
-      add_hashdb_entry(NULL, 0, tree->file);
-    }
+    if (dirtyfile == 1) add_hashdb_entry(NULL, 0, file);
+    if (dirtytree == 1) add_hashdb_entry(NULL, 0, tree->file);
  }
 #endif
 
