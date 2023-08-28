@@ -28,24 +28,20 @@ static void cross_copy_hashes(file_t *file1, file_t *file2)
 
   if (ISFLAG(file1->flags, FF_HASH_FULL)) {
     if (ISFLAG(file2->flags, FF_HASH_FULL)) return;
-fprintf(stderr, "cross_copy_hashes: file1 FULL => file2\n");
     file2->filehash_partial = file1->filehash_partial;
     file2->filehash = file1->filehash;
     SETFLAG(file2->flags, FF_HASH_PARTIAL | FF_HASH_FULL);
   } else if (ISFLAG(file2->flags, FF_HASH_FULL)) {
     if (ISFLAG(file1->flags, FF_HASH_FULL)) return;
-fprintf(stderr, "cross_copy_hashes: file2 FULL => file1\n");
     file1->filehash_partial = file2->filehash_partial;
     file1->filehash = file2->filehash;
     SETFLAG(file1->flags, FF_HASH_PARTIAL | FF_HASH_FULL);
   } else if (ISFLAG(file1->flags, FF_HASH_PARTIAL)) {
     if (ISFLAG(file2->flags, FF_HASH_PARTIAL)) return;
-fprintf(stderr, "cross_copy_hashes: file1 PARTIAL => file2\n");
     file2->filehash_partial = file1->filehash_partial;
     SETFLAG(file2->flags, FF_HASH_PARTIAL);
   } else if (ISFLAG(file2->flags, FF_HASH_PARTIAL)) {
     if (ISFLAG(file1->flags, FF_HASH_PARTIAL)) return;
-fprintf(stderr, "cross_copy_hashes: file2 PARTIAL => file1\n");
     file1->filehash_partial = file2->filehash_partial;
     SETFLAG(file1->flags, FF_HASH_PARTIAL);
   }
