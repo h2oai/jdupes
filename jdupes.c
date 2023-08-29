@@ -732,8 +732,6 @@ skip_partialonly_noise:
 
   while (curfile) {
     static file_t **match = NULL;
-    static FILE *file1;
-    static FILE *file2;
 
     if (interrupt) {
       fprintf(stderr, "%s", s_interrupt);
@@ -771,32 +769,7 @@ skip_partialonly_noise:
         goto skip_full_check;
       }
 
-#ifdef UNICODE
-      if (!M2W(curfile->d_name, wstr)) file1 = NULL;
-      else file1 = _wfopen(wstr, FILE_MODE_RO);
-#else
-      file1 = fopen(curfile->d_name, FILE_MODE_RO);
-#endif
-      if (!file1) {
-        LOUD(fprintf(stderr, "MAIN: warning: file1 fopen() failed ('%s')\n", curfile->d_name));
-        curfile = curfile->next;
-        continue;
-      }
-
-#ifdef UNICODE
-      if (!M2W((*match)->d_name, wstr)) file2 = NULL;
-      else file2 = _wfopen(wstr, FILE_MODE_RO);
-#else
-      file2 = fopen((*match)->d_name, FILE_MODE_RO);
-#endif
-      if (!file2) {
-        fclose(file1);
-        LOUD(fprintf(stderr, "MAIN: warning: file2 fopen() failed ('%s')\n", (*match)->d_name));
-        curfile = curfile->next;
-        continue;
-      }
-
-      if (confirmmatch(file1, file2, curfile->size)) {
+      if (confirmmatch(curfile->d_name, (*match)->d_name, curfile->size) == 0) {
         LOUD(fprintf(stderr, "MAIN: registering matched file pair\n"));
 #ifndef NO_MTIME
         registerpair(match, curfile, (ordertype == ORDER_TIME) ? sort_pairs_by_mtime : sort_pairs_by_filename);
@@ -804,10 +777,10 @@ skip_partialonly_noise:
         registerpair(match, curfile, sort_pairs_by_filename);
 #endif
         dupecount++;
-      } DBG(else hash_fail++;)
-
-      fclose(file1);
-      fclose(file2);
+      } else {
+	goto skip_full_check;
+        DBG(hash_fail++;)
+      }
     }
 
 skip_full_check:

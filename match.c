@@ -361,38 +361,58 @@ file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict file)
 
 /* Do a byte-by-byte comparison in case two different files produce the
    same signature. Unlikely, but better safe than sorry. */
-int confirmmatch(FILE * const restrict file1, FILE * const restrict file2, const off_t size)
+int confirmmatch(const char * const restrict file1, const char * const restrict file2, const off_t size)
 {
-  static char *c1 = NULL, *c2 = NULL;
+  char *c1, *c2;
+  FILE *fp1, *fp2;
   size_t r1, r2;
   off_t bytes = 0;
+  int retval = 0;
 
   if (unlikely(file1 == NULL || file2 == NULL)) jc_nullptr("confirmmatch()");
   LOUD(fprintf(stderr, "confirmmatch running\n"));
 
-  /* Allocate on first use; OOM if either is ever NULLed */
-  if (!c1) {
-    c1 = (char *)malloc(auto_chunk_size);
-    c2 = (char *)malloc(auto_chunk_size);
-  }
-  if (unlikely(!c1 || !c2)) jc_oom("confirmmatch() c1/c2");
+  c1 = (char *)malloc(auto_chunk_size);
+  c2 = (char *)malloc(auto_chunk_size);
+  if (unlikely(c1 == NULL || c2 == NULL)) jc_oom("confirmmatch() buffers");
 
-  fseek(file1, 0, SEEK_SET);
-  fseek(file2, 0, SEEK_SET);
+#ifdef UNICODE
+  if (!M2W(file1, wstr)) fp1 = NULL;
+  else fp1 = _wfopen(wstr, FILE_MODE_RO);
+  if (!M2W(file2, wstr)) fp2 = NULL;
+  else fp2 = _wfopen(wstr, FILE_MODE_RO);
+#else
+  fp1 = fopen(file1, FILE_MODE_RO);
+  fp2 = fopen(file2, FILE_MODE_RO);
+#endif
+  if (fp1 == NULL) {
+    if (fp2 != NULL) fclose(fp2);
+    LOUD(fprintf(stderr, "confirmmatch: warning: file open failed ('%s')\n", file1);)
+    goto different;
+  }
+  if (fp2 == NULL) {
+    if (fp1 != NULL) fclose(fp1);
+    LOUD(fprintf(stderr, "confirmmatch: warning: file open failed ('%s')\n", file2);)
+    goto different;
+  }
+
+  fseek(fp1, 0, SEEK_SET);
+  fseek(fp2, 0, SEEK_SET);
 #ifdef __linux__
-  posix_fadvise(fileno(file1), 0, size, POSIX_FADV_SEQUENTIAL);
-  posix_fadvise(fileno(file1), 0, size, POSIX_FADV_WILLNEED);
-  posix_fadvise(fileno(file2), 0, size, POSIX_FADV_SEQUENTIAL);
-  posix_fadvise(fileno(file2), 0, size, POSIX_FADV_WILLNEED);
+  /* Tell Linux we will accees sequentially and soon */
+  posix_fadvise(fileno(fp1), 0, size, POSIX_FADV_SEQUENTIAL);
+  posix_fadvise(fileno(fp1), 0, size, POSIX_FADV_WILLNEED);
+  posix_fadvise(fileno(fp2), 0, size, POSIX_FADV_SEQUENTIAL);
+  posix_fadvise(fileno(fp2), 0, size, POSIX_FADV_WILLNEED);
 #endif /* __linux__ */
 
   do {
-    if (interrupt) return 0;
-    r1 = fread(c1, sizeof(char), auto_chunk_size, file1);
-    r2 = fread(c2, sizeof(char), auto_chunk_size, file2);
+    if (interrupt) goto different;
+    r1 = fread(c1, sizeof(char), auto_chunk_size, fp1);
+    r2 = fread(c2, sizeof(char), auto_chunk_size, fp2);
 
-    if (r1 != r2) return 0; /* file lengths are different */
-    if (memcmp (c1, c2, r1)) return 0; /* file contents are different */
+    if (r1 != r2) goto different; /* file lengths are different */
+    if (memcmp (c1, c2, r1)) goto different; /* file contents are different */
 
     bytes += (off_t)r1;
     if (jc_alarm_ring != 0) {
@@ -401,5 +421,14 @@ int confirmmatch(FILE * const restrict file1, FILE * const restrict file2, const
     }
   } while (r2);
 
-  return 1;
+  /* Success: return 0 */
+  goto finish_confirm;
+
+different:
+  retval = 1;
+
+finish_confirm:
+  free(c1); free(c2);
+  fclose(fp1); fclose(fp2);
+  return retval;
 }
