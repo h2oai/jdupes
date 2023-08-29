@@ -48,6 +48,10 @@ extern "C" {
  #endif
 #endif /* _WIN32 || __MINGW32__ */
 
+#ifndef PATH_MAX
+ #define PATH_MAX 4096
+#endif
+
 /* Windows + Unicode compilation */
 #ifdef UNICODE
  #ifndef PATHBUF_SIZE

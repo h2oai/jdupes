@@ -27,10 +27,6 @@
 #endif
 #define HT_MASK (HT_SIZE - 1)
 
-#if defined(__GNU__) && !defined(PATH_MAX)
- #define PATH_MAX 1024
-#endif
-
 static hashdb_t *hashdb[HT_SIZE];
 static int hashdb_init = 0;
 static int hashdb_algo = 0;
