@@ -363,7 +363,7 @@ file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict file)
    same signature. Unlikely, but better safe than sorry. */
 int confirmmatch(const char * const restrict file1, const char * const restrict file2, const off_t size)
 {
-  char *c1, *c2;
+  static char *c1 = NULL, *c2 = NULL;
   FILE *fp1, *fp2;
   size_t r1, r2;
   off_t bytes = 0;
@@ -372,8 +372,10 @@ int confirmmatch(const char * const restrict file1, const char * const restrict 
   if (unlikely(file1 == NULL || file2 == NULL)) jc_nullptr("confirmmatch()");
   LOUD(fprintf(stderr, "confirmmatch running\n"));
 
-  c1 = (char *)malloc(auto_chunk_size);
-  c2 = (char *)malloc(auto_chunk_size);
+  if (unlikely(c1 == NULL || c2 == NULL)) {
+    c1 = (char *)malloc(auto_chunk_size);
+    c2 = (char *)malloc(auto_chunk_size);
+  }
   if (unlikely(c1 == NULL || c2 == NULL)) jc_oom("confirmmatch() buffers");
 
 #ifdef UNICODE
@@ -428,7 +430,7 @@ different:
   retval = 1;
 
 finish_confirm:
-  free(c1); free(c2);
+//  free(c1); free(c2);
   fclose(fp1); fclose(fp2);
   return retval;
 }
