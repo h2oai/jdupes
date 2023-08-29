@@ -36,14 +36,13 @@
 
 static file_t *init_newfile(const size_t len, file_t * restrict * const restrict filelistp)
 {
-  file_t * const restrict newfile = (file_t *)malloc(sizeof(file_t));
+  file_t * const restrict newfile = (file_t *)calloc(1, sizeof(file_t));
 
   if (unlikely(!newfile)) jc_oom("init_newfile() file structure");
   if (unlikely(!filelistp)) jc_nullptr("init_newfile() filelistp");
 
   LOUD(fprintf(stderr, "init_newfile(len %" PRIuMAX ", filelistp %p)\n", (uintmax_t)len, filelistp));
 
-  memset(newfile, 0, sizeof(file_t));
   newfile->d_name = (char *)malloc(EXTEND64(len));
   if (!newfile->d_name) jc_oom("init_newfile() filename");
 
