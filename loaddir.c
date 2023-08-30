@@ -90,7 +90,8 @@ void loaddir(const char * const restrict dir,
   file_t * restrict newfile;
   struct dirent *dirinfo;
   size_t dirlen, dirpos;
-  int i, single = 0;
+  int i;
+//  single = 0;
   jdupes_ino_t inode;
   dev_t device, n_device;
   jdupes_mode_t mode;
@@ -106,7 +107,7 @@ void loaddir(const char * const restrict dir,
   if (unlikely(dir == NULL || filelistp == NULL)) jc_nullptr("loaddir()");
   LOUD(fprintf(stderr, "loaddir: scanning '%s' (order %d, recurse %d)\n", dir, user_item_count, recurse));
 
-  if (interrupt) return;
+  if (unlikely(interrupt != 0)) return;
 
   /* Get directory stats (or file stats if it's a file) */
   i = getdirstats(dir, &inode, &device, &mode);
@@ -178,6 +179,7 @@ void loaddir(const char * const restrict dir,
     size_t d_name_len;
 #endif /* UNICODE */
 
+    if (unlikely(interrupt != 0)) return;
     LOUD(fprintf(stderr, "loaddir: readdir: '%s'\n", dirinfo->d_name));
     if (unlikely(!jc_streq(dirinfo->d_name, ".") || !jc_streq(dirinfo->d_name, ".."))) continue;
     check_sigusr1();
@@ -243,7 +245,7 @@ void loaddir(const char * const restrict dir,
       } else { LOUD(fprintf(stderr, "loaddir: directory: not recursing\n")); }
       free(newfile->d_name);
       free(newfile);
-      if (unlikely(interrupt)) return;
+      if (unlikely(interrupt != 0)) return;
       continue;
     } else {
 //add_single_file:
@@ -264,18 +266,12 @@ void loaddir(const char * const restrict dir,
         LOUD(fprintf(stderr, "loaddir: not a regular file: %s\n", newfile->d_name);)
         free(newfile->d_name);
         free(newfile);
-        if (single == 1) {
-          single = 0;
-          goto skip_single;
-        }
+//    if (single == 1) return;
         continue;
       }
     }
     /* Skip directory stuff if adding only a single file */
-    if (single == 1) {
-      single = 0;
-      goto skip_single;
-    }
+//    if (single == 1) return;
   }
 
 #ifdef UNICODE
@@ -285,7 +281,6 @@ void loaddir(const char * const restrict dir,
   closedir(cd);
 #endif
 
-skip_single:
   return;
 
 error_stat_dir:

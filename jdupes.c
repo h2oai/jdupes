@@ -733,8 +733,7 @@ skip_partialonly_noise:
   while (curfile) {
     static file_t **match = NULL;
 
-    if (interrupt) {
-      fprintf(stderr, "%s", s_interrupt);
+    if (unlikely(interrupt != 0)) {
       if (!ISFLAG(flags, F_SOFTABORT)) exit(EXIT_FAILURE);
       interrupt = 0;  /* reset interrupt for re-use */
       goto skip_file_scan;
