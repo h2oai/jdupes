@@ -243,13 +243,11 @@ void linkfiles(file_t *files, const int linktype, const int only_current)
           srcfile = dupelist[x];
           exit_status = EXIT_FAILURE;
           continue;
-          continue;
         }
         if (file_has_changed(dupelist[x])) {
           fprintf(stderr, "warning: target file modified since scanned, not linking:\n-//-> ");
           jc_fwprint(stderr, dupelist[x]->d_name, 1);
           exit_status = EXIT_FAILURE;
-          continue;
           continue;
         }
 #ifdef ON_WINDOWS
