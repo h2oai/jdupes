@@ -90,12 +90,7 @@ uint64_t *get_filehash(const file_t * const restrict checkfile, const size_t max
     }
   }
   errno = 0;
-#ifdef UNICODE
-  if (!M2W(checkfile->d_name, wstr)) file = NULL;
-  else file = _wfopen(wstr, FILE_MODE_RO);
-#else
-  file = fopen(checkfile->d_name, FILE_MODE_RO);
-#endif /* UNICODE */
+  file = jc_fopen(checkfile->d_name, JC_FILE_MODE_RDONLY_SEQ);
   if (file == NULL) {
     fprintf(stderr, "\n%s error opening file ", strerror(errno)); jc_fwprint(stderr, checkfile->d_name, 1);
     return NULL;

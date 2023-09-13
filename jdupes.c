@@ -89,13 +89,9 @@
 /* Detect Windows and modify as needed */
 #if defined _WIN32 || defined __MINGW32__
  #ifdef UNICODE
-  const wchar_t *FILE_MODE_RO = L"rbS";
   wpath_t wstr;
- #else
-  const char *FILE_MODE_RO = "rbS";
  #endif /* UNICODE */
 #else /* Not Windows */
- const char *FILE_MODE_RO = "rb";
  #ifdef UNICODE
   #error Do not define UNICODE on non-Windows platforms.
   #undef UNICODE

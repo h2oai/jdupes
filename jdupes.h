@@ -31,17 +31,11 @@ extern "C" {
 #if defined _WIN32 || defined __MINGW32__
  typedef uint64_t jdupes_ino_t;
  typedef uint32_t jdupes_mode_t;
- #ifdef UNICODE
-  extern const wchar_t *FILE_MODE_RO;
- #else
-  extern const char *FILE_MODE_RO;
- #endif /* UNICODE */
 
 #else /* Not Windows */
  #include <sys/stat.h>
  typedef ino_t jdupes_ino_t;
  typedef mode_t jdupes_mode_t;
- extern const char *FILE_MODE_RO;
  #ifdef UNICODE
   #error Do not define UNICODE on non-Windows platforms.
   #undef UNICODE

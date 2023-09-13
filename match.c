@@ -378,15 +378,8 @@ int confirmmatch(const char * const restrict file1, const char * const restrict 
   }
   if (unlikely(c1 == NULL || c2 == NULL)) jc_oom("confirmmatch() buffers");
 
-#ifdef UNICODE
-  if (!M2W(file1, wstr)) fp1 = NULL;
-  else fp1 = _wfopen(wstr, FILE_MODE_RO);
-  if (!M2W(file2, wstr)) fp2 = NULL;
-  else fp2 = _wfopen(wstr, FILE_MODE_RO);
-#else
-  fp1 = fopen(file1, FILE_MODE_RO);
-  fp2 = fopen(file2, FILE_MODE_RO);
-#endif
+  fp1 = jc_fopen(file1, JC_FILE_MODE_RDONLY_SEQ);
+  fp2 = jc_fopen(file2, JC_FILE_MODE_RDONLY_SEQ);
   if (fp1 == NULL) {
     if (fp2 != NULL) fclose(fp2);
     LOUD(fprintf(stderr, "confirmmatch: warning: file open failed ('%s')\n", file1);)
