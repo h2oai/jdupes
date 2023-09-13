@@ -18,6 +18,7 @@
 # Normal output and testing dirs
 #
 /build_date.h
+/hashdb_util
 /jdupes
 /jdupes*.exe
 /jdupes-standalone

@@ -220,6 +220,9 @@ LDFLAGS += $(LINK_OPTIONS) $(LDFLAGS_EXTRA)
 
 all: libjodycode_hint $(PROGRAM_NAME) dynamic_jc
 
+hashdb_util: hashdb.o hashdb_util.o
+	$(CC) $(CFLAGS) hashdb.o hashdb_util.o $(LDFLAGS) $(STATIC_LDFLAGS) $(BDYNAMIC) -o hashdb_util$(SUFFIX)
+
 dynamic_jc: $(PROGRAM_NAME)
 	$(CC) $(CFLAGS) $(OBJS) $(BDYNAMIC) $(LDFLAGS) $(DYN_LDFLAGS) -o $(PROGRAM_NAME)$(SUFFIX)
 
@@ -266,7 +269,7 @@ stripped: $(PROGRAM_NAME)
 	strip $(PROGRAM_NAME)$(SUFFIX)
 
 clean:
-	$(RM) $(OBJS) $(OBJS_CLEAN) build_date.h $(PROGRAM_NAME)$(SUFFIX) *~ .*.un~ *.gcno *.gcda *.gcov
+	$(RM) $(OBJS) $(OBJS_CLEAN) build_date.h $(PROGRAM_NAME)$(SUFFIX) hashdb_util$(SUFFIX) *~ .*.un~ *.gcno *.gcda *.gcov
 
 distclean: clean
 	$(RM) -rf *.pkg.tar* jdupes-*-*/ jdupes-*-*.zip

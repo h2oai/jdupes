@@ -109,14 +109,12 @@ static int write_hashdb_entry(FILE *db, hashdb_t *cur, uint64_t *cnt, const int 
 
   /* Write header and traverse array on first call */
   if (unlikely(cur == NULL)) {
-    if (hashdb_dirty == 1) {
-      gettimeofday(&tm, NULL);
-      snprintf(out, PATH_MAX + 127, "jdupes hashdb:%d,%d,%08lx\n", HASHDB_VER, hash_algo, (unsigned long)tm.tv_sec);
-      LOUD(fprintf(stderr, "write hashdb: %s", out);)
-      errno = 0;
-      fputs(out, db);
-      if (errno != 0) return 1;
-    }
+    gettimeofday(&tm, NULL);
+    snprintf(out, PATH_MAX + 127, "jdupes hashdb:%d,%d,%08lx\n", HASHDB_VER, hash_algo, (unsigned long)tm.tv_sec);
+    LOUD(fprintf(stderr, "write hashdb: %s", out);)
+    errno = 0;
+    db == NULL ? printf("%s", out) : fputs(out, db);
+    if (errno != 0) return 1;
     /* Write out each hash bucket, skipping empty buckets */
     for (int i = 0; i < HT_SIZE; i++) {
       if (hashdb[i] == NULL) continue;
@@ -131,51 +129,32 @@ static int write_hashdb_entry(FILE *db, hashdb_t *cur, uint64_t *cnt, const int 
   }
 
   /* Write out this node if it wasn't invalidated */
-  if (hashdb_dirty == 1 && cur->hashcount != 0) {
+  if (cur->hashcount != 0) {
     snprintf(out, PATH_MAX + 127, "%u,%016" PRIx64 ",%016" PRIx64 ",%016" PRIx64 ",%016" PRIx64 ",%016" PRIx64 ",%s\n",
       cur->hashcount, cur->partialhash, cur->fullhash, (uint64_t)cur->mtime, (uint64_t)cur->size, (uint64_t)cur->inode, cur->path);
     (*cnt)++;
     LOUD(fprintf(stderr, "write hashdb: %s", out);)
     errno = 0;
-    fputs(out, db);
+    db == NULL ? printf("%s", out) : fputs(out, db);
     if (errno != 0) return 1;
   }
 
   /* Traverse the tree, propagating errors */
-  if (cur->left != NULL) err = write_hashdb_entry(db, cur->left, cnt, destroy);
+  if (err == 0 && cur->left != NULL) err = write_hashdb_entry(db, cur->left, cnt, destroy);
   if (err == 0 && cur->right != NULL) err = write_hashdb_entry(db, cur->right, cnt, destroy);
-  if (destroy == 1) { free(cur); }
+  if (destroy == 1) free(cur);
   return err;
 }
 
 
-#if 0
-void dump_hashdb(hashdb_t *cur)
+uint64_t dump_hashdb(void)
 {
-  struct timeval tm;
+  uint64_t cnt = 0;
 
-  if (cur == NULL) {
-    gettimeofday(&tm, NULL);
-    printf("jdupes hashdb:1,%d,%08lx\n", hash_algo, tm.tv_sec);
-    for (int i = 0; i < HT_SIZE; i++) {
-      if (hashdb[i] == NULL) continue;
-      dump_hashdb(hashdb[i]);
-    }
-    return;
-  }
-  /* db line format: hashcount,partial,full,mtime,path */
-#ifdef ON_WINDOWS
-  if (cur->hashcount != 0) printf("%u,%016llx,%016llx,%08llx,%08llx,%016llx,%s\n",
-      cur->hashcount, cur->partialhash, cur->fullhash, cur->mtime, cur->size, cur->inode, cur->path);
-#else
-  if (cur->hashcount != 0) printf("%u,%016lx,%016lx,%08lx,%08lx,%016lx,%s\n",
-      cur->hashcount, cur->partialhash, cur->fullhash, cur->mtime, cur->size, cur->inode, cur->path);
-#endif
-  if (cur->left != NULL) dump_hashdb(cur->left);
-  if (cur->right != NULL) dump_hashdb(cur->right);
-  return;
+  fprintf(stderr, "Dumping hash database\n");
+  write_hashdb_entry(NULL, NULL, &cnt, 0);
+  return cnt;
 }
-#endif
 
 
 static void pivot_hashdb_tree(hashdb_t **parent, hashdb_t *cur, enum pivot direction)
@@ -219,7 +198,7 @@ static void rebalance_hashdb_tree(hashdb_t **parent)
 }
 
 
-/* in_pathlen allows use of a precomputed path length to avoid extra strlen() calls */
+/* in_path allows use of a precomputed path length to avoid extra strlen() calls */
 hashdb_t *add_hashdb_entry(char *in_path, int pathlen, const file_t *check)
 {
   unsigned int bucket;
@@ -333,7 +312,7 @@ hashdb_t *add_hashdb_entry(char *in_path, int pathlen, const file_t *check)
 
 /* db header format: jdupes hashdb:dbversion,hashtype,update_mtime
  * db line format: hashcount,partial,full,mtime,size,inode,path */
-int64_t load_hash_database(char *dbname)
+int64_t load_hash_database(const char * const restrict dbname)
 {
   FILE *db;
   char line[PATH_MAX + 128];
@@ -346,7 +325,7 @@ int64_t load_hash_database(char *dbname)
   time_t db_mtime;
   char date[32];
 #endif /* LOUD_DEBUG */
-  
+
   if (dbname == NULL) goto error_hashdb_null;
   LOUD(fprintf(stderr, "load_hash_database('%s')\n", dbname);)
   errno = 0;
@@ -462,7 +441,7 @@ warn_hashdb_algo:
   fprintf(stderr, "warning: hashdb uses a different hash algorithm than selected; not loading\n");
   return -7;
 }
- 
+
 
 static int get_path_hash(char *path, uint64_t *path_hash)
 {
@@ -478,7 +457,7 @@ static int get_path_hash(char *path, uint64_t *path_hash)
 }
 
 
- /* If file hash info is already present in hash database then preload those hashes */
+/* Scan database for a matching file entry; if found, load hashes into it */
 int read_hashdb_entry(file_t *file)
 {
   unsigned int bucket;
@@ -532,4 +511,57 @@ error_null:
 error_path_hash:
   fprintf(stderr, "error: internal error hashing a path\n");
   return -255;
+}
+
+
+int cleanup_hashdb(uint64_t *cnt, hashdb_t *cur)
+{
+  int err = 0;
+  static char **list;
+  static uint64_t listsize;
+  char *temp;
+  int i;
+
+  /* First call: traverse array, sort results, do actual verification */
+  if (unlikely(cur == NULL)) {
+    list = NULL;
+    listsize = 0;
+    *cnt = 0;
+
+    for (i = 0; i < HT_SIZE; i++) {
+      if (hashdb[i] == NULL) continue;
+      err = cleanup_hashdb(cnt, hashdb[i]);
+      if (err != 0) return err;
+    }
+
+    /* TODO: sort list first */
+
+    /* Check each item for existence; remove if it can't be accessed */
+    for (i = 0; i < *cnt; i++) {
+      char *path = *(list + i);
+      if (jc_access(path, JC_F_OK) == 0) continue;
+      /* TODO: invalidate entry - maybe need pointer? */
+    }
+
+    return 0;
+  }
+
+  /* If node is valid, add file to list to be checked, expanding array as needed */
+  if (cur->hashcount != 0) {
+    if (listsize == *cnt) {
+      listsize += 4096;
+      list = realloc(list, sizeof(char *) * listsize);
+      if (list == NULL) jc_oom("cleanup_hashdb realloc");
+    }
+    temp = (char *)malloc(strlen(cur->path) + 1);
+    if (temp == NULL) jc_oom("cleanup_hashdb path");
+    *(list + *cnt) = temp;
+    strcpy(temp, cur->path);
+    (void)*cnt++;
+  }
+
+  /* Traverse the tree, propagating errors */
+  if (err == 0 && cur->left != NULL) err = cleanup_hashdb(cnt, cur->left);
+  if (err == 0 && cur->right != NULL) err = cleanup_hashdb(cnt, cur->right);
+  return err;
 }
