@@ -18,7 +18,11 @@
 int hash_algo = 0;
 uint64_t flags = 0;
 
+#ifdef UNICODE
+int wmain(int argc, wchar_t **wargv)
+#else
 int main(int argc, char **argv)
+#endif
 {
   const char * const default_name = "jdupes_hashdb.txt";
   const char *dbname, *action;
@@ -26,6 +30,22 @@ int main(int argc, char **argv)
   uint64_t cnt;
 
   if (argc != 3) goto util_usage;
+
+#ifdef UNICODE
+  /* Create a UTF-8 **argv from the wide version */
+  static char **argv;
+  int wa_err;
+  argv = (char **)malloc(sizeof(char *) * (size_t)argc);
+  if (!argv) jc_oom("main() unicode argv");
+  wa_err = jc_widearg_to_argv(argc, wargv, argv);
+  if (wa_err != 0) {
+    jc_print_error(wa_err);
+    exit(EXIT_FAILURE);
+  }
+  /* fix up __argv so getopt etc. don't crash */
+  __argv = argv;
+  jc_set_output_modes(0x0c);
+#endif /* UNICODE */
 
   dbname = argv[1];
   action = argv[2];

@@ -19,6 +19,7 @@
 #
 /build_date.h
 /hashdb_util
+/hashdb_util*.exe
 /jdupes
 /jdupes*.exe
 /jdupes-standalone

@@ -18,7 +18,7 @@
 #endif
 
 #ifdef UNICODE
- static wpath_t wname, wname2;
+ static wchar_t wname[WPATH_MAX], wname2[WPATH_MAX];
 #endif
 
 /* Apple clonefile() is basically a hard link */

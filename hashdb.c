@@ -518,7 +518,7 @@ int cleanup_hashdb(uint64_t *cnt, hashdb_t *cur)
   static char **list;
   static uint64_t listsize;
   char *temp;
-  int i;
+  unsigned int i;
 
   /* First call: traverse array, sort results, do actual verification */
   if (unlikely(cur == NULL)) {
