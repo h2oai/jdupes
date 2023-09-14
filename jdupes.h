@@ -58,8 +58,6 @@ extern "C" {
    #define WPATH_MAX PATHBUF_SIZE
   #endif
  #endif /* PATHBUF_SIZE */
- typedef wchar_t wpath_t[WPATH_MAX];
- extern wpath_t wstr;
 #endif /* UNICODE */
 
 /* Maximum path buffer size to use; must be large enough for a path plus

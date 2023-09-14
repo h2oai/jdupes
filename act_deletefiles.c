@@ -60,6 +60,9 @@ void deletefiles(file_t *files, int prompt, FILE *tty)
   char *tstr;
   unsigned int number, sum, max, x;
   size_t i;
+#ifdef UNICODE
+ wchar_t wstr[WPATH_MAX];
+#endif
 
   LOUD(fprintf(stderr, "deletefiles: %p, %d, %p\n", files, prompt, tty));
 
