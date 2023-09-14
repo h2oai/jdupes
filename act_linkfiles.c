@@ -222,11 +222,11 @@ void linkfiles(file_t *files, const int linktype, const int only_current)
 #endif /* UNICODE */
 
         /* Do not attempt to hard link files for which we don't have write access */
+	if (
 #ifdef ON_WINDOWS
-        if (dupelist[x]->mode & FILE_ATTRIBUTE_READONLY)
-#else
-        if (access(dupelist[x]->d_name, W_OK) != 0)
+        !S_ISRO(dupelist[x]->mode) &&
 #endif
+        (jc_access(dupelist[x]->d_name, JC_W_OK) != 0))
         {
           fprintf(stderr, "warning: link target is a read-only file, not linking:\n-//-> ");
           jc_fwprint(stderr, dupelist[x]->d_name, 1);
