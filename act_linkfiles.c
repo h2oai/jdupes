@@ -398,26 +398,14 @@ void linkfiles(file_t *files, const int linktype, const int only_current)
         }
 
         /* Remove temporary file to clean up; if we can't, reverse the linking */
-#ifdef UNICODE
-          if (!M2W(tempname, wname2)) {
-            mb2wc_failed(tempname);
-            continue;
-          }
-        i = DeleteFileW(wname2) ? 0 : 1;
-#else
-        i = remove(tempname);
-#endif /* UNICODE */
+        i = jc_remove(tempname);
         if (i != 0) {
           /* If the temp file can't be deleted, there may be a permissions problem
            * so reverse the process and warn the user */
           fprintf(stderr, "\nwarning: can't delete temp file, reverting: ");
           jc_fwprint(stderr, tempname, 1);
           exit_status = EXIT_FAILURE;
-#ifdef UNICODE
-          i = DeleteFileW(wname) ? 0 : 1;
-#else
-          i = remove(dupelist[x]->d_name);
-#endif
+          i = jc_remove(dupelist[x]->d_name);
           /* This last error really should not happen, but we can't assume it won't */
           if (i != 0) fprintf(stderr, "\nwarning: couldn't remove link to restore original file\n");
           else {
