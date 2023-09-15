@@ -54,17 +54,6 @@ static void linkfiles_nosupport(const char * const restrict call, const char * c
 #endif /* anything unsupported */
 
 
-#ifdef ON_WINDOWS
-static void mb2wc_failed(const char * const restrict name)
-{
-  fprintf(stderr, "error: MultiByteToWideChar failed: ");
-  jc_fwprint(stderr, name, 1);
-  exit_status = EXIT_FAILURE;
-  return;
-}
-#endif /* ON_WINDOWS */
-
-
 static void revert_failed(const char * const restrict orig, const char * const restrict current)
 {
   fprintf(stderr, "\nwarning: couldn't revert the file to its original name\n");
