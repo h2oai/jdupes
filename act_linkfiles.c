@@ -302,25 +302,13 @@ void linkfiles(file_t *files, const int linktype, const int only_current)
         strcpy(tempname, dupelist[x]->d_name);
         strcat(tempname, ".__jdupes__.tmp");
         /* Rename the destination file to the temporary name */
-#ifdef UNICODE
-        if (!M2W(tempname, wname2)) {
-          mb2wc_failed(srcfile->d_name);
-          continue;
-        }
-        i = MoveFileW(wname, wname2) ? 0 : 1;
-#else
-        i = rename(dupelist[x]->d_name, tempname);
-#endif
+        i = jc_rename(dupelist[x]->d_name, tempname);
         if (i != 0) {
           fprintf(stderr, "warning: cannot move link target to a temporary name, not linking:\n-//-> ");
           jc_fwprint(stderr, dupelist[x]->d_name, 1);
           exit_status = EXIT_FAILURE;
           /* Just in case the rename succeeded yet still returned an error, roll back the rename */
-#ifdef UNICODE
-          MoveFileW(wname2, wname);
-#else
-          rename(tempname, dupelist[x]->d_name);
-#endif
+          jc_rename(tempname, dupelist[x]->d_name);
           continue;
         }
 
@@ -404,15 +392,7 @@ void linkfiles(file_t *files, const int linktype, const int only_current)
           fprintf(stderr, "warning: unable to link '"); jc_fwprint(stderr, dupelist[x]->d_name, 0);
           fprintf(stderr, "' -> '"); jc_fwprint(stderr, srcfile->d_name, 0);
           fprintf(stderr, "': %s\n", strerror(errno));
-#ifdef UNICODE
-          if (!M2W(tempname, wname2)) {
-            mb2wc_failed(tempname);
-            continue;
-          }
-          i = MoveFileW(wname2, wname) ? 0 : 1;
-#else
-          i = rename(tempname, dupelist[x]->d_name);
-#endif /* UNICODE */
+          i = jc_rename(tempname, dupelist[x]->d_name);
           if (i != 0) revert_failed(dupelist[x]->d_name, tempname);
           continue;
         }
@@ -441,11 +421,7 @@ void linkfiles(file_t *files, const int linktype, const int only_current)
           /* This last error really should not happen, but we can't assume it won't */
           if (i != 0) fprintf(stderr, "\nwarning: couldn't remove link to restore original file\n");
           else {
-#ifdef UNICODE
-            i = MoveFileW(wname2, wname) ? 0 : 1;
-#else
-            i = rename(tempname, dupelist[x]->d_name);
-#endif
+            i = jc_rename(tempname, dupelist[x]->d_name);
             if (i != 0) revert_failed(dupelist[x]->d_name, tempname);
           }
         }
