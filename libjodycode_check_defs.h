@@ -14,7 +14,7 @@
  * applications that don't care about the number of alarms or that work
  * properly without that info, level 1 minimum is fine; those that rely
  * on the newer behavior must specify a minimum level of 2. */
-#define MY_FEATURELEVEL_REQ 1
+#define MY_FEATURELEVEL_REQ 4
 
 /* API sub-version requirements
  * For any libjodycode API you use, copy its number from libjodycode.h to
