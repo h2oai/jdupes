@@ -17,10 +17,6 @@
  #include "hashdb.h"
 #endif
 
-#ifdef UNICODE
- static wchar_t wname[WPATH_MAX], wname2[WPATH_MAX];
-#endif
-
 /* Apple clonefile() is basically a hard link */
 #ifdef ENABLE_DEDUPE
  #ifdef __APPLE__
@@ -56,17 +52,6 @@ static void linkfiles_nosupport(const char * const restrict call, const char * c
   exit(EXIT_FAILURE);
 }
 #endif /* anything unsupported */
-
-
-#ifdef ON_WINDOWS
-static void mb2wc_failed(const char * const restrict name)
-{
-  fprintf(stderr, "error: MultiByteToWideChar failed: ");
-  jc_fwprint(stderr, name, 1);
-  exit_status = EXIT_FAILURE;
-  return;
-}
-#endif /* ON_WINDOWS */
 
 
 static void revert_failed(const char * const restrict orig, const char * const restrict current)
@@ -214,12 +199,6 @@ void linkfiles(file_t *files, const int linktype, const int only_current)
           if (x == symsrc) continue;
 #endif
         }
-#ifdef UNICODE
-        if (!M2W(dupelist[x]->d_name, wname)) {
-          mb2wc_failed(dupelist[x]->d_name);
-          continue;
-        }
-#endif /* UNICODE */
 
         /* Do not attempt to hard link files for which we don't have write access */
 	if (
@@ -302,45 +281,22 @@ void linkfiles(file_t *files, const int linktype, const int only_current)
         strcpy(tempname, dupelist[x]->d_name);
         strcat(tempname, ".__jdupes__.tmp");
         /* Rename the destination file to the temporary name */
-#ifdef UNICODE
-        if (!M2W(tempname, wname2)) {
-          mb2wc_failed(srcfile->d_name);
-          continue;
-        }
-        i = MoveFileW(wname, wname2) ? 0 : 1;
-#else
-        i = rename(dupelist[x]->d_name, tempname);
-#endif
+        i = jc_rename(dupelist[x]->d_name, tempname);
         if (i != 0) {
           fprintf(stderr, "warning: cannot move link target to a temporary name, not linking:\n-//-> ");
           jc_fwprint(stderr, dupelist[x]->d_name, 1);
           exit_status = EXIT_FAILURE;
           /* Just in case the rename succeeded yet still returned an error, roll back the rename */
-#ifdef UNICODE
-          MoveFileW(wname2, wname);
-#else
-          rename(tempname, dupelist[x]->d_name);
-#endif
+          jc_rename(tempname, dupelist[x]->d_name);
           continue;
         }
 
         /* Create the desired hard link with the original file's name */
         errno = 0;
         success = 0;
-#ifdef ON_WINDOWS
- #ifdef UNICODE
-        if (!M2W(srcfile->d_name, wname2)) {
-          mb2wc_failed(srcfile->d_name);
-          continue;
-        }
-        if (CreateHardLinkW((LPCWSTR)wname, (LPCWSTR)wname2, NULL) == TRUE) success = 1;
- #else
-        if (CreateHardLink(dupelist[x]->d_name, srcfile->d_name, NULL) == TRUE) success = 1;
- #endif
-#else /* ON_WINDOWS */
         if (linktype == 1) {
-          if (link(srcfile->d_name, dupelist[x]->d_name) == 0) success = 1;
- #ifdef ENABLE_CLONEFILE_LINK
+          if (jc_link(srcfile->d_name, dupelist[x]->d_name) == 0) success = 1;
+#ifdef ENABLE_CLONEFILE_LINK
         } else if (linktype == 2) {
           if (clonefile(srcfile->d_name, dupelist[x]->d_name, 0) == 0) {
             if (copyfile(tempname, dupelist[x]->d_name, NULL, COPYFILE_METADATA) == 0) {
@@ -356,9 +312,9 @@ void linkfiles(file_t *files, const int linktype, const int only_current)
               } else clonefile_error("chflags", dupelist[x]->d_name);
             } else clonefile_error("copyfile", dupelist[x]->d_name);
           } else clonefile_error("clonefile", dupelist[x]->d_name);
- #endif /* ENABLE_CLONEFILE_LINK */
+#endif /* ENABLE_CLONEFILE_LINK */
         }
- #ifndef NO_SYMLINKS
+#ifndef NO_SYMLINKS
         else {
           i = jc_make_relative_link_name(srcfile->d_name, dupelist[x]->d_name, rel_path);
           LOUD(fprintf(stderr, "symlink MRLN: %s to %s = %s\n", srcfile->d_name, dupelist[x]->d_name, rel_path));
@@ -368,8 +324,7 @@ void linkfiles(file_t *files, const int linktype, const int only_current)
             fprintf(stderr, "warning: files to be linked have the same canonical path; not linking\n");
           } else if (symlink(rel_path, dupelist[x]->d_name) == 0) success = 1;
         }
- #endif /* NO_SYMLINKS */
-#endif /* ON_WINDOWS */
+#endif /* NO_SYMLINKS */
         if (success) {
           if (!ISFLAG(flags, F_HIDEPROGRESS)) {
             switch (linktype) {
@@ -404,48 +359,24 @@ void linkfiles(file_t *files, const int linktype, const int only_current)
           fprintf(stderr, "warning: unable to link '"); jc_fwprint(stderr, dupelist[x]->d_name, 0);
           fprintf(stderr, "' -> '"); jc_fwprint(stderr, srcfile->d_name, 0);
           fprintf(stderr, "': %s\n", strerror(errno));
-#ifdef UNICODE
-          if (!M2W(tempname, wname2)) {
-            mb2wc_failed(tempname);
-            continue;
-          }
-          i = MoveFileW(wname2, wname) ? 0 : 1;
-#else
-          i = rename(tempname, dupelist[x]->d_name);
-#endif /* UNICODE */
+          i = jc_rename(tempname, dupelist[x]->d_name);
           if (i != 0) revert_failed(dupelist[x]->d_name, tempname);
           continue;
         }
 
         /* Remove temporary file to clean up; if we can't, reverse the linking */
-#ifdef UNICODE
-          if (!M2W(tempname, wname2)) {
-            mb2wc_failed(tempname);
-            continue;
-          }
-        i = DeleteFileW(wname2) ? 0 : 1;
-#else
-        i = remove(tempname);
-#endif /* UNICODE */
+        i = jc_remove(tempname);
         if (i != 0) {
           /* If the temp file can't be deleted, there may be a permissions problem
            * so reverse the process and warn the user */
           fprintf(stderr, "\nwarning: can't delete temp file, reverting: ");
           jc_fwprint(stderr, tempname, 1);
           exit_status = EXIT_FAILURE;
-#ifdef UNICODE
-          i = DeleteFileW(wname) ? 0 : 1;
-#else
-          i = remove(dupelist[x]->d_name);
-#endif
+          i = jc_remove(dupelist[x]->d_name);
           /* This last error really should not happen, but we can't assume it won't */
           if (i != 0) fprintf(stderr, "\nwarning: couldn't remove link to restore original file\n");
           else {
-#ifdef UNICODE
-            i = MoveFileW(wname2, wname) ? 0 : 1;
-#else
-            i = rename(tempname, dupelist[x]->d_name);
-#endif
+            i = jc_rename(tempname, dupelist[x]->d_name);
             if (i != 0) revert_failed(dupelist[x]->d_name, tempname);
           }
         }
