@@ -83,7 +83,7 @@ file_t *grokfile(const char * const restrict name, file_t * restrict * const res
 #endif
 
 /* Load a directory's contents into the file tree, recursing as needed */
-void loaddir(const char * const restrict dir,
+void loaddir(char * const restrict dir,
                 file_t * restrict * const restrict filelistp,
                 int recurse)
 {
@@ -108,6 +108,9 @@ void loaddir(const char * const restrict dir,
   LOUD(fprintf(stderr, "loaddir: scanning '%s' (order %d, recurse %d)\n", dir, user_item_count, recurse));
 
   if (unlikely(interrupt != 0)) return;
+
+  /* Convert forward slashes to backslashes if on Windows */
+  jc_slash_convert(dir);
 
   /* Get directory stats (or file stats if it's a file) */
   i = getdirstats(dir, &inode, &device, &mode);
