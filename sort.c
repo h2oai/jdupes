@@ -34,12 +34,12 @@ int sort_pairs_by_mtime(file_t *f1, file_t *f2)
   if (f1->mtime < f2->mtime) return -sort_direction;
   else if (f1->mtime > f2->mtime) return sort_direction;
 
-#ifndef NO_JODY_SORT
+#ifndef NO_NUMSORT
   /* If the mtimes match, use the names to break the tie */
   return jc_numeric_strcmp(f1->d_name, f2->d_name) > 0 ? -sort_direction : -sort_direction;
 #else
   return strcmp(f1->d_name, f2->d_name) > 0 ? sort_direction : -sort_direction;
-#endif /* NO_JODY_SORT */
+#endif /* NO_NUMSORT */
 }
 #endif
 
@@ -53,9 +53,9 @@ int sort_pairs_by_filename(file_t *f1, file_t *f2)
   if (po != 0) return po;
 #endif /* NO_USER_ORDER */
 
-#ifndef NO_JODY_SORT
+#ifndef NO_NUMSORT
   return jc_numeric_strcmp(f1->d_name, f2->d_name) > 0 ? sort_direction : -sort_direction;
 #else
   return strcmp(f1->d_name, f2->d_name) > 0 ? sort_direction : -sort_direction;
-#endif /* NO_JODY_SORT */
+#endif /* NO_NUMSORT */
 }

@@ -64,7 +64,7 @@ NO_GETOPT_LONG     Disable getopt_long() (long options will not work)
 NO_HARDLINKS       Disable hard link code -L, -H
 NO_HASHDB          Disable hash cache database feature -y
 NO_HELPTEXT        Disable all help text and almost all version text
-NO_JODY_SORT       Disable numerically-correct sort (use "naive" name sort)
+NO_NUMSORT         Disable numerically correct case-ignored symbols-last sort
 NO_JSON            Disable JSON output -j
 NO_MTIME           Disable all modify time features
 NO_PERMS           Disable permission matching -p

@@ -47,7 +47,7 @@ const char *feature_flags[] = {
   #ifdef NO_HASHDB
   "nohashdb",
   #endif
-  #ifdef NO_JODY_SORT
+  #ifdef NO_NUMSORT
   "nojsort",
   #endif
   #ifdef NO_JSON

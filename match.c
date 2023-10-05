@@ -21,6 +21,7 @@
 #include "progress.h"
 
 
+#ifndef NO_HARDLINKS
 /* Copy any hashes between entries for detected hard-linked files */
 static void cross_copy_hashes(file_t *file1, file_t *file2)
 {
@@ -72,6 +73,7 @@ static void cross_copy_hashes(file_t *file1, file_t *file2)
 
   return;
 }
+#endif  /* NO_HARDLINKS */
 
 
 void registerpair(file_t **matchlist, file_t *newmatch, int (*comparef)(file_t *f1, file_t *f2))
