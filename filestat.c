@@ -28,6 +28,8 @@
  * Returns 1 if changed, 0 if not changed, negative if error */
 int file_has_changed(file_t * const restrict file)
 {
+  struct JC_STAT s;
+
   /* If -t/--no-change-check specified then completely bypass this code */
   if (ISFLAG(flags, F_NOCHANGECHECK)) return 0;
 
@@ -36,7 +38,7 @@ int file_has_changed(file_t * const restrict file)
 
   if (!ISFLAG(file->flags, FF_VALID_STAT)) return -66;
 
-  if (STAT(file->d_name, &s) != 0) return -2;
+  if (jc_stat(file->d_name, &s) != 0) return -2;
   if (file->inode != s.st_ino) return 1;
   if (file->size != s.st_size) return 1;
   if (file->device != s.st_dev) return 1;
@@ -59,6 +61,8 @@ int file_has_changed(file_t * const restrict file)
 
 int getfilestats(file_t * const restrict file)
 {
+  struct JC_STAT s;
+
   if (unlikely(file == NULL || file->d_name == NULL)) jc_nullptr("getfilestats()");
   LOUD(fprintf(stderr, "getfilestats('%s')\n", file->d_name);)
 
@@ -66,7 +70,7 @@ int getfilestats(file_t * const restrict file)
   if (ISFLAG(file->flags, FF_VALID_STAT)) return 0;
   SETFLAG(file->flags, FF_VALID_STAT);
 
-  if (STAT(file->d_name, &s) != 0) return -1;
+  if (jc_stat(file->d_name, &s) != 0) return -1;
   file->size = s.st_size;
   file->inode = s.st_ino;
   file->device = s.st_dev;
@@ -97,10 +101,12 @@ int getdirstats(const char * const restrict name,
         jdupes_ino_t * const restrict inode, dev_t * const restrict dev,
         jdupes_mode_t * const restrict mode)
 {
+  struct JC_STAT s;
+
   if (unlikely(name == NULL || inode == NULL || dev == NULL)) jc_nullptr("getdirstats");
   LOUD(fprintf(stderr, "getdirstats('%s', %p, %p)\n", name, (void *)inode, (void *)dev);)
 
-  if (STAT(name, &s) != 0) return -1;
+  if (jc_stat(name, &s) != 0) return -1;
   *inode = s.st_ino;
   *dev = s.st_dev;
   *mode = s.st_mode;

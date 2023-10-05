@@ -80,6 +80,9 @@ void linkfiles(file_t *files, const int linktype, const int only_current)
   static unsigned int symsrc;
   static char rel_path[PATHBUF_SIZE];
 #endif
+#if defined ON_WINDOWS || defined ENABLE_CLONEFILE_LINK
+  static struct JC_STAT s;
+#endif
 #ifdef ENABLE_CLONEFILE_LINK
   static unsigned int srcfile_preserved_flags = 0;
   static unsigned int dupfile_preserved_flags = 0;
@@ -155,7 +158,7 @@ void linkfiles(file_t *files, const int linktype, const int only_current)
       }
       if (linktype == 2) {
 #ifdef ENABLE_CLONEFILE_LINK
-        if (STAT(srcfile->d_name, &s) != 0) {
+        if (jc_stat(srcfile->d_name, &s) != 0) {
           fprintf(stderr, "warning: stat() on source file failed, skipping:\n[SRC] ");
           jc_fwprint(stderr, srcfile->d_name, 1);
           exit_status = EXIT_FAILURE;
@@ -232,7 +235,7 @@ void linkfiles(file_t *files, const int linktype, const int only_current)
 #ifdef ON_WINDOWS
         /* For Windows, the hard link count maximum is 1023 (+1); work around
          * by skipping linking or changing the link source file as needed */
-        if (STAT(srcfile->d_name, &s) != 0) {
+        if (jc_stat(srcfile->d_name, &s) != 0) {
           fprintf(stderr, "warning: win_stat() on source file failed, changing source file:\n[SRC] ");
           jc_fwprint(stderr, dupelist[x]->d_name, 1);
           srcfile = dupelist[x];
@@ -245,7 +248,7 @@ void linkfiles(file_t *files, const int linktype, const int only_current)
           exit_status = EXIT_FAILURE;
           continue;
         }
-        if (STAT(dupelist[x]->d_name, &s) != 0) continue;
+        if (jc_stat(dupelist[x]->d_name, &s) != 0) continue;
         if (s.st_nlink >= 1024) {
           fprintf(stderr, "warning: maximum destination link count reached, skipping:\n-//-> ");
           jc_fwprint(stderr, dupelist[x]->d_name, 1);
@@ -255,7 +258,7 @@ void linkfiles(file_t *files, const int linktype, const int only_current)
 #endif
 #ifdef ENABLE_CLONEFILE_LINK
         if (linktype == 2) {
-          if (STAT(dupelist[x]->d_name, &s) != 0) {
+          if (jc_stat(dupelist[x]->d_name, &s) != 0) {
             fprintf(stderr, "warning: stat() on destination file failed, skipping:\n-##-> ");
             jc_fwprint(stderr, dupelist[x]->d_name, 1);
             exit_status = EXIT_FAILURE;

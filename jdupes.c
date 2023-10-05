@@ -102,13 +102,6 @@ uint_fast64_t flags = 0, a_flags = 0, p_flags = 0;
 
 static const char *program_name;
 
-/* Stat and SIGUSR */
-#ifdef ON_WINDOWS
- struct jc_winstat s;
-#else
- struct stat s;
-#endif
-
 #ifndef PARTIAL_HASH_SIZE
  #define PARTIAL_HASH_SIZE 4096
 #endif

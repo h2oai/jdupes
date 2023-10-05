@@ -242,15 +242,6 @@ typedef struct _filetree {
   struct _filetree *right;
 } filetree_t;
 
-/* This gets used in many functions */
-#ifdef ON_WINDOWS
- extern struct jc_winstat s;
- #define STAT jc_win_stat
-#else
- extern struct stat s;
- #define STAT stat
-#endif
-
 /* Progress indicator variables */
 extern uintmax_t filecount, progress, item_progress, dupecount;
 
