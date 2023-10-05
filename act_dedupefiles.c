@@ -89,7 +89,7 @@ void dedupefiles(file_t * restrict files)
       off_t remain;
       int err;
 
-      /* Don't pass hard links to dedupe (GitHub issue #25) */
+      /* Don't pass hard links to dedupe */
       if (dupefile->device == curfile->device && dupefile->inode == curfile->inode) {
         printf("  -==-> %s\n", dupefile->d_name);
         continue;

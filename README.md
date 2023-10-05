@@ -87,10 +87,6 @@ Usage
 ```
 Usage: jdupes [options] DIRECTORY...
 ```
-### Or with Docker
-```
-docker run -it --init -v /path/to/dir:/data ghcr.io/jbruchon/jdupes:latest [options] /data
-```
 
 Duplicate file sets will be printed by default unless a different action
 option is specified (delete, summarize, link, dedupe, etc.)
@@ -596,9 +592,11 @@ aren't identical between any two files.
 A future release will fix this safely.
 
 
-Contact information
+Website and contact information
 -------------------------------------------------------------------------------
-For general program information, help, and tech info: https://www.jdupes.com/
+General program information, help, and tech info: https://www.jdupes.com/
+
+Development, source code, and releases: https://codeberg.org/jbruchon/jdupes
 
 Have a bug report or questions? contact Jody Bruchon <jody@jodybruchon.com>
 
