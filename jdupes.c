@@ -279,7 +279,7 @@ int main(int argc, char **argv)
   }
   /* fix up __argv so getopt etc. don't crash */
   __argv = argv;
-  jc_set_output_modes(0x0c);
+  jc_set_output_modes(JC_MODE_UTF16_TTY, JC_MODE_UTF16_TTY);
 #endif /* UNICODE */
 
 #ifndef NO_CHUNKSIZE
