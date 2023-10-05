@@ -6,7 +6,7 @@ will probably be called "libjodycode" and "libjodycode-dev".
 
 If your distribution doesn't have libjodycode, get it here:
 
-https://github.com/jbruchon/libjodycode
+https://codeberg.org/jbruchon/libjodycode
 
 If you clone and build libjodycode into ../libjodycode/ then the build will use
 the header and library in that location instead of the libjodycode already
