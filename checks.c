@@ -120,12 +120,12 @@ int check_singlefile(file_t * const restrict newfile)
     return 1;
   }
 
-  if (!S_ISREG(newfile->mode) && !S_ISDIR(newfile->mode)) {
+  if (!JC_S_ISREG(newfile->mode) && !JC_S_ISDIR(newfile->mode)) {
     LOUD(fprintf(stderr, "check_singlefile: excluding non-regular file\n"));
     return 1;
   }
 
-  if (!S_ISDIR(newfile->mode)) {
+  if (!JC_S_ISDIR(newfile->mode)) {
     /* Exclude zero-length files if requested */
     if (newfile->size == 0 && !ISFLAG(flags, F_INCLUDEEMPTY)) {
     LOUD(fprintf(stderr, "check_singlefile: excluding zero-length empty file (-z not set)\n"));

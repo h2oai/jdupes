@@ -52,7 +52,7 @@ int file_has_changed(file_t * const restrict file)
 #endif
 #ifndef NO_SYMLINKS
   if (lstat(file->d_name, &s) != 0) return -3;
-  if ((S_ISLNK(s.st_mode) > 0) ^ ISFLAG(file->flags, FF_IS_SYMLINK)) return 1;
+  if ((JC_S_ISLNK(s.st_mode) > 0) ^ ISFLAG(file->flags, FF_IS_SYMLINK)) return 1;
 #endif
 
   return 0;
@@ -90,7 +90,7 @@ int getfilestats(file_t * const restrict file)
 #endif
 #ifndef NO_SYMLINKS
   if (lstat(file->d_name, &s) != 0) return -1;
-  if (S_ISLNK(s.st_mode) > 0) SETFLAG(file->flags, FF_IS_SYMLINK);
+  if (JC_S_ISLNK(s.st_mode) > 0) SETFLAG(file->flags, FF_IS_SYMLINK);
 #endif
   return 0;
 }
@@ -110,6 +110,6 @@ int getdirstats(const char * const restrict name,
   *inode = s.st_ino;
   *dev = s.st_dev;
   *mode = s.st_mode;
-  if (!S_ISDIR(s.st_mode)) return 1;
+  if (!JC_S_ISDIR(s.st_mode)) return 1;
   return 0;
 }

@@ -223,7 +223,7 @@ void loaddir(char * const restrict dir,
     }
 
     /* Optionally recurse directories, including symlinked ones if requested */
-    if (S_ISDIR(newfile->mode)) {
+    if (JC_S_ISDIR(newfile->mode)) {
       if (recurse) {
         /* --one-file-system - WARNING: this clobbers inode/mode */
         if (ISFLAG(flags, F_ONEFS)
@@ -256,7 +256,7 @@ void loaddir(char * const restrict dir,
 #ifndef NO_SYMLINKS
       if (!ISFLAG(newfile->flags, FF_IS_SYMLINK) || (ISFLAG(newfile->flags, FF_IS_SYMLINK) && ISFLAG(flags, F_FOLLOWLINKS))) {
 #else
-      if (S_ISREG(newfile->mode)) {
+      if (JC_S_ISREG(newfile->mode)) {
 #endif
 #ifndef NO_HASHDB
         if (ISFLAG(flags, F_HASHDB)) read_hashdb_entry(newfile);
