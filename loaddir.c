@@ -23,10 +23,6 @@
  #include "travcheck.h"
 #endif
 
-#ifdef UNICODE
- static wchar_t wname[WPATH_MAX];
-#endif
-
 /* Detect Windows and modify as needed */
 #if defined _WIN32 || defined __MINGW32__
  const char dir_sep = '\\';
@@ -95,13 +91,7 @@ void loaddir(char * const restrict dir,
   jdupes_ino_t inode;
   dev_t device, n_device;
   jdupes_mode_t mode;
-#ifdef UNICODE
-  WIN32_FIND_DATA ffd;
-  HANDLE hFind = INVALID_HANDLE_VALUE;
-  char *p;
-#else
   JC_DIR *cd;
-#endif
   static int sf_warning = 0; /* single file warning should only appear once */
 
   if (unlikely(dir == NULL || filelistp == NULL)) jc_nullptr("loaddir()");
@@ -151,28 +141,6 @@ void loaddir(char * const restrict dir,
 
   item_progress++;
 
-#ifdef UNICODE
-  /* Windows requires \* at the end of directory names */
-  strncpy(tempname, dir, PATHBUF_SIZE * 2 - 1);
-  p = tempname + strlen(tempname) - 1;
-  if (*p == '/' || *p == '\\') *p = '\0';
-  strncat(tempname, "\\*", PATHBUF_SIZE * 2 - 1);
-
-  if (unlikely(!M2W(tempname, wname))) goto error_cd;
-
-  LOUD(fprintf(stderr, "FindFirstFile: %s\n", dir));
-  hFind = FindFirstFileW(wname, &ffd);
-  if (unlikely(hFind == INVALID_HANDLE_VALUE)) { LOUD(fprintf(stderr, "\nfile handle bad\n")); goto error_cd; }
-  dirlen = strlen(dir);
-  LOUD(fprintf(stderr, "Loop start\n"));
-  do {
-    char * restrict tp = tempname;
-    size_t d_name_len;
-
-    /* Get necessary length and allocate d_name */
-    dirinfo = (struct dirent *)malloc(sizeof(struct dirent));
-    if (!W2M(ffd.cFileName, dirinfo->d_name)) continue;
-#else
   cd = jc_opendir(dir);
   if (unlikely(!cd)) goto error_cd;
   dirlen = strlen(dir);
@@ -180,7 +148,6 @@ void loaddir(char * const restrict dir,
   while ((dirinfo = jc_readdir(cd)) != NULL) {
     char * restrict tp = tempname;
     size_t d_name_len;
-#endif /* UNICODE */
 
     if (unlikely(interrupt != 0)) return;
     LOUD(fprintf(stderr, "loaddir: readdir: '%s'\n", dirinfo->d_name));
@@ -277,12 +244,7 @@ void loaddir(char * const restrict dir,
 //    if (single == 1) return;
   }
 
-#ifdef UNICODE
-  while (FindNextFileW(hFind, &ffd) != 0);
-  FindClose(hFind);
-#else
   jc_closedir(cd);
-#endif
 
   return;
 
