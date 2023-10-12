@@ -356,8 +356,6 @@ file_t **checkmatch(filetree_t * restrict tree, file_t * const restrict file)
     if (ISFLAG(p_flags, PF_FULLHASH)) printf("Full hashes match:\n   %s\n   %s\n\n", file->d_name, tree->file->d_name);
     return &tree->file;
   }
-  /* Fall through - should never be reached */
-  return NULL;
 }
 
 

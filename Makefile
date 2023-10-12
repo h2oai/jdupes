@@ -99,7 +99,8 @@ ifdef ON_WINDOWS
   COMPILER_OPTIONS += -municode
  endif
  SUFFIX=.exe
- LIBEXT=.dll
+ SO_EXT=.dll
+ LIB_EXT=.lib
  COMPILER_OPTIONS += -D__USE_MINGW_ANSI_STDIO=1 -DON_WINDOWS=1
  ifeq ($(UNAME_S), MINGW32_NT-5.1)
   OBJS += winres_xp.o
@@ -109,7 +110,8 @@ ifdef ON_WINDOWS
  override undefine ENABLE_DEDUPE
  DISABLE_DEDUPE = 1
 else
- LIBEXT=.so
+ SO_EXT=.so
+ LIB_EXT=.a
 endif
 
 # Don't use unsupported compiler options on gcc 3/4 (Mac OS X 10.5.8 Xcode)
@@ -204,9 +206,9 @@ ifndef IGNORE_NEARBY_JC
    $(error You must build libjodycode before building jdupes)
   endif
  endif
- STATIC_LDFLAGS += ../libjodycode/libjodycode.a
+ STATIC_LDFLAGS += ../libjodycode/libjodycode$(LIB_EXT)
  ifdef ON_WINDOWS
-  DYN_LDFLAGS += -l:../libjodycode/libjodycode$(LIBEXT)
+  DYN_LDFLAGS += -l:../libjodycode/libjodycode$(SO_EXT)
  else
   DYN_LDFLAGS += -ljodycode
  endif
@@ -268,7 +270,7 @@ stripped: $(PROGRAM_NAME)
 	strip $(PROGRAM_NAME)$(SUFFIX)
 
 clean:
-	$(RM) $(OBJS) $(OBJS_CLEAN) build_date.h $(PROGRAM_NAME)$(SUFFIX) hashdb_util$(SUFFIX) *~ .*.un~ *.gcno *.gcda *.gcov
+	$(RM) $(OBJS) $(OBJS_CLEAN) build_date.h $(PROGRAM_NAME)$(SUFFIX) hashdb_util$(SUFFIX) *~ .*.un~ *.gcno *.gcda *.gcov *.obj
 
 distclean: clean
 	$(RM) -rf *.pkg.tar* jdupes-*-*/ jdupes-*-*.zip
