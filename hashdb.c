@@ -102,13 +102,13 @@ static int write_hashdb_entry(FILE *db, hashdb_t *cur, uint64_t *cnt, const int 
 {
   struct timeval tm;
   int err = 0;
-  static char out[PATH_MAX + 128];
+  static char out[PATHBUF_SIZE + 128];
 
   LOUD(fprintf(stderr, "write_hashdb_entry(%p, %p, %p, %d)", db, cur, cnt, destroy);)
   /* Write header and traverse array on first call */
   if (unlikely(cur == NULL)) {
     gettimeofday(&tm, NULL);
-    snprintf(out, PATH_MAX + 127, "jdupes hashdb:%d,%d,%08lx\n", HASHDB_VER, hash_algo, (unsigned long)tm.tv_sec);
+    snprintf(out, PATHBUF_SIZE + 127, "jdupes hashdb:%d,%d,%08lx\n", HASHDB_VER, hash_algo, (unsigned long)tm.tv_sec);
     LOUD(fprintf(stderr, "write hashdb: %s", out);)
     errno = 0;
     if (db == NULL) printf("%s", out); else fputs(out, db);
@@ -128,7 +128,7 @@ static int write_hashdb_entry(FILE *db, hashdb_t *cur, uint64_t *cnt, const int 
 
   /* Write out this node if it wasn't invalidated */
   if (cur->hashcount != 0) {
-    snprintf(out, PATH_MAX + 127, "%u,%016" PRIx64 ",%016" PRIx64 ",%016" PRIx64 ",%016" PRIx64 ",%016" PRIx64 ",%s\n",
+    snprintf(out, PATHBUF_SIZE + 127, "%u,%016" PRIx64 ",%016" PRIx64 ",%016" PRIx64 ",%016" PRIx64 ",%016" PRIx64 ",%s\n",
       cur->hashcount, cur->partialhash, cur->fullhash, (uint64_t)cur->mtime, (uint64_t)cur->size, (uint64_t)cur->inode, cur->path);
     (*cnt)++;
     LOUD(fprintf(stderr, "write hashdb: %s", out);)
@@ -313,8 +313,8 @@ hashdb_t *add_hashdb_entry(char *in_path, int pathlen, const file_t *check)
 int64_t load_hash_database(const char * const restrict dbname)
 {
   FILE *db;
-  char line[PATH_MAX + 128];
-  char buf[PATH_MAX + 128];
+  char line[PATHBUF_SIZE + 128];
+  char buf[PATHBUF_SIZE + 128];
   char *field, *temp;
   int db_ver;
   unsigned int fixed_len;
@@ -331,7 +331,7 @@ int64_t load_hash_database(const char * const restrict dbname)
   if (db == NULL) goto warn_hashdb_open;
 
   /* Read header line */
-  if ((fgets(buf, PATH_MAX + 127, db) == NULL) || (ferror(db) != 0)) {
+  if ((fgets(buf, PATHBUF_SIZE + 127, db) == NULL) || (ferror(db) != 0)) {
     if (errno == 0) goto warn_hashdb_open;  // empty file = make new DB
     goto error_hashdb_read;
   } else if (!ISFLAG(flags, F_HIDEPROGRESS)) fprintf(stderr, "Loading hash database...");
@@ -367,12 +367,12 @@ int64_t load_hash_database(const char * const restrict dbname)
     jdupes_ino_t inode;
 
     errno = 0;
-    if ((fgets(line, PATH_MAX + 128, db) == NULL)) {
+    if ((fgets(line, PATHBUF_SIZE + 128, db) == NULL)) {
       if (ferror(db) != 0) goto error_hashdb_read;
       break;
     }
     LOUD(fprintf(stderr, "read hashdb: %s", line);)
-    strncpy(buf, line, PATH_MAX + 128);
+    strncpy(buf, line, PATHBUF_SIZE + 128);
     linenum++;
     linelen = (int64_t)strlen(buf);
     if (linelen < fixed_len + 1) goto error_hashdb_line;
@@ -397,7 +397,7 @@ int64_t load_hash_database(const char * const restrict dbname)
     path = buf + fixed_len;
     path = strtok(path, "\n"); if (path == NULL) goto error_hashdb_line;
     pathlen = linelen - fixed_len + 1;
-    if (pathlen > PATH_MAX) goto error_hashdb_line;
+    if (pathlen > PATHBUF_SIZE) goto error_hashdb_line;
     *(path + pathlen) = '\0';
 
     /* Allocate and populate a tree entry */
@@ -443,12 +443,12 @@ warn_hashdb_algo:
 
 static int get_path_hash(char *path, uint64_t *path_hash)
 {
-  uint64_t aligned_path[(PATH_MAX + 8) / sizeof(uint64_t)];
+  uint64_t aligned_path[(PATHBUF_SIZE + 8) / sizeof(uint64_t)];
   int retval;
 
   *path_hash = 0;
   if ((uintptr_t)path & 0x0f) {
-    strncpy((char *)&aligned_path, path, PATH_MAX);
+    strncpy((char *)&aligned_path, path, PATHBUF_SIZE);
     retval = jc_block_hash((uint64_t *)aligned_path, path_hash, strlen((char *)aligned_path));
   } else retval = jc_block_hash((uint64_t *)path, path_hash, strlen(path));
   return retval;

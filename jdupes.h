@@ -42,23 +42,13 @@ extern "C" {
  #endif
 #endif /* _WIN32 || __MINGW32__ */
 
-#ifndef PATH_MAX
- #define PATH_MAX 4096
-#endif
-
-/* Windows + Unicode compilation */
-#ifdef UNICODE
- #ifndef PATHBUF_SIZE
-  #ifndef WPATH_MAX
-   #define WPATH_MAX 8192
-  #endif
-  #define PATHBUF_SIZE WPATH_MAX
+#ifndef PATHBUF_SIZE
+ #ifdef UNICODE
+  #define PATHBUF_SIZE 8192
  #else
-  #ifndef WPATH_MAX
-   #define WPATH_MAX PATHBUF_SIZE
-  #endif
- #endif /* PATHBUF_SIZE */
-#endif /* UNICODE */
+  #define PATHBUF_SIZE 4096
+ #endif /* UNICODE */
+#endif /* PATHBUF_SIZE */
 
 /* Maximum path buffer size to use; must be large enough for a path plus
  * any work that might be done to the array it's stored in. PATH_MAX is
@@ -66,13 +56,12 @@ extern "C" {
  * http://insanecoding.blogspot.com/2007/11/pathmax-simply-isnt.html
  * Windows + Unicode needs a lot more space than UTF-8 in Linux/Mac OS X
  */
-#ifndef PATHBUF_SIZE
- #define PATHBUF_SIZE 4096
-#endif
 /* Complain if PATHBUF_SIZE is too small */
-#if PATHBUF_SIZE < PATH_MAX
- #if !defined LOW_MEMORY && !defined BARE_BONES
-  #warning "PATHBUF_SIZE is less than PATH_MAX"
+#ifdef PATH_MAX
+ #if PATHBUF_SIZE < PATH_MAX
+  #if !defined LOW_MEMORY && !defined BARE_BONES
+   #warning "PATHBUF_SIZE is less than PATH_MAX"
+  #endif
  #endif
 #endif
 

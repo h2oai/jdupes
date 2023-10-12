@@ -20,10 +20,6 @@
 #define GET_CONT(a) (a & 0x3f)
 #define TO_HEX(a) (char)(((a) & 0x0f) <= 0x09 ? ((a) & 0x0f) + 0x30 : ((a) & 0x0f) + 0x57)
 
-#if defined(__GNU__) && !defined(PATH_MAX)
-#define PATH_MAX 1024
-#endif
-
 /** Decodes a single UTF-8 codepoint, consuming bytes. */
 static inline uint32_t decode_utf8(const char * restrict * const string) {
   uint32_t ret = 0;
@@ -78,7 +74,7 @@ static void json_escape(const char * restrict string, char * restrict const targ
 {
   uint32_t curr = 0;
   char *escaped = target;
-  while (*string != '\0' && (escaped - target) < (PATH_MAX * 2 - 1)) {
+  while (*string != '\0' && (escaped - target) < (PATHBUF_SIZE * 2 - 1)) {
     switch (*string) {
       case '\"':
       case '\\':
@@ -109,8 +105,8 @@ void printjson(file_t * restrict files, const int argc, char **argv)
 {
   file_t * restrict tmpfile;
   int arg = 0, comma = 0, len = 0;
-  char *temp = malloc(PATH_MAX * 2);
-  char *temp2 = malloc(PATH_MAX * 2);
+  char *temp = (char *)malloc(PATHBUF_SIZE * 2);
+  char *temp2 = (char *)malloc(PATHBUF_SIZE * 2);
   char *temp_insert = temp;
 
   LOUD(fprintf(stderr, "printjson: %p\n", files));
