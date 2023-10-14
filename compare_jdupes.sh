@@ -10,6 +10,7 @@ if [ -z "$ORIG_JDUPES" ]
 	then
 	jdupes -v 2>/dev/null >/dev/null && ORIG_JDUPES=jdupes
 	test ! -z "$WINDIR" && "$WINDIR/jdupes.exe" -v 2>/dev/null >/dev/null && ORIG_JDUPES="$WINDIR/jdupes.exe"
+	[ -z "$ORIG_JDUPES" ] && echo "error: can't find old jdupes; set ORIG_JDUPES manually" >&2 && exit 1
 fi
 
 if [ ! $ORIG_JDUPES -v 2>/dev/null >/dev/null ]
