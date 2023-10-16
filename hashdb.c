@@ -20,7 +20,7 @@
 #ifndef PH_SHIFT
  #define PH_SHIFT 12
 #endif
-#define SECS_TO_TIME(a,b) strftime(a, 32, "%F %T", localtime(b));
+#define SECS_TO_TIME(a,b) strftime(a, 32, "%Y-%m-%d %H:%M:%S", localtime(b));
 
 #ifndef HT_SIZE
  #define HT_SIZE 131072
