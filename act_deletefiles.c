@@ -101,8 +101,8 @@ void deletefiles(file_t *files, int prompt, FILE *tty)
         for (x = 2; x <= counter; x++) preserve[x] = 0;
       } else do {
         /* Prompt for files to preserve */
-        printf("Set %u of %u: keep which files? (1 - %u, [a]ll, [n]one",
-          curgroup, groups, counter);
+        printf("Specify multiple files with commas like this: 1,2,4,6\n");
+        printf("Set %u of %u: keep which files? (1 - %u, [a]ll, [n]one", curgroup, groups, counter);
 #ifndef NO_HARDLINKS
        printf(", [l]ink all");
 #endif
@@ -139,6 +139,33 @@ void deletefiles(file_t *files, int prompt, FILE *tty)
 
         for (x = 1; x <= counter; x++) preserve[x] = 0;
 
+	/* Catch attempts to use invalid characters and block them */
+        for (char *pscheck = preservestr; *pscheck != '\0'; pscheck++) {
+          switch (*pscheck) {
+            case ',':
+            case ' ':
+            case 'a':
+            case 'A':
+            case 's':
+            case 'S':
+            case 'l':
+            case 'L':
+            case 'n':
+            case 'N':
+            case '\n':
+            case '\0':
+              continue;
+	    default:
+	      break;
+	  }
+          if (*pscheck >= '0' && *pscheck <= '9') continue;
+          if (*pscheck == '-') {
+            fprintf(stderr, "error: number ranges are not yet supported; taking no action\n");
+	    goto skip_deletion;
+	  }
+          fprintf(stderr, "error: invalid character '%c' in preserve answer; taking no action\n", *pscheck);
+	  goto skip_deletion;
+        }
         token = strtok(preservestr, " ,\n");
         if (token != NULL) {
 #if defined NO_HARDLINKS && defined NO_SYMLINKS
@@ -172,6 +199,10 @@ void deletefiles(file_t *files, int prompt, FILE *tty)
           number = 0;
           sscanf(token, "%u", &number);
           if (number > 0 && number <= counter) preserve[number] = 1;
+          else {
+            fprintf(stderr, "invalid number '%u' in preserve answer; taking no action\n", number);
+            goto skip_deletion;
+	  }
 
           token = strtok(NULL, " ,\n");
         }
