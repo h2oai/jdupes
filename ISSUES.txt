@@ -1,0 +1,122 @@
+This is a list of issues created from the defunct GitHub repo's issue tracker.
+
+
+Interactive deleting mode behaviour (-d) {delete is not respecting ranges with and without spaces}
+#269 opened Oct 4, 2023 by amalgame21
+
+"in X specified" off by one
+#258 opened Aug 24, 2023 by odwulf
+
+completely silent output [feature request]
+#257 opened Aug 24, 2023 by 07416
+
+Feature request: Extend jdupes command-line syntax to accept individual files [feature request] [high priority]
+#256 opened Aug 19, 2023 by cfgnunes
+
+Enhancement: check if target file is already reflinked [feature request]
+#245 opened Jun 10, 2023 by Forza-tng
+
+Enhancement: Print progress during dedupe [feature request]
+#244 opened Jun 10, 2023 by Forza-tng
+
+Would be good to have more user documentasion (I would be prepared to write it)
+#242 opened Jun 4, 2023 by ben-tvpp
+
+Limit hard link counts on command line [feature request]
+#241 opened Jun 4, 2023 by leahneukirchen
+
+Make jdupes aware of resource forks [feature request]
+#233 opened Mar 21, 2023 by aaronpriven
+
+Add option to move duplicates to a different directory instead of deleting them [feature request]
+#230 opened Feb 26, 2023 by STrRedWolf
+
+feature request, mode where duplicates are only found between given dirs, but not withen the same given dirs [feature request]
+#220 opened Nov 9, 2022 by calestyo
+
+Finding / Listing only hard linked duplicates [feature request]
+#206 opened May 22, 2022 by Zocker1999NET
+
+Skip byte-by-byte comparison iff filenames match [feature request]
+#198 opened Jan 1, 2022 by hollymcr
+
+How to build on Windows? Why are dedupe and symlink turned off by default? [feature request] [question]
+#194 opened Dec 21, 2021 by kwencel
+
+option to prevent change of atime? [feature request]
+#193 opened Dec 13, 2021 by m95341175
+
+Folder modification dates with option -B (tested on Mac OS) [feature request]
+#187 opened Sep 17, 2021 by cameo69
+
+Set order by full path depth? [feature request]
+#184 opened Aug 6, 2021 by dzg
+
+exclude duplicates with different names [feature request]
+#170 opened May 4, 2021 by madsurgeon
+
+Hard linking needs to link symlink targets when used with -s (not the symlinks themselves) [bug] [high priority]
+#165 opened Feb 14, 2021 by Chaz6
+
+Make behavior consistent across invocations by pre-sorting incoming files/directories [bug] [high priority]
+#152 opened Nov 25, 2020 by jbruchon
+
+Add sorting by size [feature request]
+#150 opened Nov 15, 2020 by FabioPedretti
+
+Find duplicates by name only [feature request]
+#128 opened Apr 9, 2020 by nodecentral
+
+Compare "source" files/dirs against "destination" ones and only act on the source [feature request]
+#121 opened Jan 10, 2020 by nodecentral
+
+Feature: break (undo) hard links and symlinks [feature request]
+#99 opened Apr 25, 2019 by jbruchon
+
+Test suite? [feature request]
+#86 opened Aug 6, 2018 by Freaky
+
+Feature: delete directories that were emptied out after deletion [feature request]
+#78 opened May 14, 2018 by jbruchon
+
+Add ability to move or copy duplicates to a different directory [feature request]
+#73 opened Feb 15, 2018 by jbruchon
+
+Add ability to specify maximum recursion depth [feature request]
+#72 opened Jan 16, 2018 by jbruchon
+
+Include/exclude by regular expression [feature request]
+#71 opened Jan 14, 2018 by jbruchon
+
+Feature: detecting duplicate directories
+#68 opened Dec 16, 2017 by ivanperez-keera
+
+Duplicate scan between two separate hosts "rsync style" [feature request]
+#67 opened Dec 7, 2017 by jbruchon
+
+Add option to not follow symlinks passed as parameters [feature request]
+#65 opened Dec 3, 2017 by jbruchon
+
+Accept a list of files/directories from stdin for processing [feature request]
+#64 opened Nov 21, 2017 by jbruchon
+
+Interactive mode for links and dedupes [feature request]
+#51 opened Jun 17, 2017 by anfractuosity
+
+Make -m hard link aware and clarify what "occupying X bytes" means [bug]
+#43 opened Mar 21, 2017 by mmitch
+
+Output sort by hard link reference count [feature request]
+#42 opened Mar 21, 2017 by mmitch
+
+Add control over the "triangle problem" [feature request]
+#26 opened Nov 3, 2016 by jbruchon
+
+Keep only the longest or shortest filename [feature request]
+#10 opened Mar 6, 2016 by jbruchon
+
+Exclusion of selected directories from automatic deletion [feature request]
+#8 opened Feb 19, 2016 by meoso
+
+Auto-delete only if file basenames identical (otherwise prompt) [feature request]
+#6 opened Jan 26, 2016 by igittigitthub
