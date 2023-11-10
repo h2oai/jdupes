@@ -92,7 +92,7 @@ error_hashdb_open:
   fprintf(stderr, "error: cannot open hashdb '%s' for writing: %s\n", dbname, strerror(errno));
   return -2;
 error_hashdb_write:
-  fprintf(stderr, "error: writing failed to hashdb '%s': %s\n", dbname, strerror(errno));
+  fprintf(stderr, "error: write failed to hashdb '%s': %s\n", dbname, strerror(errno));
   fclose(db);
   return -3;
 }
