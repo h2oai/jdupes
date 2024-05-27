@@ -247,3 +247,7 @@ dist_in_docker: distclean
 		-w /workspace \
 		--entrypoint make \
 		 $(shell docker build -q -f Dockerfile-builder .)
+
+publish_to_s3:
+	version=$(shell grep '#define VER "' version.h | cut -d '"' -f2) && \
+	s3cmd put ./$(PROGRAM_NAME) "s3://artifacts.h2o.ai/deps/dai/$(PROGRAM_NAME)/$$version/"
