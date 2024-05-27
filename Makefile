@@ -238,3 +238,16 @@ chrootpackage:
 	+./chroot_build.sh
 package:
 	+./generate_packages.sh
+
+dist_in_docker: distclean
+	docker run \
+		--rm -it \
+		-u `id -u`:`id -g` \
+		-v `pwd`:/workspace \
+		-w /workspace \
+		--entrypoint make \
+		 $(shell docker build -q -f Dockerfile-builder .)
+
+publish_to_s3:
+	version=$(shell grep '#define VER "' version.h | cut -d '"' -f2) && \
+	s3cmd put ./$(PROGRAM_NAME) "s3://artifacts.h2o.ai/deps/dai/$(PROGRAM_NAME)/$$version/"
