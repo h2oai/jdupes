@@ -238,3 +238,12 @@ chrootpackage:
 	+./chroot_build.sh
 package:
 	+./generate_packages.sh
+
+dist_in_docker: distclean
+	docker run \
+		--rm -it \
+		-u `id -u`:`id -g` \
+		-v `pwd`:/workspace \
+		-w /workspace \
+		--entrypoint make \
+		 $(shell docker build -q -f Dockerfile-builder .)

@@ -1,0 +1,4 @@
+ARG REDHAT_UBI8_VERSION=8.6
+FROM redhat/ubi8:$REDHAT_UBI8_VERSION
+
+RUN yum -y makecache && yum install -y make gcc gcc-c++
