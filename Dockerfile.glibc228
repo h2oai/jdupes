@@ -1,0 +1,39 @@
+# Build jdupes against a glibc 2.28 baseline (RHEL/AlmaLinux 8, Debian 10, Ubuntu 18.10+).
+#
+#   docker build -f Dockerfile.glibc228 -t jdupes-build .
+#   docker run --rm -v "$PWD/dist:/out" jdupes-build
+#
+# The manylinux_2_28 image is AlmaLinux 8 based, so everything links against
+# glibc 2.28. libjodycode is statically linked into the binary, so the result
+# has no dependency beyond glibc itself.
+#
+# LIBJODYCODE_REV is pinned to the libjodycode commit contemporaneous with this
+# jdupes tree (2023-11-09). Later revisions changed the jc_numeric_strcmp()
+# signature and will not compile against this source.
+
+ARG BASE_IMAGE=quay.io/pypa/manylinux_2_28_aarch64:latest
+FROM ${BASE_IMAGE} AS build
+
+ARG LIBJODYCODE_REV=fa0765519b638876e55c26576502e07ad0f2ca4f
+
+RUN dnf -y install gcc make git binutils && dnf clean all
+
+WORKDIR /build
+RUN git init libjodycode \
+ && cd libjodycode \
+ && git remote add origin https://codeberg.org/jbruchon/libjodycode.git \
+ && git fetch --depth 1 origin ${LIBJODYCODE_REV} \
+ && git checkout FETCH_HEAD \
+ && make -j"$(nproc)"
+
+COPY . /build/jdupes
+WORKDIR /build/jdupes
+RUN make clean || true
+RUN make -j"$(nproc)" static_jc && strip jdupes
+
+# Sanity checks: it runs, and it needs nothing newer than glibc 2.28.
+RUN ./jdupes -v \
+ && ldd jdupes \
+ && objdump -T jdupes | grep -o 'GLIBC_[0-9.]*' | sort -uV
+
+CMD ["sh", "-c", "cp /build/jdupes/jdupes /out/ && echo 'jdupes copied to /out'"]
